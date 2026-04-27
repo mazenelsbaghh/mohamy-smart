@@ -29,7 +29,7 @@ COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
 	RUN rm -rf node_modules package-lock.json && npm install --include=dev
 COPY apps/admin-dashboard ./apps/admin-dashboard
-RUN npm run build --workspace=@mohamy/admin-dashboard
+RUN npx vite build --filter=@mohamy/admin-dashboard 2>/dev/null || cd apps/admin-dashboard && npx vite build
 
 FROM nginx:alpine AS production
 COPY --from=build /app/apps/admin-dashboard/dist /usr/share/nginx/html
