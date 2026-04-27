@@ -43,8 +43,8 @@ const Login = () => {
  setFocus("phone");
  if (errorMessage.includes('تأكيد رقم الهاتف')) {
  try {
- await dispatch(thunkRequestPhoneVerification({ phoneNumber: data.phone })).unwrap();
- sileo.success({ title: 'تم إرسال رمز التحقق جديد إلى رقمك' });
+ const resultMsg = await dispatch(thunkRequestPhoneVerification({ phoneNumber: data.phone })).unwrap();
+ sileo.success({ title: typeof resultMsg === 'string' ? resultMsg : 'تم إرسال رمز التحقق إلى رقمك' });
  } catch (err) {
  // Ignore error if it fails (e.g. rate limited), they can still try on the next page
  }
