@@ -145,7 +145,6 @@ if (builder.Environment.IsProduction())
         string.IsNullOrWhiteSpace(v)
         || v.StartsWith("TODO", StringComparison.OrdinalIgnoreCase)
         || v.Contains("YOUR_", StringComparison.OrdinalIgnoreCase)
-        || v.Contains("test", StringComparison.OrdinalIgnoreCase)
         || v.Contains("placeholder", StringComparison.OrdinalIgnoreCase);
 
     var prodErrors = new List<string>();
