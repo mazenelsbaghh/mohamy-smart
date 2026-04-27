@@ -24,16 +24,15 @@ const Header = ({ theme, setTheme }: THeader) => {
     return (
         <header className="flex justify-between items-center px-6 py-4 mx-4 sm:mx-8 mt-6 rounded-2xl bg-[var(--white-color)] dark:app-surface border app-border dark:app-border-strong shadow-sm transition-colors duration-300 z-40 relative flex-wrap gap-4">
             <div className='flex items-center gap-4'>
-                <div className="md:hidden flex items-center shrink-0">
-                    <IconButton
-                        icon={<HiMenu size={22} />}
-                        radius="full"
-                        size="md"
-                        onclick={toggle}
-                        ariaLabel="فتح القائمة"
-                        variant="flat"
-                        className="bg-[var(--main-color)]/10 text-[var(--main-color)] hover:bg-[var(--main-color)] hover:text-white transition-colors"
-                    />
+                <div className="lg:hidden flex items-center shrink-0">
+                    <button
+                        onClick={toggle}
+                        aria-label="فتح القائمة"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--main-color)]/10 text-[var(--main-color)] hover:bg-[var(--main-color)] hover:text-white transition-colors text-sm font-bold"
+                    >
+                        <HiMenu size={20} />
+                        <span>القائمة</span>
+                    </button>
                 </div>
                 <div className="logo shrink-0">
                     <img src="/images/logo.png" alt="Mohamy Smart Logo" loading="lazy" decoding="async" className="h-10 w-auto" />
