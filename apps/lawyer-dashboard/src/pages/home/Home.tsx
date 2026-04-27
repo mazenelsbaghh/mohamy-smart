@@ -25,6 +25,9 @@ import NotFoundData from '../../components/notFound/NotFoundData';
 import thunkGetReports from '../../redux/reports/thunkGetReports';
 import thunkGetAgendaByLawyerId from '../../redux/agenda/thunk/thunkGetAgendaByLawyerId';
 import { FiRefreshCw } from 'react-icons/fi';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { sileo } from 'sileo';
+import thunkGetLawyerPlan from '../../redux/subscription/thunk/thunkGetLawyerPlan';
 
 const Home = () => {
     const dispatch = useAppDispatch();
@@ -36,6 +39,32 @@ const Home = () => {
     const { items: agendaItems, loading: agendaLoading } = useAppSelector((state) => state.agenda);
 
     const [selectedDate, setSelectedDate] = useState(today(getLocalTimeZone()));
+    
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        const paymentStatus = searchParams.get('status');
+        const transactionId = searchParams.get('transactionId');
+        
+        if (paymentStatus) {
+            if (paymentStatus === 'success') {
+                sileo.success({ title: `تم الدفع وتفعيل الاشتراك بنجاح 🎉 - رقم المعاملة: ${transactionId || ''}` });
+                // Force refresh lawyer plan just in case
+                if (user?.profileId) {
+                    dispatch(thunkGetLawyerPlan({ lawyerId: user.profileId }));
+                }
+            } else if (paymentStatus === 'failed') {
+                sileo.error({ title: 'فشلت عملية الدفع. يرجى التأكد من بيانات البطاقة والمحاولة مرة أخرى.' });
+            } else if (paymentStatus === 'error') {
+                sileo.error({ title: 'حدث خطأ أثناء معالجة الدفع. يرجى التواصل مع الدعم الفني.' });
+            }
+            
+            // Clean up URL
+            navigate(location.pathname, { replace: true });
+        }
+    }, [searchParams, navigate, location.pathname, dispatch, user?.profileId]);
 
     useEffect(() => {
         if (!user) return;
