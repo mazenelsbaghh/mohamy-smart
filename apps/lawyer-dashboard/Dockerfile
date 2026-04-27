@@ -27,9 +27,9 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN npm install --include=dev
+	RUN rm -rf node_modules package-lock.json && npm install --include=dev
 COPY apps/lawyer-dashboard ./apps/lawyer-dashboard
-RUN npm install --no-save lightningcss-linux-x64-gnu 2>/dev/null; npm run build --workspace=@mohamy/lawyer-dashboard
+RUN npm run build --workspace=@mohamy/lawyer-dashboard
 
 FROM nginx:alpine AS production
 COPY --from=build /app/apps/lawyer-dashboard/dist /usr/share/nginx/html
