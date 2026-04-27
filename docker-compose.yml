@@ -40,6 +40,7 @@ services:
       - .env.docker
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      CLAMAV_HOST: clamav
     ports:
       - "8976:8080"
     depends_on:

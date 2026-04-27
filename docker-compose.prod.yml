@@ -46,6 +46,7 @@ services:
       - .env.docker.prod
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      CLAMAV_HOST: clamav
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8976}:8080"
     restart: unless-stopped
