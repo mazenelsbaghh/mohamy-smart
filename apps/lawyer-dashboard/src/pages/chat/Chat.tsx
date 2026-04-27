@@ -259,7 +259,6 @@ const Chat = () => {
  onSubmit={handleSubmit(onSubmit)}
  >
  <div className="chat-footer-header">
- <span className="chat-footer-pill">Prompt</span>
  <span className="chat-footer-hint">اكتب التفاصيل المهمة وسأبني الرد على أساسها</span>
  </div>
  <Textarea
