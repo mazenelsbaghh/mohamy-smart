@@ -13,7 +13,9 @@ git pull origin main
 # Restart the production stack with the latest changes
 docker compose --env-file .env.docker.prod -f docker-compose.prod.yml up -d --build
 
-# Optional: Clean up old docker images
-docker image prune -f
+# Clean up old unused docker images and build caches to free up disk space
+echo "🧹 Deep cleaning unused docker images and build cache..."
+docker image prune -af
+docker builder prune -af
 
 echo "Deployment completed successfully!"
