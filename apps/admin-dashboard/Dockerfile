@@ -9,7 +9,7 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN npm install --include=dev --include=optional \
+	RUN npm ci --include=dev \
 	    && npm rebuild
 COPY apps/admin-dashboard ./apps/admin-dashboard
 WORKDIR /app/apps/admin-dashboard
@@ -28,7 +28,7 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN npm install --include=dev
+	RUN npm ci --include=dev
 COPY apps/admin-dashboard ./apps/admin-dashboard
 RUN npm run build --workspace=@mohamy/admin-dashboard
 
