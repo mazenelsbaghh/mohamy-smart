@@ -8,6 +8,7 @@ import { loginSchema, type loginSchemaType } from"../../validations/loginSchema"
 import { zodResolver } from"@hookform/resolvers/zod";
 import { useAppDispatch } from"../../hooks/reduxHooks";
 import thunkAuthLogin from"../../redux/auth/thunk/thunkAuthLogin";
+import thunkRequestPhoneVerification from"../../redux/auth/thunk/thunkRequestPhoneVerification";
 import { sileo } from"sileo";
 import { HiOutlinePhone, HiOutlineLockClosed } from"react-icons/hi2";
 import { IoIosArrowForward } from"react-icons/io";
@@ -36,11 +37,17 @@ const Login = () => {
  sileo.success({ title:"تم تسجيل الدخول بنجاح" });
  navigate(redirectTo, { replace: true });
  })
- .catch((errorMessage: string) => {
+ .catch(async (errorMessage: string) => {
  sileo.error({ title: errorMessage });
  setFormError(errorMessage);
  setFocus("phone");
  if (errorMessage.includes('تأكيد رقم الهاتف')) {
+ try {
+ await dispatch(thunkRequestPhoneVerification({ phoneNumber: data.phone })).unwrap();
+ sileo.success({ title: 'تم إرسال رمز التحقق جديد إلى رقمك' });
+ } catch (err) {
+ // Ignore error if it fails (e.g. rate limited), they can still try on the next page
+ }
  navigate(`/auth/verify-phone?phone=${encodeURIComponent(data.phone)}`);
  }
  })
