@@ -3,7 +3,7 @@ import { memo, useEffect, useState } from'react';
 
 import { IoGrid } from"react-icons/io5";
 import { GoLaw } from"react-icons/go";
-import { FaBookOpen, FaChevronDown, FaChevronUp, FaUsers } from"react-icons/fa";
+import { FaBookOpen, FaUsers } from"react-icons/fa";
 import { IoDocumentText } from"react-icons/io5";
 import { FaCalendarDays, FaScaleBalanced } from"react-icons/fa6";
 import { BsChatTextFill } from"react-icons/bs";
@@ -20,12 +20,11 @@ import { useSidebar } from'./sidebarContext';
 
 const Sidebar = () => {
  const [isMobile, setIsMobile] = useState<boolean>(false);
- const [open, setOpen] = useState<boolean>(false);
  const [isLogoutOpen, setIsLogoutOpen] = useState<boolean>(false);
 
  const { isOpen: ctxOpen } = useSidebar();
  // Drawer is "open" if either the context (hamburger) or the legacy drag handle says so
- const isDrawerOpen = isMobile ? (ctxOpen || open) : true;
+ const isDrawerOpen = isMobile ? ctxOpen : true;
 
  const dispatch = useAppDispatch();
 
@@ -167,25 +166,7 @@ const Sidebar = () => {
  </button>
  </div>
 
- <motion.div className="drag-box"
- drag='y'
- dragConstraints={{ top: 0, bottom: 0 }}
- // dragConstraints={{ top: 0, bottom: window.innerHeight - 100 }}
- dragElastic={0.05}
- onDragEnd={(_, info) => {
- if (info.offset.y > 50) {
- setOpen(true);
- } else if (info.offset.y < -50) {
- setOpen(false);
- }
- }}
- >
- {open ? (
- <FaChevronUp />
- ) : (
- <FaChevronDown />
- )}
- </motion.div>
+
  <ConfirmDialog
  isOpen={isLogoutOpen}
  onClose={() => setIsLogoutOpen(false)}
