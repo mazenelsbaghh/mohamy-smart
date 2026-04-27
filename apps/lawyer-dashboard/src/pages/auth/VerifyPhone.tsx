@@ -4,7 +4,7 @@ import { InputOtp } from"@heroui/react";
 
 import { zodResolver } from"@hookform/resolvers/zod";
 import { useForm, Controller } from"react-hook-form";
-import { Link, useNavigate, useSearchParams } from"react-router-dom";
+import { Link, useNavigate, useSearchParams, useLocation } from"react-router-dom";
 import z from"zod";
 import { sileo } from"sileo";
 import { IoIosArrowForward } from"react-icons/io";
@@ -24,7 +24,9 @@ const VerifyPhone = () => {
  const [searchParams] = useSearchParams();
  const phoneFromQuery = searchParams.get('phone') ||'';
  const { loading, pendingVerificationPhone, pendingVerificationMessage, error } = useAppSelector((s) => s.auth);
- const [cooldown, setCooldown] = useState(60);
+ const location = useLocation();
+ const initialCooldown = location.state?.cooldown ? Number(location.state.cooldown) : 60;
+ const [cooldown, setCooldown] = useState(initialCooldown);
 
  useEffect(() => {
  if (cooldown > 0) {
@@ -62,9 +64,20 @@ const VerifyPhone = () => {
  try {
  const message = await dispatch(thunkRequestPhoneVerification({ phoneNumber })).unwrap();
  sileo.success({ title: message });
- setCooldown(60);
+ let newCooldown = 60;
+ if (typeof message === 'string') {
+ const match = message.match(/خلال (\d+) ثانية/);
+ if (match && match[1]) newCooldown = parseInt(match[1], 10);
+ }
+ setCooldown(newCooldown);
  } catch (message) {
  sileo.error({ title: message as string });
+ let newCooldown = 60;
+ if (typeof message === 'string') {
+ const match = message.match(/خلال (\d+) ثانية/);
+ if (match && match[1]) newCooldown = parseInt(match[1], 10);
+ }
+ setCooldown(newCooldown);
  }
  };
 

@@ -42,13 +42,21 @@ const Login = () => {
  setFormError(errorMessage);
  setFocus("phone");
  if (errorMessage.includes('تأكيد رقم الهاتف')) {
+ let secondsToWait = 60;
  try {
  const resultMsg = await dispatch(thunkRequestPhoneVerification({ phoneNumber: data.phone })).unwrap();
  sileo.success({ title: typeof resultMsg === 'string' ? resultMsg : 'تم إرسال رمز التحقق إلى رقمك' });
- } catch (err) {
- // Ignore error if it fails (e.g. rate limited), they can still try on the next page
+ if (typeof resultMsg === 'string') {
+ const match = resultMsg.match(/خلال (\d+) ثانية/);
+ if (match && match[1]) secondsToWait = parseInt(match[1], 10);
  }
- navigate(`/auth/verify-phone?phone=${encodeURIComponent(data.phone)}`);
+ } catch (err: any) {
+ if (typeof err === 'string') {
+ const match = err.match(/خلال (\d+) ثانية/);
+ if (match && match[1]) secondsToWait = parseInt(match[1], 10);
+ }
+ }
+ navigate(`/auth/verify-phone?phone=${encodeURIComponent(data.phone)}`, { state: { cooldown: secondsToWait } });
  }
  })
  .finally(() => setIsSubmitting(false));
