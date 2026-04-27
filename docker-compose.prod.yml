@@ -15,6 +15,29 @@
 #   BACKEND_PORT, LAWYER_PORT, ADMIN_PORT, LANDING_PORT
 
 services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    env_file:
+      - .env.docker.prod
+    environment:
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mohamy-sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: >
+        /opt/mssql-tools18/bin/sqlcmd
+        -S localhost -U sa -P "$$MSSQL_SA_PASSWORD"
+        -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - mohamy-prod
+
   backend:
     build:
       context: ./mohamy-smart-backend
@@ -29,9 +52,14 @@ services:
     volumes:
       - mohamy-backend-logs:/app/Logs
       - mohamy-dp-keys:/app/DataProtectionKeys
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - mohamy-prod
     depends_on:
+      sqlserver:
+        condition: service_healthy
       clamav:
         condition: service_healthy
 
@@ -96,6 +124,7 @@ services:
       - mohamy-prod
 
 volumes:
+  mohamy-sqlserver-data:
   mohamy-backend-logs:
   mohamy-dp-keys:
   mohamy-clamav-db:
