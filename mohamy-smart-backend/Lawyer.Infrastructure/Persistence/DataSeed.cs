@@ -32,8 +32,7 @@ namespace Lawyer.Infrastructure.Persistence
 
 			var adminEmail = configuration["SEED_ADMIN_EMAIL"];
 			var adminPassword = configuration["SEED_ADMIN_PASSWORD"];
-			var lawyerEmail = configuration["SEED_LAWYER_EMAIL"];
-			var lawyerPassword = configuration["SEED_LAWYER_PASSWORD"];
+
 
 			if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPassword))
 			{

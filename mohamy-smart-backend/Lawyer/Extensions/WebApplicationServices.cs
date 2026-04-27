@@ -161,7 +161,7 @@ namespace Lawyer.API.Extensions
 				options.Password.RequireUppercase = true; // Password must have at least one uppercase letter
 				options.Password.RequireLowercase = true; // Password must have at least one lowercase letter
 				options.Password.RequiredUniqueChars = 0; // At least one unique character
-				options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_@.";
+				options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_@.";
 
 				// Lockout settings
 				options.Lockout.MaxFailedAccessAttempts = 5;

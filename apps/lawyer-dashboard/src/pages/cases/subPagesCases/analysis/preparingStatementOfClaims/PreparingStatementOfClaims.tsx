@@ -186,7 +186,6 @@ const PreparingStatementOfClaims = () => {
  if (hasInitializedActive.current) return;
  if (snapshotModeRef.current) return;
  if (freshRunRef.current) return;
- if (aiJobsState.loading ==='idle' || aiJobsState.loading ==='pending') return;
 
  const step = getMaxStepAllowed();
 

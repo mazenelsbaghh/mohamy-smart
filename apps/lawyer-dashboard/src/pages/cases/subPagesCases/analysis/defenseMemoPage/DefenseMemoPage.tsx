@@ -94,7 +94,7 @@ const DefenseMemoPage = () => {
  // the user submits their first real job, which re-triggers this hook.
  useAiJobSignalR(caseId, isFreshMode, smartAnalysisState.createdAt);
 
- const getMaxStepAllowed = () => {
+ const maxStepAllowed = useMemo(() => {
  const jobs = aiJobs.jobs;
  const isActive = (job: typeof jobs.FactAnalysis) => job?.status === 'Completed' || job?.status === 'Processing' || job?.status === 'Queued';
 
@@ -109,7 +109,7 @@ const DefenseMemoPage = () => {
  if (isActive(jobs.FactAnalysis)) return 1;
 
  return 0;
- };
+ }, [aiJobs.jobs, smartAnalysisState.outputs]);
 
  const currentDraftStepNumber = active === 1
  ? 1
@@ -331,23 +331,16 @@ const DefenseMemoPage = () => {
  }, [analysisDefenseJob, defenseExplanationCache, dispatch]);
 
  useEffect(() => {
-   if (hasAutoResumed || snapshotModeRef.current) return;
-   if (freshRunRef.current) return;
+  if (hasAutoResumed || snapshotModeRef.current) return;
+  if (freshRunRef.current) return;
 
-  const outputs = smartAnalysisState.outputs;
-
-  if (outputs[5]) { setActive(4); setHasAutoResumed(true); return; }
-  if (outputs[4]) { setActive(3); setHasAutoResumed(true); return; }
-  if (outputs[2]) { setActive(2); setHasAutoResumed(true); return; }
-  if (outputs[1]) { setActive(1); setHasAutoResumed(true); return; }
-
-  const nextAccessibleStep = getMaxStepAllowed();
+  const nextAccessibleStep = maxStepAllowed;
   if (nextAccessibleStep === 0) return;
 
   setActive(nextAccessibleStep);
 
   setHasAutoResumed(true);
-  }, [smartAnalysisState.outputs, aiJobs.jobs, hasAutoResumed]);
+  }, [maxStepAllowed, hasAutoResumed]);
 
  const steps = [
  { id: 1, label:'مراجعة الوقائع', icon: <IoDocumentTextOutline /> },
@@ -428,8 +421,6 @@ const DefenseMemoPage = () => {
  selectedKey={active.toString()}
  onSelectionChange={(key) => {
  const step = Number(key);
- const maxStepAllowed = getMaxStepAllowed();
-
  if (step <= Math.max(active, maxStepAllowed)) {
  setActive(step);
  }
@@ -446,8 +437,6 @@ const DefenseMemoPage = () => {
  }}
  >
  {steps.map((step, index) => {
- const maxStepAllowed = getMaxStepAllowed();
- 
  const isClickable = index <= Math.max(active, maxStepAllowed);
 
  return (
