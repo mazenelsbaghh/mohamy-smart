@@ -1,19 +1,17 @@
 import dynamic from 'next/dynamic';
 import Header from '@/components/header/Header';
-import WhoWeAreSection from '@/components/whoWeAreSection/WhoWeAreSection';
-import PricingPlans from '@/components/pricingPlans/PricingPlans';
-import TestimonialsSection from '@/components/testimonialsSection/TestimonialsSection';
-import ContactSection from '@/components/contactSection/ContactSection';
-import CallToAction from '@/components/callToAction/CallToAction';
-import Footer from '@/components/footer/Footer';
-import AboutSection from '@/components/aboutSection/AboutSection';
+import HeroSection from '@/components/heroSection/HeroSection';
 
-const HeroSection = dynamic(() => import('@/components/heroSection/HeroSection'));
+const WhoWeAreSection = dynamic(() => import('@/components/whoWeAreSection/WhoWeAreSection'));
+const PricingPlans = dynamic(() => import('@/components/pricingPlans/PricingPlans'));
+const TestimonialsSection = dynamic(() => import('@/components/testimonialsSection/TestimonialsSection'));
+const ContactSection = dynamic(() => import('@/components/contactSection/ContactSection'));
+const CallToAction = dynamic(() => import('@/components/callToAction/CallToAction'));
+const Footer = dynamic(() => import('@/components/footer/Footer'));
+const AboutSection = dynamic(() => import('@/components/aboutSection/AboutSection'));
 const FeaturesSection = dynamic(() => import('@/components/featuresSection/FeaturesSection'));
 const HowToUseSection = dynamic(() => import('@/components/howToUseSection/HowToUseSection'));
 const FaqSection = dynamic(() => import('@/components/faqSection/FaqSection'));
-
-
 
 export default function Home() {
   return (
