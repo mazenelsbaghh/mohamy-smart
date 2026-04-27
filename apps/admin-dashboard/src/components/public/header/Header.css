@@ -1,0 +1,27 @@
+header .logo {
+    display: none;
+}
+
+header .text h3 {
+    color: var(--title-color);
+    transition: var(--transition);
+}
+
+header .text p {
+    color: var(--text-color);
+    transition: var(--transition);
+}
+
+.hamburger-btn {
+    display: none;
+}
+
+@media (max-width: 1000px) {
+    header .logo {
+        display: flex;
+    }
+
+    .hamburger-btn {
+        display: flex !important;
+    }
+}

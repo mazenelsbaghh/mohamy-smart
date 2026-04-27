@@ -1,0 +1,105 @@
+# ── Production-Oriented Docker Compose ───────────────────────────
+# Usage: cp .env.docker.prod.example .env.docker.prod && docker compose --env-file .env.docker.prod -f docker-compose.prod.yml up
+# Requires: .env.docker.prod with real secrets (git-ignored)
+# Template: .env.docker.prod.example (tracked — see docs/environment-reference.md)
+# ─────────────────────────────────────────────────────────────────
+#
+# Build args reference (from .env.docker.prod):
+#   VITE_LAWYER_API_URL                 → lawyer-dashboard build arg
+#   VITE_ADMIN_API_URL                  → admin-dashboard build arg
+#   NEXT_PUBLIC_API_BASE_URL            → landing build arg
+#   VITE_LAWYER_SENTRY_DSN (optional)   → lawyer-dashboard Sentry build arg
+#   VITE_ADMIN_SENTRY_DSN (optional)    → admin-dashboard Sentry build arg
+#
+# Port overrides (optional, from .env.docker.prod):
+#   BACKEND_PORT, LAWYER_PORT, ADMIN_PORT, LANDING_PORT
+
+services:
+  backend:
+    build:
+      context: ./mohamy-smart-backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env.docker.prod
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    ports:
+      - "${BACKEND_PORT:-8976}:8080"
+    restart: unless-stopped
+    volumes:
+      - mohamy-backend-logs:/app/Logs
+      - mohamy-dp-keys:/app/DataProtectionKeys
+    networks:
+      - mohamy-prod
+    depends_on:
+      clamav:
+        condition: service_healthy
+
+  clamav:
+    image: clamav/clamav:latest
+    environment:
+      CLAMAV_NO_CLAMD: "false"
+      CLAMAV_NO_FRESHCLAMD: "false"
+    volumes:
+      - mohamy-clamav-db:/var/lib/clamav
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - mohamy-prod
+
+  lawyer-dashboard:
+    build:
+      context: .
+      dockerfile: ./apps/lawyer-dashboard/Dockerfile
+      target: production
+      args:
+        VITE_API_BASE_URL: ${VITE_LAWYER_API_URL}
+        VITE_SENTRY_DSN: ${VITE_LAWYER_SENTRY_DSN:-}
+        VITE_SENTRY_ENVIRONMENT: ${VITE_LAWYER_SENTRY_ENVIRONMENT:-production}
+    ports:
+      - "${LAWYER_PORT:-5078}:80"
+    restart: unless-stopped
+    networks:
+      - mohamy-prod
+
+  admin-dashboard:
+    build:
+      context: .
+      dockerfile: ./apps/admin-dashboard/Dockerfile
+      target: production
+      args:
+        VITE_API_BASE_URL: ${VITE_ADMIN_API_URL}
+        VITE_SENTRY_DSN: ${VITE_ADMIN_SENTRY_DSN:-}
+        VITE_SENTRY_ENVIRONMENT: ${VITE_ADMIN_SENTRY_ENVIRONMENT:-production}
+    ports:
+      - "${ADMIN_PORT:-5079}:80"
+    restart: unless-stopped
+    networks:
+      - mohamy-prod
+
+  landing:
+    build:
+      context: .
+      dockerfile: ./apps/landing/Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+        NEXT_PUBLIC_DASHBOARD_URL: ${NEXT_PUBLIC_DASHBOARD_URL:-https://lawyer.mohamy-smart.com}
+    ports:
+      - "${LANDING_PORT:-3000}:80"
+    restart: unless-stopped
+    networks:
+      - mohamy-prod
+
+volumes:
+  mohamy-backend-logs:
+  mohamy-dp-keys:
+  mohamy-clamav-db:
+
+networks:
+  mohamy-prod:
+    driver: bridge

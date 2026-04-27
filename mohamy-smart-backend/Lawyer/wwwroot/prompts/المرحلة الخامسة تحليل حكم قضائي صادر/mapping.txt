@@ -1,0 +1,24 @@
+   // Step 1: Operative Analysis
+    judgment_summary: "ملخص منطوق الحكم",
+    judgment_type: "تصنيف الحكم",
+    legal_effect: "الأثر القانوني",
+
+    // Step 2: Reasoning Analysis
+    reasoning_summary: "ملخص بناء العقيدة",
+    evidence_relied_upon: "الأدلة المعتمدة",
+    response_to_denial: "الرد على الدفع بالإنكار",
+    criminal_vs_civil: "الفصل بين الشقين الجنائي والمدني",
+
+    // Step 3: Evaluation
+    is_reasoning_sufficient: "كفاية التسبيب",
+    defect_type: "نوع العيب",
+    defect_explanation: "شرح العيب (التسلسل المنطقي)",
+
+    // Step 4: Appeal Report
+    appealability: "قابلية الطعن",
+    appeal_type: "نوع الطعن المناسب",
+    legal_basis_for_appealability: "السند القانوني للقابلية",
+    appeal_grounds: "أسباب الطعن",
+    appeal_scope: "نطاق الطعن وأثره",
+    notes: "ملاحظات إجرائية"
+

@@ -1,0 +1,171 @@
+section.home .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+section.home .head h3 {
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--main-color);
+}
+
+section.home .head .icon {
+    padding: 12px;
+    background-color: var(--opacity-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease;
+}
+
+section.home .head .icon:hover {
+    transform: translateX(-4px);
+    background-color: var(--main-color);
+}
+
+section.home .head .icon svg {
+    color: var(--title-color);
+    transition: color 0.2s ease;
+}
+
+section.home .head .icon:hover svg {
+    color: var(--white-color);
+}
+
+
+section.home ul li .text p.title {
+    font-size: 1.1rem;
+    color: var(--title-color);
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+section.home ul li .text p.subtitle {
+    font-size: 1rem;
+    color: var(--text-color);
+    margin-bottom: 5px;
+}
+
+section.home ul li span {
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+section.home .calendar-container {
+    background-color: var(--white-color);
+    /* background-color: red; */
+    border-radius: var(--sm-radius);
+    padding: var(--padding);
+}
+
+section.home .calendar-container .calendar-box {
+    background-color: var(--white-color);
+    box-shadow: none;
+}
+
+section.home .calendar-container .calendar-box div {
+    width: 100% !important;
+    overflow-x: auto;
+}
+
+section.home .calendar-container .calendar-box div::-webkit-scrollbar {
+    background-color: transparent;
+    height: 5px;
+}
+section.home .calendar-container .calendar-box div::-webkit-scrollbar-thumb {
+    background-color: rgba(150, 150, 150, 0.3);
+    border-radius: var(--sm-radius);
+    transition: background-color 0.2s ease;
+}
+section.home .calendar-container .calendar-box div::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(150, 150, 150, 0.5);
+}
+
+section.home .calendar-container .calendar-box div table tr td {
+    padding: 15px;
+}
+
+section.home .calendar-container .calendar-box div table thead tr th {
+    padding: 0 15px;
+    width: 62px;
+}
+
+section.home .today-appointments h3 {
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--title-color);
+}
+
+section.home .today-appointments a {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--main-color);
+}
+
+section.home .today-appointments .appointment-card {
+    position: relative;
+    background-color: var(--second-color);
+    padding: var(--padding);
+    border-radius: var(--sm-radius);
+    overflow: hidden;
+    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+section.home .today-appointments .appointment-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+section.home .today-appointments .appointment-card::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 100%;
+    background-color: #FFDAA7;
+    top: 0;
+    right: 0;
+    transition: width 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+section.home .today-appointments .appointment-card:hover::before {
+    width: 16px;
+}
+section.home .today-appointments .appointment-card:nth-child(3)::before {
+    background-color: #BEF0C7;
+}
+
+section.home .today-appointments .appointment-card .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: var(--opacity-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+section.home .today-appointments .appointment-card .avatar svg {
+    font-size: 1.4rem;
+    color: var(--title-color);
+}
+
+section.home .today-appointments .appointment-card .text p.title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--title-color);
+}
+
+section.home .today-appointments .appointment-card .text p {
+    font-size: 1rem;
+    color: #1B1B1BA6;
+}
+
+section.home .today-appointments .appointment-card span {
+    width: 25px;
+    height: 25px;
+    background-color: #1B1B1BA6;
+    border-radius: 50%;
+}

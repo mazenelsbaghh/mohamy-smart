@@ -1,0 +1,1 @@
+export { lawyerLoginSchema as loginSchema, type LawyerLoginSchemaType as loginSchemaType } from'@mohamy/shared-validations';

@@ -1,0 +1,437 @@
+/* ═══════════════════════════════════════════════════════
+   ClientDetails — "The Digital Curator" Redesign
+   No-Line Design · Tonal Surfaces · Glassmorphism
+   Brand: Tajawel · var(--main-color) · var(--second-color) · RTL
+   Dark mode: .dark class-based
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Design Tokens ─────────────────────────────────── */
+.client-details {
+    --cd-card: var(--white-color);
+    --cd-input: #F3F3F3;
+    --cd-muted-bg: #F9F9F9;
+    --cd-section-bg: #EEEEEE;
+    --cd-text: #1A1C1C;
+    --cd-text-secondary: #4D4635;
+    --cd-text-muted: #8A8270;
+    --cd-gold: var(--main-color);
+    --cd-gold-dark: #735C00;
+    --cd-gold-light: var(--second-color);
+    --cd-gold-mid: #D4AF37;
+    --cd-gold-soft: #F7E1A6;
+    --cd-outline: rgba(208, 197, 175, 0.15);
+    --cd-shadow-sm: 0 1px 3px rgba(26, 28, 28, 0.04);
+    --cd-shadow: 0 4px 16px rgba(26, 28, 28, 0.05);
+    --cd-shadow-lg: 0 10px 40px rgba(26, 28, 28, 0.06);
+    --cd-radius: 1.25rem;
+    --cd-radius-sm: 0.875rem;
+    --cd-gold-gradient: linear-gradient(135deg, #735C00, #D4AF37);
+}
+
+.dark .client-details {
+    --cd-card: #1A1A1A;
+    --cd-input: #252525;
+    --cd-muted-bg: #111111;
+    --cd-section-bg: #2A2A2A;
+    --cd-text: #E8E8E8;
+    --cd-text-secondary: #B0A890;
+    --cd-text-muted: #706B5F;
+    --cd-gold-light: rgba(239, 149, 10, 0.08);
+    --cd-gold-soft: rgba(247, 225, 166, 0.08);
+    --cd-outline: rgba(208, 197, 175, 0.06);
+    --cd-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.15);
+    --cd-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    --cd-shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.25);
+}
+
+/* ── Card Base ─────────────────────────────────────── */
+.cd-card {
+    background: var(--cd-card);
+    border-radius: var(--cd-radius);
+    box-shadow: var(--cd-shadow-sm);
+    border: 1px solid var(--cd-outline);
+}
+
+/* ── Section Header Bar ────────────────────────────── */
+.cd-section-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.125rem 1.5rem;
+    background: var(--cd-muted-bg);
+}
+
+.cd-accent-bar {
+    width: 3px;
+    height: 22px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+/* ── Tonal Item (hoverable cards/rows) ─────────────── */
+.cd-tonal-item {
+    background: var(--cd-muted-bg);
+    border-radius: var(--cd-radius-sm);
+    padding: 0.875rem 1rem;
+    transition: all 0.25s ease;
+    cursor: default;
+}
+
+.cd-tonal-item:hover {
+    background: var(--cd-gold-light);
+}
+
+/* ── Gold Gradient Button ──────────────────────────── */
+.cd-gold-btn {
+    background: var(--cd-gold-gradient);
+    color: white;
+    font-weight: 700;
+    border-radius: 9999px;
+    padding: 0.5rem 1.5rem;
+    font-size: 0.8125rem;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    position: relative;
+    overflow: hidden;
+    font-family: 'Tajawal', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cd-gold-btn:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+}
+
+.cd-gold-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ── Ghost Button ──────────────────────────────────── */
+.cd-ghost-btn {
+    background: transparent;
+    border: 1px solid var(--cd-outline);
+    border-radius: 9999px;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--cd-text-secondary);
+    font-family: 'Tajawal', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cd-ghost-btn:hover {
+    border-color: var(--cd-gold);
+    color: var(--cd-gold-dark);
+    background: var(--cd-gold-light);
+}
+
+/* ── Input Base (no border, tonal bg) ──────────────── */
+.cd-input {
+    width: 100%;
+    background: var(--cd-input);
+    border: none;
+    border-radius: var(--cd-radius-sm);
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    color: var(--cd-text);
+    outline: none;
+    transition: box-shadow 0.25s;
+    font-family: 'Tajawal', sans-serif;
+    direction: rtl;
+}
+
+.cd-input:focus {
+    box-shadow: 0 0 0 2px rgba(239, 149, 10, 0.15);
+}
+
+.cd-input::placeholder {
+    color: var(--cd-text-muted);
+    opacity: 0.6;
+}
+
+.cd-input-error {
+    box-shadow: 0 0 0 2px rgba(186, 26, 26, 0.15);
+}
+
+/* ── Tonal Divider ─────────────────────────────────── */
+.cd-tonal-divider {
+    height: 4px;
+    background: var(--cd-muted-bg);
+    border-radius: 2px;
+    margin: 1.25rem 0;
+}
+
+/* ── Status Dot ────────────────────────────────────── */
+.cd-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.cd-dot-active {
+    background: var(--success-color);
+    box-shadow: 0 0 0 3px rgba(52, 191, 73, 0.15);
+}
+
+.cd-dot-closed {
+    background: var(--cd-text-muted);
+    opacity: 0.4;
+}
+
+/* ── Accent Right Border (handoff items) ───────────── */
+.cd-accent-right {
+    border-right: 3px solid var(--cd-gold);
+    border-radius: var(--cd-radius-sm);
+}
+
+/* ── Empty State ───────────────────────────────────── */
+.cd-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 2.5rem 1.5rem;
+    color: var(--cd-text-muted);
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+.cd-empty-icon {
+    font-size: 2.5rem;
+    opacity: 0.15;
+    color: var(--cd-gold-dark);
+}
+
+/* ── File Table ────────────────────────────────────── */
+.cd-table {
+    width: 100%;
+    text-align: right;
+    border-collapse: collapse;
+}
+
+.cd-table thead {
+    background: var(--cd-muted-bg);
+}
+
+.cd-table th {
+    padding: 0.75rem 1rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--cd-text-secondary);
+    letter-spacing: 0.3px;
+}
+
+.cd-table td {
+    padding: 0.875rem 1rem;
+    font-size: 0.82rem;
+    color: var(--cd-text);
+}
+
+.cd-table tbody tr {
+    transition: background 0.2s;
+}
+
+.cd-table tbody tr:hover {
+    background: var(--cd-gold-light);
+}
+
+.cd-table tbody tr:not(:last-child) td {
+    border-bottom: 1px solid var(--cd-outline);
+}
+
+/* ── POA Card ──────────────────────────────────────── */
+.cd-poa-card {
+    background: var(--cd-muted-bg);
+    border-radius: var(--cd-radius-sm);
+    padding: 1.125rem;
+    transition: all 0.25s ease;
+    border: 2px solid transparent;
+}
+
+.cd-poa-card:hover {
+    background: var(--cd-gold-light);
+    border-color: var(--accent-soft);
+}
+
+.cd-poa-card-active {
+    border-color: rgba(239, 149, 10, 0.15);
+}
+
+.cd-poa-canceled {
+    opacity: 0.55;
+}
+
+/* ── Badge ─────────────────────────────────────────── */
+.cd-badge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.cd-badge-active {
+    background: rgba(52, 191, 73, 0.1);
+    color: #1a7a30;
+}
+
+.dark .client-details .cd-badge-active {
+    color: #4ade80;
+}
+
+.cd-badge-canceled {
+    background: rgba(186, 26, 26, 0.08);
+    color: #BA1A1A;
+}
+
+/* ── Financial Summary ─────────────────────────────── */
+.cd-fin-gradient {
+    background: linear-gradient(135deg, rgba(115, 92, 0, 0.06), rgba(212, 175, 55, 0.1));
+    border-radius: var(--cd-radius-sm);
+    padding: 1rem;
+}
+
+.dark .client-details .cd-fin-gradient {
+    background: linear-gradient(135deg, rgba(239, 149, 10, 0.08), rgba(212, 175, 55, 0.06));
+}
+
+.cd-fin-income {
+    background: rgba(52, 191, 73, 0.06);
+    border-radius: var(--cd-radius-sm);
+    padding: 0.75rem;
+}
+
+.cd-fin-expense {
+    background: rgba(186, 26, 26, 0.04);
+    border-radius: var(--cd-radius-sm);
+    padding: 0.75rem;
+}
+
+/* ── Transaction Item ──────────────────────────────── */
+.cd-tx-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.625rem 0.875rem;
+    border-radius: var(--cd-radius-sm);
+    transition: background 0.2s;
+}
+
+.cd-tx-item:hover {
+    background: var(--cd-muted-bg);
+}
+
+/* ── Handoff Item ──────────────────────────────────── */
+.cd-handoff-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--cd-muted-bg);
+    border-radius: var(--cd-radius-sm);
+    border-right: 3px solid var(--cd-gold);
+    transition: all 0.25s;
+}
+
+.cd-handoff-item:hover {
+    background: var(--cd-gold-light);
+}
+
+/* ── Inline Form Panel ─────────────────────────────── */
+.cd-form-panel {
+    background: var(--cd-muted-bg);
+    border-radius: var(--cd-radius);
+    padding: 1.25rem;
+}
+
+/* ── Icon Button ───────────────────────────────────── */
+.cd-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.375rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    color: var(--cd-text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cd-icon-btn:hover {
+    color: var(--cd-gold-dark);
+    background: var(--cd-gold-light);
+}
+
+.cd-icon-btn-danger:hover {
+    color: #BA1A1A;
+    background: rgba(186, 26, 26, 0.06);
+}
+
+/* ── Meta Item (contact row) ───────────────────────── */
+.cd-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--cd-text-secondary);
+    padding: 0.25rem 0;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.cd-meta-row:hover {
+    color: var(--cd-gold-dark);
+}
+
+/* ── Detail Row ────────────────────────────────────── */
+.cd-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.625rem 0;
+    gap: 1rem;
+}
+
+.cd-detail-row:not(:last-child) {
+    border-bottom: 1px solid var(--cd-outline);
+}
+
+.cd-detail-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--cd-text-muted);
+    flex-shrink: 0;
+}
+
+.cd-detail-val {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--cd-text);
+    text-align: start;
+}
+
+/* ── Responsive ────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .cd-main-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .cd-bottom-grid {
+        grid-template-columns: 1fr !important;
+    }
+}

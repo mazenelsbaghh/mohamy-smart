@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Tajawal", ui-sans-serif, system-ui, sans-serif;
+}
+
+@plugin './hero.ts';
+@source '../../../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
+@custom-variant dark (&:is(.dark *));
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal/Tajawal-ExtraLight.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal/Tajawal-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal/Tajawal-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal/Tajawal-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal/Tajawal-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal/Tajawal-ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal/Tajawal-Black.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+html, body {
+  overscroll-behavior: none;
+}
+
+:root {
+  /* Brand colors */
+  --main-color: #EF950A;
+  --main-color-25: #EF950A40;    /* brand orange at 25% opacity */
+  --accent-gold: #CBAA5D;        /* golden secondary accent */
+
+  /* Text & foreground */
+  --white-color: #FBFAE8;
+  --text-color: #FBFAE8A6;       /* muted foreground (65% opacity) */
+
+  /* Backgrounds & surfaces */
+  --bg-color: #0A0A0A;
+  --dark-surface: #1B1B1B;       /* cards, elevated dark surfaces */
+  --card-bg: #18181B80;          /* semi-transparent feature card bg */
+  --icon-bg: #271F11;            /* dark brown icon container */
+  --testimonial-bg: #040b16;     /* deep dark for testimonial cards */
+  --progress-track: #1F2B15;     /* progress bar track (dark green) */
+
+  /* Glassmorphism */
+  --glass-bg: #D3D3D31A;         /* subtle glass surface */
+  --glass-map: #9c9b9b2a;        /* darker glass for map overlay */
+  --swiper-bg: #adaaaa09;        /* very subtle swiper track */
+  --fade-overlay: #00000065;     /* edge fade for carousels */
+
+  /* Semantic */
+  --danger-color: #CA0000;
+  --success-color: #34BF49;
+
+  /* Spacing & shape */
+  --sm-radius: 16px;
+  --lg-radius: 28px;
+
+  /* Effects */
+  --blur: blur(10px);
+  --blur-color: #5a595734;
+  --transition: all .3s;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  direction: rtl;
+  background-color: var(--bg-color);
+  color: var(--white-color);
+  min-height: 100vh;
+}
+
+body::selection {
+  background-color: var(--main-color);
+  color: var(--white-color);
+}
+
+body::-webkit-scrollbar{
+  background-color: #0A0A0A;
+  width: 8px;
+}
+
+body::-webkit-scrollbar-thumb{
+  background-color: #EF950A;
+  border-radius: var(--lg-radius);
+}
+
+button.main-btn {
+  padding: 12px 24px;
+  background-color: var(--main-color);
+  border: none;
+  border-radius: var(--sm-radius);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.head-title h2 {
+  font-size: 3.25rem;
+  font-weight: 700;
+  color: var(--white-color);
+}
+
+.head-title h2 span {
+  color: var(--main-color);
+}
+
+.head-title p {
+  font-size: 1rem;
+  color: var(--text-color);
+  font-weight: 500;
+  margin-top: 12px;
+}
+
+.head-title.text-start {
+  max-width: 50%;
+}
+
+@media (max-width: 991px) {
+  .head-title.text-start {
+    max-width: 80%;
+  }
+}
+
+/* A11y: Focus styles */
+:focus-visible {
+  outline: 2px solid var(--main-color);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* A11y: Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

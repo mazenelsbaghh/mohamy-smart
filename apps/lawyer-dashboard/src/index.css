@@ -1,0 +1,646 @@
+@import "tailwindcss";
+
+html, body {
+  overscroll-behavior: none;
+}
+
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+@plugin './hero.ts';
+/* Note: You may need to change the path to fit your project structure */
+@source '../../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
+@source '../../../packages/shared-ui/src/**/*.{js,ts,jsx,tsx}';
+@custom-variant dark (&:is(.dark *));
+
+/* @import "~@fullcalendar/core/main.css";
+@import "~@fullcalendar/daygrid/main.css"; */
+
+
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal/Tajawal-ExtraLight.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal/Tajawal-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal/Tajawal-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal/Tajawal-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal/Tajawal-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal/Tajawal-ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal/Tajawal-Black.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+.sub-title-component {
+  @apply flex w-full flex-wrap gap-4 justify-start md:justify-end
+}
+
+.sub-title-component-select {
+  @apply w-5/12 md:w-5/12 lg:w-3/12
+}
+
+
+:root {
+  --main-color: #EF950A;
+  --second-color: #FBFAE8;
+  --bg-color: #f0eee7;
+  --title-color: #1B1B1B;
+  --text-color: #141414a6;
+  --muted-color: #6f6553;
+  /* --dark-color: #000; */
+  /* --opacity-color: #a7a7a731; */
+  --opacity-color: #a7a7a73f;
+  --white-color: #fff;
+  --surface-color: #fffdf8;
+  --surface-muted: #f7f3ea;
+  --surface-soft: #f4efe4;
+  --border-color: rgba(27, 27, 27, 0.1);
+  --border-strong: rgba(27, 27, 27, 0.16);
+  --accent-soft: rgba(239, 149, 10, 0.12);
+  --accent-soft-strong: rgba(239, 149, 10, 0.18);
+  --success-soft: rgba(52, 191, 73, 0.12);
+  --danger-soft: rgba(202, 0, 0, 0.1);
+  --info-soft: rgba(59, 130, 246, 0.12);
+  --overlay-color: rgba(92, 83, 63, 0.42);
+  --success-color: #34BF49;
+  --danger-color: #CA0000;
+  --blue-color: #1d47ff;
+  --linear-color: linear-gradient(120deg, #FFFFFF, #FBFAE8);
+
+  --transition: all .4s;
+
+  --blur: blur(10px);
+  --blur-color: #eeeeee44;
+
+  --sm-radius: 16px;
+  --lg-radius: 24px;
+  --padding: 24px;
+}
+
+.dark {
+  --main-color: #EF950A;
+  --title-color: #FFFFFF;
+  --text-color: #FFFFFFA6;
+  --muted-color: #c7baa1;
+  --white-color: #1D1D1D;
+  --bg-color: #0A0A0A;
+  --surface-color: #161616;
+  --surface-muted: #1d1d1d;
+  --surface-soft: #242424;
+  --border-color: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --accent-soft: rgba(239, 149, 10, 0.16);
+  --accent-soft-strong: rgba(239, 149, 10, 0.24);
+  --success-soft: rgba(52, 191, 73, 0.16);
+  --danger-soft: rgba(202, 0, 0, 0.18);
+  --info-soft: rgba(59, 130, 246, 0.18);
+  --overlay-color: rgba(0, 0, 0, 0.55);
+  --linear-color: linear-gradient(120deg, #0A0A0A, #1D1D1D);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Tajawal";
+  direction: rtl;
+  background-color: var(--bg-color);
+  color: var(--title-color);
+}
+
+html,
+body,
+#root,
+button,
+input,
+textarea,
+select,
+a,
+*,
+*::before,
+*::after,
+[class*="heroui"],
+[role="button"],
+[role="dialog"],
+[role="dialog"] *,
+[role="listbox"],
+[role="listbox"] *,
+[data-slot],
+[data-slot] * {
+  font-family: "Tajawal", sans-serif !important;
+}
+
+body::selection {
+  background-color: var(--main-color);
+  color: var(--white-color);
+}
+
+[data-sileo-viewport] {
+  z-index: 2147483647 !important;
+}
+
+.pagination-box {
+  direction: ltr;
+  display: flex;
+  justify-content: end;
+  margin-top: 30px;
+}
+
+.pagination-box span {
+  color: #fff;
+}
+
+
+.warning-image {
+  width: 100%;
+  padding: 20px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.warning-image img {
+  width: 300px;
+}
+
+/* ══════════════════════════════════════════════
+   FullCalendar toolbar button overrides
+   Must be global — high specificity beats FC defaults
+══════════════════════════════════════════════ */
+.fc .fc-button,
+.fc .fc-button-primary {
+  background-color: var(--white-color) !important;
+  background-image: none !important;
+  border: 1.5px solid var(--opacity-color) !important;
+  color: var(--title-color) !important;
+  font-family: "Tajawal", sans-serif !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  padding: 7px 16px !important;
+  box-shadow: none !important;
+  outline: none !important;
+  cursor: pointer !important;
+  transition: background 0.2s, border-color 0.2s, color 0.2s !important;
+}
+
+.fc .fc-button:hover:not(:disabled),
+.fc .fc-button-primary:hover:not(:disabled) {
+  background-color: var(--main-color) !important;
+  border-color: var(--main-color) !important;
+  color: #fff !important;
+}
+
+.fc .fc-button:focus,
+.fc .fc-button-primary:focus {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Today button always orange */
+.fc .fc-today-button {
+  background-color: var(--main-color) !important;
+  border-color: var(--main-color) !important;
+  color: #fff !important;
+}
+
+.fc .fc-today-button:disabled {
+  opacity: 0.65 !important;
+}
+
+/* Prev/Next */
+.fc .fc-prev-button,
+.fc .fc-next-button {
+  border-radius: 10px !important;
+  padding: 7px 12px !important;
+}
+
+
+
+
+/* ==========================
+  main Layout
+============================= */
+main {
+  background-color: var(--bg-color);
+  min-height: 100vh;
+  overflow-x: clip;
+}
+
+.app-surface {
+  background-color: var(--surface-color);
+  border-color: var(--border-color);
+}
+
+.app-surface-muted {
+  background-color: var(--surface-muted);
+  border-color: var(--border-color);
+}
+
+.app-surface-soft {
+  background-color: var(--surface-soft);
+  border-color: var(--border-color);
+}
+
+.app-text-muted {
+  color: var(--text-color);
+}
+
+.app-text-subtle {
+  color: var(--muted-color);
+}
+
+.app-border {
+  border-color: var(--border-color);
+}
+
+.app-border-strong {
+  border-color: var(--border-strong);
+}
+
+.app-accent-soft {
+  background-color: var(--accent-soft);
+  border-color: var(--accent-soft-strong);
+}
+
+.app-toggle-shell {
+  background-color: var(--surface-soft);
+  border: 1px solid var(--border-color);
+}
+
+.app-toggle-active {
+  background-color: var(--surface-color);
+  color: var(--title-color);
+  box-shadow: 0 8px 18px rgba(27, 27, 27, 0.08);
+}
+
+.dark .app-toggle-active {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+}
+
+.sidebar-box {
+  width: 5%;
+  position: fixed;
+  top: 0px;
+  right: 0;
+  z-index: 49;
+  transition: var(--transition);
+  /* background-color: red; */
+}
+
+.outlet-box {
+  width: 95%;
+  margin-right: 5%;
+  min-width: 0;
+  overflow-x: clip;
+  /* min-height: 100vh; */
+}
+
+@media(max-width:1600px) {
+  .sidebar-box {
+    width: 7%;
+  }
+}
+
+@media(max-width:1400px) {
+  .sidebar-box {
+    width: 7%;
+  }
+}
+
+@media(max-width:1100px) {
+  .sidebar-box {
+    width: 9%;
+  }
+}
+
+/* responsive */
+@media(max-width:991px) {
+  .sidebar-box {
+    width: 28%;
+  }
+  .warning-image img{
+    width: 200px;
+  }
+}
+
+@media(max-width:800px) {
+  .sidebar-box {
+    width: 33%;
+  }
+}
+
+@media(max-width:700px) {
+  .sidebar-box {
+    width: 40%;
+  }
+}
+
+@media(max-width:550px) {
+  .sidebar-box {
+    width: 60%;
+  }
+}
+
+
+@media(max-width:1000px) {
+  .sidebar-box {
+    right: -100%;
+  }
+
+  .sidebar-box.open {
+    right: 0px;
+  }
+
+  .sidebar-box.closed {
+    right: -100%;
+  }
+
+  .outlet-box {
+    width: 100%;
+    margin-right: 0;
+    min-width: 0;
+  }
+}
+
+
+
+
+
+/* ══════════════════════════════════════════════
+   ConfirmReviewBanner — shared pre-submit review
+══════════════════════════════════════════════ */
+.confirm-review-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-radius: 16px;
+  border: 1.5px solid #EF950A30;
+  background: linear-gradient(135deg, #FFFBF0 0%, #FFF8E8 100%);
+  overflow: hidden;
+}
+
+.dark .confirm-review-banner {
+  background: linear-gradient(135deg, #1D1A12 0%, #241F10 100%);
+  border-color: #EF950A40;
+}
+
+/* ── Header ── */
+.crb-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1rem 1.2rem;
+  background-color: #EF950A18;
+  border-bottom: 1px solid #EF950A25;
+}
+
+.crb-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background-color: #EF950A;
+  color: #fff;
+  font-size: 1rem;
+  margin-top: 2px;
+}
+
+.crb-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.crb-warning-msg {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #7A4A00;
+  margin: 0;
+  font-family: "Tajawal", sans-serif;
+}
+
+.dark .crb-warning-msg {
+  color: #F5C066;
+}
+
+.crb-note-msg {
+  font-size: 0.78rem;
+  color: #7A4A0099;
+  margin: 0;
+  font-family: "Tajawal", sans-serif;
+  line-height: 1.5;
+}
+
+.dark .crb-note-msg {
+  color: #F5C06680;
+}
+
+/* ── Sections ── */
+.crb-section {
+  padding: 0.9rem 1.2rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border-bottom: 1px dashed #EF950A20;
+}
+
+.crb-section:last-of-type {
+  border-bottom: none;
+}
+
+.crb-section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.crb-accent-bar {
+  width: 3px;
+  height: 14px;
+  border-radius: 99px;
+  background-color: var(--main-color);
+  flex-shrink: 0;
+}
+
+.crb-section-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--main-color);
+  letter-spacing: 0.01em;
+  font-family: "Tajawal", sans-serif;
+}
+
+/* ── Fields grid ── */
+.crb-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem 1rem;
+}
+
+.crb-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background-color: var(--white-color);
+  border: 1px solid #EF950A18;
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+}
+
+.dark .crb-field {
+  background-color: #2A2415;
+  border-color: #EF950A20;
+}
+
+.crb-field-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--main-color);
+  font-family: "Tajawal", sans-serif;
+}
+
+.crb-field-value {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--title-color);
+  word-break: break-word;
+  font-family: "Tajawal", sans-serif;
+}
+
+.crb-empty {
+  font-style: normal;
+  color: var(--text-color);
+  opacity: 0.5;
+  font-size: 0.78rem;
+}
+
+/* ── Long-text fields (full width) ── */
+.crb-field.crb-field--full {
+  grid-column: 1 / -1;
+}
+
+/* ── Responsibility stamp ── */
+.crb-stamp {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 1.2rem;
+  background-color: #EF950A0C;
+  border-top: 1px solid #EF950A20;
+}
+
+.crb-stamp-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--main-color);
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.crb-stamp-text {
+  font-size: 0.76rem;
+  color: #7A4A0099;
+  font-family: "Tajawal", sans-serif;
+  line-height: 1.6;
+  font-weight: 600;
+}
+
+.dark .crb-stamp-text {
+  color: #F5C06670;
+}
+
+/* Responsive: single column on small screens */
+@media (max-width: 520px) {
+  .crb-fields {
+    grid-template-columns: 1fr;
+  }
+  .crb-field.crb-field--full {
+    grid-column: 1;
+  }
+}
+
+/* ==========================
+  UI/UX Pro Max Scrollbar
+============================= */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: var(--opacity-color);
+  border-radius: var(--sm-radius);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--main-color);
+  border-radius: var(--sm-radius);
+  border: 1px solid transparent;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c47a06;
+}
+
+/* ============================================================
+   FIX 1.6: Respect user's prefers-reduced-motion preference
+   UX Audit 2026-04-27
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

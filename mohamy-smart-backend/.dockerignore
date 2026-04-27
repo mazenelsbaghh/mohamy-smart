@@ -1,0 +1,8 @@
+bin/
+obj/
+Logs/
+*.user
+*.suo
+.vs/
+.claude/
+tmpclaude-*

@@ -1,0 +1,56 @@
+.profile-component {}
+
+
+
+/* ===========================================
+    start subscription
+============================================== */
+
+.subscription .subscription-plan {
+    background-color: var(--second-color);
+    border-radius: var(--sm-radius);
+    padding: var(--padding);
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+main.dark .subscription .subscription-plan {
+    background-color: #3d3d3d85;
+}
+
+.subscription .subscription-plan h4 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 8px;
+}
+
+.subscription .subscription-plan li {
+    color: var(--text-color);
+    font-weight: 600;
+    margin-top: 8px;
+}
+
+.subscription .subscription-plan span {
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: var(--main-color);
+}
+
+.subscription .subscription-plan strong {
+    color: var(--title-color);
+}
+
+
+.subscription h3 {
+    color: var(--title-color);
+    font-weight: bold;
+}
+.subscription p {
+    color: var(--text-color);
+}
+.subscription h4 {
+    color: var(--title-color);
+}

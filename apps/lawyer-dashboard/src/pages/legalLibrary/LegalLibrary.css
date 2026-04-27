@@ -1,0 +1,71 @@
+section.legal-library .tools-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+@media (min-width: 640px) {
+    section.legal-library .tools-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    section.legal-library .tools-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+section.legal-library .tool-card {
+    padding: 2rem;
+    border-radius: var(--sm-radius);
+    background: var(--white-color);
+    border: 1px solid var(--opacity-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+}
+
+section.legal-library .tool-card:hover {
+    border-color: var(--main-color);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.dark section.legal-library .tool-card {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.dark section.legal-library .tool-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+section.legal-library .tool-card .tool-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--white-color);
+    background: var(--main-color);
+}
+
+section.legal-library .tool-card .tool-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--title-color);
+}
+
+section.legal-library .tool-card .tool-description {
+    font-size: 0.85rem;
+    color: var(--text-color);
+    line-height: 1.6;
+}

@@ -1,0 +1,54 @@
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/components/analysisWorkflow/AnalysisFactsSelectionStep.tsx
+  141:11  error  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/components/forms/AddNewClientForm.tsx
+  40:11  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/main.tsx
+  31:36  error  Empty block statement  no-empty
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/pages/auth/SignUp.tsx
+  92:41  error  Parsing error: Unterminated string literal
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/pages/cases/subPagesCases/CaseAnalysis.tsx
+   52:11  error  'e' is defined but never used      @typescript-eslint/no-unused-vars
+   52:14  error  Empty block statement              no-empty
+  215:11  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  215:18  error  Empty block statement              no-empty
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/pages/cases/subPagesCases/SnapshotsHistory.tsx
+  86:41  warning  React Hook useEffect has a missing dependency: 'refresh'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/adminComplaint/AdminComplaintPage.tsx
+  124:5  warning  React Hook useEffect has missing dependencies: 'navigate', 'pathname', and 'snapshotModeRef'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/appealBrief/AppealBriefPage.tsx
+  141:5  warning  React Hook useEffect has missing dependencies: 'navigate', 'pathname', and 'snapshotModeRef'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/defenseMemoPage/steps/DefensesList.tsx
+  58:8  warning  The 'explanationsCache' logical expression could make the dependencies of useEffect Hook (at line 146) change on every render. To fix this, wrap the initialization of 'explanationsCache' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/execRequest/ExecRequestPage.tsx
+  124:5  warning  React Hook useEffect has missing dependencies: 'navigate', 'pathname', and 'snapshotModeRef'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/legalWarning/LegalWarningPage.tsx
+  126:5  warning  React Hook useEffect has missing dependencies: 'navigate', 'pathname', and 'snapshotModeRef'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/preparingStatementOfClaims/PreparingStatementOfClaims.tsx
+  164:5  warning  React Hook useEffect has a missing dependency: 'navigate'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/preparingStatementOfClaims/steps/LawsuitLegalBasis.tsx
+  93:3  error  Parsing error: ')' expected
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/rulingAnalysis/RulingAnalysisPage.tsx
+  127:5  warning  React Hook useEffect has missing dependencies: 'navigate', 'pathname', and 'snapshotModeRef'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/pages/chat/Chat.tsx
+  267:45  error  Parsing error: Identifier expected
+
+/Users/mazenelsbagh/mazen mac/apps/mohamy smart/apps/lawyer-dashboard/src/redux/clients/clientsSlice.ts
+  73:77  error  Empty block statement  no-empty
+
+✖ 19 problems (11 errors, 8 warnings)
+

@@ -1,0 +1,18 @@
+{
+  "breakpoints": [375, 768, 1280],
+  "out": "./src/bones",
+  "wait": 1200,
+  "color": "#e8e8e8",
+  "darkColor": "#2a2a2a",
+  "animate": "shimmer",
+  "shimmerColor": "#f0f0f0",
+  "darkShimmerColor": "#333333",
+  "speed": "1.8s",
+  "shimmerAngle": 110,
+  "routes": [
+    "/",
+    "/plans",
+    "/subscriptions",
+    "/lawyers"
+  ]
+}

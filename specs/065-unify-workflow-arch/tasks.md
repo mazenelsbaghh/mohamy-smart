@@ -22,7 +22,7 @@ All paths are relative to `apps/lawyer-dashboard/src/` within the monorepo root.
 
 **Purpose**: Extend shared hooks and utilities needed by multiple user stories.
 
-- [ ] T001 Add optional `stepMapFn` parameter to `useWorkflowSnapshotLoader` hook in `hooks/useWorkflowSnapshotLoader.ts` — accept `(step: number) => number`, default to identity function; apply `stepMapFn(rawStep)` when computing the tab index from snapshot data before calling `onLoaded`
+- [x] T001 Add optional `stepMapFn` parameter to `useWorkflowSnapshotLoader` hook in `hooks/useWorkflowSnapshotLoader.ts` — accept `(step: number) => number`, default to identity function; apply `stepMapFn(rawStep)` when computing the tab index from snapshot data before calling `onLoaded`
 
 ---
 
@@ -52,11 +52,11 @@ All paths are relative to `apps/lawyer-dashboard/src/` within the monorepo root.
 
 ### Implementation for User Story 2
 
-- [ ] T002 [US2] Replace inline snapshot loading in `pages/cases/subPagesCases/analysis/defenseMemoPage/DefenseMemoPage.tsx` with `useWorkflowSnapshotLoader` hook call — import the hook, wire `snapshotId` from URL params, pass `restoreWorkflowSnapshot` action, `resetAnalysis` as `resetWorkflow`, `stepMapFn: (s) => s <= 2 ? s : Math.min(s - 1, 4)` (maps steps 1-5 to tabs 1-4 with step 3 → tab 2), remove the manual `useEffect` that fetches `/WorkflowSnapshots/{id}` and dispatches inline
+- [x] T002 [US2] Replace inline snapshot loading in `pages/cases/subPagesCases/analysis/defenseMemoPage/DefenseMemoPage.tsx` with `useWorkflowSnapshotLoader` hook call — import the hook, wire `snapshotId` from URL params, pass `restoreWorkflowSnapshot` action, `resetAnalysis` as `resetWorkflow`, `stepMapFn: (s) => s <= 2 ? s : Math.min(s - 1, 4)` (maps steps 1-5 to tabs 1-4 with step 3 → tab 2), remove the manual `useEffect` that fetches `/WorkflowSnapshots/{id}` and dispatches inline
 
-- [ ] T003 [P] [US2] Replace inline snapshot loading in `pages/cases/subPagesCases/analysis/preparingStatementOfClaims/PreparingStatementOfClaims.tsx` with `useWorkflowSnapshotLoader` hook call — import the hook, wire `snapshotId` from URL params, pass `restoreStatementSnapshot` action, `resetStatementOfClaims` as `resetWorkflow`, remove the manual `useEffect` that fetches `/WorkflowSnapshots/{id}` and dispatches inline
+- [x] T003 [P] [US2] Replace inline snapshot loading in `pages/cases/subPagesCases/analysis/preparingStatementOfClaims/PreparingStatementOfClaims.tsx` with `useWorkflowSnapshotLoader` hook call — import the hook, wire `snapshotId` from URL params, pass `restoreStatementSnapshot` action, `resetStatementOfClaims` as `resetWorkflow`, remove the manual `useEffect` that fetches `/WorkflowSnapshots/{id}` and dispatches inline
 
-- [ ] T004 [US2] Migrate defense-memo snapshot reading in `pages/cases/subPagesCases/CaseSummary.tsx` from localStorage to DB — replace `getDefenseMemoSnapshots(caseId)` (lines 47-59) with reading from `draft.state.workflowVersions` (the same Redux path used by all other workflows), remove the `getDefenseMemoSnapshots` helper function, remove the `localStorage` import/usage for defense-memo snapshots
+- [x] T004 [US2] Migrate defense-memo snapshot reading in `pages/cases/subPagesCases/CaseSummary.tsx` from localStorage to DB — replace `getDefenseMemoSnapshots(caseId)` (lines 47-59) with reading from `draft.state.workflowVersions` (the same Redux path used by all other workflows), remove the `getDefenseMemoSnapshots` helper function, remove the `localStorage` import/usage for defense-memo snapshots
 
 **Checkpoint**: User Stories 1 AND 2 should both work independently
 
@@ -80,7 +80,7 @@ All paths are relative to `apps/lawyer-dashboard/src/` within the monorepo root.
 
 ### Implementation for User Story 4
 
-- [ ] T005 [US4] Migrate DefenseMemoPage from inline fact management to `useWorkflowFacts` hook in `pages/cases/subPagesCases/analysis/defenseMemoPage/DefenseMemoPage.tsx` — import `useWorkflowFacts`, replace the `caseFacts`/`selectedFacts`/`finalFacts` useState declarations with the hook's return values (`facts`, `selectedFacts`, `toggleFact`, `addFact`), wire `toggleFact` into the facts tab checkboxes, wire `addFact` into the add-fact form, remove inline `parseCaseFacts` usage; ensure the hook receives `caseId` and `workflowType: "defense-memo"` for localStorage scoping
+- [x] T005 [US4] Migrate DefenseMemoPage from inline fact management to `useWorkflowFacts` hook in `pages/cases/subPagesCases/analysis/defenseMemoPage/DefenseMemoPage.tsx` — import `useWorkflowFacts`, replace the `caseFacts`/`selectedFacts`/`finalFacts` useState declarations with the hook's return values (`facts`, `selectedFacts`, `toggleFact`, `addFact`), wire `toggleFact` into the facts tab checkboxes, wire `addFact` into the add-fact form, remove inline `parseCaseFacts` usage; ensure the hook receives `caseId` and `workflowType: "defense-memo"` for localStorage scoping
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -90,9 +90,9 @@ All paths are relative to `apps/lawyer-dashboard/src/` within the monorepo root.
 
 **Purpose**: Validation and cleanup after all user stories are complete.
 
-- [ ] T006 [P] Run TypeScript type checking with `npx tsc -b` in `apps/lawyer-dashboard/` — fix any type errors introduced by the refactoring
-- [ ] T007 [P] Run linting with `npm run lint` in `apps/lawyer-dashboard/` — fix any lint errors introduced by the refactoring
-- [ ] T008 Validate all 7 workflow resume flows per quickstart.md in `specs/065-unify-workflow-arch/quickstart.md`
+- [x] T006 [P] Run TypeScript type checking with `npx tsc -b` in `apps/lawyer-dashboard/` — fix any type errors introduced by the refactoring
+- [x] T007 [P] Run linting with `npm run lint` in `apps/lawyer-dashboard/` — fix any lint errors introduced by the refactoring
+- [x] T008 Validate all 7 workflow resume flows per quickstart.md in `specs/065-unify-workflow-arch/quickstart.md`
 
 ---
 

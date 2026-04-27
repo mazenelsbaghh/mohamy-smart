@@ -1,0 +1,24 @@
+   // Step 1: Classification & Entity
+    'administrative_action_type': 'نوع الإجراء (تظلم/دعوى)',
+    'competent_authority': 'الجهة الإدارية المختصة',
+    'authority_level': 'المستوى الإداري',
+    'target_official': 'المسؤول المخاطب',
+    'justification': 'التكييف القانوني',
+    'confidence': 'درجة الثقة',
+
+    // Step 2: Facts Narrative
+    'facts_narrative': 'الوقائع (الصياغة القانونية)',
+
+    // Step 3: Violation Analysis
+    'violation_type': 'نوع المخالفة/العيب',
+    'violation_description': 'توصيف العيب',
+    'related_rules': 'القواعد الحاكمة',
+    'rule_source': 'المصدر (قانون/لائحة)',
+    'rule_text': 'نص المادة',
+
+    // Step 4: Requests
+    'requests_text': 'الطلبات الختامية',
+
+    // Step 5: Final Document
+    'full_complaint_text': 'صحيفة التظلم النهائية'
+

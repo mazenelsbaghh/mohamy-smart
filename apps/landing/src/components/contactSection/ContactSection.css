@@ -1,0 +1,102 @@
+
+.contact-section .contact-frame {
+    background-color: var(--glass-bg);
+    border: 2px solid var(--text-color);
+    border-radius: var(--sm-radius);
+}
+
+.contact-section h3 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--main-color);
+
+}
+
+.contact-section p {
+    color: var(--text-color);
+    font-size: 1.2rem;
+    margin: 18px 0;
+}
+
+.contact-section ul li {
+    color: var(--white-color);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.contact-section ul li svg {
+    color: var(--main-color);
+    font-size: 1.4rem;
+}
+
+
+.contact-section form button {
+    background-color: var(--main-color);
+    color: var(--white-color);
+}
+
+.contact-section .map-image {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-areas: "map-stack";
+    place-items: center;
+}
+
+.contact-section .map-image img {
+    grid-area: map-stack;
+    width: 80%;
+    user-select: none;
+}
+
+.contact-section .map-image .map-card {
+    grid-area: map-stack;
+    justify-self: end;
+    align-self: start;
+    margin-inline-end: 10%;
+    margin-top: 15%;
+    background-color: var(--glass-map);
+    backdrop-filter: var(--blur);
+    width: max-content;
+    max-width: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    gap: 12px;
+    padding: 10px 20px;
+    border-radius: var(--sm-radius);
+    border-bottom-start-radius: 0px;
+    border: 2px solid var(--text-color);
+}
+
+.contact-section .map-image .map-card::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: -10px;
+    width: 20px;
+    height: 20px;
+    background-color: var(--main-color);
+}
+
+@media (max-width: 768px) {
+    .contact-section .map-image {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    .contact-section .map-image .map-card {
+        margin: 0;
+        width: 100%;
+        max-width: 100%;
+        border-bottom-start-radius: var(--sm-radius);
+        align-items: center;
+    }
+    .contact-section .map-image .map-card::after {
+        display: none;
+    }
+    .contact-section .map-image img {
+        width: 100%;
+    }
+}

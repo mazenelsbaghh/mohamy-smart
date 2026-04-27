@@ -1,0 +1,17 @@
+.calendar-page {
+    /* background-color: red; */
+}
+
+.calendar-page .calendar-box h2,
+.calendar-page .calendar-box table thead tr th {
+    color: var(--title-color);
+}
+
+.calendar-page .calendar-box table tbody tr td {
+    color: var(--text-color);
+}
+
+.calendar-page .calendar-box table .fc-h-event {
+    background-color: var(--main-color);
+    border: 1px solid var(--main-color);
+}

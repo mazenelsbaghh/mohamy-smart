@@ -1,0 +1,45 @@
+
+.who-we-are-section .box {
+    border-radius: var(--lg-radius);
+    padding: 25px 50px;
+    height: 100%;
+}
+
+.who-we-are-section .box_1 {
+    background-color: color-mix(in srgb, var(--main-color) 25%, transparent);
+}
+
+.who-we-are-section .box_2 {
+    background-color: var(--dark-surface);
+}
+
+.who-we-are-section .box_3 {
+    background-color: var(--white-color);
+}
+
+.who-we-are-section .text .icon {
+    width: 80px;
+    height: 80px;
+    background-color: var(--main-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+}
+
+.who-we-are-section .text h3 {
+    margin: 25px 0;
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--main-color);
+}
+
+.who-we-are-section .text ul li {
+    margin-bottom: 12px;
+    color: var(--text-color);
+    font-size: 1.3rem;
+}
+
+.who-we-are-section .box_3 ul li {
+    color: var(--dark-surface);
+}

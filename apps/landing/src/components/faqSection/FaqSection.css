@@ -1,0 +1,18 @@
+.faq-section {
+    position: relative;
+    z-index: 10;
+}
+
+.faq-accordion .heroui-accordion-item {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    transition: var(--transition);
+}
+
+.faq-accordion .heroui-accordion-item:hover {
+    border-color: var(--main-color-25);
+    box-shadow: 0 4px 20px rgba(239, 149, 10, 0.1);
+}
+
+.faq-accordion [data-open="true"] {
+    border-color: var(--main-color);
+}

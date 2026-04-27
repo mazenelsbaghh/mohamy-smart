@@ -1,0 +1,11 @@
+.sub-title h3 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--title-color);
+}
+
+.sub-title .components{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}

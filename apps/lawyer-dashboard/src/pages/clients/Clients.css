@@ -1,0 +1,189 @@
+section.clients .warning-image {
+    width: 100%;
+    height: 50vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+section.clients .warning-image img {
+    width: 350px;
+}
+
+/* ── Client Name ───────────────────────── */
+section.clients .client-card-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--title-color);
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+
+/* ── Status Rows ───────────────────────── */
+section.clients .client-data-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-top: 1px solid var(--opacity-color);
+    margin-bottom: 16px;
+}
+
+section.clients .client-data-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--opacity-color);
+    gap: 8px;
+}
+
+section.clients .client-data-label {
+    font-size: 0.85rem;
+    color: var(--text-color);
+    font-weight: 400;
+    flex-shrink: 0;
+}
+
+/* ── Badges ────────────────────────────── */
+section.clients .client-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+section.clients .client-badge.active {
+    background-color: var(--opacity-color);
+    color: var(--main-color);
+}
+
+section.clients .client-badge.active::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: var(--main-color);
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+section.clients .client-badge.unlinked {
+    background-color: rgba(27, 27, 27, 0.06);
+    color: var(--text-color);
+}
+
+/* ── Pulsing / inactive dots ───────────── */
+section.clients .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--success-color);
+    animation: pulse 2s infinite;
+    flex-shrink: 0;
+}
+
+section.clients .inactive-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--opacity-color);
+    flex-shrink: 0;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* ── Footer ────────────────────────────── */
+section.clients .client-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+section.clients .client-details-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background-color: var(--main-color);
+    color: var(--white-color) !important;
+    border-radius: var(--lg-radius);
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: var(--transition);
+    text-decoration: none !important;
+}
+
+section.clients .client-details-btn:hover {
+    background-color: #c47a06;
+    transform: translateY(-1px);
+}
+
+section.clients .client-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    color: var(--text-color);
+    white-space: nowrap;
+    padding: 6px 12px;
+    border-radius: 10px;
+    background-color: var(--opacity-color);
+    border: 1px solid var(--accent-soft);
+}
+
+/* ── Card Hover ────────────────────────── */
+section.clients .card .custom-card {
+    transition: var(--transition);
+}
+
+section.clients .card .custom-card:hover {
+    border-color: var(--opacity-color);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+}
+
+/* ── Avatar ────────────────────────────── */
+section.clients .client-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+section.clients .client-avatar.small {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+}
+
+/* ── Inline section header (used inside flex rows alongside buttons) ── */
+.client-details .section-inline-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--title-color);
+    flex-shrink: 0;
+}
+
+/* ── Profile Details ───────────────────── */
+.client-details .bg-white {
+    transition: var(--transition);
+}
+
+.client-details a.text-primary,
+.client-details a:hover {
+    color: var(--main-color);
+}

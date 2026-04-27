@@ -1,0 +1,28 @@
+{
+  "name": "WorkflowDto<TStepOutput>",
+  "type": "Contract DTO",
+  "serialization": "System.Text.Json (camelCase)",
+  "fields": {
+    "caseId": {
+      "type": "int",
+      "description": "The unique identifier of the case."
+    },
+    "currentStep": {
+      "type": "int",
+      "description": "The active processing step of the workflow stage."
+    },
+    "status": {
+      "type": "string",
+      "description": "The execution status (e.g., 'Completed', 'In Progress')."
+    },
+    "outputs": {
+      "type": "object",
+      "description": "Dictionary mapping integer step numbers to their specifically defined generic outputs."
+    },
+    "executeTitleType": {
+      "type": "string",
+      "description": "An optional executing type specific to legacy ExecRequest executions.",
+      "optional": true
+    }
+  }
+}

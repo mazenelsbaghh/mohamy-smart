@@ -1,0 +1,79 @@
+
+.call-to-action .call-to-action-frame {
+    background: linear-gradient(color-mix(in srgb, var(--white-color) 5%, transparent), transparent);
+    border-radius: var(--sm-radius);
+    padding: 120px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 85%;
+    margin: 0 auto;
+}
+
+.call-to-action .call-to-action-frame h3 {
+    font-size: 3.3rem;
+    font-weight: 600;
+    max-width: 55%;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.call-to-action .call-to-action-frame .cta-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 50px;
+    width: 250px;
+    border: 2px solid var(--text-color);
+    padding: 15px;
+    border-radius: var(--lg-radius);
+    color: var(--white-color);
+    font-weight: 500;
+    transition: var(--transition);
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.call-to-action .call-to-action-frame .cta-btn svg {
+    font-size: 1.5rem;
+    color: var(--white-color);
+}
+
+.call-to-action .call-to-action-frame .cta-btn:hover {
+    background-color: var(--white-color);
+    border-color: var(--bg-color);
+    color: var(--bg-color);
+}
+
+.call-to-action .call-to-action-frame .cta-btn:hover svg {
+    color: var(--bg-color);
+}
+
+@media (max-width: 1500px) {
+    .call-to-action .call-to-action-frame h3 {
+        font-size: 3rem;
+        max-width: 60%;
+    }
+}
+@media (max-width: 1300px) {
+    .call-to-action .call-to-action-frame h3 {
+        font-size: 2.7rem;
+        max-width: 70%;
+    }
+}
+@media (max-width: 1100px) {
+    .call-to-action .call-to-action-frame h3 {
+        font-size: 2rem;
+        max-width: 80%;
+    }
+}
+@media (max-width: 768px) {
+    .call-to-action .call-to-action-frame h3 {
+        font-size: 1.7rem;
+        max-width: 90%;
+    }
+}

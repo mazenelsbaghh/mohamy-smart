@@ -1,0 +1,15 @@
+   // Step 1: Classification (New Schema)
+    'legal_classification': 'التصنيف القانوني (وحالة المطل)',
+    'legal_summary': 'الملخص القانوني للسبب',
+    'factual_grounds': 'الأسانيد الواقعية',
+    'debt_source': 'سند المديونية',
+    'delivery_fact': 'واقعة التسليم',
+    'deadline_agreement': 'الاتفاق على الأجل',
+    'refusal_fact': 'الامتناع عن الوفاء',
+
+    // Step 2: Body
+    'warning_body': 'متن الإنذار (الصياغة القانونية)',
+
+    // Step 3: Final
+    'warning_template_full': 'الإنذار الرسمي النهائي'
+

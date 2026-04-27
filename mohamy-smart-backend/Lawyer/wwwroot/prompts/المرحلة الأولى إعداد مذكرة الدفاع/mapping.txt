@@ -1,0 +1,18 @@
+PHASE 1 PROMPTS — Smart Analysis / Defense Memo (إعداد مذكرة الدفاع)
+=======================================================================
+Pipeline: "smart-analysis"
+AiStepType values: FactAnalysis=10, GenerateDefenses=11, AnalysisDefense=12, FinalRequirements=13
+
+| File                              | AiStepType (int) | DTO Record                  | Key JSON Output Fields                                              |
+|-----------------------------------|------------------|-----------------------------|---------------------------------------------------------------------|
+| defense-step1-legal-analysis.txt  | FactAnalysis (10)| FactAnalysisStepOutput      | legal_facts_summary, defendants_positions, evidence_map,            |
+|                                   |                  |                             | legal_and_technical_review_points, potential_legal_characterization |
+| defense-step2-generate-defenses.txt| GenerateDefenses(11)| GenerateDefensesStepOutput| defenses_formal[], defenses_substantive[], defenses_evidentiary[]  |
+| defense-step3-analyze-defense.txt | AnalysisDefense(12)| AnalysisDefenseStepOutput  | defense_analysis, supporting_articles[], counter_arguments[],       |
+|                                   |                  |                             | risk_assessment, recommended_order                                  |
+| defense-step4-final-requests.txt  | FinalRequirements(13)| FinalRequirementsStepOutput| final_prayers[]                                                    |
+
+Notes:
+- SmartAnalysisService loads all prompts from these files at runtime.
+- The Chat endpoint uses an inline prompt (intentional — it is conversational).
+- Strongly-typed DTOs are defined in StepOutputDtos.cs → FactAnalysisStepOutput etc.

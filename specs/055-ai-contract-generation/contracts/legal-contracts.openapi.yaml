@@ -1,0 +1,231 @@
+openapi: 3.0.3
+info:
+  title: Lawyer Legal Contracts API
+  version: 1.0.0
+  description: API contract for AI-generated legal contracts in the Lawyer Dashboard.
+
+paths:
+  /api/LegalContracts:
+    get:
+      summary: List legal contracts for the current lawyer
+      tags:
+        - LegalContracts
+      parameters:
+        - in: query
+          name: pageNumber
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: Paginated contracts returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedLegalContractsResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+    post:
+      summary: Generate and save a new legal contract for the current lawyer
+      tags:
+        - LegalContracts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLegalContractRequest'
+      responses:
+        '200':
+          description: Contract generated and saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalContractDetailResponse'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Client not found
+        '500':
+          description: Generation failed
+
+  /api/LegalContracts/{id}:
+    get:
+      summary: Get contract details for the current lawyer
+      tags:
+        - LegalContracts
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Contract details returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalContractDetailResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Contract not found
+
+  /api/LegalContracts/types:
+    get:
+      summary: Get available contract types for contract creation
+      tags:
+        - LegalContracts
+      responses:
+        '200':
+          description: Contract types returned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ContractTypeOption'
+
+components:
+  schemas:
+    CreateLegalContractRequest:
+      type: object
+      required:
+        - clientId
+        - contractTypeCode
+        - details
+      properties:
+        clientId:
+          type: string
+          format: uuid
+        contractTypeCode:
+          type: string
+        details:
+          type: string
+          minLength: 20
+        customClauses:
+          type: string
+          nullable: true
+
+    ContractTypeOption:
+      type: object
+      required:
+        - code
+        - displayNameAr
+      properties:
+        code:
+          type: string
+        displayNameAr:
+          type: string
+        description:
+          type: string
+          nullable: true
+
+    LegalContractListItem:
+      type: object
+      required:
+        - id
+        - clientId
+        - clientName
+        - contractTypeCode
+        - contractTypeName
+        - status
+        - createdAtUtc
+      properties:
+        id:
+          type: string
+          format: uuid
+        clientId:
+          type: string
+          format: uuid
+        clientName:
+          type: string
+        contractTypeCode:
+          type: string
+        contractTypeName:
+          type: string
+        status:
+          type: string
+          enum:
+            - Generated
+            - Failed
+        createdAtUtc:
+          type: string
+          format: date-time
+
+    LegalContractDetail:
+      allOf:
+        - $ref: '#/components/schemas/LegalContractListItem'
+        - type: object
+          required:
+            - details
+            - generatedContent
+            - modelIdentifier
+          properties:
+            details:
+              type: string
+            customClauses:
+              type: string
+              nullable: true
+            generatedContent:
+              type: string
+            modelIdentifier:
+              type: string
+            lastErrorMessage:
+              type: string
+              nullable: true
+
+    PagedLegalContractsResponse:
+      type: object
+      properties:
+        succeeded:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/LegalContractListItem'
+            page:
+              type: integer
+            pageSize:
+              type: integer
+            totalCount:
+              type: integer
+            totalPages:
+              type: integer
+
+    LegalContractDetailResponse:
+      type: object
+      properties:
+        succeeded:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LegalContractDetail'

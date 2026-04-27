@@ -1,0 +1,82 @@
+
+.plan-card .badge {
+    background-color: var(--second-color);
+    padding: 12px;
+    text-align: center;
+    border-radius: var(--sm-radius);
+}
+
+.plan-card .badge h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--title-color);
+}
+
+.plan-card h3 {
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--text-color);
+    margin-top: 10px;
+}
+
+.plan-card h3 span {
+    font-size: 1.6rem;
+    font-weight: 800;
+}
+
+.plan-card ul {
+    margin: 35px 0;
+}
+
+.plan-card ul li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--title-color);
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 15px 0;
+}
+
+.plan-card ul li svg {
+    color: var(--success-color);
+}
+
+.plan-card button {
+    width: 100%;
+}
+
+
+/* review-card */
+.review-card h4 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--main-color);
+}
+
+.review-card h5 {
+    font-size: 1.1rem;
+    color: var(--text-color);
+    font-weight: 500;
+    margin: 10px 0;
+}
+
+.review-card .stars {
+    display: flex;
+    gap: 5px;
+    justify-content: flex-end;
+}
+
+.review-card .stars svg {
+    font-size: 1.6rem;
+    color: #FFCD1A;
+}
+
+.review-card p {
+    margin: 30px 0;
+    color: var(--text-color);
+}
+
+.review-card button {
+    width: 100%;
+}

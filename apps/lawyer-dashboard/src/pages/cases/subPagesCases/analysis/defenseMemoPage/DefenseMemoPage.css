@@ -1,0 +1,940 @@
+.defense-memo {
+    padding-bottom: 40px;
+}
+
+
+.facts-review-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+    gap: 20px;
+    align-items: start;
+}
+
+.facts-review-grid__item {
+    min-width: 0;
+}
+
+.facts-review-grid__cta {
+    position: sticky;
+    top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.facts-review-grid__cta-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(251, 250, 232, 0.92) 100%);
+    border: 1px solid rgba(239, 149, 10, 0.14);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 18px 40px rgba(27, 27, 27, 0.05);
+}
+
+.facts-review-grid__cta-card span {
+    display: inline-block;
+    font-size: 0.88rem;
+    color: var(--text-color);
+    margin-bottom: 10px;
+}
+
+.facts-review-grid__cta-card strong {
+    display: block;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    color: var(--title-color);
+    line-height: 1;
+    margin-bottom: 14px;
+}
+
+.facts-review-grid__cta-card p {
+    color: var(--text-color);
+    line-height: 1.9;
+}
+
+.facts-review-grid__button {
+    width: 100%;
+}
+
+.defense-memo .head-card {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.defense-memo .head-card .icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid var(--success-color);
+    /* background-color: var(--success-color); */
+}
+
+.defense-memo .head-card .icon.selected {
+    background-color: var(--success-color);
+}
+
+.defense-memo .head-card .icon svg {
+    color: var(--white-color);
+}
+
+.defense-memo .head-card span {
+    padding: 8px 12px;
+    background-color: var(--success-color);
+    color: var(--white-color);
+    border-radius: var(--lg-radius);
+}
+
+.defense-memo .custom-card {
+    cursor: pointer;
+}
+
+.defense-memo .custom-card p {
+    color: var(--text-color);
+}
+
+.defense-memo .custom-card p strong {
+    color: var(--title-color);
+}
+
+.defense-memo .custom-card ul li {
+    color: var(--text-color);
+}
+
+.defense-memo .custom-card .types div {
+    padding: 4px 18px;
+    /* background-color: red; */
+    border-radius: var(--lg-radius);
+    color: var(--white-color);
+}
+
+
+.defense-memo .custom-card .defense-memo .custom-card .types div:nth-child(1) {
+    border: 2px solid var(--main-color);
+    color: var(--main-color);
+}
+
+
+.legal-analysis h3 {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--title-color);
+    margin-bottom: 6px;
+}
+
+.legal-analysis-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.legal-analysis-shell__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.legal-analysis-shell__eyebrow {
+    display: inline-flex;
+    margin-bottom: 8px;
+    color: color-mix(in srgb, var(--main-color) 78%, #5f4100 22%);
+    font-size: 0.96rem;
+    font-weight: 700;
+}
+
+.legal-analysis-shell__header h3 {
+    font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+    font-weight: 700;
+    margin: 0;
+}
+
+.legal-analysis-shell__reload {
+    width: 240px;
+    max-width: 100%;
+}
+
+.legal-analysis-shell__card {
+    position: relative;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--white-color) 92%, var(--second-color) 8%);
+    border: 1px solid rgba(27, 27, 27, 0.06);
+    border-radius: 24px;
+    padding: clamp(20px, 3vw, 36px);
+    box-shadow: 0 30px 60px rgba(27, 27, 27, 0.05);
+    max-height: calc(100vh - 240px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.legal-analysis-shell__card::before {
+    content: "";
+    position: absolute;
+    inset-inline-end: 0;
+    top: 0;
+    width: 6px;
+    height: 100%;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--main-color) 90%, #8f620c 10%) 0%, color-mix(in srgb, var(--main-color) 55%, var(--second-color) 45%) 100%);
+}
+
+.legal-analysis-shell__grid {
+    display: grid;
+    grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+    gap: 32px;
+    align-items: start;
+    min-height: min-content;
+}
+
+.legal-analysis-shell__sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.legal-analysis-panel {
+    background: color-mix(in srgb, var(--bg-color) 70%, var(--white-color) 30%);
+    border: 1px solid rgba(27, 27, 27, 0.05);
+    border-radius: 18px;
+    padding: 20px;
+}
+
+.legal-analysis-panel h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: color-mix(in srgb, var(--main-color) 75%, #7b5407 25%);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(239, 149, 10, 0.14);
+}
+
+.legal-analysis-panel__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.legal-analysis-panel__row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.legal-analysis-panel__row span {
+    font-size: 0.82rem;
+    color: var(--text-color);
+}
+
+.legal-analysis-panel__row strong {
+    font-size: 0.98rem;
+    color: var(--title-color);
+    font-weight: 700;
+}
+
+.legal-analysis-shell__body {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.legal-analysis-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.35rem;
+    margin-bottom: 18px;
+}
+
+.legal-analysis-section h4 span {
+    width: 6px;
+    height: 30px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--main-color) 88%, #8f620c 12%);
+}
+
+.legal-analysis-bullets {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.legal-analysis-bullets__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.legal-analysis-bullets__item i {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--main-color) 12%, white 88%);
+    margin-top: 3px;
+}
+
+.legal-analysis-bullets__item i::before {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    background: var(--main-color);
+}
+
+.legal-analysis-bullets__item p {
+    color: var(--title-color);
+    line-height: 2;
+}
+
+.legal-analysis-highlight {
+    background: color-mix(in srgb, var(--white-color) 88%, var(--bg-color) 12%);
+    border: 1px solid rgba(27, 27, 27, 0.06);
+    border-inline-start: 4px solid var(--main-color);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(27, 27, 27, 0.03);
+}
+
+.legal-analysis-highlight h4 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+}
+
+.legal-analysis-highlight p {
+    color: var(--title-color);
+    line-height: 2.1;
+}
+
+.legal-analysis-recommendation {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: #fff8e9;
+    border: 1px solid #f3dfab;
+    border-radius: 18px;
+    padding: 18px 20px;
+}
+
+.legal-analysis-recommendation svg {
+    flex: 0 0 auto;
+    font-size: 1.4rem;
+    color: #d08a00;
+    margin-top: 2px;
+}
+
+.legal-analysis-recommendation h5 {
+    color: #a55f00;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.legal-analysis-recommendation p {
+    color: #8a6924;
+    line-height: 1.9;
+}
+
+.legal-analysis-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.legal-analysis-details-grid--compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 18px;
+}
+
+.legal-analysis-detail-card {
+    background: color-mix(in srgb, var(--white-color) 88%, var(--bg-color) 12%);
+    border: 1px solid rgba(27, 27, 27, 0.06);
+    border-radius: 20px;
+    padding: 22px;
+}
+
+.legal-analysis-detail-card h4 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+}
+
+.legal-analysis-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.legal-analysis-mini-card {
+    background: color-mix(in srgb, var(--bg-color) 62%, var(--white-color) 38%);
+    border: 1px solid rgba(27, 27, 27, 0.05);
+    border-radius: 16px;
+    padding: 16px;
+}
+
+.legal-analysis-mini-card strong {
+    display: block;
+    color: var(--title-color);
+    font-size: 0.98rem;
+    margin-bottom: 8px;
+}
+
+.legal-analysis-mini-card p {
+    color: var(--title-color);
+    line-height: 1.9;
+}
+
+.legal-analysis-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 18px;
+    list-style: disc;
+}
+
+.legal-analysis-list li {
+    color: var(--title-color);
+    line-height: 1.9;
+}
+
+.legal-analysis-list li span {
+    font-weight: 700;
+    color: var(--title-color);
+}
+
+.legal-analysis-list--spacious {
+    gap: 12px;
+}
+
+.legal-analysis-characterization {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.legal-analysis-characterization__intro {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.legal-analysis-characterization__intro span {
+    color: var(--text-color);
+    font-size: 0.84rem;
+}
+
+.legal-analysis-characterization__intro strong {
+    color: var(--title-color);
+    font-size: 1.02rem;
+}
+
+.legal-analysis-shell__footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.defenses-list h3.title {
+    margin-top: 30px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    position: relative;
+    margin-bottom: 10px;
+    border-top: 2px solid #3b3b3b15;
+    padding-top: 20px;
+}
+
+
+.defenses-list .custom-card,
+.final-requirements .custom-card {
+    min-height: 250px;
+}
+
+.defenses-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: calc(100vh - 220px);
+    overflow: hidden;
+}
+
+.defenses-workspace__toolbar {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.defenses-workspace__toolbar-button {
+    width: 220px;
+    max-width: 100%;
+}
+
+.defenses-split {
+    display: grid;
+    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+    gap: 24px;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+}
+
+.defenses-preview,
+.defenses-sidebar {
+    background: color-mix(in srgb, var(--white-color) 94%, var(--bg-color) 6%);
+    border: 1px solid rgba(27, 27, 27, 0.05);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 18px 50px rgba(27, 27, 27, 0.04);
+}
+
+.defenses-preview {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.defenses-preview__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px;
+    border-bottom: 1px solid rgba(27, 27, 27, 0.06);
+    background: rgba(250, 249, 246, 0.9);
+}
+
+.defenses-preview__header h3 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.defenses-preview__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+    color: var(--text-color);
+    font-size: 0.78rem;
+}
+
+.defenses-preview__meta span:first-child {
+    color: var(--main-color);
+    font-weight: 700;
+}
+
+.defenses-preview__header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.defenses-preview__icon-button,
+.defenses-preview__approve {
+    border: 0;
+    cursor: pointer;
+}
+
+.defenses-preview__icon-button {
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: white;
+    border: 1px solid rgba(27, 27, 27, 0.08);
+    color: var(--title-color);
+}
+
+.defenses-preview__icon-button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.defenses-preview__approve {
+    padding: 12px 20px;
+    border-radius: 12px;
+    background: var(--main-color);
+    color: white;
+    font-weight: 700;
+}
+
+.defenses-preview__content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px;
+    min-height: 0;
+}
+
+.defenses-preview__empty {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 14px;
+    color: var(--text-color);
+}
+
+.defenses-preview__empty svg {
+    font-size: 2rem;
+    color: var(--main-color);
+}
+
+.defenses-preview__empty h4 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--title-color);
+}
+
+.defenses-preview__empty p {
+    max-width: 46ch;
+    line-height: 1.9;
+}
+
+.defenses-preview__empty-button {
+    width: 220px;
+    max-width: 100%;
+}
+
+.defenses-analysis {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.defenses-analysis__section h5 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #9b6a00;
+    margin-bottom: 12px;
+}
+
+.defenses-analysis__section h5::before {
+    content: "";
+    width: 6px;
+    height: 18px;
+    border-radius: 999px;
+    background: var(--main-color);
+}
+
+.defenses-analysis__box,
+.defenses-analysis__mini-card {
+    background: color-mix(in srgb, var(--second-color) 12%, white 88%);
+    border: 1px solid var(--accent-soft);
+    border-radius: 18px;
+    padding: 18px;
+}
+
+.defenses-analysis__box p,
+.defenses-analysis__mini-card p {
+    line-height: 2;
+    color: var(--title-color);
+}
+
+.defenses-analysis__stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.defenses-analysis__mini-card strong {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--title-color);
+}
+
+.defenses-analysis__mini-card span {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-size: 0.82rem;
+}
+
+.defenses-sidebar {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.defenses-sidebar__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.defenses-sidebar__header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.defenses-sidebar__header span {
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(27, 27, 27, 0.06);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.defenses-sidebar__list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-left: 4px;
+}
+
+.defense-list-card {
+    width: 100%;
+    text-align: right;
+    border: 0;
+    cursor: pointer;
+    padding: 18px;
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--white-color) 86%, var(--bg-color) 14%);
+    border-inline-start: 4px solid transparent;
+    transition: background .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+
+.defense-list-card:hover {
+    background: color-mix(in srgb, var(--white-color) 72%, var(--second-color) 28%);
+}
+
+.defense-list-card.is-active {
+    background: color-mix(in srgb, var(--white-color) 80%, var(--second-color) 20%);
+    border-inline-start-color: var(--main-color);
+    box-shadow: 0 12px 30px var(--accent-soft);
+}
+
+.defense-list-card__top,
+.defense-list-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.defense-list-card__badge,
+.defense-list-card__score {
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.defense-list-card__badge {
+    padding: 6px 10px;
+    border-radius: 999px;
+}
+
+.defense-list-card__badge.formal {
+    background: rgba(115, 92, 0, 0.08);
+    color: #7b5c00;
+}
+
+.defense-list-card__badge.substantive {
+    background: var(--success-soft);
+    color: #218e33;
+}
+
+.defense-list-card__badge.evidentiary {
+    background: rgba(69, 91, 164, 0.12);
+    color: #3556ac;
+}
+
+.defense-list-card__score {
+    color: var(--text-color);
+}
+
+.defense-list-card h4 {
+    margin: 12px 0 8px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--title-color);
+}
+
+.defense-list-card p {
+    color: var(--text-color);
+    line-height: 1.8;
+    margin-bottom: 14px;
+}
+
+.defense-list-card__footer span {
+    color: var(--text-color);
+    font-size: 0.8rem;
+}
+
+.defense-list-card__action {
+    border: 0;
+    background: transparent;
+    color: var(--main-color);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.defenses-sidebar__cta {
+    margin-top: 16px;
+}
+
+
+
+
+/* ===========================================
+    start defenses-list
+=============================================== */
+
+.defense-memo .defenses-list .custom-card h5.defense {
+    margin: 25px 0;
+    background-color: var(--second-color);
+    padding: 8px;
+    border-radius: var(--sm-radius);
+    color: var(--title-color);
+    font-weight: 500;
+}
+
+.defense-memo .defenses-list .custom-card .strength {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.defense-memo .defenses-list .custom-card .strength h5 {
+    font-weight: 500;
+    color: var(--title-color);
+    text-decoration: underline;
+}
+
+.defense-memo .defenses-list .custom-card .strength span {
+    padding: 6px 12px;
+    border-radius: var(--sm-radius);
+    color: var(--white-color);
+    background-color: #ce1f00;
+}
+
+.defense-memo .defenses-list .custom-card .strength.Medium span {
+    background-color: #e9be01;
+}
+
+.defense-memo .defenses-list .custom-card .strength.Strong span {
+    background-color: #00ce0a;
+}
+
+
+/* ===========================================
+    end defenses-list
+=============================================== */
+
+
+
+/* ===========================================
+    start final-requirements
+=============================================== */
+.defense-memo .final-requirements .custom-card .badge span {
+    padding: 6px 12px;
+    border: 1px solid var(--main-color);
+    border-radius: var(--sm-radius);
+    color: var(--title-color);
+}
+
+.defense-memo .final-requirements .custom-card p.defense {
+    margin: 25px 0;
+    background-color: var(--second-color);
+    padding: 8px;
+    border-radius: var(--sm-radius);
+    color: var(--title-color);
+    font-weight: 500;
+}
+
+/* ===========================================
+    end final-requirements
+=============================================== */
+/* ===========================================
+    start final-note
+=============================================== */
+
+/* ===========================================
+    end final-note
+=============================================== */
+
+@media (max-width: 1100px) {
+    .facts-review-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .facts-review-grid__cta {
+        position: static;
+    }
+
+    .legal-analysis-shell__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .legal-analysis-details-grid,
+    .legal-analysis-details-grid--compact {
+        grid-template-columns: 1fr;
+    }
+
+    .defenses-split {
+        grid-template-columns: 1fr;
+        direction: rtl;
+        max-height: none;
+        height: auto;
+    }
+
+    .defenses-preview,
+    .defenses-sidebar {
+        min-height: 420px;
+        order: initial;
+    }
+}
+
+@media (max-width: 700px) {
+    .legal-analysis-shell__header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .legal-analysis-shell__reload {
+        width: 100%;
+    }
+
+    .legal-analysis-shell__card {
+        border-radius: 20px;
+        padding: 18px;
+        max-height: calc(100vh - 210px);
+    }
+
+    .legal-analysis-highlight,
+    .legal-analysis-panel,
+    .legal-analysis-confidence,
+    .legal-analysis-recommendation {
+        padding: 16px;
+    }
+
+    .defenses-preview__header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .defenses-preview__header-actions {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .defenses-preview__content,
+    .defenses-sidebar {
+        padding: 16px;
+    }
+}

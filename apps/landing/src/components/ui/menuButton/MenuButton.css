@@ -1,0 +1,53 @@
+/* Reset button defaults */
+button.menu-button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.menu-button .ham {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 400ms;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.menu-button .line {
+    fill: none;
+    transition: stroke-dasharray 400ms, stroke-dashoffset 400ms;
+    stroke: var(--white-color);
+    stroke-width: 5.5;
+    stroke-linecap: round;
+}
+
+.menu-button .ham3 .top {
+    stroke-dasharray: 40 130;
+}
+
+.menu-button .ham3 .middle {
+    stroke-dasharray: 40 140;
+}
+
+.menu-button .ham3 .bottom {
+    stroke-dasharray: 40 205;
+}
+
+.menu-button .ham3.active .top {
+    stroke-dasharray: 75 130;
+    stroke-dashoffset: -63px;
+}
+
+.menu-button .ham3.active .middle {
+    stroke-dashoffset: -102px;
+}
+
+.menu-button .ham3.active .bottom {
+    stroke-dasharray: 110 205;
+    stroke-dashoffset: -86px;
+}

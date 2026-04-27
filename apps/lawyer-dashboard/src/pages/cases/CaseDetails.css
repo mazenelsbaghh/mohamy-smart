@@ -1,0 +1,4 @@
+/* CaseDetails styles have been migrated to Tailwind classes on the components themselves */
+.case-details-page {
+    display: block;
+}

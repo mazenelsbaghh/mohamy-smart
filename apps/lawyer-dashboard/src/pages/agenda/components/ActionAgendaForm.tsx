@@ -1,0 +1,179 @@
+import { Select, SelectItem, Input } from"@heroui/react";
+import { useForm, Controller, type SubmitHandler } from"react-hook-form";
+import { zodResolver } from"@hookform/resolvers/zod";
+import { actionSchema, type ActionFormData } from"../validations";
+import {
+ ACTION_TYPES,
+ EXECUTION_DETAILS,
+ INSPECTION_DETAILS,
+ AGENDA_STATUS_OPTIONS,
+} from"../../../types/agenda";
+import { useAppDispatch } from"../../../hooks/reduxHooks";
+import thunkCreateAgendaItem from"../../../redux/agenda/thunk/thunkCreateAgendaItem";
+import thunkGetAgendaByCaseId from"../../../redux/agenda/thunk/thunkGetAgendaByCaseId";
+import { sileo } from"sileo";
+import { useState } from"react";
+import FormSection from"../../../components/ui/form/FormSection";
+import FormFooter from"../../../components/ui/form/FormFooter";
+
+type Props = {
+ caseId: string;
+ onClose: () => void;
+ defaultDate?: string;
+ defaultEndDate?: string;
+};
+
+const ActionAgendaForm = ({ caseId, onClose, defaultDate, defaultEndDate }: Props) => {
+ const dispatch = useAppDispatch();
+ const [selectedActionType, setSelectedActionType] = useState<string>("");
+
+ const {
+ register,
+ handleSubmit,
+ control,
+ formState: { errors, isSubmitting },
+ } = useForm<ActionFormData>({
+ mode:"onChange",
+ resolver: zodResolver(actionSchema),
+ defaultValues: {
+ type:"Action",
+ status:"Scheduled",
+ date: defaultDate ||"",
+ endDate: defaultEndDate ||"",
+ location: null,
+ },
+ });
+
+ const onSubmit: SubmitHandler<ActionFormData> = async (data) => {
+ try {
+ const isoDate = new Date(data.date).toISOString();
+ const isoEndDate = data.endDate ? new Date(data.endDate).toISOString() : null;
+ await dispatch(
+ thunkCreateAgendaItem({ item: { ...data, date: isoDate, endDate: isoEndDate, caseId } })
+ ).unwrap();
+ sileo.success({ title:"تم إضافة الإجراء بنجاح" });
+ dispatch(thunkGetAgendaByCaseId({ caseId }));
+ onClose();
+ } catch (error) {
+ sileo.error({ title: `حدث خطأ: ${error}` });
+ }
+ };
+
+ const detailOptions =
+ selectedActionType ==="Inspection" ? INSPECTION_DETAILS : EXECUTION_DETAILS;
+
+ return (
+ <form
+ className="px-6 pb-6 pt-5 flex flex-col gap-5"
+ onSubmit={handleSubmit(onSubmit)}
+ dir="rtl"
+ >
+ <FormSection label="معلومات الإجراء">
+ <Input
+ label="عنوان الإجراء"
+ isInvalid={!!errors.title}
+ errorMessage={errors.title?.message}
+ classNames={{ inputWrapper:"rounded-xl" }}
+ {...register("title")}
+ />
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+ <Input
+ type="datetime-local"
+ label="من"
+ isInvalid={!!errors.date}
+ errorMessage={errors.date?.message}
+ classNames={{ inputWrapper:"rounded-xl" }}
+ {...register("date")}
+ />
+ <Input
+ type="datetime-local"
+ label="إلى"
+ isInvalid={!!errors.endDate}
+ errorMessage={errors.endDate?.message}
+ classNames={{ inputWrapper:"rounded-xl" }}
+ {...register("endDate")}
+ />
+ </div>
+ <Controller
+ name="status"
+ control={control}
+ render={({ field }) => (
+ <Select
+ label="الحالة"
+ selectedKeys={field.value ? [field.value] : []}
+ onSelectionChange={(keys) => field.onChange(Array.from(keys)[0] as string)}
+ isInvalid={!!errors.status}
+ errorMessage={errors.status?.message}
+ classNames={{ trigger:"rounded-xl" }}
+ >
+ {AGENDA_STATUS_OPTIONS.map((opt) => (
+ <SelectItem key={opt.key}>{opt.label}</SelectItem>
+ ))}
+ </Select>
+ )}
+ />
+ </FormSection>
+
+ <FormSection label="تفاصيل الإجراء" withTopDivider>
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+ <Controller
+ name="actionType"
+ control={control}
+ render={({ field }) => (
+ <Select
+ label="نوع الإجراء"
+ selectedKeys={field.value ? [field.value] : []}
+ onSelectionChange={(keys) => {
+ const val = Array.from(keys)[0] as string;
+ field.onChange(val);
+ setSelectedActionType(val);
+ }}
+ isInvalid={!!errors.actionType}
+ errorMessage={errors.actionType?.message}
+ classNames={{ trigger:"rounded-xl" }}
+ >
+ {ACTION_TYPES.map((t) => (
+ <SelectItem key={t.key}>{t.label}</SelectItem>
+ ))}
+ </Select>
+ )}
+ />
+ <Controller
+ name="executionDetails"
+ control={control}
+ render={({ field }) => (
+ <Select
+ label="تفاصيل الإجراء"
+ selectedKeys={field.value ? [field.value] : []}
+ onSelectionChange={(keys) => field.onChange(Array.from(keys)[0] as string)}
+ isInvalid={!!errors.executionDetails}
+ errorMessage={errors.executionDetails?.message}
+ classNames={{ trigger:"rounded-xl" }}
+ >
+ {detailOptions.map((d) => (
+ <SelectItem key={d}>{d}</SelectItem>
+ ))}
+ </Select>
+ )}
+ />
+ </div>
+ </FormSection>
+
+ <FormSection label="الموقع" optional withTopDivider>
+ <Input
+ label="الموقع"
+ classNames={{ inputWrapper:"rounded-xl" }}
+ {...register("location")}
+ />
+ </FormSection>
+
+ <FormFooter
+ onCancel={onClose}
+ submitLabel="إضافة الإجراء"
+ isLoading={isSubmitting}
+ />
+ </form>
+ );
+};
+
+export default ActionAgendaForm;

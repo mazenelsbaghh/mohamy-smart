@@ -1,0 +1,64 @@
+.agent/
+.agents/
+.claude/
+.specify/
+.pdfvenv/
+.opencode/
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
+promplem.md
+plan.md
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+
+# .NET NuGet packages (local restore cache only)
+**/packages/*/
+
+# Node.js / TypeScript
+node_modules/
+dist/
+build/
+*.log
+build_*.txt
+build_output.txt
+
+# Databases — never commit SQLite files
+*.db
+*.sqlite
+*.sqlite3
+
+# Secrets — NEVER commit real config
+# The following real-value files are excluded:
+#   .env.docker          — local Docker runtime secrets (copy from .env.docker.example)
+#   .env.docker.prod     — production Docker runtime secrets (copy from .env.docker.prod.example)
+#   .env                 — frontend app local values (copy from app .env.example)
+#   .env.local           — Next.js local values (copy from landing .env.example)
+#   appsettings.Development.json — backend local secrets (copy from appsettings.example.json)
+#   appsettings.Production.json  — backend production secrets
+.env*
+appsettings.Development.json
+appsettings.Production.json
+node_modules/
+venv/
+.venv/
+.env
+build/
+dist/
+.git/
+.next/
+coverage/
+.pdfvenv/
+.agent/
+.agents/
+.claude/
+.opencode/
+.specify/
+.turbo/

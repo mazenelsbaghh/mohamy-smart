@@ -1,0 +1,171 @@
+.not-found-image {
+    width: 100%;
+    height: 100%;
+    --not-found-shell-size: 118px;
+    --not-found-shell-radius: 32px;
+    --not-found-shell-border: rgba(167, 167, 167, 0.16);
+    --not-found-shell-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.48));
+    --not-found-icon-size: 6rem;
+    --not-found-icon-color: var(--opacity-color);
+    --not-found-text-color: var(--text-color);
+    --not-found-shadow: none;
+}
+
+.not-found-icon-shell {
+    position: relative;
+    width: var(--not-found-shell-size);
+    height: var(--not-found-shell-size);
+    border-radius: var(--not-found-shell-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--not-found-shell-bg);
+    border: 1px solid var(--not-found-shell-border);
+    box-shadow: var(--not-found-shadow);
+}
+
+.not-found-icon {
+    font-size: var(--not-found-icon-size);
+    color: var(--not-found-icon-color);
+    user-select: none;
+    line-height: 1;
+}
+
+.not-found-image p.not-found {
+    font-size: 22px;
+    color: var(--not-found-text-color);
+    font-weight: 600;
+    text-align: center;
+}
+
+.not-found-image--default .not-found-icon-shell::after,
+.not-found-image--cases .not-found-icon-shell::after,
+.not-found-image--clients .not-found-icon-shell::after,
+.not-found-image--defenses .not-found-icon-shell::after {
+    content: '';
+    position: absolute;
+    inset: 14px;
+    border-radius: 26px;
+    border: 1px dashed color-mix(in srgb, var(--not-found-icon-color) 22%, transparent);
+}
+
+.not-found-image--default {
+    --not-found-text-color: color-mix(in srgb, var(--text-color) 88%, var(--title-color) 12%);
+}
+
+.not-found-image--cases,
+.not-found-image--clients,
+.not-found-image--defenses {
+    min-height: 320px;
+}
+
+.not-found-image--cases {
+    --not-found-shell-size: 134px;
+    --not-found-shell-radius: 36px;
+    --not-found-shell-bg:
+        radial-gradient(circle at 30% 28%, rgba(239, 149, 10, 0.15), transparent 42%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(251, 250, 232, 0.92));
+    --not-found-shell-border: rgba(239, 149, 10, 0.14);
+    --not-found-icon-size: 4.15rem;
+    --not-found-icon-color: var(--main-color);
+    --not-found-text-color: color-mix(in srgb, var(--title-color) 84%, var(--main-color) 16%);
+    --not-found-shadow:
+        0 18px 38px rgba(93, 72, 21, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.not-found-image--clients {
+    --not-found-shell-size: 128px;
+    --not-found-shell-radius: 34px;
+    --not-found-shell-bg:
+        radial-gradient(circle at 26% 24%, var(--success-soft), transparent 36%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 252, 247, 0.94));
+    --not-found-shell-border: rgba(52, 191, 73, 0.14);
+    --not-found-icon-size: 3.7rem;
+    --not-found-icon-color: var(--success-color);
+    --not-found-text-color: color-mix(in srgb, var(--title-color) 84%, var(--success-color) 16%);
+    --not-found-shadow:
+        0 18px 34px rgba(31, 95, 44, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.not-found-image--defenses {
+    --not-found-shell-size: 126px;
+    --not-found-shell-radius: 34px;
+    --not-found-shell-bg:
+        radial-gradient(circle at 28% 24%, rgba(29, 71, 255, 0.12), transparent 38%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 248, 255, 0.94));
+    --not-found-shell-border: rgba(29, 71, 255, 0.14);
+    --not-found-icon-size: 3.6rem;
+    --not-found-icon-color: var(--blue-color);
+    --not-found-text-color: color-mix(in srgb, var(--title-color) 86%, var(--blue-color) 14%);
+    --not-found-shadow:
+        0 18px 34px rgba(30, 58, 138, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.not-found-image--compact {
+    --not-found-shell-size: 92px;
+    --not-found-shell-radius: 26px;
+    --not-found-icon-size: 2.9rem;
+}
+
+.not-found-image--compact.not-found-image--cases,
+.not-found-image--compact.not-found-image--clients,
+.not-found-image--compact.not-found-image--defenses {
+    min-height: 0;
+}
+
+.not-found-image--compact .not-found-icon-shell::after {
+    inset: 10px;
+    border-radius: 18px;
+}
+
+.not-found-image--compact p.not-found {
+    font-size: 18px;
+}
+
+@media (max-width: 700px) {
+    .not-found-icon-shell {
+        width: 96px;
+        height: 96px;
+    }
+
+    .not-found-icon {
+        font-size: 4.8rem;
+    }
+
+    .not-found-image--cases,
+    .not-found-image--clients,
+    .not-found-image--defenses {
+        min-height: 260px;
+    }
+
+    .not-found-image--cases .not-found-icon-shell,
+    .not-found-image--clients .not-found-icon-shell,
+    .not-found-image--defenses .not-found-icon-shell {
+        width: 112px;
+        height: 112px;
+        border-radius: 30px;
+    }
+
+    .not-found-image--cases .not-found-icon,
+    .not-found-image--clients .not-found-icon,
+    .not-found-image--defenses .not-found-icon {
+        font-size: 3.5rem;
+    }
+
+    .not-found-image p.not-found {
+        font-size: 18px;
+    }
+
+    .not-found-image--compact .not-found-icon-shell {
+        width: 82px;
+        height: 82px;
+        border-radius: 22px;
+    }
+
+    .not-found-image--compact .not-found-icon {
+        font-size: 2.5rem;
+    }
+}

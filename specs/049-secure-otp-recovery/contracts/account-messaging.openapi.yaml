@@ -1,0 +1,204 @@
+openapi: 3.0.3
+info:
+  title: Mohamy Smart Account Messaging API
+  version: 0.1.0
+  description: >
+    Contracts for password recovery OTP, welcome email side effects, and subscription
+    confirmation messaging for the Secure Account Messaging feature.
+servers:
+  - url: http://localhost:8976/api
+paths:
+  /auth/register:
+    post:
+      summary: Register a new lawyer account and trigger welcome messaging side effects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: Registration completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '409':
+          description: Email or phone already exists
+        '400':
+          description: Validation error
+  /auth/forget-password:
+    post:
+      summary: Initiate password recovery without disclosing account existence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Generic recovery initiation response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessageResponse'
+        '429':
+          description: Too many requests for the active cooldown window
+  /auth/verify-otp:
+    post:
+      summary: Verify an OTP challenge for password recovery or another protected action
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOtpRequest'
+      responses:
+        '200':
+          description: OTP verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyOtpResponse'
+        '400':
+          description: Invalid or expired OTP
+        '429':
+          description: Verification attempts exceeded
+  /auth/reset-password:
+    post:
+      summary: Reset password after successful OTP verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessageResponse'
+        '400':
+          description: Invalid verification state or password payload
+  /payment/server-callback:
+    post:
+      summary: Process successful payment callback and trigger subscription confirmation messaging
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Callback processed idempotently
+components:
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - fullName
+        - phoneNumber
+        - email
+        - password
+        - passwordConfirmation
+        - governorate
+        - agreeToTerms
+      properties:
+        fullName:
+          type: string
+        phoneNumber:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        passwordConfirmation:
+          type: string
+          format: password
+        governorate:
+          type: string
+        agreeToTerms:
+          type: boolean
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - phoneNumber
+      properties:
+        phoneNumber:
+          type: string
+          description: User-supplied account identifier; outward response remains generic
+    VerifyOtpRequest:
+      type: object
+      required:
+        - userId
+        - code
+      properties:
+        userId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 4
+          maxLength: 8
+    ResetPasswordRequest:
+      type: object
+      required:
+        - userId
+        - otpCode
+        - newPassword
+      properties:
+        userId:
+          type: string
+          format: uuid
+        otpCode:
+          type: string
+        newPassword:
+          type: string
+          format: password
+    AuthSuccessResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            userId:
+              type: string
+            profileId:
+              type: string
+            fullName:
+              type: string
+            phone:
+              type: string
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+            roles:
+              type: array
+              items:
+                type: string
+        message:
+          type: string
+          description: Registration succeeded; welcome email delivery is a side effect, not a blocking dependency
+    VerifyOtpResponse:
+      type: object
+      properties:
+        data:
+          type: boolean
+        message:
+          type: string
+    GenericMessageResponse:
+      type: object
+      properties:
+        data:
+          nullable: true
+        message:
+          type: string

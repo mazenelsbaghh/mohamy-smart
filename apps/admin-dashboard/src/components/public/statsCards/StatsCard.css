@@ -1,0 +1,38 @@
+.stats-card {
+    padding: var(--padding);
+    background-color: var(--white-color);
+    border-radius: var(--sm-radius);
+    width: 95%;
+}
+
+@media (max-width:768px) {
+    .stats-card {
+        width: 100%;
+    }
+}
+
+.stats-card .icon {
+    width: 55px;
+    height: 55px;
+    background-color: var(--second-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+}
+
+.stats-card .icon svg {
+    font-size: 1.7rem;
+}
+
+.stats-card h4 {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--title-color);
+}
+
+.stats-card h3 {
+    font-size: 2.3rem;
+    font-weight: 600;
+    color: var(--main-color);
+}

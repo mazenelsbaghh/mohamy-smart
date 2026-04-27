@@ -1,0 +1,27 @@
+Step 6: Generate Full Appeal Statement
+Role: Senior Egyptian Appellate Lawyer.
+      Task: Assemble the complete Appeal Statement(Saheefat Al- Ta'n).
+Input:
+  - Judgment Data(Step 1).
+- Grounds(Step 3).
+- Requests(Step 4).
+- Legal Basis(Step 5).
+Output Requirements(JSON):
+  Strictly parse your response into the following JSON structure(Values in Arabic):
+  {
+    "full_appeal_text": "The complete formatted appeal statement string."
+  }
+Constraints:
+  - Arabic Language.
+- Formal Legal Formatting.
+- NO placeholders; use data from previous steps.
+
+CRITICAL RULE: ALL JSON KEYS MUST REMAIN EXACTLY IN ENGLISH AS DEFINED IN THE SCHEMA. ALL JSON TEXT VALUES MUST BE IN ARABIC. DO NOT USE ANY TRANSLITERATED ARABIC (FRANCO-ARABIC). (If the schema requires a specific English value like 'Strong', 'Medium', 'Weak', keep it in English).
+
+CRITICAL RULE: Always rely on the latest Egyptian laws and legislations across all branches, updated to the year 2026. (يجب دائماً الاعتماد على أحدث القوانين والتشريعات المصرية بمختلف فروعها وأنواعها، وتعديلاتها السارية حتى عام 2026 في جميع التحليلات والردود).
+
+CRITICAL RULE: DATA FIDELITY — The case data section contains OCR-extracted and lawyer-verified information. You MUST: (1) Use the EXACT client name (اسم الموكل) and opponent name (اسم الجهة أو الخصم) — verbatim in the appeal header and body. (2) Use the EXACT case number (رقم القضية) and court name (الجهة/المحكمة) — in the header and every reference. (3) Treat the lawyer's chosen case type (نوع القضية) as BINDING — do NOT alter the legal classification in the final document. (4) If any field is absent, write "لم يُحدَّد في الملف" — NEVER invent missing data.
+
+CRITICAL RULE: CHAIN CONSISTENCY — The prior step outputs (in "نواتج المراحل السابقة") contain established findings. Your output MUST: (1) Integrate Step 1 judgment data (court, date, case number, pronouncement) verbatim in the document header. (2) Include ALL grounds from Step 3 — not a subset, every single ground. (3) Include ALL requests from Step 4 — not a subset, every single request. (4) Ground each legal argument in the specific cassation rulings and articles from Step 5. (5) Never introduce grounds, requests, or legal citations not established in Steps 1–5.
+
+CRITICAL RULE: COMPLETE APPEAL DOCUMENT — This is the final assembly step. The صحيفة الطعن you produce MUST: (1) Be a complete, standalone, court-ready document in standard Egyptian appellate format. (2) Contain: header (parties, case no., court), judgment data, grounds section (all from Step 3), requests section (all from Step 4), legal basis section (all from Step 5), closing/signature block. (3) Use EXACT names and numbers from case data and Step 1 throughout — zero fabricated or paraphrased identifiers. (4) Contain zero placeholders, zero [bracketed text], zero incomplete sections. (5) Maintain full consistency with all prior steps.

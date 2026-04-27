@@ -1,0 +1,149 @@
+MOHAMY SMART AI PIPELINE MAPPINGS
+=================================
+
+This document maps ALL registered C# AI pipelines (from PipelineRegistry.cs) to their
+underlying prompt templates, AiStepType enum values, and expected JSON output structures.
+
+Last updated: 2026-04-11
+Source of truth: Lawyer.Application/Services/Workflows/PipelineRegistry.cs
+
+======================================================================
+Standalone: OCR Extraction (التعرف البصري)
+======================================================================
+Pipeline: "ocr"
+Location: `wwwroot/prompts/OCR/`
+
+| Step | AiStepType Enum (int value) | Prompt File                        | Purpose                          |
+|------|-----------------------------|------------------------------------|----------------------------------|
+| 1    | Ocr (1)                     | ocr-extraction.txt                 | OCR text extraction from docs    |
+
+======================================================================
+Standalone: Pre-Flight Clarification (استكمال النواقص)
+======================================================================
+Endpoint: POST /api/ClarifyFacts/evaluate
+Location: `wwwroot/prompts/Global/`
+
+| File                | Purpose                                                      |
+|---------------------|--------------------------------------------------------------|
+| clarify-facts.txt   | Evaluate case facts for gaps, return 3–7 questions with MCQ  |
+
+NOTE: This is a modal-based checkpoint, NOT a pipeline step.
+      It runs before any workflow starts. Returns questions with
+      3 suggested answers each (frontend adds a 4th "custom input" option).
+      If facts are complete, returns an empty questions array.
+
+
+======================================================================
+Phase 1: Smart Analysis / Defense Memo (إعداد مذكرة الدفاع)
+======================================================================
+Pipeline: "smart-analysis"
+Location: `wwwroot/prompts/المرحلة الأولى إعداد مذكرة الدفاع/`
+
+| Step | AiStepType Enum (int value) | Prompt File                        | Purpose                          |
+|------|-----------------------------|------------------------------------|----------------------------------|
+| 1    | FactAnalysis (10)           | defense-step1-legal-analysis.txt   | Analyze case facts               |
+| 2    | GenerateDefenses (11)       | defense-step2-generate-defenses.txt| Identify primary legal defenses  |
+| 3    | AnalysisDefense (12)        | defense-step3-analyze-defense.txt  | Deep analysis of a single defense|
+| 4    | FinalRequirements (13)      | defense-step4-final-requests.txt   | Final requests compilation       |
+
+NOTE: The SmartAnalysisService also has a Chat (AiStepType.Chat) endpoint with an
+      inline prompt (appropriate for the conversational nature of a chat).
+
+======================================================================
+Phase 2: Statement of Claims (إعداد صحيفة الدعوى)
+======================================================================
+Pipeline: "preparing-statement-of-claims"
+Location: `wwwroot/prompts/المرحلة الثانية إعداد صحيفة الدعوى/`
+
+| Step | AiStepType Enum (int value) | Prompt File                      | Purpose                         |
+|------|-----------------------------|---------------------------------  |---------------------------------|
+| 1    | LawsuitCaseType (20)        | lawsuit-step1-case-type.txt      | Classify the case type          |
+| 2    | LawsuitParties (21)         | lawsuit-step2-parties.txt        | Extract parties                 |
+| 3    | LawsuitFacts (22)           | lawsuit-step3-facts.txt          | Format facts narrative          |
+| 4    | LawsuitSubjects (23)        | lawsuit-step4-subject.txt        | Determine lawsuit subject       |
+| 5    | LawsuitLegalBasis (24)      | lawsuit-step5-legal-basis.txt    | Identify legal basis            |
+| 6    | LawsuitRequests (25)        | lawsuit-step6-requests.txt       | Draft requests                  |
+
+NOTE: Step ordering in PipelineRegistry matches AiStepType integer values (20-25).
+
+======================================================================
+Phase 3: Appeal Brief (إعداد صحيفة طعن)
+======================================================================
+Pipeline: "appeal-brief"
+Location: `wwwroot/prompts/المرحلة الثالثة إعداد صحيفة طعن/`
+
+| Step | AiStepType Enum (int value)    | Prompt File                | Purpose                             |
+|------|--------------------------------|----------------------------|-------------------------------------|
+| 1    | AppealBriefJudgmentData (40)   | appeal-step1-judgment-data.txt | Extract judgment data           |
+| 2    | AppealBriefReasoningAnalysis(41)| appeal-step2-analysis.txt | Analyze reasoning                   |
+| 3    | AppealBriefGrounds (42)        | appeal-step3-grounds.txt   | Identify grounds for appeal         |
+| 4    | AppealBriefRequests (43)       | appeal-step4-requests.txt  | Draft requests                      |
+| 5    | AppealBriefLegalBasis (44)     | appeal-step5-legal-basis.txt| Identify legal basis               |
+| 6    | AppealBriefAssembly (45)       | appeal-step6-full-appeal.txt| Assemble final appeal brief        |
+
+NOTE: Delete the orphaned `mapping.txt.txt` file in this folder (double-extension typo).
+
+======================================================================
+Phase 4: Administrative Complaint (إعداد شكاوى أو تظلمات إدارية)
+======================================================================
+Pipeline: "admin-complaint"
+Location: `wwwroot/prompts/المرحلة الرابعة إعداد شكاوى أو تظلمات إدارية/`
+
+| Step | AiStepType Enum (int value)        | Prompt File              | Purpose                        |
+|------|-------------------------------------|--------------------------|--------------------------------|
+| 1    | AdminComplaintClassification (50)   | admin-step1-classification.txt | Classify complaint & entity |
+| 2    | AdminComplaintFacts (51)            | admin-step2-facts.txt    | Draft facts section            |
+| 3    | AdminComplaintViolation (52)        | admin-step3-violation.txt| Analyze violation              |
+| 4    | AdminComplaintRequests (53)         | admin-step4-requests.txt | Draft requests                 |
+| 5    | AdminComplaintAssembly (54)         | admin-step5-final.txt    | Assemble final complaint       |
+
+======================================================================
+Phase 5: Ruling Analysis (تحليل حكم قضائي صادر)
+======================================================================
+Pipeline: "ruling-analysis"
+Location: `wwwroot/prompts/المرحلة الخامسة تحليل حكم قضائي صادر/`
+
+| Step | AiStepType Enum (int value)            | Prompt File                | Purpose                      |
+|------|----------------------------------------|----------------------------|------------------------------|
+| 1    | RulingAnalysisOperative (60)           | ruling-step1-operative.txt | Operative part extraction    |
+| 2    | RulingAnalysisReasoning (61)           | ruling-step2-reasoning.txt | Reasoning extraction         |
+| 3    | RulingAnalysisDefectEvaluation (62)    | ruling-step3-evaluation.txt| Defect evaluation            |
+| 4    | RulingAnalysisFeasibilityReport (63)   | ruling-step4-report.txt    | Appeal feasibility report    |
+
+======================================================================
+Phase 6: Legal Warning / Formal Notice (تجهيز الإنذار الرسمي أو الإعذار القضائي)
+======================================================================
+Pipeline: "legal-warning"
+Location: `wwwroot/prompts/المرحلة السادسة تجهيز الإنذار الرسمي أو الإعذار القضائي/`
+
+| Step | AiStepType Enum (int value)     | Prompt File                   | Purpose                        |
+|------|----------------------------------|----------------------------------------|-----------------------|
+| 1    | LegalWarningClassification (70)  | warning-step1-classification.txt | Classify & legal analysis   |
+| 2    | LegalWarningBodyDraft (71)       | warning-step2-body-draft.txt   | Draft warning body           |
+| 3    | LegalWarningAssembly (72)        | warning-step3-assembly.txt     | Assemble final warning       |
+
+NOTE: `warning-step2-body.txt` and `warning-step3-full.txt` are legacy duplicates.
+      The canonical files are `warning-step2-body-draft.txt` and `warning-step3-assembly.txt`.
+
+======================================================================
+Phase 7: Execution Request (طلبات التنفيذ)
+======================================================================
+Pipeline: "exec-request"
+Location: `wwwroot/prompts/المرحلة السابعة طلبات التنفيذ/`
+
+| Step | AiStepType Enum (int value)   | Prompt File             | Purpose                          |
+|------|-------------------------------|-------------------------|----------------------------------|
+| 1    | ExecRequestClassification (80)| exec-step1-classification.txt | Classify execution request |
+| 2    | ExecRequestDrafting (81)      | exec-step2-drafting.txt | Draft execution petitions        |
+| 3    | ExecRequestAssembly (82)      | exec-step3-assembly.txt | Assemble final petition          |
+
+======================================================================
+Notes on Pipeline Registry
+======================================================================
+To add a new pipeline:
+1. Register it in Lawyer.Application/Services/Workflows/PipelineRegistry.cs
+2. Add the corresponding AiStepType enum values in Lawyer.Core/Enum/AiStepType.cs
+3. Create the prompt files under wwwroot/prompts/<folder>/
+4. Add strongly-typed output DTOs in StepOutputDtos.cs
+5. Register case branches in StepOutputSchemas.Normalize()
+6. Append the new mapping here for developer reference

@@ -1,0 +1,144 @@
+aside {
+    padding: 20px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 20px;
+    height: 100vh;
+    transition: var(--transition);
+}
+
+aside .logo img {
+    width: 65px;
+}
+
+aside nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+aside nav ul,
+aside .actions {
+    width: 70px;
+    overflow: hidden;
+    transition: var(--transition);
+    border-radius: 35px;
+    padding: 10px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 1px solid var(--accent-soft);
+    background-color: color-mix(in srgb, var(--surface-color) 88%, transparent);
+    backdrop-filter: var(--blur);
+    box-shadow: 0 12px 32px rgba(27, 27, 27, 0.06);
+}
+
+@media (min-width: 1000px) {
+    aside nav ul:hover,
+    aside .actions:hover {
+        width: 280px;
+    }
+}
+
+
+
+aside nav ul li a,
+aside .actions a,
+aside .actions button {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 1.15rem;
+    font-weight: 500;
+    text-wrap: nowrap;
+    padding: 12px 14px;
+    border-radius: 18px;
+    color: var(--title-color);
+    transition: var(--transition);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    width: 100%;
+    text-align: inherit;
+}
+
+aside nav ul li a.active,
+aside nav ul li a:hover {
+    background-color: var(--second-color);
+    color: var(--main-color);
+}
+
+aside nav ul li a svg {
+    font-size: 1.5rem;
+}
+
+.dark aside nav ul,
+.dark aside .actions {
+    border-color: rgba(239, 149, 10, 0.22);
+    background-color: rgba(29, 29, 29, 0.88);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+}
+
+.dark aside nav ul li a {
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.dark aside nav ul li a.active,
+.dark aside nav ul li a:hover {
+    background-color: var(--accent-soft-strong);
+    color: #ffd089;
+}
+
+.dark aside nav ul li a.active svg,
+.dark aside nav ul li a:hover svg {
+    color: var(--main-color);
+}
+
+aside .actions a,
+aside .actions button {
+    overflow: hidden;
+    background-color: color-mix(in srgb, var(--danger-color) 10%, transparent);
+    color: var(--danger-color);
+}
+
+aside .actions a svg,
+aside .actions button svg {
+    color: var(--danger-color);
+    transition: var(--transition);
+}
+
+aside .actions a:hover,
+aside .actions button:hover {
+    background-color: var(--danger-color);
+    color: var(--white-color);
+}
+
+aside .actions a:hover svg,
+aside .actions button:hover svg {
+    color: var(--white-color);
+}
+
+@media (max-width: 1000px) {
+    aside {
+        height: 100vh;
+        overflow-y: auto;
+        background-color: var(--bg-color);
+    }
+
+    aside nav ul {
+        width: 100%;
+        border-radius: 16px;
+    }
+
+    aside .actions {
+        width: 100%;
+        border-radius: 16px;
+    }
+
+    aside .actions a,
+    aside .actions button {
+        width: 100%;
+    }
+}

@@ -1,0 +1,143 @@
+# ── Local Development Docker Compose ─────────────────────────────
+# Usage: cp .env.docker.example .env.docker && docker compose up
+# Requires: .env.docker with real secrets (git-ignored)
+# Template: .env.docker.example (tracked — see docs/environment-reference.md)
+# ─────────────────────────────────────────────────────────────────
+
+services:
+  sqlserver:
+    # ── Database Persistence ──
+    # The mohamy-sqlserver-data volume preserves database state across container restarts and 'make down'.
+    # To reset the database, you must explicitly destroy this volume (e.g. using 'make nuke').
+    # Schema changes are applied manually via 'make migrate', never automatically.
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    env_file:
+      - .env.docker
+    environment:
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mohamy-sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: >
+        /opt/mssql-tools18/bin/sqlcmd
+        -S localhost -U sa -P "$$MSSQL_SA_PASSWORD"
+        -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - mohamy-local
+
+  backend:
+    platform: linux/amd64
+    build:
+      context: ./mohamy-smart-backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env.docker
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "8976:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    volumes:
+      - mohamy-backend-logs:/app/Logs
+      - mohamy-dp-keys:/app/DataProtectionKeys
+    networks:
+      - mohamy-local
+
+  lawyer-dashboard:
+    build:
+      context: .
+      dockerfile: ./apps/lawyer-dashboard/Dockerfile
+      target: development
+    stdin_open: true
+    tty: true
+    environment:
+      VITE_API_BASE_URL: http://localhost:8976/api/v1
+    volumes:
+      - ./apps/lawyer-dashboard/src:/app/apps/lawyer-dashboard/src
+      - ./apps/lawyer-dashboard/public:/app/apps/lawyer-dashboard/public
+      - ./apps/lawyer-dashboard/index.html:/app/apps/lawyer-dashboard/index.html
+      - ./apps/lawyer-dashboard/vite.config.ts:/app/apps/lawyer-dashboard/vite.config.ts
+      - ./apps/lawyer-dashboard/tsconfig.json:/app/apps/lawyer-dashboard/tsconfig.json
+      - ./apps/lawyer-dashboard/tsconfig.app.json:/app/apps/lawyer-dashboard/tsconfig.app.json
+      - ./apps/lawyer-dashboard/tsconfig.node.json:/app/apps/lawyer-dashboard/tsconfig.node.json
+      - ./packages:/app/packages
+      - ./tsconfig.base.json:/app/tsconfig.base.json
+    ports:
+      - "5078:5078"
+    networks:
+      - mohamy-local
+
+  admin-dashboard:
+    build:
+      context: .
+      dockerfile: ./apps/admin-dashboard/Dockerfile
+      target: development
+    stdin_open: true
+    tty: true
+    environment:
+      VITE_API_BASE_URL: http://localhost:8976/api/v1
+    volumes:
+      - ./apps/admin-dashboard/src:/app/apps/admin-dashboard/src
+      - ./apps/admin-dashboard/public:/app/apps/admin-dashboard/public
+      - ./apps/admin-dashboard/index.html:/app/apps/admin-dashboard/index.html
+      - ./apps/admin-dashboard/vite.config.ts:/app/apps/admin-dashboard/vite.config.ts
+      - ./apps/admin-dashboard/tsconfig.json:/app/apps/admin-dashboard/tsconfig.json
+      - ./apps/admin-dashboard/tsconfig.app.json:/app/apps/admin-dashboard/tsconfig.app.json
+      - ./apps/admin-dashboard/tsconfig.node.json:/app/apps/admin-dashboard/tsconfig.node.json
+      - ./packages:/app/packages
+      - ./tsconfig.base.json:/app/tsconfig.base.json
+    ports:
+      - "5079:5079"
+    networks:
+      - mohamy-local
+
+  landing:
+    build:
+      context: .
+      dockerfile: ./apps/landing/Dockerfile
+      target: development
+    stdin_open: true
+    tty: true
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8976/api/v1
+      NEXT_PUBLIC_DASHBOARD_URL: http://localhost:5078
+    volumes:
+      - ./apps/landing/src:/app/apps/landing/src
+      - ./apps/landing/public:/app/apps/landing/public
+      - ./apps/landing/next.config.ts:/app/apps/landing/next.config.ts
+      - ./apps/landing/tsconfig.json:/app/apps/landing/tsconfig.json
+      - ./packages:/app/packages
+      - ./tsconfig.base.json:/app/tsconfig.base.json
+    ports:
+      - "3000:3000"
+    networks:
+      - mohamy-local
+
+  clamav:
+    platform: linux/amd64
+    image: clamav/clamav:stable
+    ports:
+      - "3310:3310"
+    networks:
+      - mohamy-local
+    restart: unless-stopped
+
+volumes:
+  mohamy-sqlserver-data:
+  mohamy-backend-logs:
+  mohamy-dp-keys:
+
+networks:
+  mohamy-local:
+    driver: bridge

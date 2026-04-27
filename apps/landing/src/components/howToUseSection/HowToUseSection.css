@@ -1,0 +1,96 @@
+
+
+.how-to-use-section ul {
+    position: relative;
+    padding-right: 25px;
+}
+
+.how-to-use-section ul::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 4px;
+    height: 100%;
+    background-color: var(--progress-track);
+    border-radius: 30px;
+}
+
+.how-to-use-section ul::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 4px;
+    height: 20%;
+    background-color: var(--main-color);
+    border-radius: 30px;
+}
+
+.how-to-use-section ul li {
+    margin-bottom: 90px;
+
+}
+
+.how-to-use-section ul li h5 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--main-color);
+    margin-bottom: 12px;
+
+}
+
+.how-to-use-section ul li p {
+    font-size: 1rem;
+    color: var(--text-color);
+}
+
+.how-to-use-section .images {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    align-items: center;
+}
+
+.how-to-use-section .images .image {
+    width: 100%;
+    border-radius: var(--lg-radius);
+    overflow: hidden;
+}
+
+.how-to-use-section .images .image img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    object-position: center;
+}
+
+.how-to-use-section .images .vector {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 20%;
+    z-index: 10;
+}
+
+.how-to-use-section .images .image:nth-child(2) {
+    margin-top: -60px;
+}
+
+.how-to-use-section .images .image:nth-child(3) {
+    margin-top: 60px;
+}
+
+@media (max-width: 991px){
+    .how-to-use-section .images {
+        gap: 15px;
+    }
+    .how-to-use-section .images .image:nth-child(2) {
+        margin-top: -30px;
+    }
+    .how-to-use-section .images .image:nth-child(3) {
+        margin-top: 30px;
+    }
+}

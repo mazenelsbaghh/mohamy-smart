@@ -1,0 +1,247 @@
+section.inheritance-calculator .estate-card {
+    margin-bottom: 1.5rem;
+}
+
+section.inheritance-calculator .estate-inputs {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    section.inheritance-calculator .estate-inputs {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+section.inheritance-calculator .heir-card {
+    margin-bottom: 1.5rem;
+}
+
+section.inheritance-calculator .heir-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+section.inheritance-calculator .heir-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--sm-radius);
+    background: var(--opacity-color);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+section.inheritance-calculator .heir-item:hover {
+    border-color: var(--main-color);
+}
+
+section.inheritance-calculator .heir-item .heir-label {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--title-color);
+}
+
+section.inheritance-calculator .heir-item .heir-count-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+section.inheritance-calculator .heir-item .heir-count-controls button {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--opacity-color);
+    background: var(--white-color);
+    color: var(--title-color);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+section.inheritance-calculator .heir-item .heir-count-controls button:hover {
+    background: var(--main-color);
+    color: var(--white-color);
+    border-color: var(--main-color);
+}
+
+section.inheritance-calculator .heir-item .heir-count-controls span {
+    min-width: 24px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+
+section.inheritance-calculator .heir-item .remove-heir {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: var(--danger-color);
+    color: white;
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s ease;
+}
+
+section.inheritance-calculator .heir-item .remove-heir:hover {
+    opacity: 0.7;
+}
+
+section.inheritance-calculator .add-heir-section {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+section.inheritance-calculator .results-card {
+    margin-top: 1.5rem;
+}
+
+section.inheritance-calculator .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+section.inheritance-calculator .results-table th {
+    text-align: right;
+    padding: 0.75rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-color);
+    border-bottom: 2px solid var(--opacity-color);
+}
+
+section.inheritance-calculator .results-table td {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--title-color);
+    border-bottom: 1px solid var(--opacity-color);
+}
+
+section.inheritance-calculator .results-table tr:last-child td {
+    border-bottom: none;
+}
+
+section.inheritance-calculator .results-table .share-type-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--sm-radius);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+section.inheritance-calculator .results-table .share-type-fard {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.dark section.inheritance-calculator .results-table .share-type-fard {
+    background: #1b3a1b;
+    color: #81c784;
+}
+
+section.inheritance-calculator .results-table .share-type-tasib {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.dark section.inheritance-calculator .results-table .share-type-tasib {
+    background: #1a2a3a;
+    color: #90caf9;
+}
+
+section.inheritance-calculator .results-table .share-type-radd {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.dark section.inheritance-calculator .results-table .share-type-radd {
+    background: #2a1a00;
+    color: #ffb74d;
+}
+
+section.inheritance-calculator .results-table .share-type-wasiyya {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.dark section.inheritance-calculator .results-table .share-type-wasiyya {
+    background: #311b3b;
+    color: #ce93d8;
+}
+
+section.inheritance-calculator .results-summary {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--opacity-color);
+    flex-wrap: wrap;
+}
+
+section.inheritance-calculator .results-summary .summary-item {
+    display: flex;
+    flex-direction: column;
+}
+
+section.inheritance-calculator .results-summary .summary-label {
+    font-size: 0.75rem;
+    color: var(--text-color);
+}
+
+section.inheritance-calculator .results-summary .summary-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--main-color);
+}
+
+section.inheritance-calculator .warnings-list {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    border-radius: var(--sm-radius);
+    background: #fff3e0;
+    border: 1px solid #ffe0b2;
+}
+
+.dark section.inheritance-calculator .warnings-list {
+    background: #2a1a00;
+    border-color: #3d2800;
+}
+
+section.inheritance-calculator .warnings-list p {
+    font-size: 0.8rem;
+    color: #e65100;
+    margin: 0;
+}
+
+.dark section.inheritance-calculator .warnings-list p {
+    color: #ffb74d;
+}
+
+section.inheritance-calculator .error-message {
+    color: var(--danger-color);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+section.inheritance-calculator .empty-results {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
