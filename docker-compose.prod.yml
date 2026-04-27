@@ -22,7 +22,7 @@ services:
     environment:
       ACCEPT_EULA: "Y"
     ports:
-      - "1433:1433"
+      - "127.0.0.1:1433:1433"
     volumes:
       - mohamy-sqlserver-data:/var/opt/mssql
     healthcheck:
@@ -47,7 +47,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
     ports:
-      - "${BACKEND_PORT:-8976}:8080"
+      - "127.0.0.1:${BACKEND_PORT:-8976}:8080"
     restart: unless-stopped
     volumes:
       - mohamy-backend-logs:/app/Logs
@@ -89,7 +89,7 @@ services:
         VITE_SENTRY_DSN: ${VITE_LAWYER_SENTRY_DSN:-}
         VITE_SENTRY_ENVIRONMENT: ${VITE_LAWYER_SENTRY_ENVIRONMENT:-production}
     ports:
-      - "${LAWYER_PORT:-5078}:80"
+      - "127.0.0.1:${LAWYER_PORT:-5078}:80"
     restart: unless-stopped
     networks:
       - mohamy-prod
@@ -104,7 +104,7 @@ services:
         VITE_SENTRY_DSN: ${VITE_ADMIN_SENTRY_DSN:-}
         VITE_SENTRY_ENVIRONMENT: ${VITE_ADMIN_SENTRY_ENVIRONMENT:-production}
     ports:
-      - "${ADMIN_PORT:-5079}:80"
+      - "127.0.0.1:${ADMIN_PORT:-5079}:80"
     restart: unless-stopped
     networks:
       - mohamy-prod
@@ -118,7 +118,7 @@ services:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
         NEXT_PUBLIC_DASHBOARD_URL: ${NEXT_PUBLIC_DASHBOARD_URL:-https://lawyer.mohamy-smart.com}
     ports:
-      - "${LANDING_PORT:-3000}:80"
+      - "127.0.0.1:${LANDING_PORT:-3000}:80"
     restart: unless-stopped
     networks:
       - mohamy-prod
