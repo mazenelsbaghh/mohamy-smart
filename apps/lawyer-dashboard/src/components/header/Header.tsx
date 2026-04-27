@@ -1,7 +1,7 @@
 import './Header.css';
 
 
-import { HiSun } from "react-icons/hi";
+import { HiSun, HiMenu } from "react-icons/hi";
 
 
 import { Avatar } from '@heroui/react';
@@ -10,6 +10,7 @@ import { HiSparkles } from 'react-icons/hi';
 import { IconButton } from '@mohamy/shared-ui';
 import { Link } from 'react-router-dom';
 import { useAppSelector } from '../../hooks/reduxHooks';
+import { useSidebar } from '../sidebar/sidebarContext';
 
 type THeader = {
     theme: 'dark' | 'light';
@@ -18,11 +19,24 @@ type THeader = {
 
 const Header = ({ theme, setTheme }: THeader) => {
     const user = useAppSelector((state) => state.auth.user);
+    const { toggle } = useSidebar();
 
     return (
         <header className="flex justify-between items-center px-6 py-4 mx-4 sm:mx-8 mt-6 rounded-2xl bg-[var(--white-color)] dark:app-surface border app-border dark:app-border-strong shadow-sm transition-colors duration-300 z-40 relative flex-wrap gap-4">
             <div className='flex items-center gap-4'>
-                <div className="logo md:hidden flex-shrink-0">
+                <div className="md:hidden flex items-center gap-3 flex-shrink-0">
+                    <IconButton
+                        icon={<HiMenu size={22} />}
+                        radius="full"
+                        size="md"
+                        onclick={toggle}
+                        ariaLabel="فتح القائمة"
+                        variant="flat"
+                        className="bg-[var(--main-color)]/10 text-[var(--main-color)] hover:bg-[var(--main-color)] hover:text-white transition-colors"
+                    />
+                    <img src="/images/logo.png" alt="Mohamy Smart Logo" loading="lazy" decoding="async" className="h-10 w-auto" />
+                </div>
+                <div className="logo hidden md:block flex-shrink-0">
                     <img src="/images/logo.png" alt="Mohamy Smart Logo" loading="lazy" decoding="async" className="h-10 w-auto" />
                 </div>
                 <div className="flex flex-col">
