@@ -21,9 +21,9 @@ import { MdOutlineClear } from'react-icons/md';
 import thunkGetAllCaseType from'../../redux/caseType/thunk/thunkGetAllCaseType';
 
 import * as pdfjsLib from'pdfjs-dist';
-import pdfWorker from'pdfjs-dist/build/pdf.worker.mjs?url';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+// Use CDN to ensure the worker loads correctly in production without Vite bundling issues
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 const MAX_FILE_SIZE_MB = 800;
 const MAX_PDF_PAGES = 1000;
