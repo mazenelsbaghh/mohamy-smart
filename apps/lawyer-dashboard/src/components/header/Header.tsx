@@ -52,8 +52,8 @@ const Header = ({ theme, setTheme }: THeader) => {
                     ariaLabel="تبديل المظهر"
                     className="bg-gray-100 hover:bg-gray-200 dark:bg-[#2A2A2A] dark:hover:bg-[#333]"
                 />
-                <Link to="/subscription" className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--main-color)]/10 text-[var(--main-color)] hover:bg-[var(--main-color)] hover:text-white transition-colors font-semibold text-sm">
-                    <HiSparkles size={16} />
+                <Link to="/subscription" className="flex items-center gap-1 md:gap-1.5 px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-full bg-[var(--main-color)]/10 text-[var(--main-color)] hover:bg-[var(--main-color)] hover:text-white transition-colors font-semibold text-[11px] md:text-sm">
+                    <HiSparkles size={14} className="md:w-4 md:h-4" />
                     <span>الباقات</span>
                 </Link>
                 <Link to='/settings' className="transition-opacity hover:opacity-90" aria-label="الإعدادات">
