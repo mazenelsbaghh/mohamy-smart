@@ -25,9 +25,9 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN npm install && npm rebuild
+	RUN npm install
 COPY apps/landing ./apps/landing
-RUN npm run build --workspace=@mohamy/landing
+RUN npm install --no-save lightningcss-linux-x64-gnu 2>/dev/null; npm run build --workspace=@mohamy/landing
 
 FROM nginx:alpine AS production
 COPY --from=build /app/apps/landing/out /usr/share/nginx/html
