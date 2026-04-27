@@ -70,9 +70,9 @@ namespace Lawyer.Controllers.Base
 		{
 			var prefix = isProduction ? "__Host-" : "";
 
-			response.Cookies.Append($"{prefix}session",  "", new CookieOptions { MaxAge = TimeSpan.Zero, Path = "/" });
-			response.Cookies.Append($"{prefix}refresh",  "", new CookieOptions { MaxAge = TimeSpan.Zero, Path = "/api/v1/auth/" });
-			response.Cookies.Append("XSRF-TOKEN",        "", new CookieOptions { MaxAge = TimeSpan.Zero, Path = "/" });
+			response.Cookies.Append($"{prefix}session",  "", new CookieOptions { MaxAge = TimeSpan.Zero, Path = "/", Secure = isProduction, SameSite = SameSiteMode.Lax });
+			response.Cookies.Append($"{prefix}refresh",  "", new CookieOptions { MaxAge = TimeSpan.Zero, Path = "/api/v1/auth/", Secure = isProduction, SameSite = SameSiteMode.Lax });
+			response.Cookies.Append("XSRF-TOKEN",        "", new CookieOptions { MaxAge = TimeSpan.Zero, Path = "/", Secure = isProduction, SameSite = SameSiteMode.Lax });
 		}
 	}
 }
