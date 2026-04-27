@@ -66,7 +66,7 @@ namespace Lawyer.Application.Services
 			if (amountCents == 0)
 			{
 				var subResult = await _subscriptionService.SubscribeAsync(lawyerId, subscriptionId, isYearly ? "yearly" : "monthly", ct);
-				if (!subResult.IsSuccess)
+				if (!subResult.Succeeded)
 					return ApiExceptionResponse.BadRequest<InitiatePaymentResponseDto>(subResult.Message);
 				
 				return ApiExceptionResponse.Success(new InitiatePaymentResponseDto

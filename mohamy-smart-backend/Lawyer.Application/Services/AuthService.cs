@@ -551,7 +551,7 @@ namespace Lawyer.Application.Services
                     await _unitOfWork.Repository<Core.Models.Lawyer>().Update(lawyer);
 
                     var freeTrialPlan = await _unitOfWork.Repository<Subscription>()
-                        .FirstOrDefaultAsync(x => x.Name == "Free Trial", cancellationToken);
+                        .FirstOrDefaultTrackedAsync(x => x.Name == "Free Trial", cancellationToken);
 
                     if (freeTrialPlan == null)
                     {
