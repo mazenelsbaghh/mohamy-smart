@@ -107,7 +107,7 @@ const SignUp = () => {
  isInvalid={!!errors.phoneNumber}
  errorMessage={errors.phoneNumber?.message}
  startContent={<HiOutlinePhone className="text-lg text-default-400" />}
- autoComplete="tel"
+ autoComplete="username"
  {...register('phoneNumber')}
  />
  </div>

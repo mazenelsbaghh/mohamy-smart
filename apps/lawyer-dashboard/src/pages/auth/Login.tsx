@@ -71,7 +71,7 @@ const Login = () => {
  isInvalid={!!errors.phone}
  errorMessage={errors.phone?.message}
  startContent={<HiOutlinePhone className="text-xl text-default-400" />}
- autoComplete="tel"
+ autoComplete="username"
  {...register('phone', { onChange: () => formError && setFormError(null) })}
  />
  </div>
