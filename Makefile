@@ -126,6 +126,7 @@ help: ## Show this help message
 	echo "  prod-down    Stop the production-oriented stack"; \
 	echo "  prod-logs    Stream production-oriented stack logs"; \
 	echo "  prod-build   Rebuild production-oriented images"; \
+	echo "  server-logs  Stream live backend logs from the REMOTE production server"; \
 	echo ""; \
 	echo "Services:"; \
 	echo "  backend      Start backend + SQL Server only"; \
@@ -219,6 +220,11 @@ prod-logs: ## Stream production-oriented stack logs
 prod-build: ## Rebuild production-oriented images
 	$(REQUIRE_ENV_PROD)
 	docker compose --env-file $(ENV_PROD_FILE) -f $(COMPOSE_PROD_FILE) build
+
+server-logs: ## Stream live backend logs from the REMOTE production server
+	@echo "Connecting to production server (91.108.121.110) to stream live backend logs..."
+	@echo "Press Ctrl+C to exit."
+	ssh -o StrictHostKeyChecking=no root@91.108.121.110 "docker logs -f mohamy-smart-backend-1"
 
 # ══════════════════════════════════════════════════════════════════
 #  Service-Scoped Startup
