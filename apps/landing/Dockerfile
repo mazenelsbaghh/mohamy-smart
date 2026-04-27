@@ -25,7 +25,7 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN npm install
+	RUN npm install && npm rebuild
 COPY apps/landing ./apps/landing
 RUN npm run build --workspace=@mohamy/landing
 
