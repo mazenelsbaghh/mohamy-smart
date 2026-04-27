@@ -39,17 +39,9 @@ namespace Lawyer.Infrastructure.Persistence
 				await EnsureUserAsync(userManager, adminEmail, adminPassword, "Admin User", "Admin", null);
 				logger.LogInformation("Seeded admin user: {Email}", adminEmail);
 			}
-
-			if (!string.IsNullOrEmpty(lawyerEmail) && !string.IsNullOrEmpty(lawyerPassword))
+			else
 			{
-				await EnsureUserAsync(userManager, lawyerEmail, lawyerPassword, "Lawyer User", "Lawyer", "01000000001");
-				logger.LogInformation("Seeded lawyer user: {Email}", lawyerEmail);
-			}
-
-			if (string.IsNullOrEmpty(adminEmail) || string.IsNullOrEmpty(adminPassword) ||
-				string.IsNullOrEmpty(lawyerEmail) || string.IsNullOrEmpty(lawyerPassword))
-			{
-				logger.LogWarning("Seed credentials not fully configured (SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD, SEED_LAWYER_EMAIL, SEED_LAWYER_PASSWORD). Skipping user seeding.");
+				logger.LogWarning("Seed credentials not configured (SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD). Skipping admin seeding.");
 			}
 		}
 

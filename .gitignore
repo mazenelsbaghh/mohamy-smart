@@ -36,6 +36,8 @@ build_output.txt
 *.sqlite3
 
 # Secrets — NEVER commit real config
+# Server credentials (local only — NEVER push to GitHub)
+.server-credentials
 # The following real-value files are excluded:
 #   .env.docker          — local Docker runtime secrets (copy from .env.docker.example)
 #   .env.docker.prod     — production Docker runtime secrets (copy from .env.docker.prod.example)
