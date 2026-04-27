@@ -20,7 +20,6 @@ obj/
 *.suo
 
 # .NET NuGet packages (local restore cache only)
-**/packages/*/
 
 # Node.js / TypeScript
 node_modules/

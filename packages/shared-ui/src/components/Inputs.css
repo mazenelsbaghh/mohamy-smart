@@ -1,0 +1,23 @@
+.custom-input div[data-slot="input-wrapper"] {}
+
+/* 
+
+.custom-input div[data-slot="input-wrapper"][data-invalid="true"] {
+    color: #1627c2 !important;
+}
+
+.\!bg-danger-50 {
+    background-color: #17da31 !important;
+}
+
+.bg-default-100 {
+    background-color: #17da31 !important;
+}
+
+.custom-input .\!text-danger {
+    color: aqua !important;
+} */
+
+/* .custom-input .text-tiny.text-danger {
+    font-size: 1rem !important;
+} */

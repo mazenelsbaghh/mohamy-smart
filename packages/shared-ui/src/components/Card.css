@@ -1,0 +1,5 @@
+.custom-card {
+    background-color: var(--white-color);
+    border-radius: var(--sm-radius);
+    padding: var(--padding);
+}
