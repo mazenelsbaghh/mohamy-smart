@@ -2,7 +2,7 @@
 # Build context must be the repo root (see docker-compose.yml).
 # ──────────────────────────────────────────────────────────
 
-FROM node:22-alpine AS development
+FROM node:22-slim AS development
 WORKDIR /app
 COPY package.json package-lock.json* turbo.json tsconfig.base.json ./
 COPY packages ./packages
@@ -15,7 +15,7 @@ COPY apps/admin-dashboard ./apps/admin-dashboard
 WORKDIR /app/apps/admin-dashboard
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5079"]
 
-FROM node:22-alpine AS build
+FROM node:22-slim AS build
 WORKDIR /app
 ARG VITE_API_BASE_URL=http://localhost:8976/api
 ARG VITE_SENTRY_DSN=

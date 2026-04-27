@@ -2,7 +2,7 @@
 # Build context must be the repo root (see docker-compose.yml).
 # ──────────────────────────────────────────────────────────
 
-FROM node:22-alpine AS development
+FROM node:22-slim AS development
 WORKDIR /app
 COPY package.json package-lock.json* turbo.json tsconfig.base.json ./
 COPY packages ./packages
@@ -15,7 +15,7 @@ COPY apps/landing ./apps/landing
 WORKDIR /app/apps/landing
 CMD ["npm", "run", "dev"]
 
-FROM node:22-alpine AS build
+FROM node:22-slim AS build
 WORKDIR /app
 ARG NEXT_PUBLIC_API_BASE_URL=https://localhost:8976/api
 ARG NEXT_PUBLIC_DASHBOARD_URL=https://localhost:5078
