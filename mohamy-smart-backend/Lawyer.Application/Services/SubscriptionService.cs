@@ -419,12 +419,9 @@ namespace Lawyer.Application.Services
 			if (!plan.IsActive)
 				return ApiExceptionResponse.BadRequest<bool>("Plan is already archived");
 
-			// Check for active subscribers
-			var hasActiveSubscribers = await _unitOfWork.Repository<LawyerSubscription>()
-				.AnyAsync(x => x.SubscriptionId == planId && x.IsActive, cancellationToken);
-
-			if (hasActiveSubscribers)
-				return ApiExceptionResponse.BadRequest<bool>("Cannot archive plan with active subscribers. Migrate subscribers first.");
+			// We allow archiving the plan even if there are active subscribers.
+			// This simply hides the plan from the store (IsActive = false)
+			// while existing active LawyerSubscription records continue to function normally.
 
 			plan.IsActive = false;
 			await _unitOfWork.Repository<Subscription>().Update(plan);
