@@ -132,15 +132,20 @@ const AdminComplaintPage = () => {
 
   const [initialAutoJumpDone, setInitialAutoJumpDone] = useState(false);
 
- let maxStepAllowed = 0;
  const jobs = aiJobs.jobs;
  const isActive = (job: { status?: string } | undefined | null) => job?.status ==='Completed' || job?.status ==='Processing' || job?.status ==='Queued';
 
- if (isActive(jobs.AdminComplaintAssembly) || finalDocument) maxStepAllowed = 5;
- else if (isActive(jobs.AdminComplaintRequests) || requestsDraft) maxStepAllowed = 4;
- else if (isActive(jobs.AdminComplaintViolation) || violationAnalysis) maxStepAllowed = 3;
- else if (isActive(jobs.AdminComplaintFacts) || factsDraft) maxStepAllowed = 2;
- else if (isActive(jobs.AdminComplaintClassification) || classification) maxStepAllowed = 1;
+ let maxStepAllowed = 0;
+ if (finalDocument) maxStepAllowed = 5;
+ else if (requestsDraft) maxStepAllowed = 5;
+ else if (violationAnalysis) maxStepAllowed = 4;
+ else if (factsDraft) maxStepAllowed = 3;
+ else if (classification) maxStepAllowed = 2;
+ else if (isActive(jobs.AdminComplaintAssembly)) maxStepAllowed = 5;
+ else if (isActive(jobs.AdminComplaintRequests)) maxStepAllowed = 4;
+ else if (isActive(jobs.AdminComplaintViolation)) maxStepAllowed = 3;
+ else if (isActive(jobs.AdminComplaintFacts)) maxStepAllowed = 2;
+ else if (isActive(jobs.AdminComplaintClassification)) maxStepAllowed = 1;
 
  useEffect(() => {
  // Never auto-jump on a fresh run — the user should start from step 0

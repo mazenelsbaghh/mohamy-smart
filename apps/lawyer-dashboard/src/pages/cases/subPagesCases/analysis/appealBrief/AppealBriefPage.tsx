@@ -152,16 +152,22 @@ const AppealBriefPage = () => {
 
  const [initialAutoJumpDone, setInitialAutoJumpDone] = useState(false);
 
- let maxStepAllowed = 0;
  const jobs = aiJobs.jobs;
  const isActive = (job: { status?: string } | undefined | null) => job?.status ==='Completed' || job?.status ==='Processing' || job?.status ==='Queued';
  
- if (isActive(jobs.AppealBriefAssembly) || finalAssemblyData) maxStepAllowed = 6;
- else if (isActive(jobs.AppealBriefLegalBasis) || legalBasisData) maxStepAllowed = 5;
- else if (isActive(jobs.AppealBriefRequests) || requestsData) maxStepAllowed = 4;
- else if (isActive(jobs.AppealBriefGrounds) || groundsData) maxStepAllowed = 3;
- else if (isActive(jobs.AppealBriefReasoningAnalysis) || analysisData) maxStepAllowed = 2;
- else if (isActive(jobs.AppealBriefJudgmentData) || judgmentData) maxStepAllowed = 1;
+ let maxStepAllowed = 0;
+ if (finalAssemblyData) maxStepAllowed = 6;
+ else if (legalBasisData) maxStepAllowed = 6;
+ else if (requestsData) maxStepAllowed = 5;
+ else if (groundsData) maxStepAllowed = 4;
+ else if (analysisData) maxStepAllowed = 3;
+ else if (judgmentData) maxStepAllowed = 2;
+ else if (isActive(jobs.AppealBriefAssembly)) maxStepAllowed = 6;
+ else if (isActive(jobs.AppealBriefLegalBasis)) maxStepAllowed = 5;
+ else if (isActive(jobs.AppealBriefRequests)) maxStepAllowed = 4;
+ else if (isActive(jobs.AppealBriefGrounds)) maxStepAllowed = 3;
+ else if (isActive(jobs.AppealBriefReasoningAnalysis)) maxStepAllowed = 2;
+ else if (isActive(jobs.AppealBriefJudgmentData)) maxStepAllowed = 1;
 
  useEffect(() => {
  // Never auto-jump on a fresh run — the user should start from step 0

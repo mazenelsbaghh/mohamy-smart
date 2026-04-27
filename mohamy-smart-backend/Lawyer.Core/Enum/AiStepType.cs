@@ -14,6 +14,7 @@ namespace Lawyer.Core.Enum
         LawsuitFacts = 13,
         LawsuitLegalBasis = 14,
         LawsuitRequests = 15,
+        StatementOfClaimsDraft = 16,
 
         Ocr = 20,
         ClarifyFacts = 21,

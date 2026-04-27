@@ -144,6 +144,9 @@ public sealed class AiJobWorkerTestFixture : IDisposable
     public static Result<object> Failure(string message) =>
         Result<object>.Error(System.Net.HttpStatusCode.BadRequest, message);
 
+    public static Result<object> Conflict(string message) =>
+        Result<object>.Error(System.Net.HttpStatusCode.Conflict, message);
+
     public void Dispose()
     {
         DbContext.Database.EnsureDeleted();

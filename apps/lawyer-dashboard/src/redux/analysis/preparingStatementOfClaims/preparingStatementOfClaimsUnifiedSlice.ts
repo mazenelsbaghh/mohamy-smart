@@ -124,6 +124,10 @@ export const statementOfClaimsSlice = createWorkflowSlice<TStepOutputs>({
  } as TLawsuitRequestsType;
  },
  7: (state, result) => {
+ if (typeof result === 'string') {
+ state.outputs[7] = result;
+ return;
+ }
  const r = result as Record<string, unknown>;
  state.outputs[7] = (r.draftHtml ?? r.draft_html ??'') as string;
  },

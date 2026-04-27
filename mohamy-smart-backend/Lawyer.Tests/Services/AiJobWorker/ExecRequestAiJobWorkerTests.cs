@@ -82,4 +82,32 @@ public class ExecRequestAiJobWorkerTests
         persisted!.Status.Should().Be(AiJobStatus.Failed);
         persisted.ErrorMessage.Should().Be("حدث خطأ أثناء معالجة الطلب عبر الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.");
     }
+
+    [Fact]
+    public async Task ProcessAsync_ShouldMarkJobFailedWithoutThrowing_WhenWorkflowConflictOccurs()
+    {
+        using var fixture = new AiJobWorkerTestFixture();
+        var caseId = Guid.NewGuid();
+        var job = await fixture.SeedJobAsync(AiStepType.ExecRequestDrafting, caseId);
+        var workflow = await fixture.SeedExecRequestWorkflowAsync(caseId, "lawyer-1");
+
+        fixture.ExecRequestService
+            .Setup(x => x.RunStepAsync(
+                workflow.Id,
+                2,
+                It.IsAny<RunExecStepRequest>(),
+                workflow.LawyerId,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AiJobWorkerTestFixture.Conflict("تم تحديث سير العمل من قبل مستخدم آخر. يرجى إعادة تحميل الصفحة."));
+
+        var sut = fixture.CreateSut();
+
+        await sut.ProcessAsync(job.Id, "{\"drafting\":true}", CancellationToken.None);
+
+        var persisted = await fixture.DbContext.AiJobs.FindAsync(job.Id);
+        persisted!.Status.Should().Be(AiJobStatus.Failed);
+        persisted.ErrorMessage.Should().Be("تم تحديث سير العمل أثناء تنفيذ التحليل. يرجى إعادة تحميل الصفحة ثم إعادة المحاولة.");
+
+        fixture.Notifications.Verify(x => x.NotifyJobFailedAsync(It.Is<Lawyer.Core.Models.AiJob>(j => j.Id == job.Id)), Times.Once);
+    }
 }

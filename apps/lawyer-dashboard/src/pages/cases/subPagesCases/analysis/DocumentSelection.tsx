@@ -57,7 +57,7 @@ const DocumentSelection = () => {
 
   dispatch(resetAiJobs());
 
-  if (link === 'defense-memo') {
+  if (link === 'defense-memo' || link === 'preparing-statement-of-claims') {
   navigate(`${pathname}/${link}?fresh=1`, { state: facts });
   return;
   }

@@ -11,6 +11,7 @@ import {
  IoCheckmarkCircle,
  IoReaderOutline,
 } from"react-icons/io5";
+import { sileo } from'sileo';
 import { useLocation, useSearchParams, useNavigate } from'react-router-dom';
 
 import LawsuitCaseType from'./steps/LawsuitCaseType';
@@ -29,7 +30,7 @@ import AnalysisFactsSelectionStep from'../../../../../components/analysisWorkflo
 import { useWorkflowFacts } from'../../../../../hooks/useWorkflowFacts';
 import { useWorkflowAutoSave } from'../../../../../hooks/useWorkflowAutoSave';
 import WorkflowStepBar from'../../../../../components/analysisWorkflow/WorkflowStepBar';
-import { resetStatementOfClaims, restoreStatementSnapshot, statementOfClaimsThunks } from'../../../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice';
+import { abandonStatementOfClaimsWorkflow, resetStatementOfClaims, restoreStatementSnapshot, statementOfClaimsThunks } from'../../../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice';
 import { resetAiJobs } from'../../../../../redux/aiJobs/aiJobsSlice';
 import { useWorkflowSnapshotLoader } from'../../../../../hooks/useWorkflowSnapshotLoader';
 
@@ -49,10 +50,33 @@ const PreparingStatementOfClaims = () => {
  const preparingStatementOfClaimsState = useAppSelector((rootState) => rootState.preparingStatementOfClaimsSlice);
  const aiJobsState = useAppSelector((rootState) => rootState.aiJobs);
 
-  const [active, setActive] = useState(0);
-  const hasInitializedActive = useRef(false);
-  const snapshotModeRef = useRef(false);
-  const freshRunRef = useRef(false);
+ const [active, setActive] = useState(0);
+ const hasInitializedActive = useRef(false);
+ const snapshotModeRef = useRef(false);
+ const freshRunRef = useRef(false);
+
+ function getMaxStepAllowed() {
+ const jobs = aiJobsState.jobs;
+ const outputs = preparingStatementOfClaimsState.outputs;
+ const isActive = (job: { status?: string } | undefined | null) => job?.status ==='Completed' || job?.status ==='Processing' || job?.status ==='Queued';
+
+ if (outputs[7]) return 7;
+ if (outputs[6]) return 7;
+ if (outputs[5]) return 6;
+ if (outputs[4]) return 5;
+ if (outputs[3]) return 4;
+ if (outputs[2]) return 3;
+ if (outputs[1]) return 2;
+
+ if (isActive(jobs.LawsuitRequests)) return 6;
+ if (isActive(jobs.LawsuitLegalBasis)) return 5;
+ if (isActive(jobs.LawsuitFacts)) return 4;
+ if (isActive(jobs.LawsuitSubjects)) return 3;
+ if (isActive(jobs.LawsuitParties)) return 2;
+ if (isActive(jobs.LawsuitCaseType)) return 1;
+
+ return 0;
+ }
 
   useWorkflowSnapshotLoader({
     snapshotId,
@@ -122,18 +146,21 @@ const PreparingStatementOfClaims = () => {
   if (snapshotId) return;
 
   if (isFreshRun) {
- dispatch(resetStatementOfClaims());
- dispatch(resetAiJobs());
  freshRunRef.current = true;
  hasInitializedActive.current = true;
  setActive(0);
- dispatch(statementOfClaimsThunks.startWorkflow({ caseId }))
+ dispatch(resetStatementOfClaims());
+ dispatch(resetAiJobs());
+ dispatch(abandonStatementOfClaimsWorkflow(caseId))
  .unwrap()
- .then((created) => {
- const currentPath = window.location.pathname;
- navigate(`${currentPath}?workflowId=${created.id}`, { replace: true, state: undefined });
+ .then(() => {
+ freshRunRef.current = false;
+ hasInitializedActive.current = false;
+ navigate(pathname, { replace: true, state: undefined });
  })
- .catch(() => { /* fallback: stay on fresh=1 page */ });
+ .catch((error: unknown) => {
+ sileo.error({ title: typeof error === 'string' ? error : 'تعذر بدء صحيفة دعوى جديدة' });
+ });
  return;
  }
 
@@ -145,7 +172,7 @@ const PreparingStatementOfClaims = () => {
  dispatch(statementOfClaimsThunks.getWorkflow({ caseId }))
  .unwrap()
  .catch(() => dispatch(statementOfClaimsThunks.startWorkflow({ caseId })));
- }, [dispatch, caseId, selectedWorkflowId, isFreshRun, snapshotId]);
+ }, [dispatch, caseId, selectedWorkflowId, isFreshRun, snapshotId, navigate, pathname]);
 
  // Restore active step on load
  const output1 = preparingStatementOfClaimsState.outputs[1];
@@ -154,24 +181,14 @@ const PreparingStatementOfClaims = () => {
  const output4 = preparingStatementOfClaimsState.outputs[4];
  const output5 = preparingStatementOfClaimsState.outputs[5];
  const output6 = preparingStatementOfClaimsState.outputs[6];
+ const output7 = preparingStatementOfClaimsState.outputs[7];
  useEffect(() => {
  if (hasInitializedActive.current) return;
  if (snapshotModeRef.current) return;
  if (freshRunRef.current) return;
  if (aiJobsState.loading ==='idle' || aiJobsState.loading ==='pending') return;
 
- const jobs = aiJobsState.jobs;
- const outputs = preparingStatementOfClaimsState.outputs;
- const isActive = (job: { status?: string } | undefined | null) => job?.status ==='Completed' || job?.status ==='Processing' || job?.status ==='Queued';
-
- const step =
- outputs[6] || isActive(jobs.LawsuitRequests) ? 6 :
- outputs[5] || isActive(jobs.LawsuitLegalBasis) ? 5 :
- outputs[4] || isActive(jobs.LawsuitFacts) ? 4 :
- outputs[3] || isActive(jobs.LawsuitSubjects) ? 3 :
- outputs[2] || isActive(jobs.LawsuitParties) ? 2 :
- outputs[1] || isActive(jobs.LawsuitCaseType) ? 1 :
- 0;
+ const step = getMaxStepAllowed();
 
  setActive(step);
  hasInitializedActive.current = true;
@@ -185,25 +202,8 @@ const PreparingStatementOfClaims = () => {
  output4,
  output5,
  output6,
+ output7,
  ]);
-
- const getMaxStepAllowed = () => {
- const jobs = aiJobsState.jobs;
- const outputs = preparingStatementOfClaimsState.outputs;
-
- // If step 6 (Requests) is fully completed, step 7 (Final Statement) is accessible
- if (outputs[6]) return 7;
-
- // Otherwise, the highest allowed step from the tabs is the highest job they've triggered
- if (jobs.LawsuitRequests) return 6;
- if (jobs.LawsuitLegalBasis) return 5;
- if (jobs.LawsuitFacts) return 4;
- if (jobs.LawsuitSubjects) return 3;
- if (jobs.LawsuitParties) return 2;
- if (jobs.LawsuitCaseType) return 1;
- 
- return 0; // step 0 (facts review) is always accessible
- };
 
  const steps = [
  { id: 1, label:'مراجعة الوقائع', icon: <IoDocumentTextOutline /> },

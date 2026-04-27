@@ -149,6 +149,9 @@ help: ## Show this help message
 	echo "  clean        Remove containers & images (preserves DB state)"; \
 	echo "  nuke         Remove everything including DB data volumes"; \
 	echo ""; \
+	echo "GitHub:"; \
+	echo "  push         Push all changes to GitHub (requires MSG=...)"; \
+	echo ""; \
 	echo "Frontend:"; \
 	echo "  install      Install npm dependencies for all frontend apps"; \
 	echo "  bundle-report Build dashboards and open bundle analysis reports"; \
@@ -355,3 +358,15 @@ nuke: ## Remove everything including DB data volumes (requires confirmation)
 	@echo ""; \
 	echo "Destructive cleanup complete. All containers, images, and volumes removed."; \
 	echo ""
+
+# ══════════════════════════════════════════════════════════════════
+#  GitHub
+# ══════════════════════════════════════════════════════════════════
+
+MSG ?= Latest update
+
+push: ## Push all changes to GitHub (uses MSG="Latest update" by default)
+	git add .
+	git commit -m "$(MSG)" || true
+	git push origin main
+

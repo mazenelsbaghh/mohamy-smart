@@ -442,6 +442,7 @@ namespace Lawyer.Application.Services
             or AiStepType.LawsuitFacts
             or AiStepType.LawsuitLegalBasis
             or AiStepType.LawsuitRequests
+            or AiStepType.StatementOfClaimsDraft
                 => ("statement-of-claims", "صحيفة الدعوى"),
 
             AiStepType.AppealBriefJudgmentData
@@ -497,6 +498,7 @@ namespace Lawyer.Application.Services
             AiStepType.LawsuitFacts => "صياغة الوقائع",
             AiStepType.LawsuitLegalBasis => "التأسيس القانوني",
             AiStepType.LawsuitRequests => "صياغة الطلبات",
+            AiStepType.StatementOfClaimsDraft => "المسودة النهائية لصحيفة الدعوى",
 
             AiStepType.Ocr => "التعرف البصري OCR",
             AiStepType.ClarifyFacts => "استيضاح الوقائع",

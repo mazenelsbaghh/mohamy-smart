@@ -132,13 +132,16 @@ const LegalWarningPage = () => {
 
  const [initialAutoJumpDone, setInitialAutoJumpDone] = useState(false);
 
- let maxStepAllowed = 0;
  const jobs = aiJobs.jobs;
  const isActive = (job: { status?: string } | undefined | null) => job?.status ==='Completed' || job?.status ==='Processing' || job?.status ==='Queued';
 
- if (isActive(jobs.LegalWarningAssembly) || finalDocument) maxStepAllowed = 3;
- else if (isActive(jobs.LegalWarningBodyDraft) || warningDraft) maxStepAllowed = 2;
- else if (isActive(jobs.LegalWarningClassification) || classification) maxStepAllowed = 1;
+ let maxStepAllowed = 0;
+ if (finalDocument) maxStepAllowed = 3;
+ else if (warningDraft) maxStepAllowed = 3;
+ else if (classification) maxStepAllowed = 2;
+ else if (isActive(jobs.LegalWarningAssembly)) maxStepAllowed = 3;
+ else if (isActive(jobs.LegalWarningBodyDraft)) maxStepAllowed = 2;
+ else if (isActive(jobs.LegalWarningClassification)) maxStepAllowed = 1;
 
  useEffect(() => {
  // Never auto-jump on a fresh run — the user should start from step 0

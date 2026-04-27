@@ -137,15 +137,19 @@ const RulingAnalysisPage = () => {
 
  const [initialAutoJumpDone, setInitialAutoJumpDone] = useState(false);
 
- let maxStepAllowed = 0;
  const jobs = aiJobs.jobs;
  const isActive = (job: typeof jobs[keyof typeof jobs]) =>
  job?.status ==='Completed' || job?.status ==='Processing' || job?.status ==='Queued';
 
- if (isActive(jobs.RulingAnalysisFeasibilityReport) || appealViability) maxStepAllowed = 4;
- else if (isActive(jobs.RulingAnalysisDefectEvaluation) || defectsEvaluation) maxStepAllowed = 3;
- else if (isActive(jobs.RulingAnalysisReasoning) || reasonsAnalysis) maxStepAllowed = 2;
- else if (isActive(jobs.RulingAnalysisOperative) || verdictAnalysis) maxStepAllowed = 1;
+ let maxStepAllowed = 0;
+ if (appealViability) maxStepAllowed = 4;
+ else if (defectsEvaluation) maxStepAllowed = 4;
+ else if (reasonsAnalysis) maxStepAllowed = 3;
+ else if (verdictAnalysis) maxStepAllowed = 2;
+ else if (isActive(jobs.RulingAnalysisFeasibilityReport)) maxStepAllowed = 4;
+ else if (isActive(jobs.RulingAnalysisDefectEvaluation)) maxStepAllowed = 3;
+ else if (isActive(jobs.RulingAnalysisReasoning)) maxStepAllowed = 2;
+ else if (isActive(jobs.RulingAnalysisOperative)) maxStepAllowed = 1;
 
  useEffect(() => {
  // Never auto-jump on a fresh run — the user should start from step 0

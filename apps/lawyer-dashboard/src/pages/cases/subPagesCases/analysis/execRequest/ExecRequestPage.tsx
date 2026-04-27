@@ -130,13 +130,16 @@ const ExecRequestPage = () => {
 
  const [initialAutoJumpDone, setInitialAutoJumpDone] = useState(false);
 
- let maxStepAllowed = 0;
  const jobs = aiJobs.jobs;
  const isActive = (job: { status?: string } | undefined | null) => job?.status ==='Completed' || job?.status ==='Processing' || job?.status ==='Queued';
 
- if (isActive(jobs.ExecRequestAssembly) || finalAssembly) maxStepAllowed = 3;
- else if (isActive(jobs.ExecRequestDrafting) || drafting) maxStepAllowed = 2;
- else if (isActive(jobs.ExecRequestClassification) || classification) maxStepAllowed = 1;
+ let maxStepAllowed = 0;
+ if (finalAssembly) maxStepAllowed = 3;
+ else if (drafting) maxStepAllowed = 3;
+ else if (classification) maxStepAllowed = 2;
+ else if (isActive(jobs.ExecRequestAssembly)) maxStepAllowed = 3;
+ else if (isActive(jobs.ExecRequestDrafting)) maxStepAllowed = 2;
+ else if (isActive(jobs.ExecRequestClassification)) maxStepAllowed = 1;
 
  useEffect(() => {
  // Never auto-jump on a fresh run — the user should start from step 0

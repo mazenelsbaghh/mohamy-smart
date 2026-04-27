@@ -4,7 +4,7 @@ import { useLocation, useSearchParams, useNavigate } from"react-router-dom";
 import { useState, useEffect, useCallback, useMemo, useRef } from"react";
 import { sileo } from"sileo";
 import { useAppDispatch, useAppSelector } from"../../../../../hooks/reduxHooks";
-import { hydrateStep, resetAnalysis, restoreWorkflowSnapshot, smartAnalysisThunks } from"../../../../../redux/analysis/smartAnalysisSlice";
+import { abandonSmartAnalysisWorkflow, hydrateStep, resetAnalysis, restoreWorkflowSnapshot, smartAnalysisThunks } from"../../../../../redux/analysis/smartAnalysisSlice";
 import { resetAiJobs } from"../../../../../redux/aiJobs/aiJobsSlice";
 import thunkSubmitAiJob from"../../../../../redux/aiJobs/thunk/thunkSubmitAiJob";
 import thunkGetSingleCase from"../../../../../redux/cases/thunk/thunkGetSingleCase";
@@ -69,6 +69,7 @@ const DefenseMemoPage = () => {
   const [finalFacts, setFinalFacts] = useState<string>('');
   const dispatch = useAppDispatch();
   const smartAnalysisState = useAppSelector(state => state.smartAnalysis);
+  const aiJobs = useAppSelector(state => state.aiJobs);
 
   const { caseFacts, setCaseFacts, selectedFacts, setSelectedFacts } = useWorkflowFacts({
   workflowPrefix: 'defense-memo',
@@ -93,20 +94,49 @@ const DefenseMemoPage = () => {
  // the user submits their first real job, which re-triggers this hook.
  useAiJobSignalR(caseId, isFreshMode, smartAnalysisState.createdAt);
 
+ const getMaxStepAllowed = () => {
+ const jobs = aiJobs.jobs;
+ const isActive = (job: typeof jobs.FactAnalysis) => job?.status === 'Completed' || job?.status === 'Processing' || job?.status === 'Queued';
+
+ if (smartAnalysisState.outputs[5]) return 4;
+ if (smartAnalysisState.outputs[4]) return 4;
+ if (smartAnalysisState.outputs[2]) return 3;
+ if (smartAnalysisState.outputs[1]) return 2;
+
+ if (isActive(jobs.DefenseMemoDraft)) return 4;
+ if (isActive(jobs.FinalRequirements)) return 3;
+ if (isActive(jobs.GenerateDefenses)) return 2;
+ if (isActive(jobs.FactAnalysis)) return 1;
+
+ return 0;
+ };
+
+ const currentDraftStepNumber = active === 1
+ ? 1
+ : active === 2
+ ? 2
+ : active === 3
+ ? 4
+ : active === 4
+ ? 5
+ : null;
+
  const { debouncedSave, flush: flushAutoSave, cancel: cancelAutoSave } = useWorkflowAutoSave({
  mode:'immediate',
  onSave: async (payload) => {
  const autoSaveCaseId = smartAnalysisState.caseId ?? caseId;
- if (!autoSaveCaseId) return;
+ if (!autoSaveCaseId || !currentDraftStepNumber) return;
  await dispatch(smartAnalysisThunks.saveDraftStep({
  routeId: autoSaveCaseId,
- stepNumber: active + 1,
+ stepNumber: currentDraftStepNumber,
  payload,
  })).unwrap();
  },
  });
 
- const currentStepOutput = smartAnalysisState.outputs[(active + 1) as keyof typeof smartAnalysisState.outputs];
+ const currentStepOutput = currentDraftStepNumber
+ ? smartAnalysisState.outputs[currentDraftStepNumber as keyof typeof smartAnalysisState.outputs]
+ : null;
 
  const handleManualSave = useCallback(async () => {
  cancelAutoSave();
@@ -174,12 +204,22 @@ const DefenseMemoPage = () => {
   if (snapshotId) return;
 
   if (isFreshRun) {
-  dispatch(resetAnalysis());
-  dispatch(resetAiJobs());
   freshRunRef.current = true;
   setIsFreshMode(true);
   setActive(0);
-  setHasAutoResumed(true);
+  setHasAutoResumed(false);
+  dispatch(resetAnalysis());
+  dispatch(resetAiJobs());
+  dispatch(abandonSmartAnalysisWorkflow(caseId))
+  .unwrap()
+  .then(() => {
+  freshRunRef.current = false;
+  setIsFreshMode(false);
+  navigate(pathname, { replace: true, state: undefined });
+  })
+  .catch((error: unknown) => {
+  sileo.error({ title: typeof error === 'string' ? error : 'تعذر بدء مذكرة دفاع جديدة' });
+  });
   return;
   }
 
@@ -189,12 +229,9 @@ const DefenseMemoPage = () => {
   }
 
   dispatch(smartAnalysisThunks.getWorkflow({ caseId }));
-  }, [dispatch, caseId, isFreshRun, snapshotId, selectedWorkflowId]);
+  }, [dispatch, caseId, isFreshRun, snapshotId, selectedWorkflowId, navigate, pathname]);
 
  const facts = (state?.facts ? state.facts : (typeof state ==='string' && state !=='' ? state : (singleCase?.facts ||'')));
-
- const aiJobs = useAppSelector(state => state.aiJobs);
-
  const factAnalysisJob = aiJobs.jobs?.FactAnalysis;
  const isFactJobActive = factAnalysisJob?.status ==='Queued' || factAnalysisJob?.status ==='Processing';
 
@@ -304,15 +341,10 @@ const DefenseMemoPage = () => {
   if (outputs[2]) { setActive(2); setHasAutoResumed(true); return; }
   if (outputs[1]) { setActive(1); setHasAutoResumed(true); return; }
 
-  const jobs = aiJobs.jobs;
-  if (!jobs.FactAnalysis && !jobs.GenerateDefenses && !jobs.FinalRequirements && !jobs.DefenseMemoDraft) return;
+  const nextAccessibleStep = getMaxStepAllowed();
+  if (nextAccessibleStep === 0) return;
 
-  const isActive = (job: typeof jobs.FactAnalysis) => job?.status === 'Completed' || job?.status === 'Processing' || job?.status === 'Queued';
-
-  if (isActive(jobs.DefenseMemoDraft)) setActive(4);
-  else if (isActive(jobs.FinalRequirements)) setActive(3);
-  else if (isActive(jobs.GenerateDefenses)) setActive(2);
-  else if (isActive(jobs.FactAnalysis)) setActive(1);
+  setActive(nextAccessibleStep);
 
   setHasAutoResumed(true);
   }, [smartAnalysisState.outputs, aiJobs.jobs, hasAutoResumed]);
@@ -396,16 +428,7 @@ const DefenseMemoPage = () => {
  selectedKey={active.toString()}
  onSelectionChange={(key) => {
  const step = Number(key);
- let maxStepAllowed = 0;
- if (smartAnalysisState.outputs[5]) {
- maxStepAllowed = 4;
- } else if (smartAnalysisState.outputs[4]) {
- maxStepAllowed = 3;
- } else if (smartAnalysisState.outputs[2]) {
- maxStepAllowed = 2;
- } else if (smartAnalysisState.outputs[1]) {
- maxStepAllowed = 1;
- }
+ const maxStepAllowed = getMaxStepAllowed();
 
  if (step <= Math.max(active, maxStepAllowed)) {
  setActive(step);
@@ -423,16 +446,7 @@ const DefenseMemoPage = () => {
  }}
  >
  {steps.map((step, index) => {
- let maxStepAllowed = 0;
- if (smartAnalysisState.outputs[5]) {
- maxStepAllowed = 4;
- } else if (smartAnalysisState.outputs[4]) {
- maxStepAllowed = 3;
- } else if (smartAnalysisState.outputs[2]) {
- maxStepAllowed = 2;
- } else if (smartAnalysisState.outputs[1]) {
- maxStepAllowed = 1;
- }
+ const maxStepAllowed = getMaxStepAllowed();
  
  const isClickable = index <= Math.max(active, maxStepAllowed);
 

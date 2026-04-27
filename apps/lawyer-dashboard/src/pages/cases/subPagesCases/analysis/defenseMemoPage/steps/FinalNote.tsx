@@ -19,7 +19,7 @@ import {
  AnalysisStageActionButton,
 } from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
 import { useWorkflowAutoSave } from'../../../../../../hooks/useWorkflowAutoSave';
-import { smartAnalysisThunks } from'../../../../../../redux/analysis/smartAnalysisSlice';
+import { hydrateStep, smartAnalysisThunks } from'../../../../../../redux/analysis/smartAnalysisSlice';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
 import thunkSubmitAiJob from'../../../../../../redux/aiJobs/thunk/thunkSubmitAiJob';
 import { upsertJob } from'../../../../../../redux/aiJobs/aiJobsSlice';
@@ -528,9 +528,11 @@ const FinalNote = ({ caseId }: { caseId?: string }) => {
  }
  }, [aiJob]);
 
- const handleInput = () => {
+const handleInput = () => {
  if (editorRef.current) {
- debouncedSave(sanitizeHtml(editorRef.current.innerHTML));
+ const html = sanitizeHtml(editorRef.current.innerHTML);
+ dispatch(hydrateStep({ stepNumber: 5, result: html }));
+ debouncedSave(html);
  }
  };
 
@@ -626,6 +628,7 @@ const FinalNote = ({ caseId }: { caseId?: string }) => {
  type="button"
  onClick={() => {
  if (editorRef.current) editorRef.current.innerHTML = sanitizeHtml(snapshot.memoHtml);
+ dispatch(hydrateStep({ stepNumber: 5, result: snapshot.memoHtml }));
  }}
  className="flex items-center justify-between gap-3 rounded-lg border app-border dark:app-border-strong px-3 py-2 text-xs font-bold app-text-subtle hover:border-[var(--main-color)]"
  >

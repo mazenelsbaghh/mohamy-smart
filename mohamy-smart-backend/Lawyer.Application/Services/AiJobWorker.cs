@@ -14,6 +14,7 @@ using Lawyer.Core.Exceptions;
 using Lawyer.Core.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Net;
 using System.Text.Json;
 using Lawyer.Application.Services.Workflows;
 namespace Lawyer.Application.Services
@@ -21,6 +22,8 @@ namespace Lawyer.Application.Services
     public class AiJobWorker : IAiJobWorker
     {
         private const string UserCancelledMessage = "تم إلغاء التحليل بواسطة المستخدم";
+        private const string GenericFailureMessage = "حدث خطأ أثناء معالجة الطلب عبر الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.";
+        private const string WorkflowConcurrencyMessage = "تم تحديث سير العمل أثناء تنفيذ التحليل. يرجى إعادة تحميل الصفحة ثم إعادة المحاولة.";
         private readonly IApplicationDbContext _db;
         private readonly IFactAnalysisService _factAnalysisService;
         private readonly IDefenseService _defenseService;
@@ -122,22 +125,15 @@ namespace Lawyer.Application.Services
 
                 _logger.LogInformation("AiJobWorker: Job {JobId} ({StepType}) completed.", jobId, job.StepType);
             }
+            catch (WorkflowConcurrencyException ex)
+            {
+                _logger.LogWarning(ex, "AiJobWorker: Job {JobId} ({StepType}) hit a workflow concurrency conflict.", jobId, job.StepType);
+                await PersistJobFailureAsync(jobId, WorkflowConcurrencyMessage, ct);
+            }
             catch (Exception ex)
             {
-                await dbContext.Entry(job).ReloadAsync(ct);
-                if (IsCancelledByUser(job))
-                {
-                    _logger.LogInformation("AiJobWorker: Job {JobId} ({StepType}) was cancelled while failing. Keeping cancelled state.", jobId, job.StepType);
-                    return;
-                }
-
-                job.Status = AiJobStatus.Failed;
-                job.ErrorMessage = "حدث خطأ أثناء معالجة الطلب عبر الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.";
-                job.CompletedAt = DateTime.UtcNow;
-                await _db.SaveChangesAsync(ct);
-                await _notifications.NotifyJobFailedAsync(job);
-
                 _logger.LogError(ex, "AiJobWorker: Job {JobId} ({StepType}) failed.", jobId, job.StepType);
+                await PersistJobFailureAsync(jobId, GenericFailureMessage, ct);
                 throw;
             }
         }
@@ -372,10 +368,40 @@ namespace Lawyer.Application.Services
         {
             if (!result.Succeeded)
             {
+                if (result.StatusCode == HttpStatusCode.Conflict)
+                {
+                    throw new WorkflowConcurrencyException(result.Message);
+                }
+
                 throw new InvalidOperationException(result.Message ?? $"{step} failed");
             }
 
             return JsonSerializer.Serialize(result.Data, _jsonOptions);
+        }
+
+        private async Task PersistJobFailureAsync(Guid jobId, string errorMessage, CancellationToken ct)
+        {
+            var dbContext = (DbContext)_db;
+            dbContext.ChangeTracker.Clear();
+
+            var job = await _db.AiJobs.FindAsync(new object[] { jobId }, ct);
+            if (job == null)
+            {
+                _logger.LogWarning("AiJobWorker: Job {JobId} disappeared before failure state could be persisted.", jobId);
+                return;
+            }
+
+            if (IsCancelledByUser(job))
+            {
+                _logger.LogInformation("AiJobWorker: Job {JobId} ({StepType}) was cancelled while failing. Keeping cancelled state.", jobId, job.StepType);
+                return;
+            }
+
+            job.Status = AiJobStatus.Failed;
+            job.ErrorMessage = errorMessage;
+            job.CompletedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+            await _notifications.NotifyJobFailedAsync(job);
         }
 
         private async Task<string> ExecuteOcrStepAsync(Guid caseId, string? inputJson, string systemUserId, CancellationToken ct)

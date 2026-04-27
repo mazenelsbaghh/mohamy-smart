@@ -36,6 +36,9 @@ namespace Lawyer.Application.Dtos.PreparingStatementOfClaims
 
         [JsonPropertyName("step6Output")]
         public LawSuitRequestsResponseDto? Step6Output { get; set; }
+
+        [JsonPropertyName("step7Output")]
+        public string? Step7Output { get; set; }
     }
 
     /// <summary>

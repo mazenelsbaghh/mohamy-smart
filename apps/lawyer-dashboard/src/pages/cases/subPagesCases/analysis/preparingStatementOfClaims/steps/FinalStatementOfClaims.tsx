@@ -18,7 +18,7 @@ import {
  AnalysisStageActionButton,
 } from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
 import { useWorkflowAutoSave } from'../../../../../../hooks/useWorkflowAutoSave';
-import { statementOfClaimsThunks } from'../../../../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice';
+import { hydrateStatementStep, statementOfClaimsThunks } from'../../../../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice';
 import type { TCaseDetails, TLawsuitParties, TLawsuitSubjects, TLawsuitLegalBasis, TLawsuitRequests } from'../../../../../../redux/shared/workflowTypes';
 
 type TFinalStatementOfClaims = {
@@ -187,9 +187,10 @@ const FinalStatementOfClaims = ({ caseId }: TFinalStatementOfClaims) => {
  setInitialized(true);
  } else if (documentHtml) {
  editorRef.current.innerHTML = sanitizeHtml(documentHtml);
+ dispatch(hydrateStatementStep({ stepNumber: 7, result: documentHtml }));
  setInitialized(true);
  }
- }, [documentHtml, initialized, outputs]);
+ }, [dispatch, documentHtml, initialized, outputs]);
 
  useEffect(() => {
  if (!documentHtml) {
@@ -288,7 +289,9 @@ const FinalStatementOfClaims = ({ caseId }: TFinalStatementOfClaims) => {
  spellCheck={false}
  onInput={() => {
  if (editorRef.current) {
- debouncedSave(sanitizeHtml(editorRef.current.innerHTML));
+ const html = sanitizeHtml(editorRef.current.innerHTML);
+ dispatch(hydrateStatementStep({ stepNumber: 7, result: html }));
+ debouncedSave(html);
  }
  }}
  />

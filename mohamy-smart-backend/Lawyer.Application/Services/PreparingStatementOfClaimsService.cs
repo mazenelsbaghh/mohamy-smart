@@ -1160,7 +1160,8 @@ namespace Lawyer.Application.Services
                     Core.Enum.AiStepType.LawsuitSubjects,
                     Core.Enum.AiStepType.LawsuitFacts,
                     Core.Enum.AiStepType.LawsuitLegalBasis,
-                    Core.Enum.AiStepType.LawsuitRequests
+                    Core.Enum.AiStepType.LawsuitRequests,
+                    Core.Enum.AiStepType.StatementOfClaimsDraft
                 };
                 var aiJobs = await _unitOfWork.Repository<Core.Models.AiJob>().WhereAsync(x => x.CaseId == caseId && aiStepTypes.Contains(x.StepType), ct);
                 foreach (var job in aiJobs) _unitOfWork.Repository<Core.Models.AiJob>().Delete(job);
@@ -1184,9 +1185,72 @@ namespace Lawyer.Application.Services
                 if (!accessResult.Succeeded)
                     return Result<object>.Error(accessResult.StatusCode, accessResult.Message);
 
-                _logger.LogInformation("PrepStatements auto-save acknowledged for Case {CaseId}, Step {Step}", caseId, stepNumber);
+                var now = DateTime.UtcNow;
 
-                return Result<object>.Success(new { stepNumber, saved = true, lastSavedAt = DateTime.UtcNow.ToString("O") });
+                if (stepNumber != 7)
+                {
+                    _logger.LogInformation("PrepStatements auto-save acknowledged for Case {CaseId}, Step {Step}", caseId, stepNumber);
+                    return Result<object>.Success(new { stepNumber, saved = true, lastSavedAt = now.ToString("O") });
+                }
+
+                var payloadEl = request.Payload is JsonElement e ? e : default(JsonElement?);
+                string draftHtml;
+
+                if (payloadEl is JsonElement je)
+                {
+                    if (je.ValueKind == JsonValueKind.Object)
+                    {
+                        draftHtml = je.TryGetProperty("draftHtml", out var htmlProp) && htmlProp.ValueKind == JsonValueKind.String
+                            ? htmlProp.GetString() ?? string.Empty
+                            : string.Empty;
+                    }
+                    else if (je.ValueKind == JsonValueKind.String)
+                    {
+                        draftHtml = je.GetString() ?? string.Empty;
+                    }
+                    else
+                    {
+                        draftHtml = je.GetRawText();
+                    }
+                }
+                else
+                {
+                    draftHtml = request.Payload is string s ? s : JsonSerializer.Serialize(request.Payload);
+                }
+
+                var payloadJson = JsonSerializer.Serialize(new { draftHtml }, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                });
+
+                var draftJob = await _unitOfWork.Repository<Core.Models.AiJob>()
+                    .FirstOrDefaultAsync(x => x.CaseId == caseId && x.StepType == Core.Enum.AiStepType.StatementOfClaimsDraft, ct);
+
+                if (draftJob == null)
+                {
+                    draftJob = new Core.Models.AiJob
+                    {
+                        CaseId = caseId,
+                        StepType = Core.Enum.AiStepType.StatementOfClaimsDraft,
+                        ResultJson = payloadJson,
+                        Status = Core.Enum.AiJobStatus.Completed,
+                        CreatedAt = now,
+                        StartedAt = now,
+                        CompletedAt = now
+                    };
+
+                    await _unitOfWork.Repository<Core.Models.AiJob>().AddAsync(draftJob);
+                }
+                else if (draftJob.Status != Core.Enum.AiJobStatus.Queued && draftJob.Status != Core.Enum.AiJobStatus.Processing)
+                {
+                    draftJob.ResultJson = payloadJson;
+                    draftJob.CompletedAt = now;
+                    await _unitOfWork.Repository<Core.Models.AiJob>().Update(draftJob);
+                }
+
+                await _unitOfWork.SaveChangesAsync(ct);
+
+                return Result<object>.Success(new { stepNumber, saved = true, lastSavedAt = now.ToString("O") });
             }
             catch (Exception ex)
             {
@@ -1337,8 +1401,17 @@ namespace Lawyer.Application.Services
                     highestStep = 6;
                 }
 
-                summary.CurrentStep = highestStep > 0 ? highestStep + 1 : 0;
-                summary.Status = highestStep >= 6 ? "Completed" : highestStep > 0 ? "InProgress" : "NotStarted";
+                var draftJob = await _unitOfWork.Repository<Core.Models.AiJob>()
+                    .FirstOrDefaultAsync(x => x.CaseId == caseId && x.StepType == Core.Enum.AiStepType.StatementOfClaimsDraft, ct);
+                if (draftJob != null && !string.IsNullOrWhiteSpace(draftJob.ResultJson))
+                {
+                    summary.Step7Output = draftJob.ResultJson;
+                    summary.UpdatedAt = draftJob.CompletedAt ?? draftJob.CreatedAt;
+                    highestStep = 7;
+                }
+
+                summary.CurrentStep = highestStep >= 7 ? 7 : highestStep > 0 ? highestStep + 1 : 0;
+                summary.Status = highestStep >= 7 ? "Completed" : highestStep > 0 ? "InProgress" : "NotStarted";
 
                 _logger.LogInformation("Retrieved PrepStatements summary for Case {CaseId}, highest step: {Step}", caseId, highestStep);
 
