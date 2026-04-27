@@ -224,7 +224,13 @@ prod-build: ## Rebuild production-oriented images
 server-logs: ## Stream live backend logs from the REMOTE production server
 	@echo "Connecting to production server (91.108.121.110) to stream live backend logs..."
 	@echo "Press Ctrl+C to exit."
-	ssh -o StrictHostKeyChecking=no root@91.108.121.110 "docker logs -f mohamy-smart-backend-1"
+	@expect -c '\
+		set timeout -1;\
+		spawn ssh -o StrictHostKeyChecking=no root@91.108.121.110 "docker logs -f mohamy-smart-backend-1";\
+		expect {\
+			"*assword:*" { send "P.jgT8eJXZ46Y3zx\r"; exp_continue }\
+			eof\
+		}'
 
 # ══════════════════════════════════════════════════════════════════
 #  Service-Scoped Startup
