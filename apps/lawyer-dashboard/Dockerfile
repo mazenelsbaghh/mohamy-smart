@@ -9,8 +9,7 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN rm -f package-lock.json \
-	    && npm install --include=dev --include=optional \
+	RUN npm install --include=dev --include=optional \
 	    && npm rebuild
 COPY apps/lawyer-dashboard ./apps/lawyer-dashboard
 WORKDIR /app/apps/lawyer-dashboard
@@ -29,7 +28,7 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN rm -f package-lock.json && npm install --include=dev
+	RUN npm install --include=dev
 COPY apps/lawyer-dashboard ./apps/lawyer-dashboard
 RUN npm run build --workspace=@mohamy/lawyer-dashboard
 
