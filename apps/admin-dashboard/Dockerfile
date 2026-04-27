@@ -9,8 +9,7 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN npm ci --include=dev \
-	    && npm rebuild
+	RUN npm install --include=dev && npm rebuild
 COPY apps/admin-dashboard ./apps/admin-dashboard
 WORKDIR /app/apps/admin-dashboard
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5079"]
@@ -28,7 +27,7 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN npm ci --include=dev
+	RUN npm install --include=dev
 COPY apps/admin-dashboard ./apps/admin-dashboard
 RUN npm run build --workspace=@mohamy/admin-dashboard
 

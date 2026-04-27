@@ -68,16 +68,14 @@ namespace Lawyer.Application.Services.SmartAnalysis
         private async Task<(Core.Models.Case? Case, Core.Models.FactAnalysis? FactAnalysis, IEnumerable<Core.Models.Defense> Defenses)>
             GetCaseWithAnalysisDataAsync(Guid caseId, CancellationToken cancellationToken)
         {
-            var caseTask = _unitOfWork.Repository<Core.Models.Case>()
+            var caseEntity = await _unitOfWork.Repository<Core.Models.Case>()
                 .FirstOrDefaultAsync(x => x.Id == caseId, cancellationToken, x => x.CaseType);
-            var factTask = _unitOfWork.Repository<Core.Models.FactAnalysis>()
+            var factAnalysis = await _unitOfWork.Repository<Core.Models.FactAnalysis>()
                 .FirstOrDefaultAsync(x => x.CaseId == caseId, cancellationToken);
-            var defensesTask = _unitOfWork.Repository<Core.Models.Defense>()
+            var defenses = await _unitOfWork.Repository<Core.Models.Defense>()
                 .WhereAsync(x => x.CaseId == caseId, cancellationToken);
 
-            await Task.WhenAll(caseTask, factTask, defensesTask);
-
-            return (caseTask.Result, factTask.Result, defensesTask.Result);
+            return (caseEntity, factAnalysis, defenses);
         }
 
         private static DefenseDetailDto MapToDefenseDetailDto(Core.Models.Defense defense)
@@ -204,8 +202,8 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 .Select(d => CreateDefenseEntity(request.CaseId, Core.Enum.DefenseType.Evidentiary, d)))
             .ToList();
 
-        var addTasks = defensesToSave.Select(d => _unitOfWork.Repository<Core.Models.Defense>().AddAsync(d));
-        await Task.WhenAll(addTasks);
+        foreach (var d in defensesToSave)
+            await _unitOfWork.Repository<Core.Models.Defense>().AddAsync(d);
         await _unitOfWork.SaveChangesAsync(CancellationToken.None);
         await tx.CommitAsync(CancellationToken.None);
 
@@ -649,8 +647,8 @@ namespace Lawyer.Application.Services.SmartAnalysis
                     })
                     .ToList();
 
-                var addTasks = prayersToSave.Select(p => _unitOfWork.Repository<Core.Models.FinalPrayer>().AddAsync(p));
-                await Task.WhenAll(addTasks);
+                foreach (var p in prayersToSave)
+                    await _unitOfWork.Repository<Core.Models.FinalPrayer>().AddAsync(p);
                 await _unitOfWork.SaveChangesAsync(CancellationToken.None);
                 await tx.CommitAsync(CancellationToken.None);
 

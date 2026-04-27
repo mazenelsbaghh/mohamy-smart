@@ -9,8 +9,7 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN npm ci --include=dev \
-	    && npm rebuild
+	RUN npm install --include=dev && npm rebuild
 COPY apps/landing ./apps/landing
 WORKDIR /app/apps/landing
 CMD ["npm", "run", "dev"]
@@ -26,7 +25,7 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN npm ci
+	RUN npm install
 COPY apps/landing ./apps/landing
 RUN npm run build --workspace=@mohamy/landing
 
