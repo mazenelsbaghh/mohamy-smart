@@ -15,6 +15,7 @@ import { adminComplaintThunks } from'../../../redux/adminComplaint/adminComplain
 import { rulingAnalysisThunks } from'../../../redux/rulingAnalysis/rulingAnalysisWorkflowSlice';
 import { legalWarningThunks } from '../../../redux/legalWarning/legalWarningSlice';
 import { execRequestThunks } from '../../../redux/execRequest/execRequestSlice';
+import { resetAiJobs } from '../../../redux/aiJobs/aiJobsSlice';
 
 import api from '../../../APIs/api';
 import type { IWorkflowDto } from '../../../redux/shared/createWorkflowThunks';
@@ -228,17 +229,30 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  const handleStartNewVersion = async (workflowKey: string, route: string) => {
  if (!canStartAnalysis) return;
 
+ dispatch(resetAiJobs());
+
+ if (workflowKey === 'defense-memo' || workflowKey === 'preparing-statement-of-claims') {
  const draft = drafts.find(d => d.key === workflowKey);
  if (draft) {
  await abandonCurrentWorkflow(workflowKey);
  await refreshSnapshots();
- // Refresh workflow state for the 5 versioned workflows so the UI reflects the abandoned state.
- const thunks = workflowThunks[workflowKey as keyof typeof workflowThunks];
- if (thunks) {
- try { await dispatch(thunks.getWorkflow({ caseId })); } catch { /* ignore */ }
- }
  }
  navigate(`/cases/${caseId}/document-selection/${route}?fresh=1`, { state: facts });
+ return;
+ }
+
+ const thunks = workflowThunks[workflowKey as keyof typeof workflowThunks];
+ if (!thunks) {
+ navigate(`/cases/${caseId}/document-selection/${route}`, { state: facts });
+ return;
+ }
+
+ try {
+ const created = await dispatch(thunks.startWorkflow({ caseId })).unwrap();
+ navigate(`/cases/${caseId}/document-selection/${route}?workflowId=${created.id}`, { state: facts });
+ } catch (error) {
+ import('sileo').then(({ sileo }) => sileo.error({ title: typeof error === 'string' ? error : 'تعذر بدء نسخة جديدة من المسار' }));
+ }
  };
 
  if (!caseId) {
