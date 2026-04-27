@@ -74,8 +74,8 @@ const HeroSection = () => {
             <div className="image-box">
                 <motion.div className="frame"
                     style={{ y: imageY, opacity: imageOpacity }}
-                    initial={{ rotateX: -20, scale: 0.9, opacity: 0, y: 100 }}
-                    animate={{ rotateX: -10, scale: 1, opacity: 1, y: 0 }}
+                    initial={{ rotateX: -20, scale: 0.9, y: 100 }}
+                    animate={{ rotateX: -10, scale: 1, y: 0 }}
                     whileHover={{ 
                         rotateX: 0, 
                         scale: 1.15,
