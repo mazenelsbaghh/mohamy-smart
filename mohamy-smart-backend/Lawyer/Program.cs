@@ -251,7 +251,7 @@ builder.Services.AddRateLimiter(options =>
 			partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
 			factory: _ => new FixedWindowRateLimiterOptions
 			{
-				PermitLimit = 200,
+				PermitLimit = 500,
 				Window = TimeSpan.FromMinutes(1),
 				QueueLimit = 0,
 				AutoReplenishment = true
@@ -262,7 +262,7 @@ builder.Services.AddRateLimiter(options =>
 			partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
 			factory: _ => new FixedWindowRateLimiterOptions
 			{
-				PermitLimit = 100,
+				PermitLimit = 200,
 				Window = TimeSpan.FromMinutes(1),
 				QueueLimit = 0,
 				AutoReplenishment = true
@@ -273,7 +273,7 @@ builder.Services.AddRateLimiter(options =>
 			partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
 			factory: _ => new FixedWindowRateLimiterOptions
 			{
-				PermitLimit = 10,
+				PermitLimit = 20,
 				Window = TimeSpan.FromMinutes(1),
 				QueueLimit = 0,
 				AutoReplenishment = true
@@ -284,7 +284,7 @@ builder.Services.AddRateLimiter(options =>
 			partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
 			factory: _ => new FixedWindowRateLimiterOptions
 			{
-				PermitLimit = 60,
+				PermitLimit = 150,
 				Window = TimeSpan.FromMinutes(1),
 				QueueLimit = 0,
 				AutoReplenishment = true
@@ -295,9 +295,9 @@ builder.Services.AddRateLimiter(options =>
 			partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
 			factory: _ => new FixedWindowRateLimiterOptions
 			{
-				// OCR calls are expensive AI operations; 50/min/user is generous for legitimate use
+				// OCR calls are expensive AI operations; 150/min/user is generous for legitimate use
 				// and protects the Google Vision quota from runaway loops or abuse.
-				PermitLimit = 50,
+				PermitLimit = 150,
 				Window = TimeSpan.FromMinutes(1),
 				QueueLimit = 0,
 				AutoReplenishment = true
@@ -308,7 +308,7 @@ builder.Services.AddRateLimiter(options =>
 			partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
 			factory: _ => new FixedWindowRateLimiterOptions
 			{
-				PermitLimit = 20,
+				PermitLimit = 100,
 				Window = TimeSpan.FromMinutes(1),
 				QueueLimit = 0,
 				AutoReplenishment = true
@@ -319,7 +319,7 @@ builder.Services.AddRateLimiter(options =>
 			partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
 			factory: _ => new FixedWindowRateLimiterOptions
 			{
-				PermitLimit = 5,
+				PermitLimit = 20,
 				Window = TimeSpan.FromMinutes(1),
 				QueueLimit = 0,
 				AutoReplenishment = true
