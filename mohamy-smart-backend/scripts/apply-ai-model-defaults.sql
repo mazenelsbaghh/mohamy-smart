@@ -15,9 +15,9 @@
 
 SET NOCOUNT ON;
 
-DECLARE @Pro        NVARCHAR(50) = N'gemini-3.1-pro-preview';
-DECLARE @Flash      NVARCHAR(50) = N'gemini-3-flash-preview';
-DECLARE @FlashLite  NVARCHAR(50) = N'gemini-3.1-flash-lite-preview';
+DECLARE @Pro        NVARCHAR(50) = N'gemini-1.5-pro';
+DECLARE @Flash      NVARCHAR(50) = N'gemini-1.5-flash';
+DECLARE @FlashLite  NVARCHAR(50) = N'gemini-1.5-flash-8b';
 DECLARE @Admin      NVARCHAR(100) = N'apply-ai-model-defaults.sql';
 DECLARE @Now        DATETIME2 = SYSUTCDATETIME();
 
