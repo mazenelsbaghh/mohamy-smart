@@ -78,8 +78,15 @@ const Subscription = () => {
   const planId = selectedPlanIdForPayment;
   setCheckingPlan(planId);
   try {
-  await dispatch(thunkAddSubscriptionPlan({ planId, paymentMethod: method, billingCycle })).unwrap();
+  const res = await dispatch(thunkAddSubscriptionPlan({ planId, paymentMethod: method, billingCycle })).unwrap();
   closePaymentModal();
+  
+  if (!res.paymentUrl || res.paymentUrl.trim() === '') {
+      sileo.success({ title: 'تم الاشتراك وتفعيل الباقة بنجاح 🎉' });
+      if (user?.profileId) {
+          dispatch(thunkGetLawyerPlan({ lawyerId: user.profileId }));
+      }
+  }
   } catch (err: unknown) {
   sileo.error({ title: (typeof err === 'string' ? err : undefined) || 'تعذّر تنفيذ العملية. أعد المحاولة.' });
   } finally {

@@ -62,6 +62,21 @@ namespace Lawyer.Application.Services
 			var price = isYearly && plan.YearlyPrice.HasValue ? plan.YearlyPrice.Value : plan.Price;
 			var amountCents = (int)(price * 100);
 
+			// Bypass Paymob for Free/Zero-Price Plans
+			if (amountCents == 0)
+			{
+				var subResult = await _subscriptionService.SubscribeAsync(lawyerId, subscriptionId, isYearly ? "yearly" : "monthly", ct);
+				if (!subResult.IsSuccess)
+					return ApiExceptionResponse.BadRequest<InitiatePaymentResponseDto>(subResult.Message);
+				
+				return ApiExceptionResponse.Success(new InitiatePaymentResponseDto
+				{
+					PaymentId = Guid.Empty,
+					PaymentUrl = string.Empty,
+					Status = PaymentStatus.Success.ToString()
+				}, "تم تفعيل الباقة بنجاح.");
+			}
+
 			// Prevent duplicate initiation: check for recent Pending payment (within 5 minutes)
 			var existingPending = await _unitOfWork.Repository<Payment>()
 				.FirstOrDefaultAsync(x => x.LawyerId == lawyerId
