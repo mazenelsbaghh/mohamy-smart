@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from"../../../../../hooks/reduxHooks";
 import thunkGetSingleCase from"../../../../../redux/cases/thunk/thunkGetSingleCase";
 
 import CaseHeaderBanner from'../../../../../components/header/CaseHeaderBanner';
+import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
 import { Tabs, Tab } from'@heroui/react';
 import { IoCheckmarkCircle, IoDocumentTextOutline, IoFlash, IoListOutline, IoBriefcaseOutline } from'react-icons/io5';
 import { useAiJobSignalR } from'../../../../../hooks/useAiJobSignalR';
@@ -137,10 +138,10 @@ const AdminComplaintPage = () => {
 
  let maxStepAllowed = 0;
  if (finalDocument) maxStepAllowed = 5;
- else if (requestsDraft) maxStepAllowed = 5;
- else if (violationAnalysis) maxStepAllowed = 4;
- else if (factsDraft) maxStepAllowed = 3;
- else if (classification) maxStepAllowed = 2;
+ else if (requestsDraft) maxStepAllowed = 4;
+ else if (violationAnalysis) maxStepAllowed = 3;
+ else if (factsDraft) maxStepAllowed = 2;
+ else if (classification) maxStepAllowed = 1;
  else if (isActive(jobs.AdminComplaintAssembly)) maxStepAllowed = 5;
  else if (isActive(jobs.AdminComplaintRequests)) maxStepAllowed = 4;
  else if (isActive(jobs.AdminComplaintViolation)) maxStepAllowed = 3;

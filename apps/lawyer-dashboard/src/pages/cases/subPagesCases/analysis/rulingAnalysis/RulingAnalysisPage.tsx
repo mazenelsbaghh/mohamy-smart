@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from"../../../../../hooks/reduxHooks";
 import thunkGetSingleCase from"../../../../../redux/cases/thunk/thunkGetSingleCase";
 
 import CaseHeaderBanner from'../../../../../components/header/CaseHeaderBanner';
+import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
 import { Tabs, Tab } from'@heroui/react';
 import { IoCheckmarkCircle, IoDocumentTextOutline, IoFlash, IoListOutline } from'react-icons/io5';
 import { useAiJobSignalR } from'../../../../../hooks/useAiJobSignalR';
@@ -143,9 +144,9 @@ const RulingAnalysisPage = () => {
 
  let maxStepAllowed = 0;
  if (appealViability) maxStepAllowed = 4;
- else if (defectsEvaluation) maxStepAllowed = 4;
- else if (reasonsAnalysis) maxStepAllowed = 3;
- else if (verdictAnalysis) maxStepAllowed = 2;
+ else if (defectsEvaluation) maxStepAllowed = 3;
+ else if (reasonsAnalysis) maxStepAllowed = 2;
+ else if (verdictAnalysis) maxStepAllowed = 1;
  else if (isActive(jobs.RulingAnalysisFeasibilityReport)) maxStepAllowed = 4;
  else if (isActive(jobs.RulingAnalysisDefectEvaluation)) maxStepAllowed = 3;
  else if (isActive(jobs.RulingAnalysisReasoning)) maxStepAllowed = 2;

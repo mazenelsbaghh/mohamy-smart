@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from"../../../../../hooks/reduxHooks";
 import thunkGetSingleCase from"../../../../../redux/cases/thunk/thunkGetSingleCase";
 
 import CaseHeaderBanner from'../../../../../components/header/CaseHeaderBanner';
+import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
 import { Tabs, Tab } from'@heroui/react';
 import { IoCheckmarkCircle, IoDocumentTextOutline, IoFlash } from'react-icons/io5';
 import { useAiJobSignalR } from'../../../../../hooks/useAiJobSignalR';
@@ -135,8 +136,8 @@ const ExecRequestPage = () => {
 
  let maxStepAllowed = 0;
  if (finalAssembly) maxStepAllowed = 3;
- else if (drafting) maxStepAllowed = 3;
- else if (classification) maxStepAllowed = 2;
+ else if (drafting) maxStepAllowed = 2;
+ else if (classification) maxStepAllowed = 1;
  else if (isActive(jobs.ExecRequestAssembly)) maxStepAllowed = 3;
  else if (isActive(jobs.ExecRequestDrafting)) maxStepAllowed = 2;
  else if (isActive(jobs.ExecRequestClassification)) maxStepAllowed = 1;

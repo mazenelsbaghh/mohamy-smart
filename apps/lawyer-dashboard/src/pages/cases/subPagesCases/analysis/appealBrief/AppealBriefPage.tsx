@@ -157,11 +157,11 @@ const AppealBriefPage = () => {
  
  let maxStepAllowed = 0;
  if (finalAssemblyData) maxStepAllowed = 6;
- else if (legalBasisData) maxStepAllowed = 6;
- else if (requestsData) maxStepAllowed = 5;
- else if (groundsData) maxStepAllowed = 4;
- else if (analysisData) maxStepAllowed = 3;
- else if (judgmentData) maxStepAllowed = 2;
+ else if (legalBasisData) maxStepAllowed = 5;
+ else if (requestsData) maxStepAllowed = 4;
+ else if (groundsData) maxStepAllowed = 3;
+ else if (analysisData) maxStepAllowed = 2;
+ else if (judgmentData) maxStepAllowed = 1;
  else if (isActive(jobs.AppealBriefAssembly)) maxStepAllowed = 6;
  else if (isActive(jobs.AppealBriefLegalBasis)) maxStepAllowed = 5;
  else if (isActive(jobs.AppealBriefRequests)) maxStepAllowed = 4;
@@ -224,7 +224,18 @@ const AppealBriefPage = () => {
  />
  )}
 
- <WorkflowStepBar
+ {WORKFLOW_STATE.loadingState.isFetchingWorkflow || !WORKFLOW_STATE.workflowId ? (
+  <div className="w-full min-h-[300px] flex items-center justify-center bg-white dark:bg-[var(--white-color)] border app-border dark:app-border-strong shadow-sm rounded-xl">
+  <SmartAnalysisLoader 
+  title="جاري تجهيز مساحة العمل" 
+  subtitle="يرجى الانتظار بينما نقوم باسترجاع بيانات القضية..." 
+  steps={steps.map(s => s.label)}
+  activeStepIndex={0}
+  />
+  </div>
+  ) : (
+  <>
+  <WorkflowStepBar
  steps={steps}
  active={active}
  workflowTitle="صحيفة الاستئناف"
@@ -271,8 +282,10 @@ const AppealBriefPage = () => {
  );
  })}
  </Tabs>
- </div>
- </div>
+  </div>
+  </>
+  )}
+  </div>
  </Container>
  </section>
  );

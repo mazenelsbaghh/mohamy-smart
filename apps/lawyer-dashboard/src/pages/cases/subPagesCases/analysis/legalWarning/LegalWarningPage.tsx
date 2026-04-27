@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from"../../../../../hooks/reduxHooks";
 import thunkGetSingleCase from"../../../../../redux/cases/thunk/thunkGetSingleCase";
 
 import CaseHeaderBanner from'../../../../../components/header/CaseHeaderBanner';
+import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
 import { Tabs, Tab } from'@heroui/react';
 import { IoCheckmarkCircle, IoDocumentTextOutline, IoFlash } from'react-icons/io5';
 import { useAiJobSignalR } from'../../../../../hooks/useAiJobSignalR';
@@ -137,8 +138,8 @@ const LegalWarningPage = () => {
 
  let maxStepAllowed = 0;
  if (finalDocument) maxStepAllowed = 3;
- else if (warningDraft) maxStepAllowed = 3;
- else if (classification) maxStepAllowed = 2;
+ else if (warningDraft) maxStepAllowed = 2;
+ else if (classification) maxStepAllowed = 1;
  else if (isActive(jobs.LegalWarningAssembly)) maxStepAllowed = 3;
  else if (isActive(jobs.LegalWarningBodyDraft)) maxStepAllowed = 2;
  else if (isActive(jobs.LegalWarningClassification)) maxStepAllowed = 1;
