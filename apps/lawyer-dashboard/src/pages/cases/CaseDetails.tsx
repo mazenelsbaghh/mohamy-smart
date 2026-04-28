@@ -13,7 +13,7 @@ import thunkGetSingleCase from"../../redux/cases/thunk/thunkGetSingleCase";
 import { clearSingleCase, setSingleCase } from"../../redux/cases/casesSlice";
 import type { TCase } from"../../redux/cases/casesSlice";
 import { useAppDispatch, useAppSelector } from"../../hooks/reduxHooks";
-import { useEffect, useState } from"react";
+import { useEffect, useState, useRef } from"react";
 import { useParams, useNavigate, useLocation } from"react-router-dom";
 import SkeletonForm from"../../components/skeleton/SkeletonForm";
 import { CustomButton } from'@mohamy/shared-ui';
@@ -33,35 +33,39 @@ const CaseDetails = () => {
  const { id } = useParams();
   usePageTitle('تفاصيل القضية');
  const navigate = useNavigate();
- const location = useLocation();
- const [activeTab, setActiveTab] = useState<string>("details");
- const [snapshotCount, setSnapshotCount] = useState(0);
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState<string>("details");
+  const [snapshotCount, setSnapshotCount] = useState(0);
+  const navigationProcessedRef = useRef(false);
 
- const dispatch = useAppDispatch();
- const { singleCase, loading } = useAppSelector((state) => state.cases);
+  const dispatch = useAppDispatch();
+  const { singleCase, loading } = useAppSelector((state) => state.cases);
 
- useEffect(() => {
- const navigationCase = location.state && typeof location.state ==='object' &&'caseItem' in location.state
- ? location.state.caseItem
- : null;
+  useEffect(() => {
+  if (!navigationProcessedRef.current) {
+  const navigationCase = location.state && typeof location.state ==='object' &&'caseItem' in location.state
+  ? location.state.caseItem
+  : null;
 
- if (navigationCase) {
- dispatch(setSingleCase(navigationCase as TCase));
- }
+  if (navigationCase) {
+  dispatch(setSingleCase(navigationCase as TCase));
+  }
 
- // Support deep-linking to a specific tab via navigation state
- if (location.state && typeof location.state === 'object' && 'activeTab' in location.state) {
- const tab = (location.state as { activeTab?: string }).activeTab;
- if (tab) setActiveTab(tab);
- }
+  if (location.state && typeof location.state === 'object' && 'activeTab' in location.state) {
+  const tab = (location.state as { activeTab?: string }).activeTab;
+  if (tab) setActiveTab(tab);
+  }
 
- if (id) {
- dispatch(thunkGetSingleCase({ id }));
- }
- return () => {
- dispatch(clearSingleCase());
- };
- }, [dispatch, id, location.state])
+  navigationProcessedRef.current = true;
+  }
+
+  if (id) {
+  dispatch(thunkGetSingleCase({ id }));
+  }
+  return () => {
+  dispatch(clearSingleCase());
+  };
+  }, [dispatch, id])
 
   // Pre-fetch all workflow states so the CaseAnalysis tab shows correct status.
   // Runs as soon as `id` is available — does NOT wait for singleCase — so there

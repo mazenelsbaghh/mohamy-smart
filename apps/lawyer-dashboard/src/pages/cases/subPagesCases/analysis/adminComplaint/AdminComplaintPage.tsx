@@ -196,7 +196,7 @@ const AdminComplaintPage = () => {
  title={singleCase.title}
  status={singleCase.status}
  facts={singleCase.facts}
- hideDocsButton={false}
+  hideDocsButton={true}
  versionLabel={WORKFLOW_STATE.isReadOnly ? (WORKFLOW_STATE.snapshotLabel ?? 'نسخة سابقة — شكوى إدارية') : null}
  />
  )}
