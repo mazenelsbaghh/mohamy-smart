@@ -33,13 +33,12 @@ const LegalAnalysis = ({ finalFacts, caseFacts, nextStep, caseId }: TLegalAnalys
  const defenses = outputs[2];
  const aiJobs = useAppSelector((state) => state.aiJobs);
  const factAnalysisJob = aiJobs.jobs['FactAnalysis'];
- const generateDefensesJob = aiJobs.jobs['GenerateDefenses'];
+
  const [isLoading, setIsLoading] = useState(false);
  const [isNavigating, setIsNavigating] = useState(false);
 
  const isFactJobActive = factAnalysisJob && (factAnalysisJob.status ==='Queued' || factAnalysisJob.status ==='Processing');
- const isDefJobActive = generateDefensesJob && (generateDefensesJob.status ==='Queued' || generateDefensesJob.status ==='Processing');
- const showLoading = (!factAnalysis && isFactJobActive) || isNavigating || isDefJobActive || (factAnalysisJob?.status ==='Completed' && !factAnalysis);
+ const showLoading = (!factAnalysis && isFactJobActive) || isNavigating || (factAnalysisJob?.status ==='Completed' && !factAnalysis);
  const hasFactFailed = factAnalysisJob?.status ==='Failed';
  const factErrorMessage = factAnalysisJob?.errorMessage ||'تعذّر تحليل الوقائع. أعد المحاولة أو تحقق من البيانات.';
 

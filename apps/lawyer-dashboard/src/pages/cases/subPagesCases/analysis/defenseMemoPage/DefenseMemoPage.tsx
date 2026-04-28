@@ -111,6 +111,30 @@ const DefenseMemoPage = () => {
  return 0;
  }, [aiJobs.jobs, smartAnalysisState.outputs]);
 
+ // autoResumeTarget: the step that DISPLAYS the last completed/active result.
+ // Unlike maxStepAllowed (which is the furthest navigable step), this targets
+ // the step the user should actually land on when auto-resuming.
+ // e.g. FactAnalysis done → step 1 (Legal Analysis shows the result)
+ //      Defenses done     → step 2 (DefensesList shows the result)
+ const autoResumeTarget = useMemo(() => {
+ const jobs = aiJobs.jobs;
+ const isRunning = (job: typeof jobs.FactAnalysis) => job?.status === 'Queued' || job?.status === 'Processing';
+
+ // If a job is actively running, show its loading step
+ if (isRunning(jobs.DefenseMemoDraft)) return 4;
+ if (isRunning(jobs.FinalRequirements)) return 3;
+ if (isRunning(jobs.GenerateDefenses)) return 2;
+ if (isRunning(jobs.FactAnalysis)) return 1;
+
+ // No active jobs — show the step that displays the last completed output
+ if (smartAnalysisState.outputs[5]) return 4;
+ if (smartAnalysisState.outputs[4]) return 3;
+ if (smartAnalysisState.outputs[2]) return 2;
+ if (smartAnalysisState.outputs[1]) return 1;
+
+ return 0;
+ }, [aiJobs.jobs, smartAnalysisState.outputs]);
+
  const currentDraftStepNumber = active === 1
  ? 1
  : active === 2
@@ -247,6 +271,7 @@ const DefenseMemoPage = () => {
   if (factAnalysisJob?.status ==='Completed' && !freshRunRef.current) {
   const factsText = selectedFacts.join('\n\n');
   setFinalFacts(factsText);
+  setHasAutoResumed(true);
   nextStep();
   return;
   }
@@ -256,6 +281,8 @@ const DefenseMemoPage = () => {
 
   const factsText = selectedFacts.join('\n\n');
   setFinalFacts(factsText);
+  // Lock auto-resume so it won't hijack manual navigation
+  setHasAutoResumed(true);
   
   if (caseId) {
   dispatch(thunkSubmitAiJob({
@@ -334,13 +361,13 @@ const DefenseMemoPage = () => {
   if (hasAutoResumed || snapshotModeRef.current) return;
   if (freshRunRef.current) return;
 
-  const nextAccessibleStep = maxStepAllowed;
-  if (nextAccessibleStep === 0) return;
+  const targetStep = autoResumeTarget;
+  if (targetStep === 0) return;
 
-  setActive(nextAccessibleStep);
+  setActive(targetStep);
 
   setHasAutoResumed(true);
-  }, [maxStepAllowed, hasAutoResumed]);
+  }, [autoResumeTarget, hasAutoResumed]);
 
  const steps = [
  { id: 1, label:'مراجعة الوقائع', icon: <IoDocumentTextOutline /> },

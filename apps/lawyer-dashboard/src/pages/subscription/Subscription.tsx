@@ -110,7 +110,7 @@ const Subscription = () => {
 
  {/* Current Plan Banner */}
  {lawyerPlan && lawyerPlan.isActive && (
- <div className="bg-white dark:app-surface border app-border dark:app-border-strong rounded-3xl p-6 mb-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm relative overflow-hidden">
+ <div className="bg-[var(--white-color)] dark:bg-[var(--surface-color)] border app-border dark:app-border-strong rounded-3xl p-6 mb-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm relative overflow-hidden">
  <div className="absolute top-0 end-0 w-1.5 h-full bg-[var(--main-color)]" />
  <div className="flex items-center gap-5 relative z-10">
  <div className="w-14 h-14 rounded-2xl bg-[var(--main-color)]/10 flex items-center justify-center text-[var(--main-color)]">
@@ -125,7 +125,7 @@ const Subscription = () => {
  </div>
  </div>
  
- <div className="w-full md:w-auto flex-1 max-w-md bg-white/40 dark:bg-black/20 p-5 rounded-2xl border border-white/20 dark:border-white/5 relative z-10">
+ <div className="w-full md:w-auto flex-1 max-w-md bg-[var(--surface-muted)] dark:bg-black/20 p-5 rounded-2xl border border-[var(--border-color)] dark:border-white/5 relative z-10">
  <div className="flex justify-between text-sm mb-3">
  <span className="font-bold text-[var(--title-color)]">استهلاك الذكاء الاصطناعي</span>
  <span className="text-[var(--main-color)] font-bold">{lawyerPlan.usedAiRequests} / {lawyerPlan.limit}</span>
@@ -148,7 +148,7 @@ const Subscription = () => {
  {/* Controls Section: Billing Cycle & Payment Method */}
   <div className="flex flex-col md:flex-row justify-center items-center mb-10 gap-6 relative z-10">
   {anyPlanHasYearly && (
-  <div className="flex items-center p-1.5 rounded-2xl bg-white dark:app-surface border app-border dark:app-border-strong shadow-sm w-full md:w-auto">
+  <div className="flex items-center p-1.5 rounded-2xl bg-[var(--white-color)] dark:bg-[var(--surface-color)] border app-border dark:app-border-strong shadow-sm w-full md:w-auto">
   <button
   type="button"
   className={`flex-1 md:flex-none px-8 py-2.5 rounded-xl text-sm font-bold transition-colors ${billingCycle === 'monthly' ? 'bg-[var(--main-color)] text-white shadow-md' : 'text-[var(--text-color)] hover:text-[var(--title-color)]'}`}
@@ -173,7 +173,7 @@ const Subscription = () => {
  {loading === 'pending' ? (
  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
  {[1, 2, 3].map(i => (
- <div key={i} className="min-h-[500px] rounded-3xl bg-white/50 dark:bg-white/5 animate-pulse" />
+ <div key={i} className="min-h-[500px] rounded-3xl bg-[var(--surface-muted)] dark:bg-white/5 animate-pulse" />
  ))}
  </div>
  ) : (
@@ -191,7 +191,7 @@ const Subscription = () => {
   return (
  <div
  key={plan.id}
- className={`relative rounded-3xl p-8 flex flex-col gap-6 transition-colors duration-300 ${isPopular ? 'bg-[var(--surface-color)] dark:app-surface border-2 border-[var(--main-color)] shadow-md transform md:-translate-y-2' : 'bg-white dark:app-surface border app-border dark:app-border-strong shadow-sm hover:shadow-md'} ${isCurrentPlan ? 'ring-2 ring-[var(--main-color)] ring-offset-2 ring-offset-[var(--bg-color)]' : ''}`}
+ className={`relative rounded-3xl p-8 flex flex-col gap-6 transition-colors duration-300 ${isPopular ? 'bg-[var(--surface-color)] dark:bg-[var(--surface-color)] border-2 border-[var(--main-color)] shadow-md transform md:-translate-y-2' : 'bg-[var(--white-color)] dark:bg-[var(--surface-color)] border app-border dark:app-border-strong shadow-sm hover:shadow-md'} ${isCurrentPlan ? 'ring-2 ring-[var(--main-color)] ring-offset-2 ring-offset-[var(--bg-color)]' : ''}`}
  >
  {isPopular && (
  <div className="absolute -top-4 inset-x-0 mx-auto w-max bg-[var(--main-color)] text-white text-xs font-bold px-4 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
@@ -276,7 +276,7 @@ const Subscription = () => {
  );
  })
  ) : (
- <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-white dark:app-surface rounded-3xl border app-border dark:app-border-strong border-dashed">
+ <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-[var(--white-color)] dark:bg-[var(--surface-color)] rounded-3xl border app-border dark:app-border-strong border-dashed">
  <p className="text-xl font-bold text-[var(--title-color)]">لا توجد باقات متاحة حالياً</p>
  <p className="text-sm text-[var(--text-color)] mt-2">يرجى المحاولة لاحقاً أو التواصل مع الدعم الفني.</p>
  </div>
@@ -285,7 +285,7 @@ const Subscription = () => {
  )}
 
  {/* Trust / Why Section */}
- <div className="bg-white dark:app-surface border app-border dark:app-border-strong rounded-3xl p-8 lg:p-12 mb-8 mt-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center shadow-sm relative overflow-hidden">
+ <div className="bg-[var(--white-color)] dark:bg-[var(--surface-color)] border app-border dark:app-border-strong rounded-3xl p-8 lg:p-12 mb-8 mt-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center shadow-sm relative overflow-hidden">
  <div className="absolute -top-40 -start-40 w-96 h-96 bg-[var(--main-color)] opacity-5 blur-[100px] rounded-full pointer-events-none" />
  
  <div className="relative z-10">
@@ -294,18 +294,18 @@ const Subscription = () => {
  منصتنا مصممة خصيصاً لتلبية احتياجات السوق القانوني. نحن نجمع بين أحدث تقنيات الذكاء الاصطناعي ومعايير الأمان الصارمة لنقدم لك مساعداً يختصر ساعات من البحث والمراجعة بدقة متناهية.
  </p>
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
- <div className="bg-white/50 dark:bg-black/20 p-5 rounded-2xl border border-white/20 dark:border-white/5 shadow-sm">
+ <div className="bg-[var(--surface-muted)] dark:bg-black/20 p-5 rounded-2xl border border-[var(--border-color)] dark:border-white/5 shadow-sm">
  <p className="text-3xl font-black text-[var(--main-color)] mb-1 drop-shadow-sm">+10x</p>
  <p className="text-xs font-bold text-[var(--title-color)] uppercase tracking-wider opacity-80">سرعة في المراجعة</p>
  </div>
- <div className="bg-white/50 dark:bg-black/20 p-5 rounded-2xl border border-white/20 dark:border-white/5 shadow-sm">
+ <div className="bg-[var(--surface-muted)] dark:bg-black/20 p-5 rounded-2xl border border-[var(--border-color)] dark:border-white/5 shadow-sm">
  <p className="text-3xl font-black text-[var(--main-color)] mb-1 drop-shadow-sm">100%</p>
  <p className="text-xs font-bold text-[var(--title-color)] uppercase tracking-wider opacity-80">تشفير وحماية</p>
  </div>
  </div>
  </div>
  <div className="flex justify-center relative z-10">
- <div className="bg-white dark:app-surface border app-border dark:app-border-strong rounded-[2rem] p-12 flex flex-col items-center gap-6 text-center w-full max-w-sm shadow-sm transition-transform duration-300">
+ <div className="bg-[var(--white-color)] dark:bg-[var(--surface-color)] border app-border dark:app-border-strong rounded-[2rem] p-12 flex flex-col items-center gap-6 text-center w-full max-w-sm shadow-sm transition-transform duration-300">
  <div className="w-24 h-24 rounded-full bg-[var(--main-color)]/10 flex items-center justify-center">
  <BiShield className="text-6xl text-[var(--main-color)] drop-shadow-md" />
  </div>

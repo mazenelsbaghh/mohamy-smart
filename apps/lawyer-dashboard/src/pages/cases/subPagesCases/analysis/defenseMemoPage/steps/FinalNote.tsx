@@ -25,6 +25,7 @@ import thunkSubmitAiJob from'../../../../../../redux/aiJobs/thunk/thunkSubmitAiJ
 import { upsertJob } from'../../../../../../redux/aiJobs/aiJobsSlice';
 import { DEFENSE_MEMO_STEPS } from '../../../../../../components/analysisWorkflow/workflowConstants';
 import ConfirmDialog from'../../../../../../components/common/ConfirmDialog';
+import MemoConfirmModal from'./MemoConfirmModal';
 
 type TDefense = {
  id: string;
@@ -334,6 +335,7 @@ const FinalNote = ({ caseId }: { caseId?: string }) => {
  const [generationError, setGenerationError] = useState<string | null>(null);
  const [snapshots, setSnapshots] = useState<DefenseMemoSnapshot[]>([]);
  const [isRegenConfirmOpen, setIsRegenConfirmOpen] = useState(false);
+ const [isMemoConfirmOpen, setIsMemoConfirmOpen] = useState(false);
  const hasAutoSubmitted = useRef(false);
  const lastSnapshotContentRef = useRef('');
 
@@ -381,7 +383,7 @@ const FinalNote = ({ caseId }: { caseId?: string }) => {
  }
  };
 
- const buildAiInputJson = useCallback(() => {
+ const buildAiInputJson = useCallback((filteredDefenseIds?: string[], filteredRequestIds?: string[]) => {
  if (!defenses || !explanationsCache || !caseId) return'';
 
  const allDefenses = [
@@ -390,7 +392,11 @@ const FinalNote = ({ caseId }: { caseId?: string }) => {
  ...(defenses.defensesEvidentiary || []).map(d => ({ ...d, type:'Evidentiary' })),
  ];
 
- const approvedDefenses = allDefenses
+ const defensePool = filteredDefenseIds
+ ? allDefenses.filter(d => filteredDefenseIds.includes(d.id))
+ : allDefenses;
+
+ const approvedDefenses = defensePool
  .filter(d => explanationsCache[d.id])
  .map(d => {
  const exp = explanationsCache[d.id];
@@ -420,6 +426,10 @@ const FinalNote = ({ caseId }: { caseId?: string }) => {
  };
  });
 
+ const requestPool = filteredRequestIds
+ ? (finalRequirements?.finalPrayers || []).filter(r => filteredRequestIds.includes(r.id))
+ : (finalRequirements?.finalPrayers || []);
+
  const input = {
  caseId,
  caseNumber: factAnalysis?.caseNumber || singleCase?.number ||'',
@@ -435,7 +445,7 @@ const FinalNote = ({ caseId }: { caseId?: string }) => {
  positionSummary: p.positionSummary,
  })),
  approvedDefenses,
- finalRequests: (finalRequirements?.finalPrayers || []).map(r => ({
+ finalRequests: requestPool.map(r => ({
  requestLevel: r.requestLevel,
  requestText: r.requestText,
  })),
@@ -444,16 +454,25 @@ const FinalNote = ({ caseId }: { caseId?: string }) => {
  return JSON.stringify(input);
  }, [defenses, explanationsCache, factAnalysis, finalRequirements, singleCase, caseId]);
 
- const handleGenerateAiMemo = useCallback(() => {
+ const handleGenerateAiMemo = useCallback((filteredDefenseIds?: string[], filteredRequestIds?: string[]) => {
  if (!caseId) return;
  setGenerationError(null);
- const inputJson = buildAiInputJson();
+ setIsMemoConfirmOpen(false);
+ const inputJson = buildAiInputJson(filteredDefenseIds, filteredRequestIds);
  dispatch(thunkSubmitAiJob({
  caseId,
  stepType:'DefenseMemoDraft',
  inputJson,
  }));
  }, [dispatch, caseId, buildAiInputJson]);
+
+ const handleOpenMemoConfirm = useCallback(() => {
+ setIsMemoConfirmOpen(true);
+ }, []);
+
+ const handleMemoConfirmSubmit = useCallback((selectedDefenseIds: string[], selectedRequestIds: string[]) => {
+ handleGenerateAiMemo(selectedDefenseIds, selectedRequestIds);
+ }, [handleGenerateAiMemo]);
 
  const handleRegenerateAiMemo = useCallback(() => {
  if (!caseId) return;
@@ -487,10 +506,9 @@ const FinalNote = ({ caseId }: { caseId?: string }) => {
  if (!hasApprovedDefenses) return;
  if (hasContent) return;
  if (isGenerating) return;
- if (aiJob) return;
  hasAutoSubmitted.current = true;
- handleGenerateAiMemo();
- }, [hasApprovedDefenses, hasContent, isGenerating, aiJob, handleGenerateAiMemo]);
+ setIsMemoConfirmOpen(true);
+ }, [hasApprovedDefenses, hasContent, isGenerating]);
 
  useEffect(() => {
  if (memoHtml && editorRef.current && editorRef.current.innerHTML !== memoHtml) {
@@ -645,7 +663,7 @@ const handleInput = () => {
  <p className="font-bold mb-1">حدث خطأ أثناء الإنشاء</p>
  <p>{generationError}</p>
  <button
- onClick={handleGenerateAiMemo}
+ onClick={() => handleGenerateAiMemo()}
  className="mt-2 px-3 py-1.5 bg-[var(--danger-soft)] dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 rounded text-sm font-medium transition-colors"
  >
  إعادة المحاولة
@@ -658,7 +676,7 @@ const handleInput = () => {
  <AnalysisStageActionButton
  label="إنشاء المذكرة بالذكاء الاصطناعي"
  icon={IoSparklesOutline}
- onClick={handleGenerateAiMemo}
+ onClick={handleOpenMemoConfirm}
  disabled={!hasApprovedDefenses}
  variant="primary"
  />
@@ -747,6 +765,17 @@ const handleInput = () => {
  confirmText="إعادة التوليد"
  cancelText="الاحتفاظ بالحالي"
  danger
+ />
+ <MemoConfirmModal
+ isOpen={isMemoConfirmOpen}
+ onClose={() => setIsMemoConfirmOpen(false)}
+ onConfirm={handleMemoConfirmSubmit}
+ defensesFormal={defenses?.defensesFormal || []}
+ defensesSubstantive={defenses?.defensesSubstantive || []}
+ defensesEvidentiary={defenses?.defensesEvidentiary || []}
+ explanationsCache={explanationsCache}
+ finalRequests={finalRequirements?.finalPrayers || []}
+ isLoading={isGenerating}
  />
  </AnalysisStepShell>
  );
