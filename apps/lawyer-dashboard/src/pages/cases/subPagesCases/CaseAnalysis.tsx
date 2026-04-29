@@ -9,25 +9,12 @@ import {
 
 import { useAppDispatch, useAppSelector } from'../../../hooks/reduxHooks';
 import { WORKFLOW_CATALOG } from'./analysis/workflowCatalog';
-import { statementOfClaimsThunks } from'../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice';
-import { appealBriefThunks } from'../../../redux/appealBrief/appealBriefSlice';
-import { adminComplaintThunks } from'../../../redux/adminComplaint/adminComplaintSlice';
-import { rulingAnalysisThunks } from'../../../redux/rulingAnalysis/rulingAnalysisWorkflowSlice';
-import { legalWarningThunks } from '../../../redux/legalWarning/legalWarningSlice';
-import { execRequestThunks } from '../../../redux/execRequest/execRequestSlice';
 import { resetAiJobs } from '../../../redux/aiJobs/aiJobsSlice';
+import { WORKFLOW_THUNKS_MAP, isWorkflowCompleted as sharedIsWorkflowCompleted, buildWorkflowHref as sharedBuildHref } from'../../../redux/shared/workflowUtils';
 
 import api from '../../../APIs/api';
 import type { IWorkflowDto } from '../../../redux/shared/createWorkflowThunks';
-
-type DraftWorkflowState = {
- workflowId: number | null;
- lastSavedAt: string | null;
- currentStep?: number;
- status?:'NotStarted' |'InProgress' |'Completed' |'Abandoned';
- workflowVersions?: IWorkflowDto[];
- outputs: Record<number, unknown>;
-};
+import type { DraftWorkflowState } from'../../../redux/shared/workflowTypes';
 
 type DbSnapshot = {
  id: number;
@@ -82,14 +69,7 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  const legalWarning = useAppSelector((s) => s.legalWarning);
  const execRequest = useAppSelector((s) => s.execRequest);
 
- const workflowThunks = {
- "preparing-statement-of-claims": statementOfClaimsThunks,
- "appeal-brief": appealBriefThunks,
- "admin-complaint": adminComplaintThunks,
- "ruling-analysis": rulingAnalysisThunks,
- "legal-warning": legalWarningThunks,
- "exec-request": execRequestThunks,
- } as const;
+  const workflowThunks = WORKFLOW_THUNKS_MAP;
 
  // Workflow states are fetched by the parent CaseDetails page on mount
 
@@ -103,20 +83,11 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  { key:"exec-request", state: execRequest, isSaved: Boolean(execRequest.workflowId || execRequest.outputs[1] || execRequest.outputs[3]) },
  ].filter(d => d.isSaved);
 
- const hasExistingAnalysis = drafts.length > 0;
+  const hasExistingAnalysis = drafts.length > 0;
 
- const FINAL_STEPS: Record<string, number> = {"defense-memo": 5,"preparing-statement-of-claims": 7,"appeal-brief": 6,"admin-complaint": 5,"ruling-analysis": 4,"legal-warning": 3,"exec-request": 3,
- };
-
- const isWorkflowCompleted = (draftKey: string, draftState: DraftWorkflowState) => {
- const finalStep = FINAL_STEPS[draftKey];
- if (draftState.status ==='Completed') return true;
- if (draftState.currentStep && draftState.currentStep > finalStep) return true;
- if (draftKey ==="preparing-statement-of-claims") {
- return draftState.currentStep === 7 || Boolean(draftState.outputs[7] || draftState.outputs[6]);
- }
- return Boolean(draftState.outputs[finalStep]);
- };
+  const isWorkflowCompletedLocal = (draftKey: string, draftState: DraftWorkflowState) => {
+  return sharedIsWorkflowCompleted(draftState.outputs, draftKey) || draftState.status === 'Completed';
+  };
 
  const out = (draftState: DraftWorkflowState, n: number): Record<string, unknown> | null => draftState.outputs[n] as Record<string, unknown> | null;
 
@@ -133,7 +104,7 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  if (out(draftState, 1)?.legalFactsSummary) return { label:'التحليل القانوني', icon: <IoFlash className="text-lg" /> };
  if (draftState.workflowId) return { label:'مراجعة الوقائع', icon: <IoFlash className="text-lg" /> };
  } else if (draftKey ==="preparing-statement-of-claims") {
- if (isWorkflowCompleted(draftKey, draftState)) return { label:'المسودة النهائية', icon: <IoDocumentTextOutline className="text-lg" /> };
+ if (isWorkflowCompletedLocal(draftKey, draftState)) return { label:'المسودة النهائية', icon: <IoDocumentTextOutline className="text-lg" /> };
  if (out(draftState, 6)) return { label:'الطلبات', icon: <IoBriefcaseOutline className="text-lg" /> };
  if (out(draftState, 5)?.legalTexts) return { label:'التأسيس القانوني', icon: <IoList className="text-lg" /> };
  if (out(draftState, 4)?.factsNarrative) return { label:'الوقائع', icon: <IoList className="text-lg" /> };
@@ -171,53 +142,14 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  return { label:'قيد التقدم', icon: <IoDocumentTextOutline className="text-lg" /> };
  };
 
- const hasCompleted = drafts.some(d => isWorkflowCompleted(d.key, d.state));
+ const hasCompleted = drafts.some(d => isWorkflowCompletedLocal(d.key, d.state));
 
  const factsCount = facts?.split(/\n+/).map(i => i.trim()).filter(Boolean).length ?? 0;
  const hasFacts = factsCount > 0;
  const formattedFactsCount = new Intl.NumberFormat('en-US').format(factsCount);
  const canStartAnalysis = Boolean(caseId && hasFacts);
 
- const buildWorkflowHref = (route: string, workflowId?: number | null, snapshotId?: string | null) => {
- const params = new URLSearchParams();
- if (workflowId) params.set('workflowId', String(workflowId));
- if (snapshotId) params.set('snapshot', snapshotId);
- const query = params.toString();
- return `/cases/${caseId}/document-selection/${route}${query ? `?${query}` :''}`;
- };
-
- // Abandon endpoints differ: defense-memo + statement-of-claims use caseId, the 5 others use workflowId.
- const abandonCurrentWorkflow = async (workflowKey: string): Promise<void> => {
- try {
- if (workflowKey === 'defense-memo') {
- // Frontend snapshot still needed: SmartAnalysisService.AbandonAnalysisAsync deletes data without snapshotting.
- await createSnapshotInDb('defense-memo', caseId, smartAnalysis);
- await api.post(`/SmartAnalysis/${caseId}/abandon`);
- return;
- }
- if (workflowKey === 'preparing-statement-of-claims') {
- await createSnapshotInDb('preparing-statement-of-claims', caseId, statementOfClaims);
- await api.post(`/PreparingStatementOfClaims/${caseId}/abandon`);
- return;
- }
- // The 5 versioned workflows: backend WorkflowServiceBase.AbandonWorkflowAsync creates snapshot atomically.
- const draft = drafts.find(d => d.key === workflowKey);
- const workflowId = draft?.state.workflowId;
- if (!workflowId) return;
- const controllerMap: Record<string, string> = {
- 'appeal-brief': 'AppealBrief',
- 'admin-complaint': 'AdminComplaint',
- 'ruling-analysis': 'RulingAnalysis',
- 'legal-warning': 'LegalWarning',
- 'exec-request': 'ExecRequest',
- };
- const controller = controllerMap[workflowKey];
- if (!controller) return;
- await api.post(`/${controller}/abandon/${workflowId}`);
- 	} catch {
-  import('sileo').then(({ sileo }) => sileo.error({ title: "تعذر التخلي عن المسار الحالي، حاول مرة أخرى" }));
- 	}
- };
+  const buildHref = (route: string, workflowId?: number | null) => sharedBuildHref(route, workflowId ?? null, caseId);
 
  const refreshSnapshots = async (): Promise<void> => {
  try {
@@ -226,20 +158,24 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  } catch { /* ignore */ }
  };
 
- const handleStartNewVersion = async (workflowKey: string, route: string) => {
- if (!canStartAnalysis) return;
+  const handleStartNewVersion = async (workflowKey: string, route: string) => {
+  if (!canStartAnalysis) return;
 
- dispatch(resetAiJobs());
+  dispatch(resetAiJobs());
 
- if (workflowKey === 'defense-memo' || workflowKey === 'preparing-statement-of-claims') {
- const draft = drafts.find(d => d.key === workflowKey);
- if (draft) {
- await abandonCurrentWorkflow(workflowKey);
- await refreshSnapshots();
- }
- navigate(`/cases/${caseId}/document-selection/${route}?fresh=1`, { state: facts });
- return;
- }
+  if (workflowKey === 'defense-memo' || workflowKey === 'preparing-statement-of-claims') {
+  const draft = drafts.find(d => d.key === workflowKey);
+  if (draft) {
+  if (workflowKey === 'defense-memo') {
+  await createSnapshotInDb('defense-memo', caseId, smartAnalysis);
+  } else {
+  await createSnapshotInDb('preparing-statement-of-claims', caseId, statementOfClaims);
+  }
+  await refreshSnapshots();
+  }
+  navigate(`/cases/${caseId}/document-selection/${route}?fresh=1`, { state: facts });
+  return;
+  }
 
  const thunks = workflowThunks[workflowKey as keyof typeof workflowThunks];
  if (!thunks) {
@@ -323,7 +259,7 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  {WORKFLOW_CATALOG.map((catalogItem, idx) => {
  const draft = drafts.find(d => d.key === catalogItem.id);
  const stage = draft ? getAnalysisStage(draft.key, draft.state) : null;
- const isCompleted = draft ? isWorkflowCompleted(draft.key, draft.state) : false;
+ const isCompleted = draft ? isWorkflowCompletedLocal(draft.key, draft.state) : false;
  const isInProgress = Boolean(draft && !isCompleted);
  // All 7 workflows now use the unified WorkflowSnapshots system on the backend.
  const workflowDbSnapshots = dbSnapshots.filter(s => s.workflowType === catalogItem.id);
@@ -335,7 +271,7 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  return (
  <div
  key={catalogItem.id}
- className={`${rowBg} grid grid-cols-1 sm:grid-cols-[2fr_1fr_1.5fr_auto] gap-2 sm:gap-3 px-6 py-3.5 items-center transition-colors hover:bg-[var(--accent-soft)]`}
+ className={`${rowBg} grid grid-cols-1 sm:grid-cols-[2fr_1fr_1.5fr_auto] gap-2 sm:gap-3 px-6 py-3.5 items-center transition-colors hover:bg-[var(--accent-soft)] cursor-pointer`}
  >
  <div className="flex items-center gap-2.5">
  <div
@@ -377,7 +313,7 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  <div className="flex flex-col sm:items-end gap-2">
  <div className="flex flex-wrap justify-end gap-2">
             <Link
-               to={buildWorkflowHref(catalogItem.route, draft?.state.workflowId)}
+               to={buildHref(catalogItem.route, draft?.state.workflowId)}
                state={facts}
               className={`inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors
                 ${isCompleted 

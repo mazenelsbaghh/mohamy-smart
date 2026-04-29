@@ -5,14 +5,13 @@ import { IoArrowBackOutline, IoArrowForwardOutline } from'react-icons/io5';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
 import { hydrateStep } from'../../../../../../redux/appealBrief/appealBriefSlice';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
+ UnifiedStepShell,
  AnalysisStageActionButton,
- AnalysisStageLayout,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
  AnalysisStageListItem,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 
 type TAppealStep3Props = {
  nextStep: () => void;
@@ -36,16 +35,13 @@ const AppealStep3Grounds = ({ nextStep, prevStep , selectedFacts }: TAppealStep3
  });
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !groundsData}
  hasFailed={hasFailed && !groundsData}
  errorMessage={errorMessage}
  onRetry={retry}
- >
- {groundsData && (
- <AnalysisStageLayout
- title="أوجه الطعن"
- sidebar={
+ title={groundsData ? "أوجه الطعن" : undefined}
+ sidebar={groundsData ? (
  <>
  <AnalysisStageSidebarCard
  label="ملخص الأوجه"
@@ -67,8 +63,9 @@ const AppealStep3Grounds = ({ nextStep, prevStep , selectedFacts }: TAppealStep3
  />
  </div>
  </>
- }
+ ) : undefined}
  >
+ {groundsData && (
  <AnalysisStageSectionCard label="أوجه الطعن الجوهرية المُصاغة">
  {groundsData.grounds && groundsData.grounds.length > 0 ? (
  <ul className="flex flex-col gap-3">
@@ -88,9 +85,8 @@ const AppealStep3Grounds = ({ nextStep, prevStep , selectedFacts }: TAppealStep3
  <div className="app-text-subtle italic p-4 text-center">لا توجد أوجه طعن مستخرجة.</div>
  )}
  </AnalysisStageSectionCard>
- </AnalysisStageLayout>
  )}
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

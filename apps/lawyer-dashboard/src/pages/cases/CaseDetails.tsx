@@ -13,7 +13,7 @@ import thunkGetSingleCase from"../../redux/cases/thunk/thunkGetSingleCase";
 import { clearSingleCase, setSingleCase } from"../../redux/cases/casesSlice";
 import type { TCase } from"../../redux/cases/casesSlice";
 import { useAppDispatch, useAppSelector } from"../../hooks/reduxHooks";
-import { useEffect, useState, useRef } from"react";
+import { useEffect, useState, useCallback } from"react";
 import { useParams, useNavigate, useLocation } from"react-router-dom";
 import SkeletonForm from"../../components/skeleton/SkeletonForm";
 import { CustomButton } from'@mohamy/shared-ui';
@@ -36,36 +36,42 @@ const CaseDetails = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<string>("details");
   const [snapshotCount, setSnapshotCount] = useState(0);
-  const navigationProcessedRef = useRef(false);
 
   const dispatch = useAppDispatch();
   const { singleCase, loading } = useAppSelector((state) => state.cases);
 
+  const refreshSnapshotCount = useCallback(() => {
+    if (!id) return;
+    api.get(`/WorkflowSnapshots/case/${id}`)
+      .then((res) => {
+        const data = res?.data?.data;
+        if (Array.isArray(data)) setSnapshotCount(data.length);
+      })
+      .catch(() => { /* ignore */ });
+  }, [id]);
+
   useEffect(() => {
-  if (!navigationProcessedRef.current) {
-  const navigationCase = location.state && typeof location.state ==='object' &&'caseItem' in location.state
-  ? location.state.caseItem
-  : null;
+    const state = location.state as Record<string, unknown> | null | undefined;
 
-  if (navigationCase) {
-  dispatch(setSingleCase(navigationCase as TCase));
-  }
+    if (state && typeof state === 'object') {
+      if ('caseItem' in state) {
+        dispatch(setSingleCase(state.caseItem as TCase));
+      }
 
-  if (location.state && typeof location.state === 'object' && 'activeTab' in location.state) {
-  const tab = (location.state as { activeTab?: string }).activeTab;
-  if (tab) setActiveTab(tab);
-  }
+      if ('activeTab' in state && typeof state.activeTab === 'string') {
+        setActiveTab(state.activeTab);
+      }
 
-  navigationProcessedRef.current = true;
-  }
+      window.history.replaceState({}, '');
+    }
 
-  if (id) {
-  dispatch(thunkGetSingleCase({ id }));
-  }
-  return () => {
-  dispatch(clearSingleCase());
-  };
-  }, [dispatch, id])
+    if (id) {
+      dispatch(thunkGetSingleCase({ id }));
+    }
+    return () => {
+      dispatch(clearSingleCase());
+    };
+  }, [dispatch, id, location.state])
 
   // Pre-fetch all workflow states so the CaseAnalysis tab shows correct status.
   // Runs as soon as `id` is available — does NOT wait for singleCase — so there
@@ -97,16 +103,9 @@ const CaseDetails = () => {
   }
   }, [dispatch, id, location.search, location.pathname])
 
- // Fetch DB snapshot counts for the badge
- useEffect(() => {
-  if (!id) return;
-  api.get(`/WorkflowSnapshots/case/${id}`)
-   .then((res) => {
-    const data = res?.data?.data;
-    if (Array.isArray(data)) setSnapshotCount(data.length);
-   })
-   .catch(() => { /* ignore */ });
- }, [id]);
+  useEffect(() => {
+    refreshSnapshotCount();
+  }, [refreshSnapshotCount, location.pathname]);
 
  return (
  <div className="case-details-page pb-12">
@@ -156,7 +155,7 @@ const CaseDetails = () => {
  onClick={() => {
  navigate(`/cases/${id}/document-selection`, { state: singleCase.facts });
  }}
- className="flex-1 md:flex-none inline-flex justify-center items-center gap-2 px-5 py-2 bg-[var(--main-color)] text-white font-bold rounded-lg hover:bg-opacity-90 transition-colors shadow-sm text-sm shrink-0"
+ className="flex-1 md:flex-none inline-flex justify-center items-center gap-2 px-5 py-2 bg-[var(--main-color)] text-white font-bold rounded-lg hover:bg-opacity-90 transition-colors shadow-sm text-sm shrink-0 cursor-pointer"
  >
  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
@@ -189,10 +188,10 @@ const CaseDetails = () => {
   tab:"flex-1 px-3 py-3 min-h-[44px] justify-center rounded-lg data-[hover=true]:app-surface-soft dark:data-[hover=true]:app-surface-soft transition-colors z-0",
   tabContent:"font-bold text-[13px] app-text-subtle dark:app-text-subtle group-data-[selected=true]:text-[var(--main-color)] relative z-10",
   panel:"pt-4 pb-2 px-0",
-  cursor:"w-full h-full bg-orange-50 dark:bg-orange-950/40 rounded-lg shadow-none border-0"
+  cursor:"w-full h-full bg-orange-50 dark:bg-[var(--accent-soft)] rounded-lg shadow-none border-0"
   }}
   >
-  <Tab key="details" title={
+  <Tab key="details" aria-label="التفاصيل الأساسية" title={
   <div className="flex items-center gap-2">
   <LuFileText className="text-lg" />
   <span className="hidden md:inline text-nowrap">التفاصيل الأساسية</span>
@@ -200,7 +199,7 @@ const CaseDetails = () => {
   }>
   <CaseDetailsComponent singleCase={singleCase} />
   </Tab>
-  <Tab key="analysis" title={
+  <Tab key="analysis" aria-label="التحليل القانوني الذكي" title={
    <div className="flex items-center gap-2">
    <LuSparkles className="text-lg" />
    <span className="hidden md:inline text-nowrap">التحليل القانوني الذكي</span>
@@ -211,7 +210,7 @@ const CaseDetails = () => {
   }>
   <CaseAnalysis caseId={id} facts={singleCase.facts} />
   </Tab>
-  <Tab key="summary" title={
+  <Tab key="summary" aria-label="ملخص القضية الذكي" title={
   <div className="flex items-center gap-2">
   <LuLayoutTemplate className="text-lg" />
   <span className="hidden md:inline text-nowrap">ملخص القضية الذكي</span>
@@ -219,7 +218,7 @@ const CaseDetails = () => {
   }>
   <CaseSummary caseId={id} facts={singleCase.facts} />
   </Tab>
-  <Tab key="history" title={
+  <Tab key="history" aria-label="النسخ السابقة" title={
   <div className="flex items-center gap-2">
   <LuHistory className="text-lg" />
   <span className="hidden md:inline text-nowrap">النسخ السابقة</span>

@@ -57,10 +57,12 @@ const AiModelSettings = () => {
  };
 
  const handleSave = async () => {
- const updates: UpdateAiModelConfigItem[] = Object.entries(localConfigs).map(([stepType, modelIdentifier]) => ({
- stepType: Number(stepType),
- modelIdentifier,
- }));
+  const updates: UpdateAiModelConfigItem[] = Object.entries(localConfigs)
+    .filter(([, modelIdentifier]) => modelIdentifier !== '')
+    .map(([stepType, modelIdentifier]) => ({
+    stepType: Number(stepType),
+    modelIdentifier,
+    }));
 
  const result = await dispatch(updateAiModelConfig({ configs: updates }));
  if (updateAiModelConfig.fulfilled.match(result)) {

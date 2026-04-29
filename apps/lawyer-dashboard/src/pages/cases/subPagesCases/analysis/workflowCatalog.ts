@@ -1,5 +1,5 @@
 import React from'react';
-import { IoFlash, IoDocumentTextOutline } from'react-icons/io5';
+import { IoFlash, IoDocumentTextOutline, IoBriefcaseOutline } from'react-icons/io5';
 import { FaGavel, FaExclamationTriangle, FaBalanceScale, FaFileAlt } from'react-icons/fa';
 
 export interface WorkflowCatalogItem {
@@ -61,12 +61,12 @@ export const WORKFLOW_CATALOG: WorkflowCatalogItem[] = [
  icon: FaFileAlt as React.ComponentType<{ className?: string }>
  },
  {
- id:"exec-request",
- route:"exec-request",
- label:"طلب تنفيذي",
- description:"إعداد عريضة طلب تنفيذي مع تحديد نوع السند.",
- totalSteps: 3,
- icon: FaFileAlt as React.ComponentType<{ className?: string }>
+  id:"exec-request",
+  route:"exec-request",
+  label:"طلب تنفيذي",
+  description:"إعداد عرائض الطلبات التنفيذية بمختلف أنواعها.",
+  totalSteps: 3,
+  icon: IoBriefcaseOutline as React.ComponentType<{ className?: string }>
  }
 ];
 

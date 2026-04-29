@@ -64,7 +64,7 @@ export const AutoSaveButton = ({
  </svg>
  ),
  label:'جاري الحفظ التلقائي',
- className:'text-[var(--main-color)] bg-orange-50 border-orange-200 cursor-default',
+ className:'text-[var(--main-color)] bg-[var(--accent-soft)] border-[var(--accent-soft-strong)] cursor-default',
  },
  saved: {
  icon: <IoCheckmarkCircle className="text-base text-[var(--success-color)] shrink-0" />,

@@ -1,6 +1,6 @@
 import { Container } from '@mohamy/shared-ui';
 import { Tabs, Tab } from '@heroui/react';
-import { IoCheckmarkCircle, IoDocumentTextOutline, IoFlash, IoListOutline, IoBriefcaseOutline } from 'react-icons/io5';
+import { sileo } from 'sileo';
 import { useWorkflowOrchestrator } from '../../../../../hooks/useWorkflowOrchestrator';
 import { resetAdminComplaint, adminComplaintThunks, restoreAdminComplaintSnapshot } from '../../../../../redux/adminComplaint/adminComplaintSlice';
 import ComplaintStep1Classification from './steps/ComplaintStep1Classification';
@@ -12,15 +12,7 @@ import AnalysisFactsSelectionStep from '../../../../../components/analysisWorkfl
 import WorkflowStepBar from '../../../../../components/analysisWorkflow/WorkflowStepBar';
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
-
-const COMPLAINT_STEPS = [
-  { id: 1, label: 'مراجعة الوقائع', icon: <IoDocumentTextOutline /> },
-  { id: 2, label: 'بيانات الجهة والأساس', icon: <IoDocumentTextOutline /> },
-  { id: 3, label: 'سرد الوقائع', icon: <IoListOutline /> },
-  { id: 4, label: 'تحليل المخالفات', icon: <IoFlash /> },
-  { id: 5, label: 'صياغة الطلبات', icon: <IoBriefcaseOutline /> },
-  { id: 6, label: 'الشكوى النهائية', icon: <IoCheckmarkCircle /> },
-];
+import { ADMIN_COMPLAINT_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
 
 const COMPLAINT_JOB_STEP_MAP = {
   AdminComplaintClassification: 1,
@@ -34,7 +26,6 @@ const AdminComplaintPage = () => {
   const {
     active,
     nextStep,
-    maxStepAllowed,
     handleTabChange,
     caseId,
     isReadOnly,
@@ -60,8 +51,9 @@ const AdminComplaintPage = () => {
     resetWorkflow: resetAdminComplaint,
     workflowPrefix: 'admin-complaint',
     maxSteps: 5,
-    steps: COMPLAINT_STEPS,
+    steps: ADMIN_COMPLAINT_STEP_DEFS,
     jobStepMap: COMPLAINT_JOB_STEP_MAP,
+    onError: (error) => { sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' }); },
   });
 
   const classification = workflowState.outputs[1];
@@ -94,7 +86,7 @@ const AdminComplaintPage = () => {
             <SmartAnalysisLoader
               title="جاري تجهيز مساحة العمل"
               subtitle="يرجى الانتظار بينما نقوم باسترجاع بيانات القضية..."
-              steps={COMPLAINT_STEPS.map(s => s.label)}
+              steps={ADMIN_COMPLAINT_STEP_DEFS.map(s => s.label)}
               activeStepIndex={0}
             />
           </div>
@@ -119,7 +111,7 @@ const AdminComplaintPage = () => {
           )}
 
           <WorkflowStepBar
-            steps={COMPLAINT_STEPS}
+            steps={ADMIN_COMPLAINT_STEP_DEFS}
             active={active}
             workflowTitle="الشكوى الإدارية"
             isAutoSaving={isAutoSaving}
@@ -137,7 +129,7 @@ const AdminComplaintPage = () => {
               classNames={tabsClassNames}
               {...tabProps}
             >
-              {COMPLAINT_STEPS.map((step, index) => (
+              {ADMIN_COMPLAINT_STEP_DEFS.map((step, index) => (
                 <Tab
                   key={index.toString()}
                   title={

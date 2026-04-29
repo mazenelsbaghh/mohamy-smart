@@ -5,7 +5,7 @@ using Lawyer.Application.Common;
 using Lawyer.Application.Common.Interface;
 using Lawyer.Core.Common;
 using Lawyer.Core.Common.Extension;
-using Lawyer.Core.Enums;
+using Lawyer.Core.Enum;
 using Lawyer.Core.Exceptions;
 using Lawyer.Core.IRepositories;
 using Lawyer.Core.Models;

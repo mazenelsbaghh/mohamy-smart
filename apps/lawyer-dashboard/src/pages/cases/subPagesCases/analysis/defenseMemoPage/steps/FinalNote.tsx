@@ -10,14 +10,13 @@ import {
  UnderlineType,
 } from'docx';
 import { IoCloudDownloadOutline, IoCheckmarkCircleOutline, IoSaveOutline, IoSparklesOutline, IoRefreshOutline } from'react-icons/io5';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import SmartAnalysisLoader from'../../../../../../components/skeleton/SmartAnalysisLoader';
 import {
- AnalysisStageLayout,
+ UnifiedStepShell,
  AnalysisStageDocumentCard,
  AnalysisStageSidebarCard,
  AnalysisStageActionButton,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { useWorkflowAutoSave } from'../../../../../../hooks/useWorkflowAutoSave';
 import { hydrateStep, smartAnalysisThunks } from'../../../../../../redux/analysis/smartAnalysisSlice';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
@@ -592,7 +591,6 @@ const handleInput = () => {
  padding:'clamp(20px, 4vw, 40px)',
  width:'100%',
  minHeight:'50vh',
- outline:'none',
  caretColor:'var(--main-color)',
  lineHeight: 2,
  fontSize:'1rem',
@@ -611,13 +609,11 @@ const handleInput = () => {
  }
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={false}
  hasFailed={false}
  steps={DEFENSE_MEMO_STEPS}
  currentStepIndex={4}
- >
- <AnalysisStageLayout
  title="المذكرة الختامية"
  actions={
  <div className="flex items-center gap-2">
@@ -737,6 +733,7 @@ const handleInput = () => {
  <div
  ref={editorRef}
  style={editorStyle}
+ className="memo-editor focus:ring-2 focus:ring-[var(--main-color)] focus:ring-offset-2 rounded-lg"
  contentEditable
  suppressContentEditableWarning
  dir="rtl"
@@ -755,7 +752,6 @@ const handleInput = () => {
  )}
  </div>
  )}
- </AnalysisStageLayout>
  <ConfirmDialog
  isOpen={isRegenConfirmOpen}
  onClose={() => setIsRegenConfirmOpen(false)}
@@ -777,7 +773,7 @@ const handleInput = () => {
  finalRequests={finalRequirements?.finalPrayers || []}
  isLoading={isGenerating}
  />
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

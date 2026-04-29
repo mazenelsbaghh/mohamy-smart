@@ -5,14 +5,13 @@ import { IoArrowBackOutline, IoArrowForwardOutline } from'react-icons/io5';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
 import { hydrateStep } from'../../../../../../redux/appealBrief/appealBriefSlice';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
+ UnifiedStepShell,
  AnalysisStageActionButton,
- AnalysisStageLayout,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
  AnalysisStageListItem,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 
 type TAppealStep4Props = {
  nextStep: () => void;
@@ -36,16 +35,13 @@ const AppealStep4Requests = ({ nextStep, prevStep , selectedFacts }: TAppealStep
  });
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !requestsData}
  hasFailed={hasFailed && !requestsData}
  errorMessage={errorMessage}
  onRetry={retry}
- >
- {requestsData && (
- <AnalysisStageLayout
- title="الطلبات"
- sidebar={
+ title={requestsData ? "الطلبات" : undefined}
+ sidebar={requestsData ? (
  <>
  <AnalysisStageSidebarCard
  label="إجمالي الطلبات"
@@ -67,8 +63,9 @@ const AppealStep4Requests = ({ nextStep, prevStep , selectedFacts }: TAppealStep
  />
  </div>
  </>
- }
+ ) : undefined}
  >
+ {requestsData && (
  <AnalysisStageSectionCard label="الطلبات المقترحة في صحيفة الطعن">
  {requestsData.proceduralRequests || requestsData.substantiveRequests || requestsData.urgentRequests ? (
  <ul className="flex flex-col gap-3">
@@ -88,9 +85,8 @@ const AppealStep4Requests = ({ nextStep, prevStep , selectedFacts }: TAppealStep
  <div className="app-text-subtle italic p-4 text-center">لا توجد طلبات مسجلة أو جاري المعالجة.</div>
  )}
  </AnalysisStageSectionCard>
- </AnalysisStageLayout>
  )}
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

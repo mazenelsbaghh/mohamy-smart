@@ -1,4 +1,4 @@
-﻿using Lawyer.Core.Enums;
+﻿using Lawyer.Core.Enum;
 using System;
 using System.Collections.Generic;
 using System.Linq;

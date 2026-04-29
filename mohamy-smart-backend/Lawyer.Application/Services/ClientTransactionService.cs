@@ -1,5 +1,5 @@
-using Lawyer.Application.Interfaces;
-using Lawyer.Core.Enums;
+using Lawyer.Application.IServices;
+using Lawyer.Core.Enum;
 using Lawyer.Core.Exceptions;
 using Lawyer.Core.IRepositories;
 using Lawyer.Core.Models;

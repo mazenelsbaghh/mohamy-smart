@@ -3,13 +3,12 @@ import { Chip } from'@heroui/react';
 import { IoArrowBackOutline, IoPeople } from'react-icons/io5';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
- AnalysisStageLayout,
+ UnifiedStepShell,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
  AnalysisStageActionButton,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { hydrateStatementStep } from'../../../../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice';
 import type { TLawsuitParties } from'../../../../../../redux/shared/workflowTypes';
 import { buildAnalysisInput } from'../../../../../../components/analysisWorkflow/analysisFacts';
@@ -53,23 +52,20 @@ const LawsuitParties = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLaw
  };
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !lawsuitParties}
  hasFailed={hasFailed && !lawsuitParties}
  errorMessage={errorMessage}
  onRetry={retry}
  loadingTitle="جاري إعداد أطراف الدعوى..."
  loadingSubtitle="يقوم المحرك الذكي بتجميع الخصوم، تدقيق صفاتهم القانونية، وربط بياناتهم الأساسية بصياغة الصحيفة."
- >
- {lawsuitParties && (
- <AnalysisStageLayout
- title="مراجعة الخصوم وصفاتهم القانونية"
- actions={
+ title={lawsuitParties ? "مراجعة الخصوم وصفاتهم القانونية" : undefined}
+ actions={lawsuitParties ? (
  <div className="flex items-center gap-3 flex-wrap">
  {caseType && <Chip color="warning" variant="flat" size="sm">{caseType.caseMainType}</Chip>}
  </div>
- }
- sidebar={
+ ) : undefined}
+ sidebar={lawsuitParties ? (
  <>
  <AnalysisStageSidebarCard
  label="عدد الأطراف"
@@ -85,9 +81,9 @@ const LawsuitParties = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLaw
  disabled={isLoading}
  />
  </>
- }
+ ) : undefined}
  >
- {lawsuitParties.parties.map((party) => (
+ {lawsuitParties && lawsuitParties.parties.map((party) => (
  <AnalysisStageSectionCard key={party.id} label={party.role}>
  <div className="flex flex-col gap-4">
  <div className="flex items-start justify-between">
@@ -95,7 +91,7 @@ const LawsuitParties = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLaw
  <h4 className="text-lg font-bold text-[var(--title-color)] mb-1">{party.name}</h4>
  <p className="text-sm app-text-subtle">{party.type}</p>
  </div>
- <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-100">
+ <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border border-orange-100 dark:border-orange-800/50">
  {party.role}
  </span>
  </div>
@@ -117,9 +113,7 @@ const LawsuitParties = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLaw
  </div>
  </AnalysisStageSectionCard>
  ))}
- </AnalysisStageLayout>
- )}
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

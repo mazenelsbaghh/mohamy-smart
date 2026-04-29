@@ -1,6 +1,6 @@
 import { Container } from '@mohamy/shared-ui';
 import { Tabs, Tab } from '@heroui/react';
-import { IoCheckmarkCircle, IoDocumentTextOutline, IoFlash } from 'react-icons/io5';
+import { sileo } from 'sileo';
 import { useWorkflowOrchestrator } from '../../../../../hooks/useWorkflowOrchestrator';
 import { resetExecRequest, execRequestThunks, restoreExecRequestSnapshot } from '../../../../../redux/execRequest/execRequestSlice';
 import ExecStep1Classification from './steps/ExecStep1Classification';
@@ -10,13 +10,7 @@ import AnalysisFactsSelectionStep from '../../../../../components/analysisWorkfl
 import WorkflowStepBar from '../../../../../components/analysisWorkflow/WorkflowStepBar';
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
-
-const EXEC_STEPS = [
-  { id: 1, label: 'مراجعة الوقائع', icon: <IoDocumentTextOutline /> },
-  { id: 2, label: 'تصنيف الطلب', icon: <IoDocumentTextOutline /> },
-  { id: 3, label: 'صياغة المبررات', icon: <IoFlash /> },
-  { id: 4, label: 'الطلب النهائي', icon: <IoCheckmarkCircle /> },
-];
+import { EXEC_REQUEST_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
 
 const EXEC_JOB_STEP_MAP = {
   ExecRequestClassification: 1,
@@ -28,7 +22,6 @@ const ExecRequestPage = () => {
   const {
     active,
     nextStep,
-    maxStepAllowed,
     handleTabChange,
     caseId,
     isReadOnly,
@@ -54,8 +47,9 @@ const ExecRequestPage = () => {
     resetWorkflow: resetExecRequest,
     workflowPrefix: 'exec',
     maxSteps: 3,
-    steps: EXEC_STEPS,
+    steps: EXEC_REQUEST_STEP_DEFS,
     jobStepMap: EXEC_JOB_STEP_MAP,
+    onError: (error) => { sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' }); },
   });
 
   const classification = workflowState.outputs[1];
@@ -86,7 +80,7 @@ const ExecRequestPage = () => {
             <SmartAnalysisLoader
               title="جاري تجهيز مساحة العمل"
               subtitle="يرجى الانتظار بينما نقوم باسترجاع بيانات القضية..."
-              steps={EXEC_STEPS.map(s => s.label)}
+              steps={EXEC_REQUEST_STEP_DEFS.map(s => s.label)}
               activeStepIndex={0}
             />
           </div>
@@ -111,7 +105,7 @@ const ExecRequestPage = () => {
           )}
 
           <WorkflowStepBar
-            steps={EXEC_STEPS}
+            steps={EXEC_REQUEST_STEP_DEFS}
             active={active}
             workflowTitle="الطلب التنفيذي"
             isAutoSaving={isAutoSaving}
@@ -129,7 +123,7 @@ const ExecRequestPage = () => {
               classNames={tabsClassNames}
               {...tabProps}
             >
-              {EXEC_STEPS.map((step, index) => (
+              {EXEC_REQUEST_STEP_DEFS.map((step, index) => (
                 <Tab
                   key={index.toString()}
                   title={

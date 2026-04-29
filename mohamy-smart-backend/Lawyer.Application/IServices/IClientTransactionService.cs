@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Lawyer.Core.Exceptions;
 
-namespace Lawyer.Application.Interfaces
+namespace Lawyer.Application.IServices
 {
     public class ClientTransactionDto
     {

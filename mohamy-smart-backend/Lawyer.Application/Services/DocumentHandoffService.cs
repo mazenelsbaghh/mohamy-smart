@@ -1,5 +1,5 @@
 using Lawyer.Application.DTOs.Client;
-using Lawyer.Application.Interfaces;
+using Lawyer.Application.IServices;
 using Lawyer.Core.Exceptions;
 using Lawyer.Core.IRepositories;
 using Lawyer.Core.Models;

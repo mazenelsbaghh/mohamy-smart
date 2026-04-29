@@ -31,32 +31,32 @@ const CaseDetailsComponent = ({ singleCase }: TCaseDetailsComponent) => {
  <div className='flex flex-col gap-6'>
  {/* Main Info Grid */}
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
- <CustomCard className="border app-border shadow-sm hover:shadow-md transition-shadow">
+ <CustomCard className="border app-border shadow-sm transition-shadow">
  <h5 className="text-sm app-text-subtle mb-2">رقم القضية</h5>
  <p className="text-lg font-bold text-[var(--title-color)]">{singleCase.number}</p>
  </CustomCard>
  
- <CustomCard className="border app-border shadow-sm hover:shadow-md transition-shadow">
+ <CustomCard className="border app-border shadow-sm transition-shadow">
  <h5 className="text-sm app-text-subtle mb-2">المحكمة</h5>
  <p className="text-lg font-bold text-[var(--title-color)]">{singleCase.court}</p>
  </CustomCard>
 
- <CustomCard className="border app-border shadow-sm hover:shadow-md transition-shadow">
+ <CustomCard className="border app-border shadow-sm transition-shadow">
  <h5 className="text-sm app-text-subtle mb-2">نوع القضية</h5>
  <p className="text-lg font-bold text-[var(--title-color)]">{singleCase.caseTypeName}</p>
  </CustomCard>
 
- <CustomCard className="border app-border shadow-sm hover:shadow-md transition-shadow">
+ <CustomCard className="border app-border shadow-sm transition-shadow">
  <h5 className="text-sm app-text-subtle mb-2">اسم الموكل</h5>
  <p className="text-lg font-bold text-[var(--title-color)]">{singleCase.clientName}</p>
  </CustomCard>
 
- <CustomCard className="border app-border shadow-sm hover:shadow-md transition-shadow">
+ <CustomCard className="border app-border shadow-sm transition-shadow">
  <h5 className="text-sm app-text-subtle mb-2">الخصم</h5>
  <p className="text-lg font-bold text-[var(--title-color)]">{singleCase.apponentName}</p>
  </CustomCard>
 
- <CustomCard className="border app-border shadow-sm hover:shadow-md transition-shadow">
+ <CustomCard className="border app-border shadow-sm transition-shadow">
  <h5 className="text-sm app-text-subtle mb-2">تاريخ الإنشاء</h5>
  <p className="text-lg text-[var(--text-color)] font-medium" dir="ltr" style={{ textAlign:'right' }}>
  {creationDateFormatter.format(new Date(singleCase.creationDate)).replace(/-/g,'/')}
@@ -68,7 +68,7 @@ const CaseDetailsComponent = ({ singleCase }: TCaseDetailsComponent) => {
  <div className="grid grid-cols-1 gap-6 mt-2">
  <CustomCard className="border app-border shadow-sm">
  <div className="mb-4">
- <span className="text-xs font-semibold text-[var(--main-color)] bg-orange-50 px-2 py-1 rounded-md mb-2 inline-block border border-orange-100">ملخص</span>
+ <span className="text-xs font-semibold text-[var(--main-color)] bg-[var(--accent-soft)] px-2 py-1 rounded-md mb-2 inline-block border border-[var(--accent-soft-strong)]">ملخص</span>
  <h4 className="text-lg font-bold text-[var(--title-color)]">وصف القضية</h4>
  <p className="text-xs app-text-subtle mt-1">ملخص سريع لموضوع النزاع</p>
  </div>
@@ -79,7 +79,7 @@ const CaseDetailsComponent = ({ singleCase }: TCaseDetailsComponent) => {
 
  <CustomCard className="border app-border shadow-sm">
  <div className="mb-4">
- <span className="text-xs font-semibold text-[var(--main-color)] bg-orange-50 px-2 py-1 rounded-md mb-2 inline-block border border-orange-100">الأساس</span>
+ <span className="text-xs font-semibold text-[var(--main-color)] bg-[var(--accent-soft)] px-2 py-1 rounded-md mb-2 inline-block border border-[var(--accent-soft-strong)]">الأساس</span>
  <h4 className="text-lg font-bold text-[var(--title-color)]">وقائع القضية</h4>
  <p className="text-xs app-text-subtle mt-1">سيتم الاعتماد عليها في التحليل القانوني</p>
  </div>
@@ -90,7 +90,7 @@ const CaseDetailsComponent = ({ singleCase }: TCaseDetailsComponent) => {
 
  <CustomCard className="border app-border shadow-sm">
  <div className="mb-4">
- <span className="text-xs font-semibold text-[var(--main-color)] bg-orange-50 px-2 py-1 rounded-md mb-2 inline-block border border-orange-100">الطلبات</span>
+ <span className="text-xs font-semibold text-[var(--main-color)] bg-[var(--accent-soft)] px-2 py-1 rounded-md mb-2 inline-block border border-[var(--accent-soft-strong)]">الطلبات</span>
  <h4 className="text-lg font-bold text-[var(--title-color)]">الطلبات القانونية</h4>
  <p className="text-xs app-text-subtle mt-1">الطلبات المطلوب تضمينها في المستند</p>
  </div>

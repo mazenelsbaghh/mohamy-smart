@@ -1,6 +1,6 @@
 using Lawyer.Application.IServices;
 using Lawyer.Controllers.Base;
-using Lawyer.Core.Enums;
+using Lawyer.Core.Enum;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;

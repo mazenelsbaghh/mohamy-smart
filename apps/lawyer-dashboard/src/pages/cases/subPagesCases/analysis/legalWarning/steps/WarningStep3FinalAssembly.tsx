@@ -4,18 +4,17 @@ import { SanitizedContentEmpty } from'../../../../../../components/ui/SanitizedC
 import {  parseWorkflowJobResult  } from"@mohamy/shared-utils";
 import { useEffect } from'react';
 import { useParams } from'react-router-dom';
-import { IoRefreshOutline, IoCopyOutline, IoCheckmarkOutline } from'react-icons/io5';
+import { IoCopyOutline, IoCheckmarkOutline } from'react-icons/io5';
 import { useState } from'react';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
-import SmartAnalysisLoader from'../../../../../../components/skeleton/SmartAnalysisLoader';
 import thunkSubmitAiJob from'../../../../../../redux/aiJobs/thunk/thunkSubmitAiJob';
 import { hydrateStep } from'../../../../../../redux/legalWarning/legalWarningSlice';
 import {
+ UnifiedStepShell,
  AnalysisStageActionButton,
  AnalysisStageDocumentCard,
- AnalysisStageLayout,
  AnalysisStageSidebarCard,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { buildAnalysisInput } from'../../../../../../components/analysisWorkflow/analysisFacts';
 import { useWorkflowAutoSave } from'../../../../../../hooks/useWorkflowAutoSave';
 import { legalWarningThunks } from'../../../../../../redux/legalWarning/legalWarningSlice';
@@ -57,9 +56,8 @@ const WarningStep3FinalAssembly = ({ selectedFacts }: TWarningStep3Props) => {
 
  const isProcessingJob = job?.status ==='Queued' || job?.status ==='Processing';
  const isWaitingForHydration = job?.status ==='Completed' && !finalDocument;
- const showLoader = isProcessingJob || isWaitingForHydration || (!job && !finalDocument);
+ const isLoading = isProcessingJob || isWaitingForHydration || (!job && !finalDocument);
 
- // Hydrate from resultJson
  useEffect(() => {
  if (job?.status ==='Completed' && job.resultJson && !finalDocument) {
  try {
@@ -69,7 +67,6 @@ const WarningStep3FinalAssembly = ({ selectedFacts }: TWarningStep3Props) => {
  }
  }, [job?.status, job?.resultJson, finalDocument, dispatch]);
 
- // Auto-submit
  useEffect(() => {
  if (finalDocument || job || !caseId || !warningDraft) return;
  dispatch(thunkSubmitAiJob({
@@ -95,7 +92,6 @@ const WarningStep3FinalAssembly = ({ selectedFacts }: TWarningStep3Props) => {
  setTimeout(() => setCopied(false), 2000);
  };
 
- // Highlight placeholders in document text
  const getHighlightedText = (text: string | undefined) => {
  if (!text) return'';
  const highlighted = text.replace(
@@ -107,37 +103,16 @@ const WarningStep3FinalAssembly = ({ selectedFacts }: TWarningStep3Props) => {
  });
  };
 
- if (showLoader && job?.status !=='Failed') {
  return (
- <SmartAnalysisLoader
- title="جاري تجميع الإنذار الرسمي النهائي..."
- subtitle="يقوم النظام بتجميع وتنسيق الإنذار في صيغته الرسمية النهائية الجاهزة للتسليم."
+ <UnifiedStepShell
+ isLoading={isLoading}
+ hasFailed={job?.status === 'Failed'}
+ errorMessage={job?.errorMessage || 'تعذّر تجميع الإنذار النهائي. أعد المحاولة.'}
+ onRetry={handleRetry}
+ loadingTitle="جاري تجميع الإنذار الرسمي النهائي..."
+ loadingSubtitle="يقوم النظام بتجميع وتنسيق الإنذار في صيغته الرسمية النهائية الجاهزة للتسليم."
  steps={LEGAL_WARNING_STEPS}
- activeStepIndex={2}
- />
- );
- }
-
- if (job?.status ==='Failed') {
- return (
- <div className="w-full mt-4">
- <div className="flex items-center gap-3 p-4 mb-4 bg-[var(--danger-soft)] border border-[var(--danger-soft)] rounded-xl">
- <span className="text-sm font-bold text-[var(--danger-color)]">
- {job.errorMessage ||'تعذّر تجميع الإنذار النهائي. أعد المحاولة.'}
- </span>
- <button type="button" onClick={handleRetry}
- className="me-auto flex items-center gap-2 bg-[var(--danger-soft)] text-[var(--danger-color)] px-4 py-1.5 rounded-full text-sm font-bold hover:bg-red-200 transition-colors">
- <IoRefreshOutline />إعادة المحاولة
- </button>
- </div>
- </div>
- );
- }
-
- if (!finalDocument) return null;
-
- return (
- <AnalysisStageLayout
+ currentStepIndex={2}
  title="الإنذار الرسمي النهائي"
  sidebar={
  <>
@@ -159,7 +134,7 @@ const WarningStep3FinalAssembly = ({ selectedFacts }: TWarningStep3Props) => {
  }
  >
  <AnalysisStageDocumentCard label="الإنذار الرسمي" badge="مسودة جاهزة للمراجعة">
- {isSanitizedEmpty(getHighlightedText(finalDocument.documentText)) ? (
+ {isSanitizedEmpty(getHighlightedText(finalDocument?.documentText)) ? (
  <SanitizedContentEmpty />
  ) : (
  <div
@@ -172,11 +147,11 @@ const WarningStep3FinalAssembly = ({ selectedFacts }: TWarningStep3Props) => {
  onInput={() => {
  if (editorRef.current) debouncedSave(editorRef.current.innerText || editorRef.current.innerHTML);
  }}
- dangerouslySetInnerHTML={{ __html: sanitizeHtml(getHighlightedText(finalDocument.documentText)) }}
+ dangerouslySetInnerHTML={{ __html: sanitizeHtml(getHighlightedText(finalDocument?.documentText)) }}
  />
  )}
  </AnalysisStageDocumentCard>
- </AnalysisStageLayout>
+ </UnifiedStepShell>
  );
 };
 

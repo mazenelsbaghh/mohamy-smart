@@ -10,13 +10,12 @@ import {
  TextRun,
 } from'docx';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
- AnalysisStageLayout,
+ UnifiedStepShell,
  AnalysisStageDocumentCard,
  AnalysisStageSidebarCard,
  AnalysisStageActionButton,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { useWorkflowAutoSave } from'../../../../../../hooks/useWorkflowAutoSave';
 import { hydrateStatementStep, statementOfClaimsThunks } from'../../../../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice';
 import type { TCaseDetails, TLawsuitParties, TLawsuitSubjects, TLawsuitLegalBasis, TLawsuitRequests } from'../../../../../../redux/shared/workflowTypes';
@@ -233,14 +232,12 @@ const FinalStatementOfClaims = ({ caseId }: TFinalStatementOfClaims) => {
  };
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={false}
  hasFailed={false}
- >
- {!hasAllSections ? (
- <AnalysisStageLayout
  title="الصحيفة النهائية"
  sidebar={
+ !hasAllSections ? (
  <AnalysisStageSidebarCard
  label="الحالة"
  value="بانتظار اكتمال المراحل"
@@ -248,18 +245,7 @@ const FinalStatementOfClaims = ({ caseId }: TFinalStatementOfClaims) => {
  icon={<IoCheckmarkOutline />}
  description="أكمل كل مراحل صحيفة الدعوى أولاً حتى تظهر النسخة النهائية المجمعة."
  />
- }
- >
- <div className="text-center py-16 px-4">
- <p className="app-text-subtle font-medium text-lg">
- أكمل كل مراحل صحيفة الدعوى أولاً حتى تظهر النسخة النهائية المجمعة.
- </p>
- </div>
- </AnalysisStageLayout>
  ) : (
- <AnalysisStageLayout
- title="الصحيفة النهائية"
- sidebar={
  <>
  <AnalysisStageSidebarCard
  label="الحالة"
@@ -277,9 +263,16 @@ const FinalStatementOfClaims = ({ caseId }: TFinalStatementOfClaims) => {
  />
  </div>
  </>
+ )
  }
  >
- <AnalysisStageDocumentCard label="صحيفة الدعوى" badge="مسودة جاهزة للتحرير">
+ {!hasAllSections ? (
+ <div className="text-center py-16 px-4">
+ <p className="app-text-subtle font-medium text-lg">
+ أكمل كل مراحل صحيفة الدعوى أولاً حتى تظهر النسخة النهائية المجمعة.
+ </p>
+ </div>
+ ) : ( <AnalysisStageDocumentCard label="صحيفة الدعوى" badge="مسودة جاهزة للتحرير">
  <div
  ref={editorRef}
  className="outline-none focus:ring-2 focus:ring-[var(--main-color)]/30 rounded-lg w-full transition-shadow"
@@ -296,9 +289,8 @@ const FinalStatementOfClaims = ({ caseId }: TFinalStatementOfClaims) => {
  }}
  />
  </AnalysisStageDocumentCard>
- </AnalysisStageLayout>
  )}
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

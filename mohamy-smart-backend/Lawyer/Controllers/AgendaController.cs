@@ -1,6 +1,5 @@
 using Lawyer.Application.Common;
 using Lawyer.Application.Dtos.Agenda;
-using Lawyer.Application.Interfaces;
 using Lawyer.Application.IServices;
 using Lawyer.Controllers.Base;
 using Lawyer.Core.IRepositories;

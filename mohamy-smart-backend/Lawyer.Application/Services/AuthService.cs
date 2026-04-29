@@ -2,7 +2,7 @@ using Lawyer.Application.Common;
 using Lawyer.Application.Common.Interface;
 using Lawyer.Application.Dto.Auth;
 using Lawyer.Application.IServices;
-using Lawyer.Core.Enums;
+using Lawyer.Core.Enum;
 using Lawyer.Core.Exceptions;
 using Lawyer.Core.IRepositories;
 using Lawyer.Core.Models;

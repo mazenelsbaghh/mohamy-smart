@@ -217,7 +217,7 @@ const AnalysisFactsSelectionStep = ({
  actions={
  <button
  type="button"
- className="inline-flex items-center gap-2 bg-[var(--main-color)] text-white px-5 py-2.5 rounded-full font-bold hover:bg-opacity-90 transition-colors text-sm shadow-sm"
+ className="inline-flex items-center gap-2 bg-[var(--main-color)] text-white px-5 py-2.5 rounded-full font-bold hover:bg-opacity-90 transition-colors text-sm shadow-sm cursor-pointer"
  onClick={onOpen}
  >
  <IoAdd className="text-lg" />
@@ -337,7 +337,7 @@ const AnalysisFactsSelectionStep = ({
 
  {/* Inline Clarification Component */}
  {clarifyQuestions.length > 0 && !clarifyState.done && (
- <CustomCard className="border-2 border-orange-200 bg-orange-50/10 p-6 mt-6 col-span-full">
+ <CustomCard className="border-2 border-orange-200 dark:border-orange-800/50 bg-orange-50/10 dark:bg-orange-950/10 p-6 mt-6 col-span-full">
  <div className="flex flex-col gap-5">
  <p className="text-sm app-text-subtle leading-relaxed">
  لضمان دقة التحليل القانوني، أجب على الأسئلة التالية. يمكنك اختيار إجابة جاهزة أو كتابة إجابة مخصصة.
@@ -458,7 +458,7 @@ const AnalysisFactsSelectionStep = ({
  px-6 py-2.5 rounded-full text-sm font-bold text-white transition-colors shadow-sm
  ${allQuestionsAnswered
  ?'bg-[var(--main-color)] hover:bg-opacity-90 cursor-pointer'
- :'bg-gray-300 cursor-not-allowed'
+ :'app-surface-muted dark:app-surface-soft cursor-not-allowed opacity-60'
  }
  `}
  >

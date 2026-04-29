@@ -1,15 +1,6 @@
 import { Container } from '@mohamy/shared-ui';
 import { Tabs, Tab } from '@heroui/react';
-import {
-  IoDocumentTextOutline,
-  IoFlash,
-  IoPeopleOutline,
-  IoList,
-  IoShieldCheckmarkOutline,
-  IoBriefcaseOutline,
-  IoCheckmarkCircle,
-  IoReaderOutline,
-} from 'react-icons/io5';
+import { sileo } from 'sileo';
 import { useWorkflowOrchestrator } from '../../../../../hooks/useWorkflowOrchestrator';
 import { abandonStatementOfClaimsWorkflow, resetStatementOfClaims, restoreStatementSnapshot, statementOfClaimsThunks } from '../../../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice';
 import LawsuitCaseType from './steps/LawsuitCaseType';
@@ -23,17 +14,7 @@ import AnalysisFactsSelectionStep from '../../../../../components/analysisWorkfl
 import WorkflowStepBar from '../../../../../components/analysisWorkflow/WorkflowStepBar';
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
-
-const STATEMENT_STEPS = [
-  { id: 1, label: 'مراجعة الوقائع', icon: <IoDocumentTextOutline /> },
-  { id: 2, label: 'نوع الدعوى', icon: <IoFlash /> },
-  { id: 3, label: 'الأطراف', icon: <IoPeopleOutline /> },
-  { id: 4, label: 'الموضوع', icon: <IoReaderOutline /> },
-  { id: 5, label: 'الوقائع', icon: <IoList /> },
-  { id: 6, label: 'الأساس القانوني', icon: <IoShieldCheckmarkOutline /> },
-  { id: 7, label: 'الطلبات', icon: <IoBriefcaseOutline /> },
-  { id: 8, label: 'الصحيفة', icon: <IoCheckmarkCircle /> },
-];
+import { STATEMENT_OF_CLAIMS_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
 
 const STATEMENT_JOB_STEP_MAP = {
   LawsuitCaseType: 1,
@@ -95,10 +76,12 @@ const PreparingStatementOfClaims = () => {
     resetWorkflow: resetStatementOfClaims,
     workflowPrefix: 'statement',
     maxSteps: 7,
-    steps: STATEMENT_STEPS,
+    steps: STATEMENT_OF_CLAIMS_STEP_DEFS,
     isCaseIdBased: true,
     abandonThunk: abandonStatementOfClaimsWorkflow as any,
     computeMaxStepAllowed: STATEMENT_COMPUTE_MAX_STEP,
+    jobStepMap: STATEMENT_JOB_STEP_MAP,
+    onError: (error) => { sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' }); },
   });
 
   const caseType = workflowState.outputs[1] as any;
@@ -134,7 +117,7 @@ const PreparingStatementOfClaims = () => {
             <SmartAnalysisLoader
               title="جاري تجهيز مساحة العمل"
               subtitle="يرجى الانتظار بينما نقوم باسترجاع بيانات القضية..."
-              steps={STATEMENT_STEPS.map(s => s.label)}
+              steps={STATEMENT_OF_CLAIMS_STEP_DEFS.map(s => s.label)}
               activeStepIndex={0}
             />
           </div>
@@ -159,7 +142,7 @@ const PreparingStatementOfClaims = () => {
           )}
 
           <WorkflowStepBar
-            steps={STATEMENT_STEPS}
+            steps={STATEMENT_OF_CLAIMS_STEP_DEFS}
             active={active}
             workflowTitle="إعداد الصحيفة"
             isAutoSaving={isAutoSaving}
@@ -177,7 +160,7 @@ const PreparingStatementOfClaims = () => {
               classNames={tabsClassNames}
               {...tabProps}
             >
-              {STATEMENT_STEPS.map((step, index) => (
+              {STATEMENT_OF_CLAIMS_STEP_DEFS.map((step, index) => (
                 <Tab
                   key={index.toString()}
                   title={

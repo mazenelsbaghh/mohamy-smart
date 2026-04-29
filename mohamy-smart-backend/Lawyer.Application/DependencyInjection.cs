@@ -6,7 +6,6 @@ using Lawyer.Application.IServices;
 using Lawyer.Application.IServices.AI;
 using Lawyer.Application.Services;
 using Lawyer.Application.Services.AI;
-using Lawyer.Application.Interfaces;
 using Lawyer.Application.Validators;
 using Lawyer.Application.Common;
 using Lawyer.Core.Exceptions;

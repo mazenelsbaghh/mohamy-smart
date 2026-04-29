@@ -1,18 +1,17 @@
 import {  parseWorkflowJobResult  } from"@mohamy/shared-utils";
 import { useEffect, useRef } from'react';
 import { useParams } from'react-router-dom';
-import { IoArrowBackOutline, IoRefreshOutline } from'react-icons/io5';
+import { IoArrowBackOutline } from'react-icons/io5';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
-import SmartAnalysisLoader from'../../../../../../components/skeleton/SmartAnalysisLoader';
 import thunkSubmitAiJob from'../../../../../../redux/aiJobs/thunk/thunkSubmitAiJob';
 import { hydrateStep } from'../../../../../../redux/legalWarning/legalWarningSlice';
 import {
+ UnifiedStepShell,
  AnalysisStageActionButton,
  AnalysisStageBanner,
- AnalysisStageLayout,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { buildAnalysisInput } from'../../../../../../components/analysisWorkflow/analysisFacts';
 import { LEGAL_WARNING_STEPS } from '../../../../../../components/analysisWorkflow/workflowConstants';
 
@@ -32,11 +31,10 @@ const WarningStep1Classification = ({ nextStep, selectedFacts }: TWarningStep1Pr
 
  const isProcessingJob = job?.status ==='Queued' || job?.status ==='Processing';
  const isWaitingForHydration = job?.status ==='Completed' && !classification;
- const showLoader = isProcessingJob || isWaitingForHydration;
+ const isLoading = isProcessingJob || isWaitingForHydration;
 
  const hasAutoSubmitted = useRef(false);
 
- // Hydrate from resultJson when job completes
  useEffect(() => {
  if (job?.status ==='Completed' && job.resultJson && !classification) {
  try {
@@ -46,7 +44,6 @@ const WarningStep1Classification = ({ nextStep, selectedFacts }: TWarningStep1Pr
  }
  }, [job?.status, job?.resultJson, classification, dispatch]);
 
- // Auto-submit on mount if no job exists yet
  useEffect(() => {
  if (hasAutoSubmitted.current || classification || job) return;
  if (aiJobsState.loading ==='idle' || aiJobsState.loading ==='pending') return;
@@ -69,47 +66,22 @@ const WarningStep1Classification = ({ nextStep, selectedFacts }: TWarningStep1Pr
  }));
  };
 
- if (showLoader) {
  return (
- <SmartAnalysisLoader
- title="جاري تصنيف الإنذار وتحليل الالتزامات..."
- subtitle="يقوم النظام بدراسة وقائع القضية وتحديد نوع الإنذار والأساس القانوني المناسب."
+ <UnifiedStepShell
+ isLoading={isLoading}
+ hasFailed={job?.status === 'Failed'}
+ errorMessage={job?.errorMessage || 'تعذّر تصنيف الإنذار. أعد المحاولة.'}
+ onRetry={handleRetry}
+ loadingTitle="جاري تصنيف الإنذار وتحليل الالتزامات..."
+ loadingSubtitle="يقوم النظام بدراسة وقائع القضية وتحديد نوع الإنذار والأساس القانوني المناسب."
  steps={LEGAL_WARNING_STEPS}
- activeStepIndex={0}
- />
- );
- }
-
- if (job?.status ==='Failed') {
- return (
- <div className="w-full mt-4">
- <div className="flex items-center gap-3 p-4 mb-4 bg-[var(--danger-soft)] border border-[var(--danger-soft)] rounded-xl">
- <span className="text-sm font-bold text-[var(--danger-color)]">
- {job.errorMessage ||'تعذّر تصنيف الإنذار. أعد المحاولة.'}
- </span>
- <button
- type="button"
- onClick={handleRetry}
- className="me-auto flex items-center gap-2 bg-[var(--danger-soft)] text-[var(--danger-color)] px-4 py-1.5 rounded-full text-sm font-bold hover:bg-red-200 transition-colors"
- >
- <IoRefreshOutline />
- إعادة المحاولة
- </button>
- </div>
- </div>
- );
- }
-
- if (!classification) return null;
-
- return (
- <AnalysisStageLayout
+ currentStepIndex={0}
  title="تصنيف الإنذار وتحديد الالتزامات"
  sidebar={
  <>
  <AnalysisStageSidebarCard
  label="التصنيف"
- value={classification.warningType}
+ value={classification?.warningType}
  valueClassName="text-2xl"
  description="تم تحديد نوع الإنذار والأساس القانوني. يمكنك الانتقال لصياغة متن الإنذار."
  />
@@ -123,31 +95,31 @@ const WarningStep1Classification = ({ nextStep, selectedFacts }: TWarningStep1Pr
  >
  <AnalysisStageSectionCard label="نوع الإنذار">
  <span className="inline-block rounded-full px-4 py-1.5 text-sm font-bold bg-orange-100 text-orange-800">
- {classification.warningType}
+ {classification?.warningType}
  </span>
  </AnalysisStageSectionCard>
 
  <AnalysisStageSectionCard label="الأساس القانوني">
  <span className="inline-block rounded-full px-3 py-1 text-xs font-bold app-surface-soft app-text-muted mb-3">
- {classification.legalBasis?.type}
+ {classification?.legalBasis?.type}
  </span>
  <p className="text-sm leading-relaxed app-text-muted">
- {classification.legalBasis?.description}
+ {classification?.legalBasis?.description}
  </p>
  </AnalysisStageSectionCard>
 
  <AnalysisStageSectionCard label="تفاصيل الالتزام">
  <p className="text-sm leading-relaxed app-text-muted">
- {classification.obligationDetails}
+ {classification?.obligationDetails}
  </p>
  </AnalysisStageSectionCard>
 
- {classification.recommendedAction && (
+ {classification?.recommendedAction && (
  <AnalysisStageBanner label="الإجراء الموصى به" icon="⚡">
- <p>{classification.recommendedAction}</p>
+ <p>{classification?.recommendedAction}</p>
  </AnalysisStageBanner>
  )}
- </AnalysisStageLayout>
+ </UnifiedStepShell>
  );
 };
 

@@ -6,17 +6,16 @@ import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHook
 import thunkSubmitAiJob from'../../../../../../redux/aiJobs/thunk/thunkSubmitAiJob';
 import { hydrateStep } from'../../../../../../redux/analysis/smartAnalysisSlice';
 import { parseJobResult } from"@mohamy/shared-utils";
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import { DEFENSE_MEMO_STEPS } from '../../../../../../components/analysisWorkflow/workflowConstants';
 import {
- AnalysisStageLayout,
+ UnifiedStepShell,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
  AnalysisStageActionButton,
  AnalysisStageNumberedList,
  AnalysisStageDocumentCard,
  AnalysisStageBanner,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 
 type TLegalAnalysis = {
  finalFacts: string;
@@ -184,7 +183,7 @@ const LegalAnalysis = ({ finalFacts, caseFacts, nextStep, caseId }: TLegalAnalys
  };
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={showLoading}
  hasFailed={hasFactFailed}
  errorMessage={factErrorMessage}
@@ -193,11 +192,8 @@ const LegalAnalysis = ({ finalFacts, caseFacts, nextStep, caseId }: TLegalAnalys
  loadingSubtitle="يقوم النظام بدراسة الوقائع وتحديد التكييف القانوني، وبناء خريطة للأدلة."
  steps={DEFENSE_MEMO_STEPS}
  currentStepIndex={1}
- >
- {normalizedFactAnalysis && (
- <AnalysisStageLayout
- title="التحليل القانوني المتقدم"
- actions={
+ title={normalizedFactAnalysis ? "التحليل القانوني المتقدم" : undefined}
+ actions={normalizedFactAnalysis ? (
  <button
  type="button"
  disabled={isLoading}
@@ -205,14 +201,14 @@ const LegalAnalysis = ({ finalFacts, caseFacts, nextStep, caseId }: TLegalAnalys
  className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${
  isLoading
  ?'app-surface-soft app-text-subtle cursor-not-allowed'
- :'bg-orange-50 text-[var(--main-color)] hover:bg-orange-100 border border-orange-200'
+ :'bg-[var(--accent-soft)] text-[var(--main-color)] dark:text-white hover:opacity-80 border border-[var(--accent-soft-strong)]'
  }`}
  >
  <IoReload className="text-base" />
  إعادة التحليل الذكي
  </button>
- }
- sidebar={
+ ) : undefined}
+ sidebar={normalizedFactAnalysis ? (
  <>
  <AnalysisStageSidebarCard
  label="نوع القضية"
@@ -236,7 +232,7 @@ const LegalAnalysis = ({ finalFacts, caseFacts, nextStep, caseId }: TLegalAnalys
  disabled={isLoading}
  />
  </>
- }
+ ) : undefined}
  >
  <AnalysisStageDocumentCard label="ملخص الوقائع" badge="تحليل قانوني">
  <AnalysisStageNumberedList
@@ -263,7 +259,7 @@ const LegalAnalysis = ({ finalFacts, caseFacts, nextStep, caseId }: TLegalAnalys
  <div className="flex items-center gap-2 mb-2">
  <strong className="text-sm text-[var(--title-color)]">{defendant.defendantName}</strong>
  {defendant.relationshipToClient && (
- <span className="text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200">
+ <span className="text-xs bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full border border-orange-200 dark:border-orange-800/50">
  {defendant.relationshipToClient}
  </span>
  )}
@@ -326,9 +322,7 @@ const LegalAnalysis = ({ finalFacts, caseFacts, nextStep, caseId }: TLegalAnalys
  </div>
  </div>
  </AnalysisStageSectionCard>
- </AnalysisStageLayout>
- )}
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

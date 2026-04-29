@@ -1,5 +1,5 @@
 using Lawyer.Application.Common.Interface;
-using Lawyer.Core.Enums;
+using Lawyer.Core.Enum;
 using Lawyer.Core.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

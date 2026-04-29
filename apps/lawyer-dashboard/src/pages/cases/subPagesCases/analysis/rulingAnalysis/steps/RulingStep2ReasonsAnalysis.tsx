@@ -5,14 +5,13 @@ import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHook
 import { hydrateRulingStep } from'../../../../../../redux/rulingAnalysis/rulingAnalysisWorkflowSlice';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
 import type { TReasonsAnalysis } from'../../../../../../redux/shared/workflowTypes';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
+ UnifiedStepShell,
  AnalysisStageActionButton,
- AnalysisStageLayout,
  AnalysisStageNumberedList,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { buildAnalysisInput } from'../../../../../../components/analysisWorkflow/analysisFacts';
 
 type TRulingStep2Props = {
@@ -38,16 +37,13 @@ const RulingStep2ReasonsAnalysis = ({ nextStep, selectedFacts }: TRulingStep2Pro
  });
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !reasonsAnalysis}
  hasFailed={hasFailed && !reasonsAnalysis}
  errorMessage={errorMessage}
  onRetry={retry}
- >
- {reasonsAnalysis && (
- <AnalysisStageLayout
- title="تحليل أسباب الحكم والأسانيد"
- sidebar={
+ title={reasonsAnalysis ? "تحليل أسباب الحكم والأسانيد" : undefined}
+ sidebar={reasonsAnalysis ? (
  <>
  <AnalysisStageSidebarCard
  label="أسباب الحكم المستخرجة"
@@ -61,28 +57,30 @@ const RulingStep2ReasonsAnalysis = ({ nextStep, selectedFacts }: TRulingStep2Pro
  onClick={nextStep}
  />
  </>
- }
+ ) : undefined}
  >
- {reasonsAnalysis.keyFindings?.length > 0 && (
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- {reasonsAnalysis.keyFindings.map((finding, idx) => (
- <AnalysisStageSectionCard key={idx} label="استنتاج المحكمة" className="p-5">
- <p className="text-sm leading-relaxed app-text-muted font-medium">
- {finding}
- </p>
- </AnalysisStageSectionCard>
- ))}
- </div>
- )}
+  {reasonsAnalysis && (
+  <>
+  {reasonsAnalysis.keyFindings?.length > 0 && (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  {reasonsAnalysis.keyFindings.map((finding, idx) => (
+  <AnalysisStageSectionCard key={idx} label="استنتاج المحكمة" className="p-5">
+  <p className="text-sm leading-relaxed app-text-muted font-medium">
+  {finding}
+  </p>
+  </AnalysisStageSectionCard>
+  ))}
+  </div>
+  )}
 
- {reasonsAnalysis.reasoningPoints?.length > 0 && (
- <AnalysisStageSectionCard label="النقاط التشريعية لتسبيب الحكم">
- <AnalysisStageNumberedList items={reasonsAnalysis.reasoningPoints} />
- </AnalysisStageSectionCard>
- )}
- </AnalysisStageLayout>
- )}
- </AnalysisStepShell>
+  {reasonsAnalysis.reasoningPoints?.length > 0 && (
+  <AnalysisStageSectionCard label="النقاط التشريعية لتسبيب الحكم">
+  <AnalysisStageNumberedList items={reasonsAnalysis.reasoningPoints} />
+  </AnalysisStageSectionCard>
+  )}
+  </>
+  )}
+ </UnifiedStepShell>
  );
 };
 

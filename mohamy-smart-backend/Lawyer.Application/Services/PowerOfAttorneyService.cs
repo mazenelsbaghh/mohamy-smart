@@ -1,6 +1,6 @@
 using Lawyer.Core.IRepositories;
 using Lawyer.Application.DTOs.POA;
-using Lawyer.Application.Interfaces;
+using Lawyer.Application.IServices;
 using Lawyer.Core.Exceptions;
 using Lawyer.Core.Models;
 using Microsoft.EntityFrameworkCore;

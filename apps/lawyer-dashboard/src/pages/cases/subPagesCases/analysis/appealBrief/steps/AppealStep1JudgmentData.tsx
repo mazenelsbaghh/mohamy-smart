@@ -5,13 +5,12 @@ import { IoArrowBackOutline } from'react-icons/io5';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
 import { hydrateStep } from'../../../../../../redux/appealBrief/appealBriefSlice';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
+ UnifiedStepShell,
  AnalysisStageActionButton,
- AnalysisStageLayout,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 
 type TAppealStep1Props = {
  nextStep: () => void;
@@ -35,16 +34,13 @@ const AppealStep1JudgmentData = ({ nextStep, selectedFacts }: TAppealStep1Props)
  });
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !judgmentData}
  hasFailed={hasFailed && !judgmentData}
  errorMessage={errorMessage}
  onRetry={retry}
- >
- {judgmentData && (
- <AnalysisStageLayout
- title="بيانات الحكم المطعون فيه"
- sidebar={
+ title={judgmentData ? "بيانات الحكم المطعون فيه" : undefined}
+ sidebar={judgmentData ? (
  <>
  <AnalysisStageSidebarCard
  label="منطوق الحكم"
@@ -58,8 +54,9 @@ const AppealStep1JudgmentData = ({ nextStep, selectedFacts }: TAppealStep1Props)
  onClick={nextStep}
  />
  </>
- }
+ ) : undefined}
  >
+ {judgmentData && (
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <AnalysisStageSectionCard label="معلومات المحكمة">
  <p className="text-sm leading-relaxed app-text-muted">
@@ -73,9 +70,8 @@ const AppealStep1JudgmentData = ({ nextStep, selectedFacts }: TAppealStep1Props)
  </p>
  </AnalysisStageSectionCard>
  </div>
- </AnalysisStageLayout>
  )}
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

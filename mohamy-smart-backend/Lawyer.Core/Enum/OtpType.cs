@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Lawyer.Core.Enums
+namespace Lawyer.Core.Enum
 {
 	public enum OtpType
 	{

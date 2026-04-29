@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using System;
 using Lawyer.Application.DTOs.Session;
 
-namespace Lawyer.Application.Interfaces
+namespace Lawyer.Application.IServices
 {
     public interface IAgendaService
     {

@@ -1,27 +1,23 @@
 import { CustomCard, Container } from'@mohamy/shared-ui';
 
 
-import { IoWarningOutline, IoDocumentTextOutline, IoArrowBackOutline, IoFlash } from'react-icons/io5';
-import { FaGavel, FaExclamationTriangle, FaBalanceScale, FaFileAlt } from'react-icons/fa';
-import { useLocation, useNavigate, useParams } from'react-router-dom';
+import { IoWarningOutline, IoArrowBackOutline } from'react-icons/io5';
+import { useLocation, useNavigate, useParams, useSearchParams } from'react-router-dom';
 import { sileo } from'sileo';
 import { useAppDispatch, useAppSelector } from"../../../../hooks/reduxHooks";
 import { useEffect } from"react";
 import thunkGetSingleCase from"../../../../redux/cases/thunk/thunkGetSingleCase";
 import CaseHeaderBanner from"../../../../components/header/CaseHeaderBanner";
 import SkeletonForm from"../../../../components/skeleton/SkeletonForm";
-import { statementOfClaimsThunks } from"../../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice";
 import { resetAiJobs } from"../../../../redux/aiJobs/aiJobsSlice";
-import { appealBriefThunks } from"../../../../redux/appealBrief/appealBriefSlice";
-import { adminComplaintThunks } from"../../../../redux/adminComplaint/adminComplaintSlice";
-import { rulingAnalysisThunks } from"../../../../redux/rulingAnalysis/rulingAnalysisWorkflowSlice";
-import { legalWarningThunks } from"../../../../redux/legalWarning/legalWarningSlice";
-import { execRequestThunks } from"../../../../redux/execRequest/execRequestSlice";
+import { WORKFLOW_CATALOG } from"./workflowCatalog";
+import { WORKFLOW_THUNKS_MAP } from"../../../../redux/shared/workflowUtils";
 
 const DocumentSelection = () => {
  const navigate = useNavigate();
  const { id } = useParams();
  const { pathname, state } = useLocation();
+ const [searchParams] = useSearchParams();
 
  const dispatch = useAppDispatch();
  const { singleCase, loading } = useAppSelector((rootState) => rootState.cases);
@@ -43,90 +39,44 @@ const DocumentSelection = () => {
  .map((item) => item.trim())
  .filter(Boolean).length;
 
-  const workflowThunks = {
-  "preparing-statement-of-claims": statementOfClaimsThunks,
-  "appeal-brief": appealBriefThunks,
-  "admin-complaint": adminComplaintThunks,
-  "ruling-analysis": rulingAnalysisThunks,
-  "legal-warning": legalWarningThunks,
-  "exec-request": execRequestThunks,
-  } as const;
+   const handleNavigateToWorkflow = async (link: string) => {
+   if (!id) return;
 
-  const handleNavigateToWorkflow = async (link: string) => {
-  if (!id) return;
+   dispatch(resetAiJobs());
 
-  dispatch(resetAiJobs());
+   if (link === 'defense-memo' || link === 'preparing-statement-of-claims') {
+   const existingFresh = searchParams.get('fresh') === '1' ? '?fresh=1' : '';
+   navigate(`${pathname}/${link}${existingFresh || (searchParams.get('snapshot') ? `?snapshot=${searchParams.get('snapshot')}` : '')}`, { state: facts });
+   return;
+   }
 
-  if (link === 'defense-memo' || link === 'preparing-statement-of-claims') {
-  navigate(`${pathname}/${link}?fresh=1`, { state: facts });
-  return;
-  }
+   const existingWorkflowId = searchParams.get('workflowId');
+   if (existingWorkflowId) {
+   navigate(`${pathname}/${link}?workflowId=${existingWorkflowId}`, { state: facts });
+   return;
+   }
 
-  const thunks = workflowThunks[link as keyof typeof workflowThunks];
-  if (!thunks) {
-  navigate(`${pathname}/${link}`, { state: facts });
-  return;
-  }
+   const thunks = WORKFLOW_THUNKS_MAP[link];
+   if (!thunks) {
+   navigate(`${pathname}/${link}`, { state: facts });
+   return;
+   }
 
-  try {
-  const created = await dispatch(thunks.startWorkflow({ caseId: id })).unwrap();
-  navigate(`${pathname}/${link}?workflowId=${created.id}`, { state: facts });
-  } catch (error) {
-  sileo.error({ title: typeof error === 'string' ? error : 'تعذر بدء نسخة جديدة من المسار' });
-  }
-  };
+   try {
+   const created = await dispatch(thunks.startWorkflow({ caseId: id })).unwrap();
+   navigate(`${pathname}/${link}?workflowId=${created.id}`, { state: facts });
+   } catch (error) {
+   sileo.error({ title: typeof error === 'string' ? error : 'تعذر بدء نسخة جديدة من المسار' });
+   }
+   };
 
- const legalAnalysisOptions = [
- {
- title:"إعداد مذكرة دفاع",
- text:"إنشاء مذكرة دفاع شاملة مع الدفوع الشكلية والموضوعية.",
- stepCount: 5,
- link:"defense-memo",
- icon: <IoFlash className="text-4xl" />
- },
- {
-    title:"إعداد صحيفة دعوى",
-    text:"إنشاء صحيفة دعوى كاملة مع جميع البيانات المطلوبة.",
-    stepCount: 7,
- link:"preparing-statement-of-claims",
- icon: <IoDocumentTextOutline className="text-4xl" />
- },
- {
- title:"صحيفة طعن بالنقض",
- text:"إعداد صحيفة طعن بالنقض من استخراج بيانات الحكم وحتى التجميع النهائي.",
- stepCount: 6,
- link:"appeal-brief",
- icon: <FaGavel className="text-4xl" />
- },
- {
- title:"شكوى",
- text:"إعداد شكوى رسمية من التصنيف وحتى التجميع النهائي.",
- stepCount: 5,
- link:"admin-complaint",
- icon: <FaExclamationTriangle className="text-4xl" />
- },
- {
- title:"تحليل حكم",
- text:"تحليل الحكم وتقييم العيوب وتقرير جدوى الطعن.",
- stepCount: 4,
- link:"ruling-analysis",
- icon: <FaBalanceScale className="text-4xl" />
- },
- {
- title:"إنذار رسمي",
- text:"إعداد إنذار رسمي بالصيغة القانونية المصرية.",
- stepCount: 3,
- link:"legal-warning",
- icon: <FaFileAlt className="text-4xl" />
- },
- {
- title:"طلب تنفيذي",
- text:"إعداد عرائض الطلبات التنفيذية بمختلف أنواعها.",
- stepCount: 3,
- link:"exec-request",
- icon: <IoDocumentTextOutline className="text-4xl" />
- },
- ];
+  const workflowOptions = WORKFLOW_CATALOG.map((item) => ({
+  title: item.label,
+  text: item.description,
+  stepCount: item.totalSteps,
+  link: item.route,
+  icon: <item.icon className="text-4xl" />,
+  }));
 
  return (
  <section className="py-8 min-h-screen">
@@ -181,7 +131,7 @@ const DocumentSelection = () => {
  </p>
  <button
  onClick={() => navigate(id ? `/cases/${id}` :'/cases')}
- className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-xl transition-colors text-sm font-bold shadow-sm"
+ className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[var(--main-color)] hover:opacity-90 text-white rounded-xl transition-colors text-sm font-bold shadow-sm cursor-pointer"
  >
  <IoArrowBackOutline />
  الرجوع لملف القضية
@@ -191,10 +141,10 @@ const DocumentSelection = () => {
 
  {/* Options grid */}
  <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${!hasFacts ?'opacity-40 pointer-events-none grayscale-[50%]' :''}`}>
- {legalAnalysisOptions.map((option) => (
+  {workflowOptions.map((option) => (
  <CustomCard
  key={option.link}
- className="border border-[var(--border-color)] dark:border-white/10 bg-[var(--white-color)] hover:border-[var(--main-color)] transition-colors flex flex-col p-8 lg:p-10 group relative overflow-hidden"
+ className="border border-[var(--border-color)] dark:border-white/10 bg-[var(--white-color)] hover:border-[var(--main-color)] cursor-pointer transition-colors flex flex-col p-8 lg:p-10 group relative overflow-hidden"
  >
  <div className="flex flex-col items-center text-center relative z-10 w-full h-full">
  <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 transition-colors group-hover:bg-[var(--main-color)] group-hover:text-white bg-[var(--bg-color)] dark:bg-white/5 text-[var(--main-color)] border border-[var(--border-color)] dark:border-white/10">

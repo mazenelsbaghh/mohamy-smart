@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Lawyer.Application.DTOs.Client;
 using Lawyer.Core.Exceptions;
 
-namespace Lawyer.Application.Interfaces
+namespace Lawyer.Application.IServices
 {
     public interface IDocumentHandoffService
     {

@@ -5,14 +5,13 @@ import { IoArrowBackOutline, IoArrowForwardOutline } from'react-icons/io5';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
 import { hydrateStep } from'../../../../../../redux/appealBrief/appealBriefSlice';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
+ UnifiedStepShell,
  AnalysisStageActionButton,
- AnalysisStageLayout,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
  AnalysisStageListItem,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 
 type TAppealStep2Props = {
  nextStep: () => void;
@@ -36,16 +35,13 @@ const AppealStep2Analysis = ({ nextStep, prevStep , selectedFacts }: TAppealStep
  });
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !analysisData}
  hasFailed={hasFailed && !analysisData}
  errorMessage={errorMessage}
  onRetry={retry}
- >
- {analysisData && (
- <AnalysisStageLayout
- title="تحليل الأسباب والعيوب"
- sidebar={
+ title={analysisData ? "تحليل الأسباب والعيوب" : undefined}
+ sidebar={analysisData ? (
  <>
  <AnalysisStageSidebarCard
  label="حالة التحليل"
@@ -67,8 +63,10 @@ const AppealStep2Analysis = ({ nextStep, prevStep , selectedFacts }: TAppealStep
  />
  </div>
  </>
- }
+ ) : undefined}
  >
+ {analysisData && (
+ <>
  <AnalysisStageSectionCard label="التحليل الشامل للحيثيات">
  <p className="text-sm leading-relaxed app-text-muted">
  {analysisData.analysis || (analysisData.reasoningAnalysis as string | undefined) || (analysisData.Analysis as string | undefined) ||'جاري المعالجة...'}
@@ -94,9 +92,9 @@ const AppealStep2Analysis = ({ nextStep, prevStep , selectedFacts }: TAppealStep
  <div className="app-text-subtle italic p-4 text-center">لا توجد عيوب قانونية مسجلة.</div>
  )}
  </AnalysisStageSectionCard>
- </AnalysisStageLayout>
+ </>
  )}
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

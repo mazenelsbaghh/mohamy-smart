@@ -1,4 +1,4 @@
-using Lawyer.Core.Enums;
+using Lawyer.Core.Enum;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;

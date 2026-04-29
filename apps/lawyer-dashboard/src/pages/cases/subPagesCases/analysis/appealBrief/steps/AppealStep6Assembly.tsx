@@ -9,8 +9,7 @@ import { IoCheckmarkOutline, IoCopyOutline, IoArrowForwardOutline } from'react-i
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
 import { hydrateStep } from'../../../../../../redux/appealBrief/appealBriefSlice';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
-import { AnalysisStageActionButton, AnalysisStageDocumentCard, AnalysisStageLayout, AnalysisStageSidebarCard } from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+import { UnifiedStepShell, AnalysisStageActionButton, AnalysisStageDocumentCard, AnalysisStageSidebarCard } from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { useWorkflowAutoSave } from'../../../../../../hooks/useWorkflowAutoSave';
 import { appealBriefThunks } from'../../../../../../redux/appealBrief/appealBriefSlice';
 import { useRef } from'react';
@@ -75,16 +74,13 @@ const AppealStep6Assembly = ({ prevStep , selectedFacts }: TAppealStep6Props) =>
  };
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !finalAssemblyData}
  hasFailed={hasFailed && !finalAssemblyData}
  errorMessage={errorMessage}
  onRetry={retry}
- >
- {finalAssemblyData && (
- <AnalysisStageLayout
- title="المسودة النهائية لصحيفة الطعن"
- sidebar={
+ title={finalAssemblyData ? "المسودة النهائية لصحيفة الطعن" : undefined}
+ sidebar={finalAssemblyData ? (
  <>
  <AnalysisStageSidebarCard
  label="الحالة"
@@ -108,8 +104,9 @@ const AppealStep6Assembly = ({ prevStep , selectedFacts }: TAppealStep6Props) =>
  />
  </div>
  </>
- }
+ ) : undefined}
  >
+ {finalAssemblyData && (
  <AnalysisStageDocumentCard label="محتوى صحيفة الطعن" badge="مسودة جاهزة للتحرير">
  {isSanitizedEmpty(getHighlightedText(finalAssemblyData.fullAppealText ||'')) ? (
  <SanitizedContentEmpty />
@@ -126,11 +123,10 @@ const AppealStep6Assembly = ({ prevStep , selectedFacts }: TAppealStep6Props) =>
  }}
  dangerouslySetInnerHTML={{ __html: sanitizeHtml(getHighlightedText(finalAssemblyData.fullAppealText ||'')) }}
  />
- )}
- </AnalysisStageDocumentCard>
- </AnalysisStageLayout>
- )}
- </AnalysisStepShell>
+  )}
+  </AnalysisStageDocumentCard>
+  )}
+  </UnifiedStepShell>
  );
 };
 

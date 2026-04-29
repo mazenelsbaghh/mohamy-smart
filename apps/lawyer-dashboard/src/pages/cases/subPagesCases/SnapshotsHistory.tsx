@@ -23,9 +23,10 @@ interface Props {
 }
 
 type CurrentVersion = {
- workflowType: string;
- currentStep: number;
- lastSavedAt: string | null;
+  workflowType: string;
+  currentStep: number;
+  lastSavedAt: string | null;
+  workflowId: number | null;
 };
 
 const SnapshotsHistory = ({ caseId }: Props) => {
@@ -63,11 +64,12 @@ const SnapshotsHistory = ({ caseId }: Props) => {
  if (state.isReadOnly) continue; // Snapshot view, not the live workflow
  if (state.status === 'Abandoned') continue;
  if (!hasOutputs(state.outputs as Record<number, unknown>)) continue;
- list.push({
- workflowType: type,
- currentStep: state.currentStep,
- lastSavedAt: state.lastSavedAt,
- });
+  list.push({
+  workflowType: type,
+  currentStep: state.currentStep,
+  lastSavedAt: state.lastSavedAt,
+  workflowId: state.workflowId ?? null,
+  });
  }
  return list;
  }, [smartAnalysis, statementOfClaims, appealBrief, adminComplaint, rulingAnalysis, legalWarning, execRequest]);
@@ -196,8 +198,14 @@ const SnapshotsHistory = ({ caseId }: Props) => {
  </p>
  </div>
  <div className="flex items-center gap-2 shrink-0">
- <button
- onClick={() => navigate(`/cases/${caseId}/document-selection/${catalog.route}`)}
+  <button
+  onClick={() => {
+  const NON_VERSIONED = new Set(['defense-memo', 'preparing-statement-of-claims']);
+  const href = NON_VERSIONED.has(catalog.id)
+  ? `/cases/${caseId}/document-selection/${catalog.route}`
+  : `/cases/${caseId}/document-selection/${catalog.route}?workflowId=${current.workflowId}`;
+  navigate(href);
+  }}
  className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-[var(--main-color)] text-white text-xs font-bold hover:bg-opacity-90 transition-colors cursor-pointer"
  >
  <IoArrowBackOutline />
@@ -236,8 +244,9 @@ const SnapshotsHistory = ({ caseId }: Props) => {
  <span className="font-bold text-[var(--title-color)] truncate">{displayName}</span>
  <button
  onClick={() => { setEditingId(s.id); setEditValue(s.label || ''); }}
- className="opacity-60 hover:opacity-100 text-[var(--main-color)]"
+ className="opacity-60 hover:opacity-100 text-[var(--main-color)] cursor-pointer transition-opacity duration-200"
  title="تغيير الاسم"
+ aria-label="تغيير اسم النسخة"
  >
  <IoCreateOutline className="text-base" />
  </button>
@@ -259,6 +268,7 @@ const SnapshotsHistory = ({ caseId }: Props) => {
  onClick={() => setDeleteTarget(s.id)}
  className="inline-flex items-center gap-1 px-3 py-2 rounded-full border app-border text-[var(--danger-color)] text-xs font-bold hover:bg-[var(--danger-soft)] transition-colors cursor-pointer"
  title="حذف النسخة"
+ aria-label="حذف النسخة"
  >
  <IoTrashOutline />
  </button>

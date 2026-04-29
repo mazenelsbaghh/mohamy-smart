@@ -123,17 +123,18 @@ export function createWorkflowSlice<TStepOutputs, TReducers extends SliceCaseRed
  return numToStatus[status] ??'InProgress';
  };
 
- const applyWorkflowPayload = (
- state: Draft<TypedWorkflowState<TStepOutputs>>,
- payload: Record<string, unknown>,
- ) => {
- state.workflowId = (payload.id as number | null | undefined) ?? null;
- state.caseId = (payload.caseId as string | null | undefined) ?? null;
- state.currentStep = (payload.currentStep as number | undefined) ?? 1;
- state.status = mapStatus((payload.status as number | string | undefined) ??'InProgress');
- state.createdAt = (payload.createdAt as string | null | undefined) ?? null;
- state.lastSavedAt = (payload.updatedAt as string | null | undefined) ?? (payload.createdAt as string | null | undefined) ?? null;
- state.outputs = cloneInitialDraftOutputs();
+        const applyWorkflowPayload = (
+          state: Draft<TypedWorkflowState<TStepOutputs>>,
+          payload: Record<string, unknown>,
+        ) => {
+          state.workflowId = (payload.id as number | null | undefined) ?? null;
+          state.caseId = (payload.caseId as string | null | undefined) ?? null;
+          state.currentStep = (payload.currentStep as number | undefined) ?? 1;
+          state.status = mapStatus((payload.status as number | string | undefined) ?? 'InProgress');
+          state.createdAt = (payload.createdAt as string | null | undefined) ?? null;
+          state.lastSavedAt = (payload.updatedAt as string | null | undefined) ?? (payload.createdAt as string | null | undefined) ?? null;
+          state.isReadOnly = false;
+          state.outputs = cloneInitialDraftOutputs();
 
  const maxStps = config.maxSteps || 10;
  for (let i = 1; i <= maxStps; i++) {
@@ -163,16 +164,19 @@ export function createWorkflowSlice<TStepOutputs, TReducers extends SliceCaseRed
  state.loadingState.isStarting = true;
  state.errorState.startError = null;
  })
- .addCase(thunks.startWorkflow.fulfilled, (state, action) => {
- state.loadingState.isStarting = false;
- state.workflowId = action.payload.id ?? null;
- state.caseId = action.payload.caseId ?? null;
- state.currentStep = action.payload.currentStep ?? 1;
- state.status = mapStatus(action.payload.status);
- state.createdAt = action.payload.createdAt ?? null;
- state.lastSavedAt = action.payload.updatedAt ?? action.payload.createdAt ?? null;
- state.outputs = cloneInitialDraftOutputs();
- })
+  .addCase(thunks.startWorkflow.fulfilled, (state, action) => {
+  state.loadingState.isStarting = false;
+  state.workflowId = action.payload.id ?? null;
+  state.caseId = action.payload.caseId ?? null;
+  state.currentStep = action.payload.currentStep ?? 1;
+  state.status = mapStatus(action.payload.status);
+  state.createdAt = action.payload.createdAt ?? null;
+  state.lastSavedAt = action.payload.updatedAt ?? action.payload.createdAt ?? null;
+  state.outputs = cloneInitialDraftOutputs();
+  state.isReadOnly = false;
+  state.snapshotId = null;
+  state.snapshotLabel = null;
+  })
  .addCase(thunks.startWorkflow.rejected, (state, action) => {
  state.loadingState.isStarting = false;
  state.errorState.startError = isString(action.payload) ? action.payload :"Unknown error";

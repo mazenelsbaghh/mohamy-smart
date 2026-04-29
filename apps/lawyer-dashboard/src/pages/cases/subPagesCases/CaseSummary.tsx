@@ -2,7 +2,8 @@ import { CustomCard } from'@mohamy/shared-ui';
 import { useState } from'react';
 import { Link } from'react-router-dom';
 import { useAppSelector } from'../../../hooks/reduxHooks';
-import type { IWorkflowDto } from'../../../redux/shared/createWorkflowThunks';
+import type { DraftWorkflowState } from'../../../redux/shared/workflowTypes';
+import { isWorkflowCompleted as sharedIsWorkflowCompleted } from'../../../redux/shared/workflowUtils';
 
 import {
  IoAlertCircleOutline, IoCheckmarkCircle, IoCalendarOutline,
@@ -16,26 +17,8 @@ type TCaseSummary = {
  facts: string;
 }
 
-type DraftWorkflowState = {
- workflowId: number | null;
- lastSavedAt: string | null;
- currentStep?: number;
- status?:'NotStarted' |'InProgress' |'Completed' |'Abandoned';
- workflowVersions?: IWorkflowDto[];
- outputs: Record<number, unknown>;
-};
-
-const FINAL_STEPS: Record<string, number> = {"defense-memo": 5,"preparing-statement-of-claims": 7,"appeal-brief": 6,"admin-complaint": 5,"ruling-analysis": 4,"legal-warning": 3,"exec-request": 3,
-};
-
 function isWorkflowCompleted(draftKey: string, draftState: DraftWorkflowState): boolean {
- const finalStep = FINAL_STEPS[draftKey];
- if (draftState.status ==='Completed') return true;
- if (draftState.currentStep && draftState.currentStep > finalStep) return true;
- if (draftKey ==="preparing-statement-of-claims") {
- return draftState.currentStep === 7 || Boolean(draftState.outputs[7] || draftState.outputs[6]);
- }
- return Boolean(draftState.outputs[finalStep]);
+ return sharedIsWorkflowCompleted(draftState.outputs, draftKey) || draftState.status === 'Completed';
 }
 
 function getVersionTime(version: { createdAt?: string | null; updatedAt?: string | null }) {
@@ -73,10 +56,10 @@ const CaseSummary = ({ caseId, facts }: TCaseSummary) => {
  if (drafts.length === 0) {
  return (
  <div className='flex flex-col gap-6 mt-2'>
- <CustomCard className="border border-orange-200 bg-orange-50 shadow-sm text-center py-10 px-4">
- <IoAlertCircleOutline className="mx-auto text-4xl text-orange-500 mb-4" />
- <h3 className="text-lg font-bold text-orange-900 mb-2">لا يوجد ملخص محفوظ لهذه القضية حتى الآن.</h3>
- <p className="text-orange-700 text-sm">ابدأ تحليلًا جديدًا أولًا، ثم ستظهر آخر نتيجة محفوظة هنا تلقائيًا.</p>
+ <CustomCard className="border shadow-sm text-center py-10 px-4" style={{ borderColor: "var(--accent-soft-strong)", backgroundColor: "var(--accent-soft)" }}>
+ <IoAlertCircleOutline className="mx-auto text-4xl text-[var(--main-color)] mb-4" />
+ <h3 className="text-lg font-bold text-[var(--title-color)] mb-2">لا يوجد ملخص محفوظ لهذه القضية حتى الآن.</h3>
+ <p className="text-[var(--main-color)] text-sm">ابدأ تحليلًا جديدًا أولًا، ثم ستظهر آخر نتيجة محفوظة هنا تلقائيًا.</p>
  </CustomCard>
  </div>
  );
@@ -103,17 +86,17 @@ const CaseSummary = ({ caseId, facts }: TCaseSummary) => {
   const archivedVersions = allVersions.filter((version) => version.id !== latestVersionId);
   const versionLabels = buildVersionLabels(allVersions);
 
- const borderColor = isCompleted ?'border-blue-100' :'border-green-100';
+ const borderColor = isCompleted ?'border-[var(--info-soft)]' :'border-[var(--success-soft)]';
  const bgColor = isCompleted ?'bg-[var(--info-soft)]/40' :'bg-[var(--success-soft)]/40';
- const accentBg = isCompleted ?'bg-blue-500' :'bg-green-500';
+ const accentBg = isCompleted ?'bg-[var(--blue-color)]' :'bg-[var(--success-color)]';
  const iconBg = isCompleted ?'bg-[var(--info-soft)] border-[var(--info-soft)]' :'bg-[var(--success-soft)] border-[var(--success-soft)]';
  const iconColor = isCompleted ?'text-[var(--blue-color)]' :'text-[var(--success-color)]';
- const titleColor = isCompleted ?'text-blue-800' :'text-green-800';
+ const titleColor = isCompleted ?'text-[var(--blue-color)]' :'text-[var(--success-color)]';
  const textColor = isCompleted ?'text-[var(--blue-color)]' :'text-[var(--success-color)]';
  const metaColor = isCompleted ?'text-[var(--blue-color)]/70' :'text-[var(--success-color)]/70';
- const btnClass = isCompleted ?'bg-blue-600 hover:bg-blue-700' :'bg-green-600 hover:bg-green-700';
- const dotColor = isCompleted ?'bg-blue-500 border-blue-500' :'bg-green-500 border-green-500';
- const lineColor = isCompleted ?'bg-blue-200' :'bg-green-200';
+ const btnClass = isCompleted ?'bg-[var(--blue-color)] hover:brightness-110' :'bg-[var(--success-color)] hover:brightness-110';
+ const dotColor = isCompleted ?'bg-[var(--blue-color)] border-[var(--blue-color)]' :'bg-[var(--success-color)] border-[var(--success-color)]';
+ const lineColor = isCompleted ?'bg-[var(--info-soft)]' :'bg-[var(--success-soft)]';
 
  return (
  <CustomCard key={draft.key} className={`border ${borderColor} ${bgColor} shadow-sm relative overflow-hidden`}>

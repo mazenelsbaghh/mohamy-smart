@@ -1,5 +1,5 @@
 using System;
-using Lawyer.Core.Enums;
+using Lawyer.Core.Enum;
 
 namespace Lawyer.Core.Models
 {

@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from"react";
 import { IoDocumentTextOutline } from"react-icons/io5";
 import { sileo } from"sileo";
-import { AnalysisStepShell } from"../../../../../../components/analysisWorkflow/AnalysisStepShell";
 import {
- AnalysisStageLayout,
+ UnifiedStepShell,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
  AnalysisStageActionButton,
-} from"../../../../../../components/analysisWorkflow/AnalysisStageLayout";
+} from"../../../../../../components/analysisWorkflow/UnifiedStepShell";
+import { AnalysisStepShell } from"../../../../../../components/analysisWorkflow/AnalysisStepShell";
+import { AnalysisStageLayout } from"../../../../../../components/analysisWorkflow/AnalysisStageLayout";
 import { useAnalysisStep } from"../../../../../../hooks/useAnalysisStep";
 import { hydrateStep } from"../../../../../../redux/analysis/smartAnalysisSlice";
 import { useAppDispatch, useAppSelector } from"../../../../../../hooks/reduxHooks";
@@ -102,7 +103,7 @@ const FinalRequirements = ({ caseId, nextStep }: TFinalRequirementsProps) => {
  const progressPercent = totalCount > 0 ? Math.round((selectionCount / totalCount) * 100) : 0;
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && finalPrayers.length === 0 && !isNavigating}
  hasFailed={hasFailed && !isNavigating}
  errorMessage={errorMessage}
@@ -126,6 +127,7 @@ const FinalRequirements = ({ caseId, nextStep }: TFinalRequirementsProps) => {
  )}
 
  {!isNavigating && (
+ <>
  <AnalysisStageLayout
  title="الطلبات الختامية"
  sidebar={
@@ -159,7 +161,7 @@ const FinalRequirements = ({ caseId, nextStep }: TFinalRequirementsProps) => {
  >
  {finalPrayers.length === 0 && !isLoading && (
  <div className="flex flex-col items-center justify-center py-16 text-center">
- <IoDocumentTextOutline className="text-5xl text-gray-300 mb-4" />
+ <IoDocumentTextOutline className="text-5xl app-text-subtle mb-4" />
  <p className="text-sm app-text-subtle">لا توجد طلبات لعرضها</p>
  </div>
  )}
@@ -195,7 +197,7 @@ const FinalRequirements = ({ caseId, nextStep }: TFinalRequirementsProps) => {
  <h4 className={`text-sm font-bold ${isSelected ?'text-[var(--title-color)]' :'app-text-subtle'}`}>
  طلب {idx + 1}: {item.requestLevel}
  </h4>
- <span className="shrink-0 text-[10px] font-bold px-2 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-100">
+ <span className="shrink-0 text-[10px] font-bold px-2 py-1 rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border border-orange-100 dark:border-orange-800/50">
  {item.requestLevel}
  </span>
  </div>
@@ -210,8 +212,9 @@ const FinalRequirements = ({ caseId, nextStep }: TFinalRequirementsProps) => {
  </AnalysisStageSectionCard>
  )}
  </AnalysisStageLayout>
+ </>
  )}
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

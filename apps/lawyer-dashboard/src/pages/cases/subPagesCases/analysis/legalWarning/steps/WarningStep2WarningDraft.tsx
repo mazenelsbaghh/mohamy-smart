@@ -1,21 +1,20 @@
 import { useEffect, useState } from'react';
 import {  parseWorkflowJobResult  } from"@mohamy/shared-utils";
 import { useParams } from'react-router-dom';
-import { IoArrowBackOutline, IoRefreshOutline } from'react-icons/io5';
+import { IoArrowBackOutline } from'react-icons/io5';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
-import SmartAnalysisLoader from'../../../../../../components/skeleton/SmartAnalysisLoader';
 import thunkSubmitAiJob from'../../../../../../redux/aiJobs/thunk/thunkSubmitAiJob';
 import {
  hydrateStep,
  legalWarningThunks,
 } from'../../../../../../redux/legalWarning/legalWarningSlice';
 import {
+ UnifiedStepShell,
  AnalysisStageActionButton,
- AnalysisStageLayout,
  AnalysisStageNumberedList,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { buildAnalysisInput } from'../../../../../../components/analysisWorkflow/analysisFacts';
 import { useWorkflowAutoSave } from'../../../../../../hooks/useWorkflowAutoSave';
 import { LEGAL_WARNING_STEPS } from '../../../../../../components/analysisWorkflow/workflowConstants';
@@ -61,9 +60,8 @@ const WarningStep2LegalWarningBodyDraft = ({ nextStep, selectedFacts }: TWarning
 
  const isProcessingJob = job?.status ==='Queued' || job?.status ==='Processing';
  const isWaitingForHydration = job?.status ==='Completed' && !warningDraft;
- const showLoader = isProcessingJob || isWaitingForHydration || (!job && !warningDraft);
+ const isLoading = isProcessingJob || isWaitingForHydration || (!job && !warningDraft);
 
- // Hydrate from resultJson when job completes
  useEffect(() => {
  if (job?.status ==='Completed' && job.resultJson && !warningDraft) {
  try {
@@ -73,7 +71,6 @@ const WarningStep2LegalWarningBodyDraft = ({ nextStep, selectedFacts }: TWarning
  }
  }, [job?.status, job?.resultJson, warningDraft, dispatch]);
 
- // Auto-submit when this step becomes active
  useEffect(() => {
  if (warningDraft || job || !caseId || !classification) return;
  dispatch(thunkSubmitAiJob({
@@ -100,43 +97,22 @@ const WarningStep2LegalWarningBodyDraft = ({ nextStep, selectedFacts }: TWarning
  }));
  };
 
- if (showLoader && job?.status !=='Failed') {
  return (
- <SmartAnalysisLoader
- title="جاري صياغة متن الإنذار الرسمي..."
- subtitle="يعمل النظام على صياغة نص الإنذار بأسلوب قانوني رسمي استنادًا إلى التصنيف والأساس القانوني."
+ <UnifiedStepShell
+ isLoading={isLoading}
+ hasFailed={job?.status === 'Failed'}
+ errorMessage={job?.errorMessage || 'تعذّر صياغة الإنذار. أعد المحاولة.'}
+ onRetry={handleRetry}
+ loadingTitle="جاري صياغة متن الإنذار الرسمي..."
+ loadingSubtitle="يعمل النظام على صياغة نص الإنذار بأسلوب قانوني رسمي استنادًا إلى التصنيف والأساس القانوني."
  steps={LEGAL_WARNING_STEPS}
- activeStepIndex={1}
- />
- );
- }
-
- if (job?.status ==='Failed') {
- return (
- <div className="w-full mt-4">
- <div className="flex items-center gap-3 p-4 mb-4 bg-[var(--danger-soft)] border border-[var(--danger-soft)] rounded-xl">
- <span className="text-sm font-bold text-[var(--danger-color)]">
- {job.errorMessage ||'تعذّر صياغة الإنذار. أعد المحاولة.'}
- </span>
- <button type="button" onClick={handleRetry}
- className="me-auto flex items-center gap-2 bg-[var(--danger-soft)] text-[var(--danger-color)] px-4 py-1.5 rounded-full text-sm font-bold hover:bg-red-200 transition-colors">
- <IoRefreshOutline />إعادة المحاولة
- </button>
- </div>
- </div>
- );
- }
-
- if (!warningDraft) return null;
-
- return (
- <AnalysisStageLayout
+ currentStepIndex={1}
  title="صياغة متن الإنذار"
  sidebar={
  <>
  <AnalysisStageSidebarCard
  label={isAutoSaving ?'جارِ الحفظ...' : (lastSaved ?'النقاط المستخرجة' :'النقاط المستخرجة')}
- value={warningDraft.keyPoints?.length ?? 0}
+ value={warningDraft?.keyPoints?.length ?? 0}
  valueClassName="text-5xl"
  description={lastSaved ? `آخر حفظ ${lastSaved}` :"تمت صياغة متن الإنذار. يمكنك الانتقال لتجميع الوثيقة النهائية."}
  />
@@ -160,12 +136,12 @@ const WarningStep2LegalWarningBodyDraft = ({ nextStep, selectedFacts }: TWarning
  />
  </AnalysisStageSectionCard>
 
- {warningDraft.keyPoints?.length > 0 && (
+ {warningDraft?.keyPoints?.length > 0 && (
  <AnalysisStageSectionCard label="النقاط الرئيسية">
- <AnalysisStageNumberedList items={warningDraft.keyPoints} />
+ <AnalysisStageNumberedList items={warningDraft?.keyPoints} />
  </AnalysisStageSectionCard>
  )}
- </AnalysisStageLayout>
+ </UnifiedStepShell>
  );
 };
 

@@ -195,7 +195,7 @@ const ClarifyFactsModal = ({
  px-6 py-2.5 rounded-full text-sm font-bold text-white transition-colors shadow-sm
  ${allAnswered && !isSubmitting
  ?'bg-[var(--main-color)] hover:bg-opacity-90 cursor-pointer'
- :'bg-gray-300 cursor-not-allowed'
+ :'app-surface-muted dark:app-surface-soft cursor-not-allowed opacity-60'
  }
  `}
  >

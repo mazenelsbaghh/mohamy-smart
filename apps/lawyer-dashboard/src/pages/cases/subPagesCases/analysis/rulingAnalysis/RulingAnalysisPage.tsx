@@ -1,6 +1,6 @@
 import { Container } from '@mohamy/shared-ui';
 import { Tabs, Tab } from '@heroui/react';
-import { IoCheckmarkCircle, IoDocumentTextOutline, IoFlash, IoListOutline } from 'react-icons/io5';
+import { sileo } from 'sileo';
 import { useWorkflowOrchestrator } from '../../../../../hooks/useWorkflowOrchestrator';
 import { resetRulingAnalysis, rulingAnalysisThunks, restoreRulingAnalysisSnapshot } from '../../../../../redux/rulingAnalysis/rulingAnalysisWorkflowSlice';
 import RulingStep1VerdictAnalysis from './steps/RulingStep1VerdictAnalysis';
@@ -11,14 +11,7 @@ import AnalysisFactsSelectionStep from '../../../../../components/analysisWorkfl
 import WorkflowStepBar from '../../../../../components/analysisWorkflow/WorkflowStepBar';
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
-
-const RULING_STEPS = [
-  { id: 1, label: 'مراجعة الوقائع', icon: <IoDocumentTextOutline /> },
-  { id: 2, label: 'منطوق الحكم', icon: <IoDocumentTextOutline /> },
-  { id: 3, label: 'أسباب الحكم', icon: <IoListOutline /> },
-  { id: 4, label: 'تقييم العيوب', icon: <IoFlash /> },
-  { id: 5, label: 'خلاصة الطعن', icon: <IoCheckmarkCircle /> },
-];
+import { RULING_ANALYSIS_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
 
 const RULING_JOB_STEP_MAP = {
   RulingAnalysisOperative: 1,
@@ -31,7 +24,6 @@ const RulingAnalysisPage = () => {
   const {
     active,
     nextStep,
-    maxStepAllowed,
     handleTabChange,
     caseId,
     isReadOnly,
@@ -57,8 +49,9 @@ const RulingAnalysisPage = () => {
     resetWorkflow: resetRulingAnalysis,
     workflowPrefix: 'ruling',
     maxSteps: 4,
-    steps: RULING_STEPS,
+    steps: RULING_ANALYSIS_STEP_DEFS,
     jobStepMap: RULING_JOB_STEP_MAP,
+    onError: (error) => { sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' }); },
   });
 
   const verdictAnalysis = workflowState.outputs[1];
@@ -90,7 +83,7 @@ const RulingAnalysisPage = () => {
             <SmartAnalysisLoader
               title="جاري تجهيز مساحة العمل"
               subtitle="يرجى الانتظار بينما نقوم باسترجاع بيانات القضية..."
-              steps={RULING_STEPS.map(s => s.label)}
+              steps={RULING_ANALYSIS_STEP_DEFS.map(s => s.label)}
               activeStepIndex={0}
             />
           </div>
@@ -115,7 +108,7 @@ const RulingAnalysisPage = () => {
           )}
 
           <WorkflowStepBar
-            steps={RULING_STEPS}
+            steps={RULING_ANALYSIS_STEP_DEFS}
             active={active}
             workflowTitle="تحليل الحكم"
             isAutoSaving={isAutoSaving}
@@ -133,7 +126,7 @@ const RulingAnalysisPage = () => {
               classNames={tabsClassNames}
               {...tabProps}
             >
-              {RULING_STEPS.map((step, index) => (
+              {RULING_ANALYSIS_STEP_DEFS.map((step, index) => (
                 <Tab
                   key={index.toString()}
                   title={

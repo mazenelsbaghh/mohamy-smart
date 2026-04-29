@@ -182,7 +182,7 @@ export const AnalysisStageDocumentCard = ({
  <div className="flex items-center justify-between mb-6 pb-4 border-b app-border dark:app-border-strong">
  <span className="text-xs font-bold app-text-subtle dark:app-text-subtle tracking-wider">{label}</span>
  <span className={`inline-flex items-center gap-1.5 text-xs font-bold border px-3 py-1 rounded-full ${palette.badge}`}>
- <span className={`w-1.5 h-1.5 rounded-full ${badgeTone ==='success' ?'bg-green-500' :'bg-orange-500'}`} />
+ <span className={`w-1.5 h-1.5 rounded-full ${badgeTone ==='success' ?'bg-[var(--success-color)]' :'bg-[var(--main-color)]'}`} />
  {badge}
  </span>
  </div>

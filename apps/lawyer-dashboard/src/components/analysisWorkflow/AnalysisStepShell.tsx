@@ -39,13 +39,13 @@ export const AnalysisStepShell: React.FC<AnalysisStepShellProps> = ({
 
  if (hasFailed) {
  return (
- <Card className="w-full bg-danger-50 border-danger-200 min-h-[300px] flex items-center justify-center shadow-sm">
+ <Card className="w-full bg-[var(--danger-soft)] border-[var(--danger-soft)] min-h-[300px] flex items-center justify-center shadow-sm">
  <CardBody className="flex flex-col items-center justify-center p-8 text-center">
  <IoAlertCircleOutline className="w-16 h-16 text-danger mb-4" />
- <h3 className="text-xl font-bold text-danger-800 font-tajawal mb-2">
+ <h3 className="text-xl font-bold text-[var(--danger-color)] font-tajawal mb-2">
  فشل في استخراج البيانات
  </h3>
- <p className="text-danger-600 font-tajawal mb-6 max-w-md">
+ <p className="text-[var(--danger-color)] opacity-80 font-tajawal mb-6 max-w-md">
  {errorMessage ||'تعذّر على الذكاء الاصطناعي معالجة البيانات. أعد المحاولة أو تحقق من صحة الوقائع.'}
  </p>
  

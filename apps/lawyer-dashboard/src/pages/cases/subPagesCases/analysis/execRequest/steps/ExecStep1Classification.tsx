@@ -4,13 +4,12 @@ import { IoArrowBackOutline } from'react-icons/io5';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
 import { hydrateStep } from'../../../../../../redux/execRequest/execRequestSlice';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
+ UnifiedStepShell,
  AnalysisStageActionButton,
- AnalysisStageLayout,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { buildAnalysisInput } from'../../../../../../components/analysisWorkflow/analysisFacts';
 
 type TExecStep1Props = {
@@ -35,16 +34,13 @@ const ExecStep1Classification = ({ nextStep, selectedFacts }: TExecStep1Props) =
  });
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !classification}
  hasFailed={hasFailed && !classification}
  errorMessage={errorMessage}
  onRetry={retry}
- >
- {classification && (
- <AnalysisStageLayout
- title="تصنيف ومعطيات الطلب التنفيذي"
- sidebar={
+ title={classification ? "تصنيف ومعطيات الطلب التنفيذي" : undefined}
+ sidebar={classification ? (
  <>
  <AnalysisStageSidebarCard
  label="نوع الطلب المستخرج"
@@ -58,8 +54,10 @@ const ExecStep1Classification = ({ nextStep, selectedFacts }: TExecStep1Props) =
  onClick={nextStep}
  />
  </>
- }
+ ) : undefined}
  >
+ {classification && (
+ <>
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <AnalysisStageSectionCard label="نوع الطلب التنفيذي">
  <span className="inline-block rounded-full px-4 py-1.5 text-sm font-bold bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300">
@@ -85,9 +83,9 @@ const ExecStep1Classification = ({ nextStep, selectedFacts }: TExecStep1Props) =
  {classification.executionGrounds}
  </p>
  </AnalysisStageSectionCard>
- </AnalysisStageLayout>
+ </>
  )}
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

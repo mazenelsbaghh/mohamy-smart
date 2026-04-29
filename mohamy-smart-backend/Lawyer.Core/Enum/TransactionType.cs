@@ -1,4 +1,4 @@
-namespace Lawyer.Core.Enums
+namespace Lawyer.Core.Enum
 {
     public enum TransactionType
     {

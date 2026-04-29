@@ -1,13 +1,12 @@
 import { useCallback, useMemo } from'react';
 import { IoArrowBackOutline } from'react-icons/io5';
 import { Chip } from'@heroui/react';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
- AnalysisStageLayout,
+ UnifiedStepShell,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
  AnalysisStageActionButton,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
 import { hydrateStatementStep } from'../../../../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice';
 import type { TLawsuitLegalBasis } from'../../../../../../redux/shared/workflowTypes';
@@ -114,15 +113,13 @@ const LawsuitLegalBasis = ({ caseId, nextStep, caseType, selectedFacts = [] }: L
  : 0;
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading}
  hasFailed={hasFailed}
  errorMessage={errorMessage}
  onRetry={retry}
  loadingTitle="جاري تأسيس الأساس القانوني للدعوى..."
  loadingSubtitle="يقوم المحرك الذكي باستخراج النصوص القانونية وأحكام النقض ذات الصلة وربطها مباشرة بوقائع الدعوى."
- >
- <AnalysisStageLayout
  title="الأساس القانوني"
  actions={
  caseType ? (
@@ -210,8 +207,7 @@ const LawsuitLegalBasis = ({ caseId, nextStep, caseType, selectedFacts = [] }: L
  </AnalysisStageSectionCard>
  </>
  )}
- </AnalysisStageLayout>
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

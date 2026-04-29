@@ -1,7 +1,7 @@
 using Lawyer.Application.Dto.Auth;
 using Lawyer.Application.Dtos.Account;
 using Lawyer.Core.Common;
-using Lawyer.Core.Enums;
+using Lawyer.Core.Enum;
 using Lawyer.Core.Exceptions;
 using Lawyer.Core.Models;
 using System;

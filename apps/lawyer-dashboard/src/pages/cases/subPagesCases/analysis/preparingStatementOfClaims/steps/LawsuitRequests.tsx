@@ -1,12 +1,11 @@
 import { useCallback, useMemo } from"react";
 import { Chip } from"@heroui/react";
-import { AnalysisStepShell } from"../../../../../../components/analysisWorkflow/AnalysisStepShell";
 import {
- AnalysisStageLayout,
+ UnifiedStepShell,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
  AnalysisStageActionButton,
-} from"../../../../../../components/analysisWorkflow/AnalysisStageLayout";
+} from"../../../../../../components/analysisWorkflow/UnifiedStepShell";
 import { useAnalysisStep } from"../../../../../../hooks/useAnalysisStep";
 import { hydrateStatementStep } from"../../../../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice";
 import type { TLawsuitRequests } from"../../../../../../redux/shared/workflowTypes";
@@ -74,15 +73,13 @@ const LawsuitRequests = ({ caseId, nextStep, caseType, selectedFacts = [] }: Law
  : [];
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading}
  hasFailed={hasFailed}
  errorMessage={errorMessage}
  onRetry={retry}
  loadingTitle="جاري تنسيق الطلبات الختامية..."
  loadingSubtitle="يقوم النظام الاستدلالي ببناء الطلبات الأصلية والاحتياطية والإجرائية اعتمادًا على الوقائع والأساس القانوني المعتمد."
- >
- <AnalysisStageLayout
  title="تنسيق الطلبات الختامية للدعوى"
  actions={
  caseType ? (
@@ -146,8 +143,7 @@ const LawsuitRequests = ({ caseId, nextStep, caseType, selectedFacts = [] }: Law
  </div>
  </AnalysisStageSectionCard>
  ))}
- </AnalysisStageLayout>
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

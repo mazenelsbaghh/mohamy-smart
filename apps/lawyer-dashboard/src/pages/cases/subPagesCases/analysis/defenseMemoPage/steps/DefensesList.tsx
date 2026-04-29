@@ -24,15 +24,16 @@ import {
 } from'../../../../../../redux/analysis/smartAnalysisSlice';
 import thunkCancelAiJob from'../../../../../../redux/aiJobs/thunk/thunkCancelAiJob';
 import thunkSubmitAiJob from'../../../../../../redux/aiJobs/thunk/thunkSubmitAiJob';
-import { AnalysisStepShell } from"../../../../../../components/analysisWorkflow/AnalysisStepShell";
 import {
- AnalysisStageLayout,
+ UnifiedStepShell,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
  AnalysisStageActionButton,
  AnalysisStageDocumentCard,
  AnalysisStageBanner,
-} from"../../../../../../components/analysisWorkflow/AnalysisStageLayout";
+} from"../../../../../../components/analysisWorkflow/UnifiedStepShell";
+import { AnalysisStageLayout } from"../../../../../../components/analysisWorkflow/AnalysisStageLayout";
+import { AnalysisStepShell } from"../../../../../../components/analysisWorkflow/AnalysisStepShell";
 import type { TDefense, TDefenseMemorandum } from"../../../../../../redux/shared/workflowTypes";
 
 type TDefensesList = {
@@ -520,7 +521,7 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  const analyzedCount = allDefenses.filter((d) => explanationsCache[d.id]).length;
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isShellLoading}
  hasFailed={false}
  loadingTitle="جاري إنشاء الدفوع من الوقائع..."
@@ -961,7 +962,7 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  />
  </>
  )}
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

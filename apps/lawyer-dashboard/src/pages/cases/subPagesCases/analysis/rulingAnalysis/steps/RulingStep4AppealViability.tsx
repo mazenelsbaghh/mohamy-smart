@@ -5,14 +5,13 @@ import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHook
 import { hydrateRulingStep } from'../../../../../../redux/rulingAnalysis/rulingAnalysisWorkflowSlice';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
 import type { TAppealViability } from'../../../../../../redux/shared/workflowTypes';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
+ UnifiedStepShell,
  AnalysisStageBanner,
- AnalysisStageLayout,
  AnalysisStageNumberedList,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { buildAnalysisInput } from'../../../../../../components/analysisWorkflow/analysisFacts';
 
 type TRulingStep4Props = {
@@ -39,16 +38,13 @@ const RulingStep4AppealViability = ({ selectedFacts }: TRulingStep4Props) => {
  const isViable = appealViability?.isAppealViable;
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !appealViability}
  hasFailed={hasFailed && !appealViability}
  errorMessage={errorMessage}
  onRetry={retry}
- >
- {appealViability && (
- <AnalysisStageLayout
- title="خلاصة وجدوى الطعن"
- sidebar={
+ title={appealViability ? "خلاصة وجدوى الطعن" : undefined}
+ sidebar={appealViability ? (
  <AnalysisStageSidebarCard
  label="نسبة قوة الطعن المقدرة"
  value={`${appealViability.appealStrength}${typeof appealViability.appealStrength ==='number' ?'%' :''}`}
@@ -56,32 +52,34 @@ const RulingStep4AppealViability = ({ selectedFacts }: TRulingStep4Props) => {
  valueClassName="text-5xl"
  description="تم الانتهاء من تحليل الحكم بالكامل. يمكنك مراجعة الأسباب الموصى بها وتقييم قوة الاستئناف أو النقض."
  />
- }
+ ) : undefined}
  >
- <AnalysisStageBanner
- label="تقييم النظام لجدوى الطعن"
- tone={isViable ?'success' :'danger'}
- icon={isViable ? <IoCheckmarkCircleOutline /> : <IoCloseCircleOutline />}
- >
- <strong className="text-xl font-extrabold">
- {isViable ?'ينصح بالطعن - توجد أسباب قوية' :'لا ينصح بالطعن - الأسباب ضعيفة'}
- </strong>
- </AnalysisStageBanner>
+  {appealViability && (
+  <>
+  <AnalysisStageBanner
+  label="تقييم النظام لجدوى الطعن"
+  tone={isViable ?'success' :'danger'}
+  icon={isViable ? <IoCheckmarkCircleOutline /> : <IoCloseCircleOutline />}
+  >
+  <strong className="text-xl font-extrabold">
+  {isViable ?'ينصح بالطعن - توجد أسباب قوية' :'لا ينصح بالطعن - الأسباب ضعيفة'}
+  </strong>
+  </AnalysisStageBanner>
 
- <AnalysisStageSectionCard label="الخلاصة التحليلية">
- <p className="text-sm leading-[2.2] app-text-muted">
- {appealViability.conclusion}
- </p>
- </AnalysisStageSectionCard>
+  <AnalysisStageSectionCard label="الخلاصة التحليلية">
+  <p className="text-sm leading-[2.2] app-text-muted">
+  {appealViability.conclusion}
+  </p>
+  </AnalysisStageSectionCard>
 
- {appealViability.recommendedGrounds?.length > 0 && (
- <AnalysisStageSectionCard label="الأسباب الموصى بالاستناد إليها في الطعن">
- <AnalysisStageNumberedList items={appealViability.recommendedGrounds} />
- </AnalysisStageSectionCard>
- )}
- </AnalysisStageLayout>
- )}
- </AnalysisStepShell>
+  {appealViability.recommendedGrounds?.length > 0 && (
+  <AnalysisStageSectionCard label="الأسباب الموصى بالاستناد إليها في الطعن">
+  <AnalysisStageNumberedList items={appealViability.recommendedGrounds} />
+  </AnalysisStageSectionCard>
+  )}
+  </>
+  )}
+ </UnifiedStepShell>
  );
 };
 

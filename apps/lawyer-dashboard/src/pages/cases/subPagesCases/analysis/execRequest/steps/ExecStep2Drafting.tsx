@@ -4,14 +4,13 @@ import { IoArrowBackOutline } from'react-icons/io5';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
 import { hydrateStep } from'../../../../../../redux/execRequest/execRequestSlice';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
+ UnifiedStepShell,
  AnalysisStageActionButton,
- AnalysisStageLayout,
  AnalysisStageNumberedList,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { buildAnalysisInput } from'../../../../../../components/analysisWorkflow/analysisFacts';
 import { useWorkflowAutoSave } from'../../../../../../hooks/useWorkflowAutoSave';
 import { execRequestThunks } from'../../../../../../redux/execRequest/execRequestSlice';
@@ -67,16 +66,13 @@ const ExecStep2Drafting = ({ nextStep, selectedFacts }: TExecStep2Props) => {
  });
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !drafting}
  hasFailed={hasFailed && !drafting}
  errorMessage={errorMessage}
  onRetry={retry}
- >
- {drafting && (
- <AnalysisStageLayout
- title="مسودة موضوع الطلب التنفيذي"
- sidebar={
+ title={drafting ? "مسودة موضوع الطلب التنفيذي" : undefined}
+ sidebar={drafting ? (
  <>
  <AnalysisStageSidebarCard
  label={isAutoSaving ?'جارِ الحفظ...' : (lastSaved ?'المبررات القانونية' :'المبررات القانونية')}
@@ -90,8 +86,10 @@ const ExecStep2Drafting = ({ nextStep, selectedFacts }: TExecStep2Props) => {
  onClick={nextStep}
  />
  </>
- }
+ ) : undefined}
  >
+ {drafting && (
+ <>
  <AnalysisStageSectionCard label="متن الطلب وموضوعه">
  <textarea
  className="text-sm leading-[2.2] app-text-muted w-full outline-none bg-transparent resize-none border border-transparent hover:app-border-strong focus:border-[var(--main-color)] focus:ring-1 focus:ring-[var(--main-color)]/20 rounded p-2 transition-colors min-h-[300px]"
@@ -109,9 +107,9 @@ const ExecStep2Drafting = ({ nextStep, selectedFacts }: TExecStep2Props) => {
  <AnalysisStageNumberedList items={drafting.keyArguments} />
  </AnalysisStageSectionCard>
  )}
- </AnalysisStageLayout>
+ </>
  )}
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

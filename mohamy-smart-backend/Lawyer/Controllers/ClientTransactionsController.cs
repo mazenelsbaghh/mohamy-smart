@@ -1,5 +1,4 @@
 using Lawyer.Application.Common;
-using Lawyer.Application.Interfaces;
 using Lawyer.Application.IServices;
 using Lawyer.Application.Validators;
 using Lawyer.Controllers.Base;

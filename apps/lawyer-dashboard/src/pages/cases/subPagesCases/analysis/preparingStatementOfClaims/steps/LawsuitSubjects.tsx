@@ -1,13 +1,12 @@
 import { useMemo } from 'react';
 import { Chip } from'@heroui/react';
 import { IoArrowBackOutline, IoRefreshOutline } from'react-icons/io5';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
- AnalysisStageLayout,
+ UnifiedStepShell,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
  AnalysisStageActionButton,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
 import { hydrateStatementStep } from'../../../../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice';
 import type { TLawsuitSubjects } from'../../../../../../redux/shared/workflowTypes';
@@ -57,25 +56,22 @@ const LawsuitSubjects = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLa
  };
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !data}
  hasFailed={hasFailed && !data}
  errorMessage={errorMessage}
  onRetry={retry}
  loadingTitle="جاري صياغة موضوع صحيفة الدعوى..."
  loadingSubtitle="يقوم النظام ببناء عنوان الدعوى ونص موضوعها بصورة قانونية منسقة ومتسقة مع بيانات القضية والأطراف."
- >
- {data && (
- <AnalysisStageLayout
- title="صياغة موضوع الصحيفة"
- actions={
+ title={data ? "صياغة موضوع الصحيفة" : undefined}
+ actions={data ? (
  caseType ? (
  <Chip color="warning" variant="flat" size="sm">
  {caseType.caseMainType}
  </Chip>
  ) : undefined
- }
- sidebar={
+ ) : undefined}
+ sidebar={data ? (
  <>
  <AnalysisStageSidebarCard
  label="وضع المرحلة"
@@ -98,22 +94,24 @@ const LawsuitSubjects = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLa
  variant="secondary"
  />
  </>
- }
+ ) : undefined}
  >
- <AnalysisStageSectionCard label="عنوان الموضوع">
- <p className="text-sm app-text-muted leading-relaxed whitespace-pre-wrap">
- {data.subjectTitle}
- </p>
- </AnalysisStageSectionCard>
+  {data && (
+  <>
+  <AnalysisStageSectionCard label="عنوان الموضوع">
+  <p className="text-sm app-text-muted leading-relaxed whitespace-pre-wrap">
+  {data.subjectTitle}
+  </p>
+  </AnalysisStageSectionCard>
 
- <AnalysisStageSectionCard label="تفصيل الموضوع">
- <p className="text-sm app-text-muted leading-relaxed whitespace-pre-wrap">
- {data.subjectFullText}
- </p>
- </AnalysisStageSectionCard>
- </AnalysisStageLayout>
- )}
- </AnalysisStepShell>
+  <AnalysisStageSectionCard label="تفصيل الموضوع">
+  <p className="text-sm app-text-muted leading-relaxed whitespace-pre-wrap">
+  {data.subjectFullText}
+  </p>
+  </AnalysisStageSectionCard>
+  </>
+  )}
+ </UnifiedStepShell>
  );
 };
 

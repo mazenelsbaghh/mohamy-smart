@@ -1,6 +1,6 @@
 import { Container } from '@mohamy/shared-ui';
 import { Tabs, Tab } from '@heroui/react';
-import { IoCheckmarkCircle, IoDocumentTextOutline, IoFlash } from 'react-icons/io5';
+import { sileo } from 'sileo';
 import { useWorkflowOrchestrator } from '../../../../../hooks/useWorkflowOrchestrator';
 import { resetLegalWarning, legalWarningThunks, restoreLegalWarningSnapshot } from '../../../../../redux/legalWarning/legalWarningSlice';
 import WarningStep1Classification from './steps/WarningStep1Classification';
@@ -10,13 +10,7 @@ import AnalysisFactsSelectionStep from '../../../../../components/analysisWorkfl
 import WorkflowStepBar from '../../../../../components/analysisWorkflow/WorkflowStepBar';
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
-
-const WARNING_STEPS = [
-  { id: 1, label: 'مراجعة الوقائع', icon: <IoDocumentTextOutline /> },
-  { id: 2, label: 'تصنيف الإنذار', icon: <IoDocumentTextOutline /> },
-  { id: 3, label: 'صياغة المتن', icon: <IoFlash /> },
-  { id: 4, label: 'الإنذار النهائي', icon: <IoCheckmarkCircle /> },
-];
+import { LEGAL_WARNING_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
 
 const WARNING_JOB_STEP_MAP = {
   LegalWarningClassification: 1,
@@ -28,7 +22,6 @@ const LegalWarningPage = () => {
   const {
     active,
     nextStep,
-    maxStepAllowed,
     handleTabChange,
     caseId,
     isReadOnly,
@@ -54,8 +47,9 @@ const LegalWarningPage = () => {
     resetWorkflow: resetLegalWarning,
     workflowPrefix: 'warning',
     maxSteps: 3,
-    steps: WARNING_STEPS,
+    steps: LEGAL_WARNING_STEP_DEFS,
     jobStepMap: WARNING_JOB_STEP_MAP,
+    onError: (error) => { sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' }); },
   });
 
   const classification = workflowState.outputs[1];
@@ -86,7 +80,7 @@ const LegalWarningPage = () => {
             <SmartAnalysisLoader
               title="جاري تجهيز مساحة العمل"
               subtitle="يرجى الانتظار بينما نقوم باسترجاع بيانات القضية..."
-              steps={WARNING_STEPS.map(s => s.label)}
+              steps={LEGAL_WARNING_STEP_DEFS.map(s => s.label)}
               activeStepIndex={0}
             />
           </div>
@@ -111,7 +105,7 @@ const LegalWarningPage = () => {
           )}
 
           <WorkflowStepBar
-            steps={WARNING_STEPS}
+            steps={LEGAL_WARNING_STEP_DEFS}
             active={active}
             workflowTitle="الإنذار الرسمي"
             isAutoSaving={isAutoSaving}
@@ -129,7 +123,7 @@ const LegalWarningPage = () => {
               classNames={tabsClassNames}
               {...tabProps}
             >
-              {WARNING_STEPS.map((step, index) => (
+              {LEGAL_WARNING_STEP_DEFS.map((step, index) => (
                 <Tab
                   key={index.toString()}
                   title={

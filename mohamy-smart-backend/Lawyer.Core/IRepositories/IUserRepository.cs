@@ -1,4 +1,4 @@
-﻿using Lawyer.Core.Enums;
+﻿using Lawyer.Core.Enum;
 using Lawyer.Core.Exceptions;
 using Lawyer.Core.Models;
 using System;

@@ -5,14 +5,13 @@ import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHook
 import { hydrateRulingStep } from'../../../../../../redux/rulingAnalysis/rulingAnalysisWorkflowSlice';
 import type { TVerdictAnalysis } from'../../../../../../redux/shared/workflowTypes';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
+ UnifiedStepShell,
  AnalysisStageActionButton,
- AnalysisStageLayout,
  AnalysisStageNumberedList,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { buildAnalysisInput } from'../../../../../../components/analysisWorkflow/analysisFacts';
 
 type TRulingStep1Props = {
@@ -37,16 +36,13 @@ const RulingStep1VerdictAnalysis = ({ nextStep, selectedFacts }: TRulingStep1Pro
  });
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !verdictAnalysis}
  hasFailed={hasFailed && !verdictAnalysis}
  errorMessage={errorMessage}
  onRetry={retry}
- >
- {verdictAnalysis && (
- <AnalysisStageLayout
- title="تحليل منطوق الحكم"
- sidebar={
+ title={verdictAnalysis ? "تحليل منطوق الحكم" : undefined}
+ sidebar={verdictAnalysis ? (
  <>
  <AnalysisStageSidebarCard
  label="التهم المستخرجة"
@@ -60,34 +56,36 @@ const RulingStep1VerdictAnalysis = ({ nextStep, selectedFacts }: TRulingStep1Pro
  onClick={nextStep}
  />
  </>
- }
+ ) : undefined}
  >
- <AnalysisStageSectionCard label="ملخص المنطوق">
- <p className="text-sm leading-relaxed app-text-muted">
- {verdictAnalysis.verdictSummary}
- </p>
- </AnalysisStageSectionCard>
+  {verdictAnalysis && (
+  <>
+  <AnalysisStageSectionCard label="ملخص المنطوق">
+  <p className="text-sm leading-relaxed app-text-muted">
+  {verdictAnalysis.verdictSummary}
+  </p>
+  </AnalysisStageSectionCard>
 
- {verdictAnalysis.charges?.length > 0 && (
- <AnalysisStageSectionCard label="التهم الموجهة">
- <div className="flex flex-wrap gap-2">
- {verdictAnalysis.charges.map((charge, idx) => (
- <span key={idx} className="inline-block rounded-full px-4 py-1.5 text-sm font-bold app-surface-soft dark:app-surface-soft app-text-muted border app-border-strong dark:app-border-strong">
- {charge}
- </span>
- ))}
- </div>
- </AnalysisStageSectionCard>
- )}
+  {verdictAnalysis.charges?.length > 0 && (
+  <AnalysisStageSectionCard label="التهم الموجهة">
+  <div className="flex flex-wrap gap-2">
+  {verdictAnalysis.charges.map((charge, idx) => (
+  <span key={idx} className="inline-block rounded-full px-4 py-1.5 text-sm font-bold app-surface-soft dark:app-surface-soft app-text-muted border app-border-strong dark:app-border-strong">
+  {charge}
+  </span>
+  ))}
+  </div>
+  </AnalysisStageSectionCard>
+  )}
 
- {verdictAnalysis.verdictPoints?.length > 0 && (
- <AnalysisStageSectionCard label="نقاط الحكم الأساسية">
- <AnalysisStageNumberedList items={verdictAnalysis.verdictPoints} />
- </AnalysisStageSectionCard>
- )}
- </AnalysisStageLayout>
- )}
- </AnalysisStepShell>
+  {verdictAnalysis.verdictPoints?.length > 0 && (
+  <AnalysisStageSectionCard label="نقاط الحكم الأساسية">
+  <AnalysisStageNumberedList items={verdictAnalysis.verdictPoints} />
+  </AnalysisStageSectionCard>
+  )}
+  </>
+  )}
+ </UnifiedStepShell>
  );
 };
 

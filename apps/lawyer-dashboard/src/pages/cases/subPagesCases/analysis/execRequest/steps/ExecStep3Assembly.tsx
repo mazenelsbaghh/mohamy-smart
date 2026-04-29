@@ -8,13 +8,12 @@ import { IoCheckmarkOutline, IoCopyOutline } from'react-icons/io5';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
 import { hydrateStep } from'../../../../../../redux/execRequest/execRequestSlice';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
+ UnifiedStepShell,
  AnalysisStageActionButton,
  AnalysisStageDocumentCard,
- AnalysisStageLayout,
  AnalysisStageSidebarCard,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { buildAnalysisInput } from'../../../../../../components/analysisWorkflow/analysisFacts';
 
 type TExecStep3Props = {
@@ -57,16 +56,13 @@ const ExecStep3Assembly = ({ selectedFacts }: TExecStep3Props) => {
  };
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !finalAssembly}
  hasFailed={hasFailed && !finalAssembly}
  errorMessage={errorMessage}
  onRetry={retry}
- >
- {finalAssembly && (
- <AnalysisStageLayout
- title="المسودة النهائية للطلب التنفيذي"
- sidebar={
+ title={finalAssembly ? "المسودة النهائية للطلب التنفيذي" : undefined}
+ sidebar={finalAssembly ? (
  <>
  <AnalysisStageSidebarCard
  label="الحالة النهائية"
@@ -83,22 +79,22 @@ const ExecStep3Assembly = ({ selectedFacts }: TExecStep3Props) => {
  variant="secondary"
  />
  </>
- }
+ ) : undefined}
  >
- <AnalysisStageDocumentCard label="الطلب التنفيذي المتكامل" badge="مسودة جاهزة للتصدير">
- {isSanitizedEmpty(getHighlightedText(finalAssembly.documentText)) ? (
- <SanitizedContentEmpty />
- ) : (
- <div
- className="text-sm leading-[2.4] text-[var(--title-color)] dark:text-gray-200 text-end whitespace-pre-wrap"
- style={{ direction:'rtl' }}
- dangerouslySetInnerHTML={{ __html: sanitizeHtml(getHighlightedText(finalAssembly.documentText)) }}
- />
- )}
- </AnalysisStageDocumentCard>
- </AnalysisStageLayout>
- )}
- </AnalysisStepShell>
+  {finalAssembly && (
+  <AnalysisStageDocumentCard label="الطلب التنفيذي المتكامل" badge="مسودة جاهزة للتصدير">
+  {isSanitizedEmpty(getHighlightedText(finalAssembly.documentText)) ? (
+  <SanitizedContentEmpty />
+  ) : (
+  <div
+  className="text-sm leading-[2.4] text-[var(--title-color)] dark:text-gray-200 text-end whitespace-pre-wrap"
+  style={{ direction:'rtl' }}
+  dangerouslySetInnerHTML={{ __html: sanitizeHtml(getHighlightedText(finalAssembly.documentText)) }}
+  />
+  )}
+  </AnalysisStageDocumentCard>
+  )}
+ </UnifiedStepShell>
  );
 };
 

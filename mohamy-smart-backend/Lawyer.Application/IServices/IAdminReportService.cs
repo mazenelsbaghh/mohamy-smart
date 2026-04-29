@@ -1,5 +1,5 @@
 	using Lawyer.Application.Dtos.AdminReport;
-	using Lawyer.Core.Enums;
+	using Lawyer.Core.Enum;
 	using Lawyer.Core.Exceptions;
 
 	namespace Lawyer.Application.IServices

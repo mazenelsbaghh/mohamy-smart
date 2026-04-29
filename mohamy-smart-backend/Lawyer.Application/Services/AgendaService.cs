@@ -1,5 +1,5 @@
 using Lawyer.Application.Common.Interface;
-using Lawyer.Application.Interfaces;
+using Lawyer.Application.IServices;
 using Lawyer.Core.Exceptions;
 using Lawyer.Core.Models.Agenda;
 using Microsoft.EntityFrameworkCore;

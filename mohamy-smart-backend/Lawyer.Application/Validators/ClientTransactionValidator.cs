@@ -1,5 +1,5 @@
 using FluentValidation;
-using Lawyer.Application.Interfaces;
+using Lawyer.Application.IServices;
 
 namespace Lawyer.Application.Validators
 {

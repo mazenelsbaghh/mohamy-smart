@@ -2,7 +2,7 @@ using Lawyer.Application.Dtos.Account;
 using Lawyer.Application.Dto.Auth;
 using Lawyer.Application.IServices;
 using Lawyer.Controllers.Base;
-using Lawyer.Core.Enums;
+using Lawyer.Core.Enum;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;

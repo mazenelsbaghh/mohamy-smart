@@ -48,7 +48,7 @@ const WorkflowStepBar = ({
  ?'w-4 h-2 bg-[var(--main-color)]'
  : done
  ?'w-2 h-2 bg-[var(--main-color)] opacity-40'
- :'w-2 h-2 app-surface-muted dark:bg-gray-700'
+ :'w-2 h-2 app-surface-muted dark:app-surface-soft'
  }`}
  />
  );
@@ -60,7 +60,7 @@ const WorkflowStepBar = ({
  <span className="text-xs font-bold text-[var(--main-color)] dark:text-white shrink-0">
  {humanStep}/{total}
  </span>
- <span className="text-gray-300 dark:app-text-muted shrink-0">·</span>
+ <span className="app-text-subtle shrink-0">·</span>
  <span className="text-xs sm:text-sm font-bold text-[var(--title-color)] truncate">
  {currentLabel}
  </span>

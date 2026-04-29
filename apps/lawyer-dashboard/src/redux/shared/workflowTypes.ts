@@ -32,9 +32,13 @@ export interface BaseWorkflowState {
  };
 }
 
-export type TypedWorkflowState<TStepOutputs> = BaseWorkflowState & {
- outputs: TStepOutputs;
-};
+  export type TypedWorkflowState<TStepOutputs> = BaseWorkflowState & {
+    outputs: TStepOutputs;
+  };
+
+  export type DraftWorkflowState = BaseWorkflowState & {
+    outputs: Record<number, unknown>;
+  };
 
 // ─── Defense Memo Step Output Types (from smartAnalysisSlice) ───
 

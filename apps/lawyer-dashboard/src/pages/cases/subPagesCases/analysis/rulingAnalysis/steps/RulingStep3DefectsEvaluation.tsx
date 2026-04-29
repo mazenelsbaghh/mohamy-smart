@@ -5,13 +5,12 @@ import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHook
 import { hydrateRulingStep } from'../../../../../../redux/rulingAnalysis/rulingAnalysisWorkflowSlice';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
 import type { TDefectsEvaluation } from'../../../../../../redux/shared/workflowTypes';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
+ UnifiedStepShell,
  AnalysisStageActionButton,
- AnalysisStageLayout,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { buildAnalysisInput } from'../../../../../../components/analysisWorkflow/analysisFacts';
 
 type TRulingStep3Props = {
@@ -43,16 +42,13 @@ const RulingStep3DefectsEvaluation = ({ nextStep, selectedFacts }: TRulingStep3P
  };
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !defectsEvaluation}
  hasFailed={hasFailed && !defectsEvaluation}
  errorMessage={errorMessage}
  onRetry={retry}
- >
- {defectsEvaluation && (
- <AnalysisStageLayout
- title="تحليل عيوب ومثالب الحكم"
- sidebar={
+ title={defectsEvaluation ? "تحليل عيوب ومثالب الحكم" : undefined}
+ sidebar={defectsEvaluation ? (
  <>
  <AnalysisStageSidebarCard
  label="إجمالي العيوب المكتشفة"
@@ -66,33 +62,35 @@ const RulingStep3DefectsEvaluation = ({ nextStep, selectedFacts }: TRulingStep3P
  onClick={nextStep}
  />
  </>
- }
+ ) : undefined}
  >
- {defectsEvaluation.defects?.length > 0 ? (
- <div className="flex flex-col gap-4">
- {defectsEvaluation.defects.map((defect, idx) => (
- <AnalysisStageSectionCard key={idx} label={`العيب ${idx + 1}`} className="relative overflow-hidden">
- <div className={`absolute top-0 end-0 h-full w-[4px] ${defect.severity ==='خطير' ?'bg-red-500' : defect.severity ==='متوسط' ?'bg-orange-400' :'bg-gray-300 dark:bg-gray-600'}`} />
- <div className="flex justify-between items-start mb-3">
- <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getSeverityColor(defect.severity)}`}>
- {defect.severity}
- </span>
- </div>
- <p className="text-sm leading-relaxed text-[var(--title-color)] dark:text-gray-200">
- {defect.description}
- </p>
- </AnalysisStageSectionCard>
- ))}
- </div>
- ) : (
- <AnalysisStageSectionCard label="نتيجة التقييم" className="border-green-100 dark:border-green-800/50 bg-[var(--success-soft)] dark:bg-green-950/30 text-center">
- <strong className="block text-lg font-bold text-[var(--success-color)] dark:text-green-400 mb-2">لا توجد عيوب جوهرية</strong>
- <p className="text-sm text-[var(--success-color)] dark:text-green-400">الحكم سليم تقريباً من حيث التسبيب وتطبيق القانون بناءً على المستندات المتاحة.</p>
- </AnalysisStageSectionCard>
- )}
- </AnalysisStageLayout>
- )}
- </AnalysisStepShell>
+  {defectsEvaluation && (
+  <>
+  {defectsEvaluation.defects?.length > 0 ? (
+  <div className="flex flex-col gap-4">
+  {defectsEvaluation.defects.map((defect, idx) => (
+  <AnalysisStageSectionCard key={idx} label={`العيب ${idx + 1}`} className="relative overflow-hidden">
+  <div className={`absolute top-0 end-0 h-full w-[4px] ${defect.severity ==='خطير' ?'bg-red-500' : defect.severity ==='متوسط' ?'bg-orange-400' :'bg-gray-300 dark:bg-gray-600'}`} />
+  <div className="flex justify-between items-start mb-3">
+  <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getSeverityColor(defect.severity)}`}>
+  {defect.severity}
+  </span>
+  </div>
+  <p className="text-sm leading-relaxed text-[var(--title-color)] dark:text-gray-200">
+  {defect.description}
+  </p>
+  </AnalysisStageSectionCard>
+  ))}
+  </div>
+  ) : (
+  <AnalysisStageSectionCard label="نتيجة التقييم" className="border-green-100 dark:border-green-800/50 bg-[var(--success-soft)] dark:bg-green-950/30 text-center">
+  <strong className="block text-lg font-bold text-[var(--success-color)] dark:text-green-400 mb-2">لا توجد عيوب جوهرية</strong>
+  <p className="text-sm text-[var(--success-color)] dark:text-green-400">الحكم سليم تقريباً من حيث التسبيب وتطبيق القانون بناءً على المستندات المتاحة.</p>
+  </AnalysisStageSectionCard>
+  )}
+  </>
+  )}
+ </UnifiedStepShell>
  );
 };
 

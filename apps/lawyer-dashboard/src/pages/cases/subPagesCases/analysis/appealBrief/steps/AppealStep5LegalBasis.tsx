@@ -5,13 +5,12 @@ import { IoArrowBackOutline, IoArrowForwardOutline } from'react-icons/io5';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
 import { hydrateStep } from'../../../../../../redux/appealBrief/appealBriefSlice';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
+ UnifiedStepShell,
  AnalysisStageActionButton,
- AnalysisStageLayout,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 
 type TAppealStep5Props = {
  nextStep: () => void;
@@ -35,16 +34,13 @@ const AppealStep5LegalBasis = ({ nextStep, prevStep , selectedFacts }: TAppealSt
  });
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !legalBasisData}
  hasFailed={hasFailed && !legalBasisData}
  errorMessage={errorMessage}
  onRetry={retry}
- >
- {legalBasisData && (
- <AnalysisStageLayout
- title="السند القانوني"
- sidebar={
+ title={legalBasisData ? "السند القانوني" : undefined}
+ sidebar={legalBasisData ? (
  <>
  <AnalysisStageSidebarCard
  label="إطار السند"
@@ -66,8 +62,9 @@ const AppealStep5LegalBasis = ({ nextStep, prevStep , selectedFacts }: TAppealSt
  />
  </div>
  </>
- }
+ ) : undefined}
  >
+ {legalBasisData && (
  <div className="grid grid-cols-1 gap-6">
  <AnalysisStageSectionCard label="المواد والسوابق ومجه الاستدلال">
  {legalBasisData.legalBasis && legalBasisData.legalBasis.length > 0 ? (
@@ -116,19 +113,18 @@ const AppealStep5LegalBasis = ({ nextStep, prevStep , selectedFacts }: TAppealSt
  {basis.applicationNotes}
  </p>
  </div>
- )}
- </div>
- ))}
- </div>
- ) : (
- <div className="app-text-subtle italic p-3 text-center">لا يوجد سند قانوني مسجل أو جاري المعالجة...</div>
- )}
- </AnalysisStageSectionCard>
- </div>
- </AnalysisStageLayout>
- )}
- </AnalysisStepShell>
- );
+  )}
+  </div>
+  ))}
+  </div>
+  ) : (
+  <div className="app-text-subtle italic p-4 text-center">لا يوجد سند قانوني مسجل.</div>
+  )}
+  </AnalysisStageSectionCard>
+  </div>
+  )}
+  </UnifiedStepShell>
+  );
 };
 
 export default AppealStep5LegalBasis;

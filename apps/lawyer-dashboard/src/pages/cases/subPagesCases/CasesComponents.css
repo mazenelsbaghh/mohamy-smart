@@ -35,7 +35,7 @@
     max-width: 58ch;
     margin: 0.8rem 0 0;
     line-height: 1.9;
-    color: rgba(27, 27, 27, 0.64);
+    color: var(--text-color);
 }
 
 .case-analysis .analysis-brief__meta {
@@ -48,7 +48,7 @@
 .case-analysis .analysis-brief__meta span,
 .case-analysis .analysis-brief__panel small {
     display: block;
-    color: rgba(27, 27, 27, 0.58);
+    color: var(--muted-color);
 }
 
 .case-analysis .analysis-brief__meta strong {
@@ -112,7 +112,7 @@
 .case-analysis .analysis-brief__panel p {
     max-width: 50ch;
     margin: 0;
-    color: rgba(27, 27, 27, 0.62);
+    color: var(--text-color);
     line-height: 1.9;
     text-align: right;
 }

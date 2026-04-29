@@ -1,13 +1,12 @@
 import { useState, useMemo } from'react';
 import { Chip } from'@heroui/react';
 import { IoArrowBackOutline, IoRefreshOutline } from'react-icons/io5';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
- AnalysisStageLayout,
+ UnifiedStepShell,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
  AnalysisStageActionButton,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
 import { hydrateStatementStep } from'../../../../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice';
 import type { TCaseDetails } from'../../../../../../redux/shared/workflowTypes';
@@ -55,23 +54,20 @@ const LawsuitCaseType = ({ caseId, nextStep, selectedFacts }: TLawsuitCaseType) 
  };
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !data}
  hasFailed={hasFailed && !data}
  errorMessage={errorMessage}
  onRetry={retry}
  loadingTitle="جاري تحديد نوع الدعوى والاختصاص..."
  loadingSubtitle="يقوم النظام بتحليل وقائع القضية وتكييفها قانونيًا لتحديد نوع الدعوى، المحكمة المختصة، والطبيعة الإجرائية المناسبة."
- >
- {data && (
- <AnalysisStageLayout
- title="تصنيف القضية وتحديد نطاقها القضائي"
- actions={
+ title={data ? "تصنيف القضية وتحديد نطاقها القضائي" : undefined}
+ actions={data ? (
  <Chip color="warning" variant="flat">
  {data.caseMainType ||'تصنيف'}
  </Chip>
- }
- sidebar={
+ ) : undefined}
+ sidebar={data ? (
  <>
  <AnalysisStageSidebarCard
  label="التصنيف الحالي"
@@ -94,8 +90,10 @@ const LawsuitCaseType = ({ caseId, nextStep, selectedFacts }: TLawsuitCaseType) 
  variant="secondary"
  />
  </>
- }
+ ) : undefined}
  >
+ {data && (
+ <>
  <AnalysisStageSectionCard label="بيانات التصنيف الأساسية">
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
  <div className="flex flex-col gap-1">
@@ -138,9 +136,9 @@ const LawsuitCaseType = ({ caseId, nextStep, selectedFacts }: TLawsuitCaseType) 
  </p>
  )}
  </AnalysisStageSectionCard>
- </AnalysisStageLayout>
+ </>
  )}
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 

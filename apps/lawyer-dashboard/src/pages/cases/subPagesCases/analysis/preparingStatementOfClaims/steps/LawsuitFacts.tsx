@@ -3,13 +3,12 @@ import { IoArrowBackOutline } from'react-icons/io5';
 import { Chip } from'@heroui/react';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
 import { useAnalysisStep } from'../../../../../../hooks/useAnalysisStep';
-import { AnalysisStepShell } from'../../../../../../components/analysisWorkflow/AnalysisStepShell';
 import {
- AnalysisStageLayout,
+ UnifiedStepShell,
  AnalysisStageSectionCard,
  AnalysisStageSidebarCard,
  AnalysisStageActionButton,
-} from'../../../../../../components/analysisWorkflow/AnalysisStageLayout';
+} from'../../../../../../components/analysisWorkflow/UnifiedStepShell';
 import { hydrateStatementStep } from'../../../../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice';
 import { buildAnalysisInput } from'../../../../../../components/analysisWorkflow/analysisFacts';
 
@@ -54,15 +53,13 @@ const LawsuitFacts = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLawsu
  };
 
  return (
- <AnalysisStepShell
+ <UnifiedStepShell
  isLoading={isLoading && !lawsuitFact}
  hasFailed={hasFailed && !lawsuitFact}
  errorMessage={errorMessage}
  onRetry={retry}
  loadingTitle="جاري إعداد الوقائع بصياغة قانونية..."
  loadingSubtitle="يعيد النظام ترتيب التسلسل الواقعي وصياغته في صورة وقائع مترابطة تصلح للإدراج المباشر داخل صحيفة الدعوى."
- >
- <AnalysisStageLayout
  title="سرد الوقائع بصياغة مرتبة"
  actions={
  caseType ? (
@@ -93,8 +90,7 @@ const LawsuitFacts = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLawsu
  {lawsuitFact?.factsNarrative}
  </p>
  </AnalysisStageSectionCard>
- </AnalysisStageLayout>
- </AnalysisStepShell>
+ </UnifiedStepShell>
  );
 };
 
