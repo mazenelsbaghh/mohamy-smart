@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Container } from '@mohamy/shared-ui';
 import { Tabs, Tab } from '@heroui/react';
 import { sileo } from 'sileo';
@@ -42,6 +43,7 @@ const RulingAnalysisPage = () => {
     tabsClassNames,
     tabProps,
     isClickableTab,
+    handleAdvanceStage,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: any) => s.rulingAnalysis,
     thunks: rulingAnalysisThunks,
@@ -56,6 +58,10 @@ const RulingAnalysisPage = () => {
 
   const verdictAnalysis = workflowState.outputs[1];
 
+  const advanceToNextStep = useCallback(() => {
+    handleAdvanceStage(active, active + 1);
+  }, [active, handleAdvanceStage]);
+
   const renderedStep = [
     <AnalysisFactsSelectionStep
       key="facts"
@@ -69,9 +75,9 @@ const RulingAnalysisPage = () => {
       continueLabel={verdictAnalysis ? 'الانتقال إلى تحليل المنطوق' : 'بدء تحليل الحكم'}
       onStart={nextStep}
     />,
-    <RulingStep1VerdictAnalysis key="step1" nextStep={nextStep} selectedFacts={selectedFacts} />,
-    <RulingStep2ReasonsAnalysis key="step2" nextStep={nextStep} selectedFacts={selectedFacts} />,
-    <RulingStep3DefectsEvaluation key="step3" nextStep={nextStep} selectedFacts={selectedFacts} />,
+    <RulingStep1VerdictAnalysis key="step1" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
+    <RulingStep2ReasonsAnalysis key="step2" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
+    <RulingStep3DefectsEvaluation key="step3" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <RulingStep4AppealViability key="step4" selectedFacts={selectedFacts} />,
   ];
 
@@ -116,6 +122,8 @@ const RulingAnalysisPage = () => {
             lastSavedAt={lastSavedAt}
             onManualSave={handleManualSave}
             isSavingStep={isSavingStep}
+            currentAccessibleStep={workflowState.currentAccessibleStep}
+            lastCompletedStep={workflowState.lastCompletedStep}
           />
 
           <div className="w-full">

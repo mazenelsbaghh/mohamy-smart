@@ -21,6 +21,20 @@ namespace Lawyer.Controllers
 
         private string GetLawyerId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
 
+        [HttpPost("{caseId}/start-new")]
+        public async Task<IActionResult> StartNewRun(Guid caseId, CancellationToken ct)
+        {
+            var result = await _service.StartNewRunAsync(caseId, GetLawyerId(), ct);
+            return CreateResponse(result);
+        }
+
+        [HttpGet("case/{caseId}/resume")]
+        public async Task<IActionResult> ResumeCurrentRun(Guid caseId, CancellationToken ct)
+        {
+            var result = await _service.ResumeCurrentRunAsync(caseId, GetLawyerId(), ct);
+            return CreateResponse(result);
+        }
+
         [HttpPost]
         public async Task<IActionResult> StartWorkflow([FromBody] StartAppealWorkflowRequest request, CancellationToken ct)
         {
@@ -67,6 +81,20 @@ namespace Lawyer.Controllers
         public async Task<IActionResult> AbandonWorkflow(int id, CancellationToken ct)
         {
             var result = await _service.AbandonWorkflowAsync(id, GetLawyerId(), ct);
+            return CreateResponse(result);
+        }
+
+        [HttpPost("{id}/advance-stage")]
+        public async Task<IActionResult> AdvanceStage(int id, [FromBody] Lawyer.Application.Dtos.Workflows.TransitionStageRequestDto request, CancellationToken ct)
+        {
+            var result = await _service.AdvanceStageAsync(Guid.Empty, id, request.FromStep, request.ToStep, GetLawyerId(), ct);
+            return CreateResponse(result);
+        }
+
+        [HttpPost("{id}/recover-conflict")]
+        public async Task<IActionResult> RecoverConflict(int id, [FromBody] Lawyer.Application.Dtos.Workflows.RecoverConflictRequest request, CancellationToken ct)
+        {
+            var result = await _service.RecoverConflictAsync(Guid.Empty, id, request.StepNumber, GetLawyerId(), ct);
             return CreateResponse(result);
         }
     }

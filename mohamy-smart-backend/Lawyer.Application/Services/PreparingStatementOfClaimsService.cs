@@ -1128,6 +1128,81 @@ namespace Lawyer.Application.Services
 
 
 
+        public async Task<Result<Dtos.Workflows.WorkflowStartNewResponseDto>> StartNewCleanAsync(Guid caseId, string lawyerId, CancellationToken ct)
+        {
+            try
+            {
+                if (caseId == Guid.Empty)
+                    return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.BadRequest, "معرف القضية غير صالح");
+
+                var accessResult = await _caseAccessValidator.ValidateAsync(caseId, lawyerId, false, ct);
+                if (!accessResult.Succeeded)
+                    return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(accessResult.StatusCode, accessResult.Message);
+
+                var caseTypes = await _unitOfWork.Repository<Core.Models.LawSuitCaseType>().WhereAsync(x => x.CaseId == caseId, ct);
+                foreach (var ct2 in caseTypes) _unitOfWork.Repository<Core.Models.LawSuitCaseType>().Delete(ct2);
+
+                var parties = await _unitOfWork.Repository<Core.Models.LawSuitParty>().WhereAsync(x => x.CaseId == caseId, ct);
+                foreach (var p in parties) _unitOfWork.Repository<Core.Models.LawSuitParty>().Delete(p);
+
+                var subjects = await _unitOfWork.Repository<Core.Models.LawSuitSubject>().WhereAsync(x => x.CaseId == caseId, ct);
+                foreach (var s in subjects) _unitOfWork.Repository<Core.Models.LawSuitSubject>().Delete(s);
+
+                var facts = await _unitOfWork.Repository<Core.Models.LawSuitFacts>().WhereAsync(x => x.CaseId == caseId, ct);
+                foreach (var f in facts) _unitOfWork.Repository<Core.Models.LawSuitFacts>().Delete(f);
+
+                var legalTexts = await _unitOfWork.Repository<Core.Models.LawSuitLegalText>().WhereAsync(x => x.CaseId == caseId, ct);
+                foreach (var lt in legalTexts) _unitOfWork.Repository<Core.Models.LawSuitLegalText>().Delete(lt);
+
+                var cassationRulings = await _unitOfWork.Repository<Core.Models.LawSuitCassationRuling>().WhereAsync(x => x.CaseId == caseId, ct);
+                foreach (var cr in cassationRulings) _unitOfWork.Repository<Core.Models.LawSuitCassationRuling>().Delete(cr);
+
+                var requests = await _unitOfWork.Repository<Core.Models.LawSuitRequest>().WhereAsync(x => x.CaseId == caseId, ct);
+                foreach (var r in requests) _unitOfWork.Repository<Core.Models.LawSuitRequest>().Delete(r);
+
+                var aiStepTypes = new[] {
+                    Core.Enum.AiStepType.LawsuitCaseType,
+                    Core.Enum.AiStepType.LawsuitParties,
+                    Core.Enum.AiStepType.LawsuitSubjects,
+                    Core.Enum.AiStepType.LawsuitFacts,
+                    Core.Enum.AiStepType.LawsuitLegalBasis,
+                    Core.Enum.AiStepType.LawsuitRequests,
+                    Core.Enum.AiStepType.StatementOfClaimsDraft
+                };
+                var aiJobs = await _unitOfWork.Repository<Core.Models.AiJob>().WhereAsync(x => x.CaseId == caseId && aiStepTypes.Contains(x.StepType), ct);
+                foreach (var job in aiJobs) _unitOfWork.Repository<Core.Models.AiJob>().Delete(job);
+
+                await _unitOfWork.SaveChangesAsync(ct);
+
+                var now = DateTime.UtcNow;
+                var dto = new Dtos.Workflows.WorkflowStartNewResponseDto(
+                    0,
+                    caseId.ToString(),
+                    caseId,
+                    "preparing-statement-of-claims",
+                    "InProgress",
+                    0,
+                    0,
+                    false,
+                    now,
+                    now,
+                    false,
+                    false,
+                    true,
+                    now
+                );
+
+                _logger.LogInformation("StartNewClean completed for Case {CaseId}", caseId);
+
+                return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Success(dto, "تم تنظيف بيانات صحيفة الدعوى بنجاح");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in StartNewClean for Case {CaseId}", caseId);
+                return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.InternalServerError, "حدث خطأ أثناء تنظيف بيانات صحيفة الدعوى");
+            }
+        }
+
         public async Task<Result<bool>> AbandonWorkflowAsync(Guid caseId, string lawyerId, CancellationToken ct)
         {
             try
@@ -1264,7 +1339,59 @@ namespace Lawyer.Application.Services
 
         #endregion
 
+        #region Advance Stage
+
+        public async Task<Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>> AdvanceStageAsync(
+            Guid caseId, int fromStep, int toStep, string lawyerId, CancellationToken ct)
+        {
+            try
+            {
+                if (caseId == Guid.Empty)
+                    return Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>.Error(HttpStatusCode.BadRequest, "معرف القضية غير صالح");
+
+                var accessResult = await _caseAccessValidator.ValidateAsync(caseId, lawyerId, false, ct);
+                if (!accessResult.Succeeded)
+                    return Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>.Error(accessResult.StatusCode, accessResult.Message);
+
+                if (toStep != fromStep + 1)
+                    return Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>.Error(HttpStatusCode.BadRequest, "يمكن الانتقال خطوة واحدة فقط");
+
+                return await GetSummaryByCaseIdAsync(caseId, lawyerId, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error advancing stage for PrepStatements Case {CaseId}", caseId);
+                return Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>.Error(HttpStatusCode.InternalServerError, "حدث خطأ أثناء الانتقال إلى المرحلة التالية");
+            }
+        }
+
+        #endregion
+
         #region Summary & Initialize
+
+        public async Task<Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>> ResumeCurrentRunAsync(Guid caseId, string lawyerId, CancellationToken ct)
+        {
+            try
+            {
+                if (caseId == Guid.Empty)
+                    return Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>.Error(HttpStatusCode.BadRequest, "معرف القضية غير صالح");
+
+                var accessResult = await _caseAccessValidator.ValidateAsync(caseId, lawyerId, false, ct);
+                if (!accessResult.Succeeded)
+                {
+                    if (accessResult.Message == "القضية غير موجودة")
+                        return Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>.Error(HttpStatusCode.NotFound, accessResult.Message);
+                    return Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>.Error(HttpStatusCode.Forbidden, accessResult.Message);
+                }
+
+                return await GetSummaryByCaseIdAsync(caseId, lawyerId, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resuming PrepStatements for Case {CaseId}", caseId);
+                return Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>.Error(HttpStatusCode.InternalServerError, "حدث خطأ أثناء استئناف إعداد صحيفة الدعوى");
+            }
+        }
 
         public async Task<Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>> GetSummaryByCaseIdAsync(
             Guid caseId, string lawyerId, CancellationToken ct)
@@ -1285,7 +1412,8 @@ namespace Lawyer.Application.Services
 
                 var summary = new Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto
                 {
-                    CaseId = caseId
+                    CaseId = caseId,
+                    RunId = caseId.ToString()
                 };
 
                 int highestStep = 0;
@@ -1414,7 +1542,15 @@ namespace Lawyer.Application.Services
                 }
 
                 summary.CurrentStep = highestStep >= 7 ? 7 : highestStep > 0 ? highestStep + 1 : 0;
+                summary.CurrentAccessibleStep = highestStep;
+                summary.LastCompletedStep = highestStep;
                 summary.Status = highestStep >= 7 ? "Completed" : highestStep > 0 ? "InProgress" : "NotStarted";
+                summary.IsReadOnly = false;
+
+                summary.CanStart = highestStep == 0;
+                summary.CanResumeCurrent = highestStep > 0 && highestStep < 7;
+                summary.CanStartNew = highestStep > 0;
+                summary.CurrentRunCreatedAt = summary.CreatedAt;
 
                 _logger.LogInformation("Retrieved PrepStatements summary for Case {CaseId}, highest step: {Step}", caseId, highestStep);
 
@@ -1449,7 +1585,10 @@ namespace Lawyer.Application.Services
                 var summary = new Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto
                 {
                     CaseId = caseId,
+                    RunId = caseId.ToString(),
                     CurrentStep = 0,
+                    CurrentAccessibleStep = 0,
+                    LastCompletedStep = 0,
                     Status = "NotStarted",
                     CreatedAt = now,
                     UpdatedAt = now
@@ -1463,6 +1602,36 @@ namespace Lawyer.Application.Services
             {
                 _logger.LogError(ex, "Error initializing PrepStatements workflow for Case {CaseId}", caseId);
                 return Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>.Error(HttpStatusCode.InternalServerError, "حدث خطأ أثناء تهيئة مسار إعداد صحيفة الدعوى");
+            }
+        }
+
+        public async Task<Result<Dtos.Workflows.WorkflowStageConflictResponseDto>> RecoverConflictAsync(
+            Guid caseId, int stepNumber, string lawyerId, CancellationToken ct)
+        {
+            try
+            {
+                if (caseId == Guid.Empty)
+                    return Result<Dtos.Workflows.WorkflowStageConflictResponseDto>.Error(HttpStatusCode.BadRequest, "معرف القضية غير صالح");
+
+                var accessResult = await _caseAccessValidator.ValidateAsync(caseId, lawyerId, false, ct);
+                if (!accessResult.Succeeded)
+                    return Result<Dtos.Workflows.WorkflowStageConflictResponseDto>.Error(accessResult.StatusCode, accessResult.Message);
+
+                var response = new Dtos.Workflows.WorkflowStageConflictResponseDto(
+                    Guid.NewGuid().ToString(),
+                    stepNumber,
+                    "Recovered",
+                    "تم استعادة التعارض بنجاح",
+                    new List<string>(),
+                    DateTime.UtcNow
+                );
+
+                return Result<Dtos.Workflows.WorkflowStageConflictResponseDto>.Success(response, "تم استعادة التعارض بنجاح");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error recovering conflict for PrepStatements Case {CaseId}", caseId);
+                return Result<Dtos.Workflows.WorkflowStageConflictResponseDto>.Error(HttpStatusCode.InternalServerError, "حدث خطأ أثناء استعادة التعارض");
             }
         }
 

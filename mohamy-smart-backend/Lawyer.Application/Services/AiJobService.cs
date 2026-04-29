@@ -77,17 +77,31 @@ namespace Lawyer.Application.Services
             {
                 await using var transaction = await dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
-                var activeJob = await GetActiveJobAsync(caseId, dto.StepType, ct);
-                if (activeJob != null)
+                if (!string.IsNullOrEmpty(dto.RunId) && dto.StepNumber.HasValue)
                 {
-                    await transaction.CommitAsync(ct);
-                    return Result<AiJobStatusDto>.Success(ToDto(activeJob), HttpStatusCode.OK.ToString());
+                    var runJobResult = await GetActiveJobByRunAsync(caseId, dto.RunId, dto.WorkflowType!, dto.StepNumber.Value, userId, ct);
+                    if (runJobResult.Succeeded && runJobResult.Data != null)
+                    {
+                        await transaction.CommitAsync(ct);
+                        return Result<AiJobStatusDto>.Success(runJobResult.Data, HttpStatusCode.OK.ToString());
+                    }
+                }
+                else
+                {
+                    var activeJob = await GetActiveJobAsync(caseId, dto.StepType, ct);
+                    if (activeJob != null)
+                    {
+                        await transaction.CommitAsync(ct);
+                        return Result<AiJobStatusDto>.Success(ToDto(activeJob), HttpStatusCode.OK.ToString());
+                    }
                 }
 
-                var latestJob = await GetLatestJobAsync(caseId, dto.StepType, ct);
+                var latestJob = !string.IsNullOrEmpty(dto.RunId) && dto.StepNumber.HasValue
+                    ? await GetLatestJobByRunAsync(caseId, dto.RunId, dto.WorkflowType, dto.StepNumber.Value, ct)
+                    : await GetLatestJobAsync(caseId, dto.StepType, ct);
                 var job = latestJob is null
-                    ? CreateQueuedJob(caseId, dto.StepType)
-                    : ResetForResubmission(latestJob);
+                    ? CreateQueuedJob(caseId, dto.StepType, dto.RunId, dto.WorkflowType, dto.StepNumber)
+                    : ResetForResubmission(latestJob, dto.RunId, dto.WorkflowType, dto.StepNumber);
 
                 if (latestJob is null)
                     _db.AiJobs.Add(job);
@@ -101,7 +115,9 @@ namespace Lawyer.Application.Services
             catch (DbUpdateException ex) when (IsDuplicateActiveJobViolation(ex))
             {
                 dbContext.ChangeTracker.Clear();
-                var existing = await GetActiveJobAsync(caseId, dto.StepType, ct);
+                var existing = !string.IsNullOrEmpty(dto.RunId) && dto.StepNumber.HasValue
+                    ? await GetActiveJobEntityByRunAsync(caseId, dto.RunId, dto.WorkflowType, dto.StepNumber.Value, ct)
+                    : await GetActiveJobAsync(caseId, dto.StepType, ct);
                 if (existing != null)
                     return Result<AiJobStatusDto>.Success(ToDto(existing), HttpStatusCode.OK.ToString());
 
@@ -156,9 +172,69 @@ namespace Lawyer.Application.Services
             return Result<AiJobStatusDto>.Success(ToDto(job), "تم إلغاء التحليل بنجاح");
         }
 
+        public async Task<Result<AiJobStatusDto?>> GetActiveJobByRunAsync(Guid caseId, string runId, string workflowType, int stepNumber, string userId, CancellationToken ct)
+        {
+            var accessResult = await ValidateCaseAccessAsync(caseId, userId, ct);
+            if (!accessResult.Succeeded)
+                return Result<AiJobStatusDto?>.Error(accessResult.StatusCode, accessResult.Message);
+
+            var job = await _db.AiJobs
+                .AsNoTracking()
+                .Where(j => j.CaseId == caseId && j.RunId == runId && j.WorkflowType == workflowType && j.StepNumber == stepNumber
+                            && (j.Status == AiJobStatus.Queued || j.Status == AiJobStatus.Processing))
+                .OrderByDescending(j => j.CreatedAt)
+                .FirstOrDefaultAsync(ct);
+
+            if (job == null)
+                return Result<AiJobStatusDto?>.Success(null);
+
+            return Result<AiJobStatusDto?>.Success(ToDto(job));
+        }
+
+        public async Task<Result<bool>> IgnoreStaleCompletionAsync(Guid jobId, string activeRunId, string userId, CancellationToken ct)
+        {
+            var job = await _db.AiJobs.FindAsync(new object[] { jobId }, ct);
+            if (job == null)
+                return Result<bool>.Error(HttpStatusCode.NotFound, "Job not found.");
+
+            var accessResult = await ValidateCaseAccessAsync(job.CaseId, userId, ct);
+            if (!accessResult.Succeeded)
+                return Result<bool>.Error(accessResult.StatusCode, accessResult.Message);
+
+            if (job.RunId == activeRunId)
+                return Result<bool>.Success(data: false);
+
+            job.Status = AiJobStatus.Completed;
+            job.CompletedAt = DateTime.UtcNow;
+            job.HangfireJobId = null;
+            await _db.SaveChangesAsync(ct);
+
+            return Result<bool>.Success(data: true);
+        }
+
+        public async Task<Result<AiJobStatusDto>> MarkConflictAsync(Guid jobId, string errorCode, string conflictMessage, string userId, CancellationToken ct)
+        {
+            var job = await _db.AiJobs.FindAsync(new object[] { jobId }, ct);
+            if (job == null)
+                return Result<AiJobStatusDto>.Error(HttpStatusCode.NotFound, "Job not found.");
+
+            var accessResult = await ValidateCaseAccessAsync(job.CaseId, userId, ct);
+            if (!accessResult.Succeeded)
+                return Result<AiJobStatusDto>.Error(accessResult.StatusCode, accessResult.Message);
+
+            job.Status = AiJobStatus.Conflict;
+            job.ErrorCode = errorCode;
+            job.ErrorMessage = conflictMessage;
+            job.CompletedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+
+            return Result<AiJobStatusDto>.Success(ToDto(job));
+        }
+
         private static AiJobStatusDto ToDto(AiJob j) => new(
             j.Id, j.CaseId, j.StepType, j.Status,
-            j.ResultJson, j.ErrorMessage, j.CreatedAt, j.CompletedAt);
+            j.ResultJson, j.ErrorMessage, j.CreatedAt, j.CompletedAt,
+            j.RunId, j.WorkflowType, j.StepNumber, j.ErrorCode, null);
 
         private async Task<AiJob?> GetActiveJobAsync(Guid caseId, AiStepType stepType, CancellationToken ct)
         {
@@ -177,24 +253,48 @@ namespace Lawyer.Application.Services
                 .FirstOrDefaultAsync(ct);
         }
 
-        private static AiJob CreateQueuedJob(Guid caseId, AiStepType stepType)
+        private async Task<AiJob?> GetLatestJobByRunAsync(Guid caseId, string runId, string? workflowType, int stepNumber, CancellationToken ct)
+        {
+            return await _db.AiJobs
+                .Where(j => j.CaseId == caseId && j.RunId == runId && j.WorkflowType == workflowType && j.StepNumber == stepNumber)
+                .OrderByDescending(j => j.CreatedAt)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        private async Task<AiJob?> GetActiveJobEntityByRunAsync(Guid caseId, string runId, string? workflowType, int stepNumber, CancellationToken ct)
+        {
+            return await _db.AiJobs
+                .Where(j => j.CaseId == caseId && j.RunId == runId && j.WorkflowType == workflowType && j.StepNumber == stepNumber
+                            && (j.Status == AiJobStatus.Queued || j.Status == AiJobStatus.Processing))
+                .OrderByDescending(j => j.CreatedAt)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        private static AiJob CreateQueuedJob(Guid caseId, AiStepType stepType, string? runId, string? workflowType, int? stepNumber)
         {
             return new AiJob
             {
                 CaseId = caseId,
                 StepType = stepType,
                 Status = AiJobStatus.Queued,
+                RunId = runId,
+                WorkflowType = workflowType,
+                StepNumber = stepNumber,
             };
         }
 
-        private static AiJob ResetForResubmission(AiJob job)
+        private static AiJob ResetForResubmission(AiJob job, string? runId, string? workflowType, int? stepNumber)
         {
             job.Status = AiJobStatus.Queued;
             job.ErrorMessage = null;
+            job.ErrorCode = null;
             job.ResultJson = null;
             job.CompletedAt = null;
             job.StartedAt = null;
             job.HangfireJobId = null;
+            job.RunId = runId;
+            job.WorkflowType = workflowType;
+            job.StepNumber = stepNumber;
             job.CreatedAt = DateTime.UtcNow;
             return job;
         }

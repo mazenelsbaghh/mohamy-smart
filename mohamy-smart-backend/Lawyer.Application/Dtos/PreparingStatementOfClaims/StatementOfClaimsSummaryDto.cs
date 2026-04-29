@@ -1,21 +1,29 @@
+using System;
 using System.Text.Json.Serialization;
 
 namespace Lawyer.Application.Dtos.PreparingStatementOfClaims
 {
-    /// <summary>
-    /// Aggregated summary of all PrepStatements step outputs for a given case.
-    /// Property names use [JsonPropertyName("stepNOutput")] to match the format
-    /// expected by the unified frontend createWorkflowSlice hydrator.
-    /// </summary>
     public class StatementOfClaimsSummaryDto
     {
         public Guid CaseId { get; set; }
 
-        /// <summary>Current highest completed step (1-7). 0 means nothing started.</summary>
+        public string? RunId { get; set; }
+
+        public string WorkflowType { get; set; } = "preparing-statement-of-claims";
+
         public int CurrentStep { get; set; }
 
-        /// <summary>"InProgress" | "Completed" | "NotStarted"</summary>
+        public int CurrentAccessibleStep { get; set; }
+
+        public int LastCompletedStep { get; set; }
+
         public string Status { get; set; } = "NotStarted";
+
+        public bool IsReadOnly { get; set; }
+
+        public object[] ActiveRequests { get; set; } = Array.Empty<object>();
+
+        public object[] StageConflicts { get; set; } = Array.Empty<object>();
 
         public DateTime? CreatedAt { get; set; }
 
@@ -41,6 +49,18 @@ namespace Lawyer.Application.Dtos.PreparingStatementOfClaims
 
         [JsonPropertyName("step7Output")]
         public string? Step7Output { get; set; }
+
+        [JsonPropertyName("canStart")]
+        public bool CanStart { get; set; }
+
+        [JsonPropertyName("canResumeCurrent")]
+        public bool CanResumeCurrent { get; set; }
+
+        [JsonPropertyName("canStartNew")]
+        public bool CanStartNew { get; set; }
+
+        [JsonPropertyName("currentRunCreatedAt")]
+        public DateTime? CurrentRunCreatedAt { get; set; }
     }
 
     /// <summary>

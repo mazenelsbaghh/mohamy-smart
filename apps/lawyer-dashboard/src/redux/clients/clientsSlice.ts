@@ -70,9 +70,9 @@ const isPlainObject = (v: unknown): v is Record<string, unknown> =>
  typeof v ==='object' && v !== null && !Array.isArray(v);
 
 const normalizePaginatedClients = (payload: unknown) => {
- if (payload != null && !isPlainObject(payload) && !Array.isArray(payload)) {
-		return { data: [], totalCount: 0 };
-	}
+	 if (payload != null && !isPlainObject(payload) && !Array.isArray(payload)) {
+			return { clients: [] as TClient[], pageNumber: 1, totalPages: 1, totalRecords: 0 };
+		}
  const page = (isPlainObject(payload) ? payload : {}) as {
  data?: unknown;
  items?: unknown;

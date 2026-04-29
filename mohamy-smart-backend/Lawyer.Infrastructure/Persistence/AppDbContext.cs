@@ -71,11 +71,15 @@ namespace Lawyer.Infrastructure.Persistence
 			builder.Entity<AiJob>(entity =>
 			{
 				entity.HasKey(e => e.Id);
-				entity.HasIndex(e => new { e.CaseId, e.StepType })
+				entity.Property(e => e.RunId).HasMaxLength(450);
+				entity.Property(e => e.WorkflowType).HasMaxLength(200);
+				entity.Property(e => e.ErrorCode).HasMaxLength(500);
+				entity.HasIndex(e => new { e.RunId, e.StepNumber })
+					  .HasDatabaseName("IX_AiJobs_RunId_StepNumber");
+				entity.HasIndex(e => new { e.CaseId, e.StepType, e.RunId, e.StepNumber })
 					  .HasFilter("[Status] IN (0, 1)")
 					  .IsUnique()
-					  .HasDatabaseName("UX_AiJobs_CaseId_StepType_Active");
-				// Covering index for GetActiveJobAsync: WHERE CaseId+StepType ORDER BY CreatedAt DESC
+					  .HasDatabaseName("UX_AiJobs_CaseId_StepType_RunId_StepNumber_Active");
 				entity.HasIndex(e => new { e.CaseId, e.StepType, e.CreatedAt })
 					  .HasDatabaseName("IX_AiJobs_CaseId_StepType_CreatedAt");
 
@@ -132,6 +136,56 @@ namespace Lawyer.Infrastructure.Persistence
 					  .HasForeignKey(e => e.CaseId)
 					  .OnDelete(DeleteBehavior.Cascade);
 			});
+
+			Action<Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<AppealWorkflow>> configureAppeal = entity =>
+			{
+				entity.Property(e => e.RunId).HasMaxLength(450);
+				entity.Property(e => e.CurrentAccessibleStep).HasDefaultValue(0);
+				entity.Property(e => e.LastCompletedStep).HasDefaultValue(0);
+				entity.HasIndex(e => new { e.CaseId, e.RunId })
+					  .HasDatabaseName("IX_AppealWorkflows_CaseId_RunId");
+			};
+			builder.Entity<AppealWorkflow>(configureAppeal);
+
+			Action<Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<AdminComplaintWorkflow>> configureAdminComplaint = entity =>
+			{
+				entity.Property(e => e.RunId).HasMaxLength(450);
+				entity.Property(e => e.CurrentAccessibleStep).HasDefaultValue(0);
+				entity.Property(e => e.LastCompletedStep).HasDefaultValue(0);
+				entity.HasIndex(e => new { e.CaseId, e.RunId })
+					  .HasDatabaseName("IX_AdminComplaintWorkflows_CaseId_RunId");
+			};
+			builder.Entity<AdminComplaintWorkflow>(configureAdminComplaint);
+
+			Action<Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<RulingAnalysisWorkflow>> configureRulingAnalysis = entity =>
+			{
+				entity.Property(e => e.RunId).HasMaxLength(450);
+				entity.Property(e => e.CurrentAccessibleStep).HasDefaultValue(0);
+				entity.Property(e => e.LastCompletedStep).HasDefaultValue(0);
+				entity.HasIndex(e => new { e.CaseId, e.RunId })
+					  .HasDatabaseName("IX_RulingAnalysisWorkflows_CaseId_RunId");
+			};
+			builder.Entity<RulingAnalysisWorkflow>(configureRulingAnalysis);
+
+			Action<Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<LegalWarningWorkflow>> configureLegalWarning = entity =>
+			{
+				entity.Property(e => e.RunId).HasMaxLength(450);
+				entity.Property(e => e.CurrentAccessibleStep).HasDefaultValue(0);
+				entity.Property(e => e.LastCompletedStep).HasDefaultValue(0);
+				entity.HasIndex(e => new { e.CaseId, e.RunId })
+					  .HasDatabaseName("IX_LegalWarningWorkflows_CaseId_RunId");
+			};
+			builder.Entity<LegalWarningWorkflow>(configureLegalWarning);
+
+			Action<Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<ExecRequestWorkflow>> configureExecRequest = entity =>
+			{
+				entity.Property(e => e.RunId).HasMaxLength(450);
+				entity.Property(e => e.CurrentAccessibleStep).HasDefaultValue(0);
+				entity.Property(e => e.LastCompletedStep).HasDefaultValue(0);
+				entity.HasIndex(e => new { e.CaseId, e.RunId })
+					  .HasDatabaseName("IX_ExecRequestWorkflows_CaseId_RunId");
+			};
+			builder.Entity<ExecRequestWorkflow>(configureExecRequest);
 
 			builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 		}

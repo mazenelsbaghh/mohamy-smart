@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Container } from '@mohamy/shared-ui';
 import { Tabs, Tab } from '@heroui/react';
 import { sileo } from 'sileo';
@@ -47,6 +48,7 @@ const AppealBriefPage = () => {
     tabsClassNames,
     tabProps,
     isClickableTab,
+    handleAdvanceStage,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: any) => s.appealBrief,
     thunks: appealBriefThunks,
@@ -61,6 +63,10 @@ const AppealBriefPage = () => {
 
   const judgmentData = workflowState.outputs[1];
 
+  const advanceToNextStep = useCallback(() => {
+    handleAdvanceStage(active, active + 1);
+  }, [active, handleAdvanceStage]);
+
   const renderedStep = [
     <AnalysisFactsSelectionStep
       key="facts"
@@ -74,11 +80,11 @@ const AppealBriefPage = () => {
       continueLabel={judgmentData ? 'الانتقال إلى بيانات الحكم' : 'بدء استخراج بيانات الحكم'}
       onStart={nextStep}
     />,
-    <AppealStep1JudgmentData key="step1" nextStep={nextStep} selectedFacts={selectedFacts} />,
-    <AppealStep2Analysis key="step2" nextStep={nextStep} prevStep={prevStep} selectedFacts={selectedFacts} />,
-    <AppealStep3Grounds key="step3" nextStep={nextStep} prevStep={prevStep} selectedFacts={selectedFacts} />,
-    <AppealStep4Requests key="step4" nextStep={nextStep} prevStep={prevStep} selectedFacts={selectedFacts} />,
-    <AppealStep5LegalBasis key="step5" nextStep={nextStep} prevStep={prevStep} selectedFacts={selectedFacts} />,
+    <AppealStep1JudgmentData key="step1" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
+    <AppealStep2Analysis key="step2" nextStep={advanceToNextStep} prevStep={prevStep} selectedFacts={selectedFacts} />,
+    <AppealStep3Grounds key="step3" nextStep={advanceToNextStep} prevStep={prevStep} selectedFacts={selectedFacts} />,
+    <AppealStep4Requests key="step4" nextStep={advanceToNextStep} prevStep={prevStep} selectedFacts={selectedFacts} />,
+    <AppealStep5LegalBasis key="step5" nextStep={advanceToNextStep} prevStep={prevStep} selectedFacts={selectedFacts} />,
     <AppealStep6Assembly key="step6" prevStep={prevStep} selectedFacts={selectedFacts} />,
   ];
 
@@ -123,6 +129,8 @@ const AppealBriefPage = () => {
             lastSavedAt={lastSavedAt}
             onManualSave={handleManualSave}
             isSavingStep={isSavingStep}
+            currentAccessibleStep={workflowState.currentAccessibleStep}
+            lastCompletedStep={workflowState.lastCompletedStep}
           />
 
           <div className="w-full">

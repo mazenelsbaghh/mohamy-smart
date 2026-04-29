@@ -63,5 +63,17 @@ namespace Lawyer.Controllers
             var result = await _service.CancelAsync(caseId, stepType, GetUserId(), ct);
             return CreateResponse(result);
         }
+
+        [HttpGet("active")]
+        public async Task<IActionResult> GetActiveByRun(Guid caseId, [FromQuery] string runId, [FromQuery] string workflowType, [FromQuery] int stepNumber, CancellationToken ct)
+        {
+            _logger.LogInformation("GetActiveAiJobByRun called for Case {CaseId}, Run {RunId}", caseId, runId);
+            var result = await _service.GetActiveJobByRunAsync(caseId, runId, workflowType, stepNumber, GetUserId(), ct);
+            if (!result.Succeeded)
+                return CreateResponse(result);
+            if (result.Data == null)
+                return NotFound();
+            return Ok(result.Data);
+        }
     }
 }

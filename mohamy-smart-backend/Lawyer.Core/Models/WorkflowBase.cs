@@ -10,6 +10,10 @@ namespace Lawyer.Core.Models
         public Case Case { get; set; } = null!;
         public string LawyerId { get; set; } = string.Empty;
         public int CurrentStep { get; set; } = 1;
+        public string? RunId { get; set; }
+        public int CurrentAccessibleStep { get; set; }
+        public int LastCompletedStep { get; set; }
+        public string? ConflictStepMetadata { get; set; }
         public WorkflowStatus Status { get; set; } = WorkflowStatus.InProgress;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

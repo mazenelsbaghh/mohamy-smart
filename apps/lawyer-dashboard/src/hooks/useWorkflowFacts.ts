@@ -5,11 +5,11 @@ import thunkUpdateCaseFacts from'../redux/cases/thunk/thunkUpdateCaseFacts';
 import thunkGetSingleCase from'../redux/cases/thunk/thunkGetSingleCase';
 
 // ── localStorage helpers ──
-const SELECTED_FACTS_KEY = (prefix: string, caseId: string) =>
- `${prefix}_selected_facts_${caseId}`;
+const SELECTED_FACTS_KEY = (prefix: string, caseId: string, runId?: string | number | null) =>
+ runId != null ? `${prefix}_selected_facts_${caseId}_${runId}` : `${prefix}_selected_facts_${caseId}`;
 
-const KNOWN_FACTS_KEY = (prefix: string, caseId: string) =>
- `${prefix}_known_facts_${caseId}`;
+const KNOWN_FACTS_KEY = (prefix: string, caseId: string, runId?: string | number | null) =>
+ runId != null ? `${prefix}_known_facts_${caseId}_${runId}` : `${prefix}_known_facts_${caseId}`;
 
 const loadJson = <T,>(key: string, fallback: T): T => {
  try {
@@ -28,9 +28,9 @@ const saveJson = (key: string, value: unknown) => {
 };
 
 type UseWorkflowFactsOptions = {
- /** Unique prefix per workflow type, e.g."ruling","appeal","warning", etc. */
- workflowPrefix: string;
- caseId: string | undefined;
+  workflowPrefix: string;
+  caseId: string | undefined;
+  runId?: string | number | null;
 };
 
 /**
@@ -43,12 +43,19 @@ type UseWorkflowFactsOptions = {
  * - Adding a new fact calls the backend API to persist it permanently
  * - Refreshing the case from API after adding a fact
  */
-export function useWorkflowFacts({ workflowPrefix, caseId }: UseWorkflowFactsOptions) {
+export function useWorkflowFacts({ workflowPrefix, caseId, runId }: UseWorkflowFactsOptions) {
  const dispatch = useAppDispatch();
  const { singleCase } = useAppSelector((rootState) => rootState.cases);
 
  const [caseFacts, setCaseFacts] = useState<string[]>([]);
- const [selectedFacts, setSelectedFacts] = useState<string[]>([]);
+  const [selectedFacts, setSelectedFacts] = useState<string[]>([]);
+  const activeRunIdRef = useRef<string | number | null | undefined>(runId);
+
+  useEffect(() => {
+  if (runId != null) {
+  activeRunIdRef.current = runId;
+  }
+  }, [runId]);
 
  // Parse API facts, restore persisted selection, and auto-select newly added facts
  useEffect(() => {
@@ -56,8 +63,8 @@ export function useWorkflowFacts({ workflowPrefix, caseId }: UseWorkflowFactsOpt
  const parsedFacts = parseCaseFacts(singleCase?.facts);
  setCaseFacts(parsedFacts);
 
- const selectionKey = SELECTED_FACTS_KEY(workflowPrefix, caseId);
- const knownFactsKey = KNOWN_FACTS_KEY(workflowPrefix, caseId);
+  const selectionKey = SELECTED_FACTS_KEY(workflowPrefix, caseId, activeRunIdRef.current);
+  const knownFactsKey = KNOWN_FACTS_KEY(workflowPrefix, caseId, activeRunIdRef.current);
 
  const savedSelection: string[] = loadJson(selectionKey, []);
  const knownFacts: string[] = loadJson(knownFactsKey, []);
@@ -94,8 +101,8 @@ export function useWorkflowFacts({ workflowPrefix, caseId }: UseWorkflowFactsOpt
  if (caseFacts.length > 0) hasInitializedSelection.current = true;
  return;
  }
- saveJson(SELECTED_FACTS_KEY(workflowPrefix, caseId), selectedFacts);
- saveJson(KNOWN_FACTS_KEY(workflowPrefix, caseId), caseFacts);
+ saveJson(SELECTED_FACTS_KEY(workflowPrefix, caseId, activeRunIdRef.current), selectedFacts);
+ saveJson(KNOWN_FACTS_KEY(workflowPrefix, caseId, activeRunIdRef.current), caseFacts);
  }, [selectedFacts, caseId, caseFacts, workflowPrefix]);
 
  // Wrapped setFacts that persists the new fact to the backend API
@@ -128,10 +135,20 @@ export function useWorkflowFacts({ workflowPrefix, caseId }: UseWorkflowFactsOpt
  [caseId, dispatch]
  );
 
- return {
- caseFacts,
- setCaseFacts: handleSetCaseFacts,
- selectedFacts,
- setSelectedFacts,
- };
+  const resetForNewRun = useCallback((newRunId: string | number) => {
+    if (caseId) {
+      localStorage.removeItem(SELECTED_FACTS_KEY(workflowPrefix, caseId, activeRunIdRef.current));
+      localStorage.removeItem(KNOWN_FACTS_KEY(workflowPrefix, caseId, activeRunIdRef.current));
+    }
+    setSelectedFacts([]);
+    activeRunIdRef.current = newRunId;
+  }, [workflowPrefix, caseId]);
+
+  return {
+    caseFacts,
+    setCaseFacts: handleSetCaseFacts,
+    selectedFacts,
+    setSelectedFacts,
+    resetForNewRun,
+  };
 }

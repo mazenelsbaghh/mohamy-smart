@@ -47,7 +47,7 @@ describe('API client module (structure)', () => {
  expect(API_ROUTES.GET_PAYMENT_STATUS('123')).toBe('/payment/status/123');
  expect(API_ROUTES.GET_PAYMENT_HISTORY).toBe('/payment/history');
  expect(API_ROUTES.GET_DOCUMENTS).toBe('/documents');
- expect(API_ROUTES.GET_LEGAL_CONTRACTS).toBe('/legal-contracts');
+ expect(API_ROUTES.GET_LEGAL_CONTRACTS).toBe('/LegalContracts');
  expect(API_ROUTES.SEND_CHAT_MESSAGE).toBe('/smartanalysis/chat');
  expect(API_ROUTES.AUTH_REFRESH).toBe('/Auth/refresh-token');
  });

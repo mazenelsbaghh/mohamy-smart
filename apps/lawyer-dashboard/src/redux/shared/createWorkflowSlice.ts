@@ -2,6 +2,7 @@ import { createSlice } from"@reduxjs/toolkit";
 import type { CaseReducer, Draft, PayloadAction, SliceCaseReducers, ValidateSliceCaseReducers } from"@reduxjs/toolkit";
 import type { TypedWorkflowState, WorkflowStatus } from"./workflowTypes";
 import type { IWorkflowThunks } from"./createWorkflowThunks";
+import type { ActiveStageRequest, WorkflowStageConflict } from"../../types/workflowLifecycle";
 import { isString } from"@mohamy/shared-utils";
 import { deepCamelize } from"@mohamy/shared-utils";
 
@@ -32,16 +33,22 @@ export function createWorkflowSlice<TStepOutputs, TReducers extends SliceCaseRed
  lastSavedAt: null,
  workflowVersions: [],
  isReadOnly: false,
- snapshotId: null,
- snapshotLabel: null,
+  snapshotId: null,
+  snapshotLabel: null,
+  runId: null,
+  currentAccessibleStep: 0,
+  lastCompletedStep: 0,
+  activeRequests: [],
+  stageConflicts: [],
  outputs: cloneInitialOutputs(),
- loadingState: {
- isStarting: false,
- isGetting: false,
- isRunningStep: false,
- isSavingStep: false,
- isAutoSaving: false,
- },
+  loadingState: {
+  isStarting: false,
+  isGetting: false,
+  isRunningStep: false,
+  isSavingStep: false,
+  isAutoSaving: false,
+  isAdvancingStage: false,
+  },
  errorState: {
  startError: null,
  getError: null,
@@ -89,16 +96,44 @@ export function createWorkflowSlice<TStepOutputs, TReducers extends SliceCaseRed
  (state.outputs as Record<number, unknown>)[stepNumber] = actualResult;
  }
 
- // Auto-advance step if needed
- if (state.currentStep <= stepNumber) {
- state.currentStep = stepNumber + 1;
- if (config.maxSteps && state.currentStep > config.maxSteps) {
- state.currentStep = config.maxSteps;
- state.status ="Completed";
- }
- }
- },
- ...(config.reducers ?? {}),
+  if (state.lastCompletedStep < stepNumber) {
+  state.lastCompletedStep = stepNumber;
+  }
+  },
+  setRunId: (state: Draft<TypedWorkflowState<TStepOutputs>>, action: PayloadAction<string | number | null>) => {
+  state.runId = action.payload;
+  },
+  setCurrentAccessibleStep: (state: Draft<TypedWorkflowState<TStepOutputs>>, action: PayloadAction<number>) => {
+  state.currentAccessibleStep = action.payload;
+  },
+  setLastCompletedStep: (state: Draft<TypedWorkflowState<TStepOutputs>>, action: PayloadAction<number>) => {
+  state.lastCompletedStep = action.payload;
+  },
+  setActiveRequests: (state: Draft<TypedWorkflowState<TStepOutputs>>, action: PayloadAction<ActiveStageRequest[]>) => {
+  state.activeRequests = action.payload;
+  },
+  setStageConflicts: (state: Draft<TypedWorkflowState<TStepOutputs>>, action: PayloadAction<WorkflowStageConflict[]>) => {
+  state.stageConflicts = action.payload;
+  },
+   clearLifecycleState: (state: Draft<TypedWorkflowState<TStepOutputs>>) => {
+   state.runId = null;
+   state.currentAccessibleStep = 0;
+   state.lastCompletedStep = 0;
+   state.activeRequests = [];
+   state.stageConflicts = [];
+   },
+   setStageConflict: (state: Draft<TypedWorkflowState<TStepOutputs>>, action: PayloadAction<import('../../types/workflowLifecycle').WorkflowStageConflict>) => {
+   const existing = state.stageConflicts.findIndex(c => c.stepNumber === action.payload.stepNumber);
+   if (existing >= 0) {
+   state.stageConflicts[existing] = action.payload;
+   } else {
+   state.stageConflicts.push(action.payload);
+   }
+   },
+   clearStageConflict: (state: Draft<TypedWorkflowState<TStepOutputs>>, action: PayloadAction<number>) => {
+   state.stageConflicts = state.stageConflicts.filter(c => c.stepNumber !== action.payload);
+   },
+  ...(config.reducers ?? {}),
  } as unknown) as ValidateSliceCaseReducers<TypedWorkflowState<TStepOutputs>, TReducers> & {
  resetWorkflow: CaseReducer<TypedWorkflowState<TStepOutputs>>;
  hydrateStep: CaseReducer<TypedWorkflowState<TStepOutputs>, PayloadAction<{ stepNumber: number; result: unknown }>>;
@@ -134,6 +169,11 @@ export function createWorkflowSlice<TStepOutputs, TReducers extends SliceCaseRed
           state.createdAt = (payload.createdAt as string | null | undefined) ?? null;
           state.lastSavedAt = (payload.updatedAt as string | null | undefined) ?? (payload.createdAt as string | null | undefined) ?? null;
           state.isReadOnly = false;
+          state.runId = (payload.runId as string | number | null | undefined) ?? null;
+          state.currentAccessibleStep = (payload.currentAccessibleStep as number | undefined) ?? 0;
+          state.lastCompletedStep = (payload.lastCompletedStep as number | undefined) ?? 0;
+          state.activeRequests = (payload.activeRequests as Draft<ActiveStageRequest[]> | undefined) ?? [];
+          state.stageConflicts = (payload.stageConflicts as Draft<WorkflowStageConflict[]> | undefined) ?? [];
           state.outputs = cloneInitialDraftOutputs();
 
  const maxStps = config.maxSteps || 10;
@@ -172,6 +212,11 @@ export function createWorkflowSlice<TStepOutputs, TReducers extends SliceCaseRed
   state.status = mapStatus(action.payload.status);
   state.createdAt = action.payload.createdAt ?? action.payload.updatedAt ?? null;
   state.lastSavedAt = action.payload.updatedAt ?? action.payload.createdAt ?? null;
+  state.runId = action.payload.runId ?? null;
+  state.currentAccessibleStep = action.payload.currentAccessibleStep ?? 0;
+  state.lastCompletedStep = action.payload.lastCompletedStep ?? 0;
+  state.activeRequests = action.payload.activeRequests ?? [];
+  state.stageConflicts = action.payload.stageConflicts ?? [];
   state.outputs = cloneInitialDraftOutputs();
   state.isReadOnly = false;
   state.snapshotId = null;
@@ -244,21 +289,19 @@ export function createWorkflowSlice<TStepOutputs, TReducers extends SliceCaseRed
  (state.outputs as Record<number, unknown>)[stepNumber] = action.payload;
  }
 
- if (state.currentStep === stepNumber && config.maxSteps) {
- if (stepNumber < config.maxSteps) {
- state.currentStep = stepNumber + 1;
- } else {
- state.status ="Completed";
- }
- } else if (!config.maxSteps) {
- state.currentStep = stepNumber + 1;
- }
+  if (state.lastCompletedStep < stepNumber) {
+  state.lastCompletedStep = stepNumber;
+  }
+
+  if (config.maxSteps && stepNumber >= config.maxSteps) {
+  state.status = "Completed";
+  }
  })
  .addCase(thunks.runStep.rejected, (state, action) => {
  state.loadingState.isRunningStep = false;
  const errorMsg = isString(action.payload) ? action.payload :"Unknown error";
  state.errorState.runError = errorMsg;
- if (errorMsg.includes("تم تحديث سير العمل من قبل مستخدم آخر") || action.error?.message?.includes("409")) {
+	 if (errorMsg.includes("تم تحديث سير العمل من قبل مستخدم آخر") || (action.error as { message?: string } | undefined)?.message?.includes("409")) {
  state.errorState.hasConcurrencyConflict = true;
  }
  });
@@ -286,37 +329,144 @@ export function createWorkflowSlice<TStepOutputs, TReducers extends SliceCaseRed
  state.loadingState.isSavingStep = false;
  const errorMsg = isString(action.payload) ? action.payload :"Unknown error";
  state.errorState.saveError = errorMsg;
- if (errorMsg.includes("تم تحديث سير العمل من قبل مستخدم آخر") || action.error?.message?.includes("409")) {
+	 if (errorMsg.includes("تم تحديث سير العمل من قبل مستخدم آخر") || (action.error as { message?: string } | undefined)?.message?.includes("409")) {
  state.errorState.hasConcurrencyConflict = true;
  }
  });
 
  // Save Draft Step
- if (thunks.saveDraftStep) {
- builder
- .addCase(thunks.saveDraftStep.pending, (state) => {
- state.loadingState.isAutoSaving = true;
- state.errorState.autoSaveError = null;
- })
-  .addCase(thunks.saveDraftStep.fulfilled, (state, action) => {
+  if (thunks.saveDraftStep) {
+  builder
+  .addCase(thunks.saveDraftStep.pending, (state) => {
+  state.loadingState.isAutoSaving = true;
+  state.errorState.autoSaveError = null;
+  })
+   .addCase(thunks.saveDraftStep.fulfilled, (state, action) => {
+   state.loadingState.isAutoSaving = false;
+   state.errorState.hasConcurrencyConflict = false;
+
+  if (action.payload?.lastSavedAt) {
+  state.lastSavedAt = action.payload.lastSavedAt;
+  }
+  })
+  .addCase(thunks.saveDraftStep.rejected, (state, action) => {
   state.loadingState.isAutoSaving = false;
+  const errorMsg = isString(action.payload) ? action.payload :"Unknown error";
+  state.errorState.autoSaveError = errorMsg;
+	  if (errorMsg.includes("تم تحديث سير العمل من قبل مستخدم آخر") || (action.error as { message?: string } | undefined)?.message?.includes("409")) {
+  state.errorState.hasConcurrencyConflict = true;
+  }
+  });
+  }
+
+  builder
+  .addCase(thunks.startNewRun.pending, (state) => {
+  state.loadingState.isStarting = true;
+  state.errorState.startError = null;
+  })
+  .addCase(thunks.startNewRun.fulfilled, (state, action) => {
+  state.loadingState.isStarting = false;
+  state.outputs = cloneInitialDraftOutputs();
+  state.runId = action.payload.runId;
+  state.currentAccessibleStep = action.payload.currentAccessibleStep ?? 0;
+  state.lastCompletedStep = action.payload.lastCompletedStep ?? 0;
+  state.activeRequests = action.payload.activeRequests ?? [];
+  state.stageConflicts = action.payload.stageConflicts ?? [];
+  state.caseId = action.payload.caseId ?? null;
+  state.status = mapStatus(action.payload.status);
+  state.snapshotId = null;
+  state.snapshotLabel = null;
+  state.isReadOnly = action.payload.isReadOnly ?? false;
+  state.createdAt = action.payload.createdAt ?? null;
+  state.lastSavedAt = action.payload.updatedAt ?? null;
+   state.workflowId = action.payload.id ?? null;
+   state.currentStep = 1;
+  state.loadingState.isStarting = false;
   state.errorState.hasConcurrencyConflict = false;
- 
- if (action.payload?.lastSavedAt) {
- state.lastSavedAt = action.payload.lastSavedAt;
- }
- })
- .addCase(thunks.saveDraftStep.rejected, (state, action) => {
- state.loadingState.isAutoSaving = false;
- const errorMsg = isString(action.payload) ? action.payload :"Unknown error";
- state.errorState.autoSaveError = errorMsg;
- if (errorMsg.includes("تم تحديث سير العمل من قبل مستخدم آخر") || action.error?.message?.includes("409")) {
- state.errorState.hasConcurrencyConflict = true;
- }
- });
- }
- }
- });
+  })
+   .addCase(thunks.startNewRun.rejected, (state, action) => {
+   state.loadingState.isStarting = false;
+   state.errorState.startError = isString(action.payload) ? action.payload :"Unknown error";
+   })
+   .addCase(thunks.resumeCurrentRun.pending, (state) => {
+   state.loadingState.isGetting = true;
+   state.errorState.getError = null;
+   })
+   .addCase(thunks.resumeCurrentRun.fulfilled, (state, action) => {
+   state.loadingState.isGetting = false;
+   const payload = action.payload;
+   state.runId = payload.runId;
+   state.currentAccessibleStep = payload.currentAccessibleStep ?? 0;
+   state.lastCompletedStep = payload.lastCompletedStep ?? 0;
+   state.activeRequests = payload.activeRequests ?? [];
+   state.stageConflicts = payload.stageConflicts ?? [];
+   state.caseId = payload.caseId ?? null;
+   state.status = mapStatus(payload.status);
+   state.isReadOnly = payload.isReadOnly ?? false;
+   state.createdAt = payload.createdAt ?? null;
+   state.lastSavedAt = payload.updatedAt ?? null;
+   state.snapshotId = null;
+   state.snapshotLabel = payload.snapshotLabel ?? null;
+   if (payload.id) {
+   state.workflowId = payload.id;
+   }
+   state.currentStep = payload.currentAccessibleStep ?? 1;
+   state.outputs = cloneInitialDraftOutputs();
+   const maxStps = config.maxSteps || 10;
+   for (let i = 1; i <= maxStps; i++) {
+   const raw = (payload as unknown as Record<string, unknown>)[`step${i}Output`];
+   if (raw === null || raw === undefined || raw === '') continue;
+   let parsed: unknown = raw;
+   try {
+   if (typeof raw === 'string') parsed = deepCamelize(JSON.parse(raw));
+   else if (typeof raw === 'object') parsed = deepCamelize(raw);
+    } catch { /* */ }
+   if (config.stepHydrators && config.stepHydrators[i]) {
+   config.stepHydrators[i](state, parsed);
+   } else {
+   (state.outputs as Record<number, unknown>)[i] = parsed;
+   }
+   }
+   state.errorState.hasConcurrencyConflict = false;
+   })
+    .addCase(thunks.resumeCurrentRun.rejected, (state, action) => {
+    state.loadingState.isGetting = false;
+    state.errorState.getError = isString(action.payload) ? action.payload :"Unknown error";
+    });
+
+    if (thunks.advanceStage) {
+    builder
+    .addCase(thunks.advanceStage.pending, (state) => {
+    state.loadingState.isAdvancingStage = true;
+    })
+    .addCase(thunks.advanceStage.fulfilled, (state, action) => {
+    state.loadingState.isAdvancingStage = false;
+    state.currentAccessibleStep = action.payload.currentAccessibleStep ?? state.currentAccessibleStep;
+    state.activeRequests = action.payload.activeRequests ?? [];
+    state.stageConflicts = action.payload.stageConflicts ?? [];
+    state.lastSavedAt = action.payload.updatedAt ?? state.lastSavedAt;
+    })
+     .addCase(thunks.advanceStage.rejected, (state) => {
+     state.loadingState.isAdvancingStage = false;
+     });
+     }
+
+     if (thunks.recoverConflict) {
+     builder
+     .addCase(thunks.recoverConflict.pending, (state) => {
+     state.loadingState.isAdvancingStage = true;
+     })
+     .addCase(thunks.recoverConflict.fulfilled, (state, action) => {
+     state.loadingState.isAdvancingStage = false;
+     state.stageConflicts = state.stageConflicts.filter(c => c.stepNumber !== action.meta.arg.stepNumber);
+     state.errorState.hasConcurrencyConflict = false;
+     })
+     .addCase(thunks.recoverConflict.rejected, (state) => {
+     state.loadingState.isAdvancingStage = false;
+     });
+     }
+     }
+   });
 
  return slice;
 }

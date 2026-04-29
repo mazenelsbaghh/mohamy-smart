@@ -26,6 +26,7 @@ const ComplaintStep3ViolationAnalysis = ({ nextStep, selectedFacts }: TComplaint
   const { outputs } = useAppSelector((s) => s.adminComplaint);
   const factsDraft = outputs[2];
   const violationAnalysis = outputs[3];
+  const violations = violationAnalysis?.violations ?? [];
   const job = aiJobsState.jobs['AdminComplaintViolation'];
 
   const isProcessingJob = job?.status === 'Queued' || job?.status === 'Processing';
@@ -75,7 +76,7 @@ const ComplaintStep3ViolationAnalysis = ({ nextStep, selectedFacts }: TComplaint
         <>
           <AnalysisStageSidebarCard
             label="إجمالي المخالفات"
-            value={violationAnalysis?.violations?.length || 0}
+            value={violations.length}
             valueClassName="text-5xl"
             description="تم تكييف الوقائع قانونياً وإدارياً. يمكنك الانتقال الآن لإعداد وتحديد طلبات الشكوى."
           />
@@ -87,9 +88,9 @@ const ComplaintStep3ViolationAnalysis = ({ nextStep, selectedFacts }: TComplaint
         </>
       }
     >
-      {violationAnalysis?.violations?.length > 0 ? (
+      {violations.length > 0 ? (
         <div className="flex flex-col gap-4">
-          {violationAnalysis.violations.map((violation, idx) => (
+          {violations.map((violation, idx) => (
             <AnalysisStageSectionCard key={idx} label={`مخالفة ${idx + 1}`} className="relative">
               <div className="absolute top-0 end-0 h-full w-[4px] bg-[var(--main-color)] opacity-60" />
               <div className="flex justify-between items-start mb-3">

@@ -15,5 +15,9 @@ namespace Lawyer.Core.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? StartedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
+        public string? RunId { get; set; }
+        public string? WorkflowType { get; set; }
+        public int? StepNumber { get; set; }
+        public string? ErrorCode { get; set; }
     }
 }

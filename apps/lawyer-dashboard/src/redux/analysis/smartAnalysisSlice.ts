@@ -4,6 +4,7 @@ import { createWorkflowThunks } from'../shared/createWorkflowThunks';
 import { createAsyncThunk } from'@reduxjs/toolkit';
 import api from'../../APIs/api';
 import { axiosErrorHandler } from"@mohamy/shared-api";
+import type { IWorkflowDto, IWorkflowThunks } from '../shared/createWorkflowThunks';
 
 export type {
  TDefense,
@@ -19,21 +20,24 @@ import type { TFactAnalysis, TDefenses, TDefense, TFinalRequirementsWrapper, TAn
 
 const smartAnalysisBaseThunks = createWorkflowThunks('SmartAnalysis');
 
-const startSmartAnalysisWorkflow = createAsyncThunk(
+const startSmartAnalysisWorkflow = createAsyncThunk<IWorkflowDto, { caseId: string }>(
  'smartAnalysis/startWorkflow',
  async ({ caseId }: { caseId: string }) => ({
  id: undefined,
  caseId,
  currentStep: 1,
- status:'InProgress',
- createdAt: new Date().toISOString(),
- })
-);
+	 status:'InProgress',
+	 createdAt: new Date().toISOString(),
+	 runId: caseId,
+	 currentAccessibleStep: 0,
+	 lastCompletedStep: 0,
+	 })
+	);
 
-export const smartAnalysisThunks = {
- ...smartAnalysisBaseThunks,
- startWorkflow: startSmartAnalysisWorkflow,
-};
+export const smartAnalysisThunks: IWorkflowThunks = {
+	 ...smartAnalysisBaseThunks,
+	 startWorkflow: startSmartAnalysisWorkflow,
+	};
 
 export const thunkGetDefenseAnalysis = createAsyncThunk('smartAnalysis/getDefenseAnalysis',
  async ({ defenseId }: { defenseId: string }, { rejectWithValue }) => {

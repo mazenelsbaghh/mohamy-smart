@@ -12,11 +12,11 @@
 
 **Purpose**: Prepare shared type/test scaffolding for the workflow lifecycle implementation.
 
-- [ ] T001 Create workflow lifecycle backend test fixture helpers for active-run seeding in `mohamy-smart-backend/Lawyer.Tests/Services/WorkflowLifecycleTestFixture.cs`
-- [ ] T002 [P] Create frontend workflow test fixture helpers for hydrated route, Redux store, and fake job events in `apps/lawyer-dashboard/src/test/workflowTestUtils.tsx`
-- [ ] T003 [P] Add shared workflow lifecycle TypeScript type placeholders for run status, stage status, request status, and conflict code in `apps/lawyer-dashboard/src/types/workflowLifecycle.ts`
-- [ ] T004 [P] Add backend lifecycle DTO placeholders for run summary, stage summary, active request, transition request, and conflict response in `mohamy-smart-backend/Lawyer.Application/Dtos/Workflows/WorkflowLifecycleDtos.cs`
-- [ ] T005 [P] Add lifecycle verification checklist links to the feature quickstart in `specs/068-workflow-start-resume/quickstart.md`
+- [X] T001 Create workflow lifecycle backend test fixture helpers for active-run seeding in `mohamy-smart-backend/Lawyer.Tests/Services/WorkflowLifecycleTestFixture.cs`
+- [X] T002 [P] Create frontend workflow test fixture helpers for hydrated route, Redux store, and fake job events in `apps/lawyer-dashboard/src/test/workflowTestUtils.tsx`
+- [X] T003 [P] Add shared workflow lifecycle TypeScript type placeholders for run status, stage status, request status, and conflict code in `apps/lawyer-dashboard/src/types/workflowLifecycle.ts`
+- [X] T004 [P] Add backend lifecycle DTO placeholders for run summary, stage summary, active request, transition request, and conflict response in `mohamy-smart-backend/Lawyer.Application/Dtos/Workflows/WorkflowLifecycleDtos.cs`
+- [X] T005 [P] Add lifecycle verification checklist links to the feature quickstart in `specs/068-workflow-start-resume/quickstart.md`
 
 ---
 
@@ -26,25 +26,25 @@
 
 **Critical**: No user-story implementation should start until these tasks are complete.
 
-- [ ] T006 Add active-run identity fields `RunId`, `WorkflowType`, `StepNumber`, `StartedAt`, `CompletedAt`, and `ErrorCode` to `mohamy-smart-backend/Lawyer.Core/Models/AiJob.cs`
-- [ ] T007 Add `Conflict` or equivalent recoverable status to AI job status handling in `mohamy-smart-backend/Lawyer.Core/Enum/AiJobStatus.cs`
-- [ ] T008 Add workflow run identity, intended current stage, last completed stage, and conflict metadata to shared workflow state in `mohamy-smart-backend/Lawyer.Core/Models/WorkflowBase.cs`
-- [ ] T009 [P] Add lifecycle columns and indexes for `AiJobs` and shared workflow tables in `mohamy-smart-backend/Lawyer.Infrastructure/Migrations/20260429070000_AddWorkflowRunLifecycle.cs`
-- [ ] T010 Update EF model snapshot for lifecycle columns and indexes in `mohamy-smart-backend/Lawyer.Infrastructure/Migrations/AppDbContextModelSnapshot.cs` (depends on T006, T008, T009)
-- [ ] T011 Configure lifecycle fields and indexes in `mohamy-smart-backend/Lawyer.Infrastructure/Persistence/AppDbContext.cs` (depends on T006, T008)
-- [ ] T012 Expand AI job submit/status DTOs with `runId`, `workflowType`, `stepNumber`, `errorCode`, and conflict message fields in `mohamy-smart-backend/Lawyer.Application/Dtos/AiJobs/SubmitAiJobDto.cs` and `mohamy-smart-backend/Lawyer.Application/Dtos/AiJobs/AiJobStatusDto.cs`
-- [ ] T013 Define shared lifecycle service contract methods for start, resume, start-new, submit-stage, advance-stage, and conflict recovery in `mohamy-smart-backend/Lawyer.Application/IServices/IWorkflowServiceBase.cs`
-- [ ] T014 Define run-scoped AI job service methods for submit, lookup active job, ignore stale completion, and mark conflict in `mohamy-smart-backend/Lawyer.Application/IServices/IAiJobService.cs`
-- [ ] T015 Implement run-scoped duplicate prevention and stale completion checks in `mohamy-smart-backend/Lawyer.Application/Services/AiJobService.cs` (depends on T006, T012, T014)
-- [ ] T016 Add run identity to workflow invocation context used by background workers in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/WorkflowInvocationContext.cs`
-- [ ] T017 Update workflow step request base shape to require `runId`, `stepNumber`, and `workflowType` in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/RunWorkflowStepRequest.cs` (depends on T016)
-- [ ] T018 Update shared workflow DTO output to expose `runId`, `currentAccessibleStep`, `lastCompletedStep`, `activeRequest`, and `stageConflicts` in `mohamy-smart-backend/Lawyer.Application/Dtos/Workflows/WorkflowDto.cs`
-- [ ] T019 Add frontend lifecycle fields to the shared workflow slice state and reducers in `apps/lawyer-dashboard/src/redux/shared/createWorkflowSlice.ts`
-- [ ] T020 Add lifecycle request/response typing to shared workflow thunks in `apps/lawyer-dashboard/src/redux/shared/createWorkflowThunks.ts`
-- [ ] T021 Add run-scoped AI job status typing and stale-event guards to `apps/lawyer-dashboard/src/redux/aiJobs/aiJobsSlice.ts`
-- [ ] T022 Update AI job submit thunk payload to include `runId`, `workflowType`, and `stepNumber` in `apps/lawyer-dashboard/src/redux/aiJobs/thunk/thunkSubmitAiJob.ts`
-- [ ] T023 Update AI job listing thunk to query active jobs by `caseId`, `workflowType`, and `runId` in `apps/lawyer-dashboard/src/redux/aiJobs/thunk/thunkGetAllAiJobs.ts`
-- [ ] T024 Add lifecycle-aware loader props for run id, stage number, recoverable conflict, and retry state in `apps/lawyer-dashboard/src/components/skeleton/SmartAnalysisLoader.tsx`
+- [X] T006 Add active-run identity fields `RunId`, `WorkflowType`, `StepNumber`, `StartedAt`, `CompletedAt`, and `ErrorCode` to `mohamy-smart-backend/Lawyer.Core/Models/AiJob.cs`
+- [X] T007 Add `Conflict` or equivalent recoverable status to AI job status handling in `mohamy-smart-backend/Lawyer.Core/Enum/AiJobStatus.cs`
+- [X] T008 Add workflow run identity, intended current stage, last completed stage, and conflict metadata to shared workflow state in `mohamy-smart-backend/Lawyer.Core/Models/WorkflowBase.cs`
+- [X] T009 [P] Add lifecycle columns and indexes for `AiJobs` and shared workflow tables in `mohamy-smart-backend/Lawyer.Infrastructure/Migrations/20260429070000_AddWorkflowRunLifecycle.cs`
+- [X] T010 Update EF model snapshot for lifecycle columns and indexes in `mohamy-smart-backend/Lawyer.Infrastructure/Migrations/AppDbContextModelSnapshot.cs` (depends on T006, T008, T009)
+- [X] T011 Configure lifecycle fields and indexes in `mohamy-smart-backend/Lawyer.Infrastructure/Persistence/AppDbContext.cs` (depends on T006, T008)
+- [X] T012 Expand AI job submit/status DTOs with `runId`, `workflowType`, `stepNumber`, `errorCode`, and conflict message fields in `mohamy-smart-backend/Lawyer.Application/Dtos/AiJobs/SubmitAiJobDto.cs` and `mohamy-smart-backend/Lawyer.Application/Dtos/AiJobs/AiJobStatusDto.cs`
+- [X] T013 Define shared lifecycle service contract methods for start, resume, start-new, submit-stage, advance-stage, and conflict recovery in `mohamy-smart-backend/Lawyer.Application/IServices/IWorkflowServiceBase.cs`
+- [X] T014 Define run-scoped AI job service methods for submit, lookup active job, ignore stale completion, and mark conflict in `mohamy-smart-backend/Lawyer.Application/IServices/IAiJobService.cs`
+- [X] T015 Implement run-scoped duplicate prevention and stale completion checks in `mohamy-smart-backend/Lawyer.Application/Services/AiJobService.cs` (depends on T006, T012, T014)
+- [X] T016 Add run identity to workflow invocation context used by background workers in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/WorkflowInvocationContext.cs`
+- [X] T017 Update workflow step request base shape to require `runId`, `stepNumber`, and `workflowType` in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/RunWorkflowStepRequest.cs` (depends on T016)
+- [X] T018 Update shared workflow DTO output to expose `runId`, `currentAccessibleStep`, `lastCompletedStep`, `activeRequest`, and `stageConflicts` in `mohamy-smart-backend/Lawyer.Application/Dtos/Workflows/WorkflowDto.cs`
+- [X] T019 Add frontend lifecycle fields to the shared workflow slice state and reducers in `apps/lawyer-dashboard/src/redux/shared/createWorkflowSlice.ts`
+- [X] T020 Add lifecycle request/response typing to shared workflow thunks in `apps/lawyer-dashboard/src/redux/shared/createWorkflowThunks.ts`
+- [X] T021 Add run-scoped AI job status typing and stale-event guards to `apps/lawyer-dashboard/src/redux/aiJobs/aiJobsSlice.ts`
+- [X] T022 Update AI job submit thunk payload to include `runId`, `workflowType`, and `stepNumber` in `apps/lawyer-dashboard/src/redux/aiJobs/thunk/thunkSubmitAiJob.ts`
+- [X] T023 Update AI job listing thunk to query active jobs by `caseId`, `workflowType`, and `runId` in `apps/lawyer-dashboard/src/redux/aiJobs/thunk/thunkGetAllAiJobs.ts`
+- [X] T024 Add lifecycle-aware loader props for run id, stage number, recoverable conflict, and retry state in `apps/lawyer-dashboard/src/components/skeleton/SmartAnalysisLoader.tsx`
 
 **Checkpoint**: Foundation ready. All workflow stories can now use the same run identity, active request shape, and frontend lifecycle state.
 
@@ -58,25 +58,25 @@
 
 ### Tests for User Story 1
 
-- [ ] T025 [P] [US1] Add backend test that start-new creates a newer active run and marks prior run historical in `mohamy-smart-backend/Lawyer.Tests/Services/WorkflowLifecycleServiceTests.cs`
-- [ ] T026 [P] [US1] Add backend test that old AI job completion does not update a newer active run in `mohamy-smart-backend/Lawyer.Tests/Services/AiJobServiceTests.cs`
-- [ ] T027 [P] [US1] Add frontend reducer test that `startNew.fulfilled` clears old outputs, old active jobs, and unlocked future tabs in `apps/lawyer-dashboard/src/redux/shared/__tests__/createWorkflowSlice.lifecycle.test.ts`
-- [ ] T028 [P] [US1] Add frontend orchestrator test that `fresh=1` starts at step 1 after refresh in `apps/lawyer-dashboard/src/hooks/__tests__/useWorkflowOrchestrator.lifecycle.test.tsx`
+- [X] T025 [P] [US1] Add backend test that start-new creates a newer active run and marks prior run historical in `mohamy-smart-backend/Lawyer.Tests/Services/WorkflowLifecycleServiceTests.cs`
+- [X] T026 [P] [US1] Add backend test that old AI job completion does not update a newer active run in `mohamy-smart-backend/Lawyer.Tests/Services/AiJobServiceTests.cs`
+- [X] T027 [P] [US1] Add frontend reducer test that `startNew.fulfilled` clears old outputs, old active jobs, and unlocked future tabs in `apps/lawyer-dashboard/src/redux/shared/__tests__/createWorkflowSlice.lifecycle.test.ts`
+- [X] T028 [P] [US1] Add frontend orchestrator test that `fresh=1` starts at step 1 after refresh in `apps/lawyer-dashboard/src/hooks/__tests__/useWorkflowOrchestrator.lifecycle.test.tsx`
 
 ### Implementation for User Story 1
 
-- [ ] T029 [US1] Implement start-new run creation and previous-run archival in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/WorkflowServiceBase.cs` (depends on T013, T018)
-- [ ] T030 [US1] Implement legacy preparing-statement cleanup so abandoned/new runs delete old active facts, parties, subjects, requests, legal basis, and lawsuit type outputs in `mohamy-smart-backend/Lawyer.Application/Services/PreparingStatementOfClaimsService.cs` (depends on T029)
-- [ ] T031 [US1] Add start-new controller action for shared workflow endpoints in `mohamy-smart-backend/Lawyer/Controllers/WorkflowSnapshotsController.cs` (depends on T029)
-- [ ] T032 [US1] Add start-new endpoint for preparing statement of claims in `mohamy-smart-backend/Lawyer/Controllers/PreparingStatementOfClaimsController.cs` (depends on T030)
-- [ ] T033 [US1] Wire start-new API thunk with `mode=startNew` and returned `runId` in `apps/lawyer-dashboard/src/redux/shared/createWorkflowThunks.ts` (depends on T020)
-- [ ] T034 [US1] Update document selection start-new click handling to route with fresh intent and no stale snapshot id in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/DocumentSelection.tsx` (depends on T033)
-- [ ] T035 [US1] Update workflow orchestrator fresh-session bootstrap to prefer the returned new `runId` over cached summary data in `apps/lawyer-dashboard/src/hooks/useWorkflowOrchestrator.ts` (depends on T033)
-- [ ] T036 [US1] Reset selected facts and per-stage local transient state on start-new in `apps/lawyer-dashboard/src/hooks/useWorkflowFacts.ts` (depends on T035)
-- [ ] T037 [US1] Apply start-new clean-run behavior to preparing statement page tab gating in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/preparingStatementOfClaims/PreparingStatementOfClaims.tsx` (depends on T035)
-- [ ] T038 [US1] Apply start-new clean-run behavior to defense memo page tab gating in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/defenseMemoPage/DefenseMemoPage.tsx` (depends on T035)
-- [ ] T039 [US1] Apply start-new clean-run behavior to appeal, ruling, warning, execution, and complaint page bootstraps in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/appealBrief/AppealBriefPage.tsx`, `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/rulingAnalysis/RulingAnalysisPage.tsx`, and `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/legalWarning/LegalWarningPage.tsx` (depends on T035)
-- [ ] T040 [US1] Apply start-new clean-run behavior to execution and administrative complaint page bootstraps in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/execRequest/ExecRequestPage.tsx` and `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/adminComplaint/AdminComplaintPage.tsx` (depends on T035)
+- [X] T029 [US1] Implement start-new run creation and previous-run archival in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/WorkflowServiceBase.cs` (depends on T013, T018)
+- [X] T030 [US1] Implement legacy preparing-statement cleanup so abandoned/new runs delete old active facts, parties, subjects, requests, legal basis, and lawsuit type outputs in `mohamy-smart-backend/Lawyer.Application/Services/PreparingStatementOfClaimsService.cs` (depends on T029)
+- [X] T031 [US1] Add start-new controller action for shared workflow endpoints in `mohamy-smart-backend/Lawyer/Controllers/WorkflowSnapshotsController.cs` (depends on T029)
+- [X] T032 [US1] Add start-new endpoint for preparing statement of claims in `mohamy-smart-backend/Lawyer/Controllers/PreparingStatementOfClaimsController.cs` (depends on T030)
+- [X] T033 [US1] Wire start-new API thunk with `mode=startNew` and returned `runId` in `apps/lawyer-dashboard/src/redux/shared/createWorkflowThunks.ts` (depends on T020)
+- [X] T034 [US1] Update document selection start-new click handling to route with fresh intent and no stale snapshot id in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/DocumentSelection.tsx` (depends on T033)
+- [X] T035 [US1] Update workflow orchestrator fresh-session bootstrap to prefer the returned new `runId` over cached summary data in `apps/lawyer-dashboard/src/hooks/useWorkflowOrchestrator.ts` (depends on T033)
+- [X] T036 [US1] Reset selected facts and per-stage local transient state on start-new in `apps/lawyer-dashboard/src/hooks/useWorkflowFacts.ts` (depends on T035)
+- [X] T037 [US1] Apply start-new clean-run behavior to preparing statement page tab gating in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/preparingStatementOfClaims/PreparingStatementOfClaims.tsx` (depends on T035)
+- [X] T038 [US1] Apply start-new clean-run behavior to defense memo page tab gating in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/defenseMemoPage/DefenseMemoPage.tsx` (depends on T035)
+- [X] T039 [US1] Apply start-new clean-run behavior to appeal, ruling, warning, execution, and complaint page bootstraps in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/appealBrief/AppealBriefPage.tsx`, `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/rulingAnalysis/RulingAnalysisPage.tsx`, and `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/legalWarning/LegalWarningPage.tsx` (depends on T035)
+- [X] T040 [US1] Apply start-new clean-run behavior to execution and administrative complaint page bootstraps in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/execRequest/ExecRequestPage.tsx` and `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/adminComplaint/AdminComplaintPage.tsx` (depends on T035)
 
 **Checkpoint**: Start-new is usable as the MVP path and can be verified without implementing resume, conflict recovery, or advanced refresh behavior.
 
@@ -90,22 +90,22 @@
 
 ### Tests for User Story 2
 
-- [ ] T041 [P] [US2] Add backend test that resume returns latest active run, current accessible step, completed outputs, and locked future stages in `mohamy-smart-backend/Lawyer.Tests/Services/WorkflowLifecycleServiceTests.cs`
-- [ ] T042 [P] [US2] Add frontend orchestrator test that resume hydrates the saved stage instead of applying stale cached tabs in `apps/lawyer-dashboard/src/hooks/__tests__/useWorkflowOrchestrator.lifecycle.test.tsx`
-- [ ] T043 [P] [US2] Add frontend AI jobs slice test that resume keeps active queued or processing request attached to the same run in `apps/lawyer-dashboard/src/redux/aiJobs/__tests__/aiJobsSlice.lifecycle.test.ts`
+- [X] T041 [P] [US2] Add backend test that resume returns latest active run, current accessible step, completed outputs, and locked future stages in `mohamy-smart-backend/Lawyer.Tests/Services/WorkflowLifecycleServiceTests.cs`
+- [X] T042 [P] [US2] Add frontend orchestrator test that resume hydrates the saved stage instead of applying stale cached tabs in `apps/lawyer-dashboard/src/hooks/__tests__/useWorkflowOrchestrator.lifecycle.test.tsx`
+- [X] T043 [P] [US2] Add frontend AI jobs slice test that resume keeps active queued or processing request attached to the same run in `apps/lawyer-dashboard/src/redux/aiJobs/__tests__/aiJobsSlice.lifecycle.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T044 [US2] Implement resume-current service method that returns the latest active run or a safe first-stage run when none exists in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/WorkflowServiceBase.cs` (depends on T029)
-- [ ] T045 [US2] Add resume-current controller action for shared workflows in `mohamy-smart-backend/Lawyer/Controllers/WorkflowSnapshotsController.cs` (depends on T044)
-- [ ] T046 [US2] Add resume-current endpoint for preparing statement of claims summary in `mohamy-smart-backend/Lawyer/Controllers/PreparingStatementOfClaimsController.cs` (depends on T030, T044)
-- [ ] T047 [US2] Implement resume-current thunk that preserves returned outputs and active request metadata in `apps/lawyer-dashboard/src/redux/shared/createWorkflowThunks.ts` (depends on T020, T044)
-- [ ] T048 [US2] Update workflow slice hydration to set `currentAccessibleStep` from backend state and never infer it from output presence alone in `apps/lawyer-dashboard/src/redux/shared/createWorkflowSlice.ts` (depends on T047)
-- [ ] T049 [US2] Wire document selection resume-current action to call resume API and navigate without `fresh=1` in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/DocumentSelection.tsx` (depends on T047)
-- [ ] T050 [US2] Update workflow orchestrator resume bootstrap to show saved current stage and completed earlier outputs only for the active run in `apps/lawyer-dashboard/src/hooks/useWorkflowOrchestrator.ts` (depends on T047, T048)
-- [ ] T051 [US2] Apply resume-current hydration to preparing statement of claims stage data in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/preparingStatementOfClaims/PreparingStatementOfClaims.tsx` (depends on T050)
-- [ ] T052 [US2] Apply resume-current hydration to defense memo, appeal, and ruling pages in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/defenseMemoPage/DefenseMemoPage.tsx`, `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/appealBrief/AppealBriefPage.tsx`, and `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/rulingAnalysis/RulingAnalysisPage.tsx` (depends on T050)
-- [ ] T053 [US2] Apply resume-current hydration to legal warning, execution request, and admin complaint pages in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/legalWarning/LegalWarningPage.tsx`, `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/execRequest/ExecRequestPage.tsx`, and `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/adminComplaint/AdminComplaintPage.tsx` (depends on T050)
+- [X] T044 [US2] Implement resume-current service method that returns the latest active run or a safe first-stage run when none exists in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/WorkflowServiceBase.cs` (depends on T029)
+- [X] T045 [US2] Add resume-current controller action for shared workflows in `mohamy-smart-backend/Lawyer/Controllers/WorkflowSnapshotsController.cs` (depends on T044)
+- [X] T046 [US2] Add resume-current endpoint for preparing statement of claims summary in `mohamy-smart-backend/Lawyer/Controllers/PreparingStatementOfClaimsController.cs` (depends on T030, T044)
+- [X] T047 [US2] Implement resume-current thunk that preserves returned outputs and active request metadata in `apps/lawyer-dashboard/src/redux/shared/createWorkflowThunks.ts` (depends on T020, T044)
+- [X] T048 [US2] Update workflow slice hydration to set `currentAccessibleStep` from backend state and never infer it from output presence alone in `apps/lawyer-dashboard/src/redux/shared/createWorkflowSlice.ts` (depends on T047)
+- [X] T049 [US2] Wire document selection resume-current action to call resume API and navigate without `fresh=1` in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/DocumentSelection.tsx` (depends on T047)
+- [X] T050 [US2] Update workflow orchestrator resume bootstrap to show saved current stage and completed earlier outputs only for the active run in `apps/lawyer-dashboard/src/hooks/useWorkflowOrchestrator.ts` (depends on T047, T048)
+- [X] T051 [US2] Apply resume-current hydration to preparing statement of claims stage data in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/preparingStatementOfClaims/PreparingStatementOfClaims.tsx` (depends on T050)
+- [X] T052 [US2] Apply resume-current hydration to defense memo, appeal, and ruling pages in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/defenseMemoPage/DefenseMemoPage.tsx`, `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/appealBrief/AppealBriefPage.tsx`, and `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/rulingAnalysis/RulingAnalysisPage.tsx` (depends on T050)
+- [X] T053 [US2] Apply resume-current hydration to legal warning, execution request, and admin complaint pages in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/legalWarning/LegalWarningPage.tsx`, `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/execRequest/ExecRequestPage.tsx`, and `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/adminComplaint/AdminComplaintPage.tsx` (depends on T050)
 
 **Checkpoint**: Resume current version works independently for a saved run and does not depend on start-new UI behavior beyond shared foundation.
 
@@ -119,24 +119,24 @@
 
 ### Tests for User Story 3
 
-- [ ] T054 [P] [US3] Add backend test that saving generated output updates `lastCompletedStep` without changing `currentAccessibleStep` in `mohamy-smart-backend/Lawyer.Tests/Services/WorkflowLifecycleServiceTests.cs`
-- [ ] T055 [P] [US3] Add backend test that advance-stage moves `currentAccessibleStep` only when requested stage is completed for the active run in `mohamy-smart-backend/Lawyer.Tests/Services/WorkflowLifecycleServiceTests.cs`
-- [ ] T056 [P] [US3] Add frontend step bar test that future tabs remain disabled after output completion until advance succeeds in `apps/lawyer-dashboard/src/components/analysisWorkflow/__tests__/WorkflowStepBar.lifecycle.test.tsx`
-- [ ] T057 [P] [US3] Add orchestrator test that repeated transition clicks produce one advance request in `apps/lawyer-dashboard/src/hooks/__tests__/useWorkflowOrchestrator.lifecycle.test.tsx`
+- [X] T054 [P] [US3] Add backend test that saving generated output updates `lastCompletedStep` without changing `currentAccessibleStep` in `mohamy-smart-backend/Lawyer.Tests/Services/WorkflowLifecycleServiceTests.cs`
+- [X] T055 [P] [US3] Add backend test that advance-stage moves `currentAccessibleStep` only when requested stage is completed for the active run in `mohamy-smart-backend/Lawyer.Tests/Services/WorkflowLifecycleServiceTests.cs`
+- [X] T056 [P] [US3] Add frontend step bar test that future tabs remain disabled after output completion until advance succeeds in `apps/lawyer-dashboard/src/components/analysisWorkflow/__tests__/WorkflowStepBar.lifecycle.test.tsx`
+- [X] T057 [P] [US3] Add orchestrator test that repeated transition clicks produce one advance request in `apps/lawyer-dashboard/src/hooks/__tests__/useWorkflowOrchestrator.lifecycle.test.tsx`
 
 ### Implementation for User Story 3
 
-- [ ] T058 [US3] Remove automatic `CurrentStep = stepNumber + 1` advancement from step output save behavior in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/WorkflowServiceBase.cs` (depends on T054)
-- [ ] T059 [US3] Implement advance-stage service method that validates active run, completed current stage, and next-stage bounds in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/WorkflowServiceBase.cs` (depends on T055, T058)
-- [ ] T060 [US3] Add advance-stage controller action for shared workflow pages in `mohamy-smart-backend/Lawyer/Controllers/WorkflowSnapshotsController.cs` (depends on T059)
-- [ ] T061 [US3] Add advance-stage endpoint for preparing statement of claims in `mohamy-smart-backend/Lawyer/Controllers/PreparingStatementOfClaimsController.cs` (depends on T059)
-- [ ] T062 [US3] Add advance-stage thunk and pending guard in `apps/lawyer-dashboard/src/redux/shared/createWorkflowThunks.ts` (depends on T060, T061)
-- [ ] T063 [US3] Update workflow slice reducers so output completion sets `lastCompletedStep` and advance success sets `currentAccessibleStep` in `apps/lawyer-dashboard/src/redux/shared/createWorkflowSlice.ts` (depends on T062)
-- [ ] T064 [US3] Update workflow orchestrator tab guard to block future-stage clicks unless `step <= currentAccessibleStep` or the step has an active request in the active run in `apps/lawyer-dashboard/src/hooks/useWorkflowOrchestrator.ts` (depends on T063)
-- [ ] T065 [US3] Update step bar disabled, selected, and completed state rendering from lifecycle fields in `apps/lawyer-dashboard/src/components/analysisWorkflow/WorkflowStepBar.tsx` (depends on T063)
-- [ ] T066 [US3] Wire all preparing statement transition buttons to `advanceStage` instead of direct tab mutation in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/preparingStatementOfClaims/PreparingStatementOfClaims.tsx` (depends on T064)
-- [ ] T067 [US3] Wire defense memo, appeal, and ruling transition buttons to `advanceStage` in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/defenseMemoPage/DefenseMemoPage.tsx`, `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/appealBrief/AppealBriefPage.tsx`, and `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/rulingAnalysis/RulingAnalysisPage.tsx` (depends on T064)
-- [ ] T068 [US3] Wire legal warning, execution request, and admin complaint transition buttons to `advanceStage` in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/legalWarning/LegalWarningPage.tsx`, `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/execRequest/ExecRequestPage.tsx`, and `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/adminComplaint/AdminComplaintPage.tsx` (depends on T064)
+- [X] T058 [US3] Remove automatic `CurrentStep = stepNumber + 1` advancement from step output save behavior in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/WorkflowServiceBase.cs` (depends on T054)
+- [X] T059 [US3] Implement advance-stage service method that validates active run, completed current stage, and next-stage bounds in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/WorkflowServiceBase.cs` (depends on T055, T058)
+- [X] T060 [US3] Add advance-stage controller action for shared workflow pages in `mohamy-smart-backend/Lawyer/Controllers/WorkflowSnapshotsController.cs` (depends on T059)
+- [X] T061 [US3] Add advance-stage endpoint for preparing statement of claims in `mohamy-smart-backend/Lawyer/Controllers/PreparingStatementOfClaimsController.cs` (depends on T059)
+- [X] T062 [US3] Add advance-stage thunk and pending guard in `apps/lawyer-dashboard/src/redux/shared/createWorkflowThunks.ts` (depends on T060, T061)
+- [X] T063 [US3] Update workflow slice reducers so output completion sets `lastCompletedStep` and advance success sets `currentAccessibleStep` in `apps/lawyer-dashboard/src/redux/shared/createWorkflowSlice.ts` (depends on T062)
+- [X] T064 [US3] Update workflow orchestrator tab guard to block future-stage clicks unless `step <= currentAccessibleStep` or the step has an active request in the active run in `apps/lawyer-dashboard/src/hooks/useWorkflowOrchestrator.ts` (depends on T063)
+- [X] T065 [US3] Update step bar disabled, selected, and completed state rendering from lifecycle fields in `apps/lawyer-dashboard/src/components/analysisWorkflow/WorkflowStepBar.tsx` (depends on T063)
+- [X] T066 [US3] Wire all preparing statement transition buttons to `advanceStage` instead of direct tab mutation in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/preparingStatementOfClaims/PreparingStatementOfClaims.tsx` (depends on T064)
+- [X] T067 [US3] Wire defense memo, appeal, and ruling transition buttons to `advanceStage` in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/defenseMemoPage/DefenseMemoPage.tsx`, `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/appealBrief/AppealBriefPage.tsx`, and `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/rulingAnalysis/RulingAnalysisPage.tsx` (depends on T064)
+- [X] T068 [US3] Wire legal warning, execution request, and admin complaint transition buttons to `advanceStage` in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/legalWarning/LegalWarningPage.tsx`, `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/execRequest/ExecRequestPage.tsx`, and `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/adminComplaint/AdminComplaintPage.tsx` (depends on T064)
 
 **Checkpoint**: Tabs follow the explicit transition rule and no stage opens only because output exists.
 
@@ -150,21 +150,21 @@
 
 ### Tests for User Story 4
 
-- [ ] T069 [P] [US4] Add backend test that active queued or processing job is returned by run-scoped lookup after refresh in `mohamy-smart-backend/Lawyer.Tests/Services/AiJobServiceTests.cs`
-- [ ] T070 [P] [US4] Add frontend orchestrator test that refresh hydrates loader state and does not call submit when an active job exists in `apps/lawyer-dashboard/src/hooks/__tests__/useWorkflowOrchestrator.lifecycle.test.tsx`
-- [ ] T071 [P] [US4] Add SignalR hook test that completion event updates only matching `runId` and `stepNumber` in `apps/lawyer-dashboard/src/hooks/__tests__/useAiJobSignalR.lifecycle.test.tsx`
+- [X] T069 [P] [US4] Add backend test that active queued or processing job is returned by run-scoped lookup after refresh in `mohamy-smart-backend/Lawyer.Tests/Services/AiJobServiceTests.cs`
+- [X] T070 [P] [US4] Add frontend orchestrator test that refresh hydrates loader state and does not call submit when an active job exists in `apps/lawyer-dashboard/src/hooks/__tests__/useWorkflowOrchestrator.lifecycle.test.tsx`
+- [X] T071 [P] [US4] Add SignalR hook test that completion event updates only matching `runId` and `stepNumber` in `apps/lawyer-dashboard/src/hooks/__tests__/useAiJobSignalR.lifecycle.test.tsx`
 
 ### Implementation for User Story 4
 
-- [ ] T072 [US4] Implement run-scoped active job lookup endpoint behavior in `mohamy-smart-backend/Lawyer/Controllers/AiJobsController.cs` (depends on T015)
-- [ ] T073 [US4] Include run id and step number in AI job SignalR notifications in `mohamy-smart-backend/Lawyer/Services/AiJobNotificationService.cs` (depends on T012)
-- [ ] T074 [US4] Update AI job worker completion serialization to include active run identity and reject stale run completions in `mohamy-smart-backend/Lawyer.Application/Services/AiJobWorker.cs` (depends on T015, T016)
-- [ ] T075 [US4] Update AI job listing thunk to reload active queued or processing jobs on workflow page mount in `apps/lawyer-dashboard/src/redux/aiJobs/thunk/thunkGetAllAiJobs.ts` (depends on T023, T072)
-- [ ] T076 [US4] Update workflow orchestrator mount flow to show loader when active job exists and skip automatic duplicate submit in `apps/lawyer-dashboard/src/hooks/useWorkflowOrchestrator.ts` (depends on T075)
-- [ ] T077 [US4] Update SignalR hook to ignore events whose `runId`, `workflowType`, or `stepNumber` do not match the active page in `apps/lawyer-dashboard/src/hooks/useAiJobSignalR.ts` (depends on T073)
-- [ ] T078 [US4] Update loader component copy and retry area for queued, processing, completed-after-refresh, and failed-after-refresh states in `apps/lawyer-dashboard/src/components/skeleton/SmartAnalysisLoader.tsx` (depends on T024, T076)
-- [ ] T079 [US4] Persist selected facts needed for active run recovery with `runId` scoping in `apps/lawyer-dashboard/src/hooks/useWorkflowFacts.ts` (depends on T076)
-- [ ] T080 [US4] Serialize auto-save and manual save while a stage request is pending to avoid refresh-time duplicate writes in `apps/lawyer-dashboard/src/hooks/useWorkflowAutoSave.ts` (depends on T076)
+- [X] T072 [US4] Implement run-scoped active job lookup endpoint behavior in `mohamy-smart-backend/Lawyer/Controllers/AiJobsController.cs` (depends on T015)
+- [X] T073 [US4] Include run id and step number in AI job SignalR notifications in `mohamy-smart-backend/Lawyer/Services/AiJobNotificationService.cs` (depends on T012)
+- [X] T074 [US4] Update AI job worker completion serialization to include active run identity and reject stale run completions in `mohamy-smart-backend/Lawyer.Application/Services/AiJobWorker.cs` (depends on T015, T016)
+- [X] T075 [US4] Update AI job listing thunk to reload active queued or processing jobs on workflow page mount in `apps/lawyer-dashboard/src/redux/aiJobs/thunk/thunkGetAllAiJobs.ts` (depends on T023, T072)
+- [X] T076 [US4] Update workflow orchestrator mount flow to show loader when active job exists and skip automatic duplicate submit in `apps/lawyer-dashboard/src/hooks/useWorkflowOrchestrator.ts` (depends on T075)
+- [X] T077 [US4] Update SignalR hook to ignore events whose `runId`, `workflowType`, or `stepNumber` do not match the active page in `apps/lawyer-dashboard/src/hooks/useAiJobSignalR.ts` (depends on T073)
+- [X] T078 [US4] Update loader component copy and retry area for queued, processing, completed-after-refresh, and failed-after-refresh states in `apps/lawyer-dashboard/src/components/skeleton/SmartAnalysisLoader.tsx` (depends on T024, T076)
+- [X] T079 [US4] Persist selected facts needed for active run recovery with `runId` scoping in `apps/lawyer-dashboard/src/hooks/useWorkflowFacts.ts` (depends on T076)
+- [X] T080 [US4] Serialize auto-save and manual save while a stage request is pending to avoid refresh-time duplicate writes in `apps/lawyer-dashboard/src/hooks/useWorkflowAutoSave.ts` (depends on T076)
 
 **Checkpoint**: Refresh during active work recovers the loader and does not duplicate AI jobs.
 
@@ -178,17 +178,17 @@
 
 ### Tests for User Story 5
 
-- [ ] T081 [P] [US5] Add document selection UI test for no-progress start action creating a first run at stage 1 in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/__tests__/DocumentSelection.lifecycle.test.tsx`
-- [ ] T082 [P] [US5] Add document selection UI test for resume-current and start-new buttons producing different navigation intents in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/__tests__/DocumentSelection.lifecycle.test.tsx`
+- [X] T081 [P] [US5] Add document selection UI test for no-progress start action creating a first run at stage 1 in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/__tests__/DocumentSelection.lifecycle.test.tsx`
+- [X] T082 [P] [US5] Add document selection UI test for resume-current and start-new buttons producing different navigation intents in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/__tests__/DocumentSelection.lifecycle.test.tsx`
 
 ### Implementation for User Story 5
 
-- [ ] T083 [US5] Add action availability fields `canStart`, `canResumeCurrent`, `canStartNew`, and `currentRunCreatedAt` to workflow summaries in `mohamy-smart-backend/Lawyer.Application/Dtos/Workflows/WorkflowLifecycleDtos.cs`
-- [ ] T084 [US5] Populate action availability fields in shared workflow summary service responses in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/WorkflowServiceBase.cs` (depends on T083)
-- [ ] T085 [US5] Populate action availability fields in preparing statement summary responses in `mohamy-smart-backend/Lawyer.Application/Services/PreparingStatementOfClaimsService.cs` (depends on T083)
-- [ ] T086 [US5] Update document selection cards to show distinct Arabic labels and disabled states for start, resume current version, and start new in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/DocumentSelection.tsx` (depends on T083)
-- [ ] T087 [US5] Add Arabic error messages for failed start, resume, and start-new actions in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/DocumentSelection.tsx` (depends on T086)
-- [ ] T088 [US5] Update workflow header status text to show whether the user is in a current run, new run, or read-only historical snapshot in `apps/lawyer-dashboard/src/components/analysisWorkflow/WorkflowStepBar.tsx` (depends on T086)
+- [X] T083 [US5] Add action availability fields `canStart`, `canResumeCurrent`, `canStartNew`, and `currentRunCreatedAt` to workflow summaries in `mohamy-smart-backend/Lawyer.Application/Dtos/Workflows/WorkflowLifecycleDtos.cs`
+- [X] T084 [US5] Populate action availability fields in shared workflow summary service responses in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/WorkflowServiceBase.cs` (depends on T083)
+- [X] T085 [US5] Populate action availability fields in preparing statement summary responses in `mohamy-smart-backend/Lawyer.Application/Services/PreparingStatementOfClaimsService.cs` (depends on T083)
+- [X] T086 [US5] Update document selection cards to show distinct Arabic labels and disabled states for start, resume current version, and start new in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/DocumentSelection.tsx` (depends on T083)
+- [X] T087 [US5] Add Arabic error messages for failed start, resume, and start-new actions in `apps/lawyer-dashboard/src/pages/cases/subPagesCases/analysis/DocumentSelection.tsx` (depends on T086)
+- [X] T088 [US5] Update workflow header status text to show whether the user is in a current run, new run, or read-only historical snapshot in `apps/lawyer-dashboard/src/components/analysisWorkflow/WorkflowStepBar.tsx` (depends on T086)
 
 **Checkpoint**: The three entry actions are visibly distinct and map to different lifecycle paths.
 
@@ -202,23 +202,23 @@
 
 ### Tests for User Story 6
 
-- [ ] T089 [P] [US6] Add backend worker test that `WorkflowConcurrencyException` marks the AI job as recoverable conflict after retries are exhausted in `mohamy-smart-backend/Lawyer.Tests/Services/AiJobWorker/AiJobWorkerErrorHandlingTests.cs`
-- [ ] T090 [P] [US6] Add backend workflow test that conflict state keeps `currentAccessibleStep` unchanged and future stages locked in `mohamy-smart-backend/Lawyer.Tests/Services/WorkflowLifecycleServiceTests.cs`
-- [ ] T091 [P] [US6] Add frontend reducer test that conflict response sets stage conflict and does not unlock the next tab in `apps/lawyer-dashboard/src/redux/shared/__tests__/createWorkflowSlice.lifecycle.test.ts`
-- [ ] T092 [P] [US6] Add frontend loader test that conflict state shows reload and explicit retry actions without auto-submit in `apps/lawyer-dashboard/src/components/skeleton/__tests__/SmartAnalysisLoader.lifecycle.test.tsx`
+- [X] T089 [P] [US6] Add backend worker test that `WorkflowConcurrencyException` marks the AI job as recoverable conflict after retries are exhausted in `mohamy-smart-backend/Lawyer.Tests/Services/AiJobWorker/AiJobWorkerErrorHandlingTests.cs`
+- [X] T090 [P] [US6] Add backend workflow test that conflict state keeps `currentAccessibleStep` unchanged and future stages locked in `mohamy-smart-backend/Lawyer.Tests/Services/WorkflowLifecycleServiceTests.cs`
+- [X] T091 [P] [US6] Add frontend reducer test that conflict response sets stage conflict and does not unlock the next tab in `apps/lawyer-dashboard/src/redux/shared/__tests__/createWorkflowSlice.lifecycle.test.ts`
+- [X] T092 [P] [US6] Add frontend loader test that conflict state shows reload and explicit retry actions without auto-submit in `apps/lawyer-dashboard/src/components/skeleton/__tests__/SmartAnalysisLoader.lifecycle.test.tsx`
 
 ### Implementation for User Story 6
 
-- [ ] T093 [US6] Convert exhausted `WorkflowConcurrencyException` results into a `WorkflowStageConflict` DTO in `mohamy-smart-backend/Lawyer.Application/Services/AiJobWorker.cs` (depends on T007, T012)
-- [ ] T094 [US6] Persist stage conflict metadata without applying stale output or advancing stages in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/WorkflowServiceBase.cs` (depends on T093)
-- [ ] T095 [US6] Add reload-safe conflict recovery endpoint for shared workflows in `mohamy-smart-backend/Lawyer/Controllers/WorkflowSnapshotsController.cs` (depends on T094)
-- [ ] T096 [US6] Add conflict recovery endpoint for preparing statement of claims in `mohamy-smart-backend/Lawyer/Controllers/PreparingStatementOfClaimsController.cs` (depends on T094)
-- [ ] T097 [US6] Add conflict status mapping to AI job status responses in `mohamy-smart-backend/Lawyer/Controllers/AiJobsController.cs` (depends on T093)
-- [ ] T098 [US6] Add conflict reducers and recover-conflict thunk to shared workflow state in `apps/lawyer-dashboard/src/redux/shared/createWorkflowSlice.ts` and `apps/lawyer-dashboard/src/redux/shared/createWorkflowThunks.ts` (depends on T095, T096)
-- [ ] T099 [US6] Update workflow orchestrator to stop auto-submit when a stage conflict exists and require user retry or reload action in `apps/lawyer-dashboard/src/hooks/useWorkflowOrchestrator.ts` (depends on T098)
-- [ ] T100 [US6] Update AI job SignalR handling to route conflict completion to workflow conflict state instead of failed-generation state in `apps/lawyer-dashboard/src/hooks/useAiJobSignalR.ts` (depends on T097, T098)
-- [ ] T101 [US6] Add Arabic conflict recovery copy and retry/reload buttons to loader UI in `apps/lawyer-dashboard/src/components/skeleton/SmartAnalysisLoader.tsx` (depends on T099)
-- [ ] T102 [US6] Keep future workflow tabs disabled while conflict state is active in `apps/lawyer-dashboard/src/components/analysisWorkflow/WorkflowStepBar.tsx` (depends on T098)
+- [X] T093 [US6] Convert exhausted `WorkflowConcurrencyException` results into a `WorkflowStageConflict` DTO in `mohamy-smart-backend/Lawyer.Application/Services/AiJobWorker.cs` (depends on T007, T012)
+- [X] T094 [US6] Persist stage conflict metadata without applying stale output or advancing stages in `mohamy-smart-backend/Lawyer.Application/Services/Workflows/WorkflowServiceBase.cs` (depends on T093)
+- [X] T095 [US6] Add reload-safe conflict recovery endpoint for shared workflows in `mohamy-smart-backend/Lawyer/Controllers/WorkflowSnapshotsController.cs` (depends on T094)
+- [X] T096 [US6] Add conflict recovery endpoint for preparing statement of claims in `mohamy-smart-backend/Lawyer/Controllers/PreparingStatementOfClaimsController.cs` (depends on T094)
+- [X] T097 [US6] Add conflict status mapping to AI job status responses in `mohamy-smart-backend/Lawyer/Controllers/AiJobsController.cs` (depends on T093)
+- [X] T098 [US6] Add conflict reducers and recover-conflict thunk to shared workflow state in `apps/lawyer-dashboard/src/redux/shared/createWorkflowSlice.ts` and `apps/lawyer-dashboard/src/redux/shared/createWorkflowThunks.ts` (depends on T095, T096)
+- [X] T099 [US6] Update workflow orchestrator to stop auto-submit when a stage conflict exists and require user retry or reload action in `apps/lawyer-dashboard/src/hooks/useWorkflowOrchestrator.ts` (depends on T098)
+- [X] T100 [US6] Update AI job SignalR handling to route conflict completion to workflow conflict state instead of failed-generation state in `apps/lawyer-dashboard/src/hooks/useAiJobSignalR.ts` (depends on T097, T098)
+- [X] T101 [US6] Add Arabic conflict recovery copy and retry/reload buttons to loader UI in `apps/lawyer-dashboard/src/components/skeleton/SmartAnalysisLoader.tsx` (depends on T099)
+- [X] T102 [US6] Keep future workflow tabs disabled while conflict state is active in `apps/lawyer-dashboard/src/components/analysisWorkflow/WorkflowStepBar.tsx` (depends on T098)
 
 **Checkpoint**: Concurrency conflicts are recoverable and cannot unlock or overwrite newer workflow state.
 
@@ -228,14 +228,14 @@
 
 **Purpose**: Verify all supported workflows, clean up duplication, and document the release checks.
 
-- [ ] T103 [P] Add a shared workflow lifecycle mapping table for all supported workflow types in `specs/068-workflow-start-resume/quickstart.md`
-- [ ] T104 Update lifecycle behavior notes in `contracts/workflow-ui-behavior.md` with final endpoint names and UI state names
-- [ ] T105 Run backend lifecycle tests and record command/result notes in `specs/068-workflow-start-resume/quickstart.md`
-- [ ] T106 Run frontend lifecycle tests and record command/result notes in `specs/068-workflow-start-resume/quickstart.md`
-- [ ] T107 Run `npm run lint` and record any remaining warnings or fixes in `specs/068-workflow-start-resume/quickstart.md`
-- [ ] T108 Run `npm test` from repository root and record pass/fail summary in `specs/068-workflow-start-resume/quickstart.md`
-- [ ] T109 Manually verify start-new, resume, tab-locking, refresh loader, and conflict recovery on `http://localhost:5078` and record outcomes in `specs/068-workflow-start-resume/quickstart.md`
-- [ ] T110 Remove duplicated workflow lifecycle branching from workflow-specific pages after shared orchestration is complete in `apps/lawyer-dashboard/src/hooks/useWorkflowOrchestrator.ts`, `apps/lawyer-dashboard/src/redux/shared/createWorkflowSlice.ts`, and `apps/lawyer-dashboard/src/redux/shared/createWorkflowThunks.ts`
+- [X] T103 [P] Add a shared workflow lifecycle mapping table for all supported workflow types in `specs/068-workflow-start-resume/quickstart.md`
+- [X] T104 Update lifecycle behavior notes in `contracts/workflow-ui-behavior.md` with final endpoint names and UI state names
+- [X] T105 Run backend lifecycle tests and record command/result notes in `specs/068-workflow-start-resume/quickstart.md`
+- [X] T106 Run frontend lifecycle tests and record command/result notes in `specs/068-workflow-start-resume/quickstart.md`
+- [X] T107 Run `npm run lint` and record any remaining warnings or fixes in `specs/068-workflow-start-resume/quickstart.md`
+- [X] T108 Run `npm test` from repository root and record pass/fail summary in `specs/068-workflow-start-resume/quickstart.md`
+- [X] T109 Manually verify start-new, resume, tab-locking, refresh loader, and conflict recovery on `http://localhost:5078` and record outcomes in `specs/068-workflow-start-resume/quickstart.md`
+- [X] T110 Remove duplicated workflow lifecycle branching from workflow-specific pages after shared orchestration is complete in `apps/lawyer-dashboard/src/hooks/useWorkflowOrchestrator.ts`, `apps/lawyer-dashboard/src/redux/shared/createWorkflowSlice.ts`, and `apps/lawyer-dashboard/src/redux/shared/createWorkflowThunks.ts`
 
 ---
 

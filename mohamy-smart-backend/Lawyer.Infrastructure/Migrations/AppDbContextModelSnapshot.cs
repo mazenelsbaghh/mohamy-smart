@@ -177,11 +177,24 @@ namespace Lawyer.Infrastructure.Migrations
                     b.Property<Guid>("CaseId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("ConflictStepMetadata")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("CurrentAccessibleStep")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<int>("CurrentStep")
                         .HasColumnType("int");
+
+                    b.Property<int>("LastCompletedStep")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("LawyerId")
                         .IsRequired()
@@ -192,6 +205,10 @@ namespace Lawyer.Infrastructure.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.Property<string>("RunId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -216,7 +233,8 @@ namespace Lawyer.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CaseId");
+                    b.HasIndex("CaseId", "RunId")
+                        .HasDatabaseName("IX_AdminComplaintWorkflows_CaseId_RunId");
 
                     b.ToTable("AdminComplaintWorkflows");
                 });
@@ -301,6 +319,10 @@ namespace Lawyer.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("ErrorCode")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("ErrorMessage")
                         .HasColumnType("nvarchar(max)");
 
@@ -310,24 +332,38 @@ namespace Lawyer.Infrastructure.Migrations
                     b.Property<string>("ResultJson")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("RunId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<DateTime?>("StartedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<int?>("StepNumber")
+                        .HasColumnType("int");
+
                     b.Property<int>("StepType")
                         .HasColumnType("int");
 
+                    b.Property<string>("WorkflowType")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("CaseId", "StepType")
-                        .IsUnique()
-                        .HasDatabaseName("UX_AiJobs_CaseId_StepType_Active")
-                        .HasFilter("[Status] IN (0, 1)");
+                    b.HasIndex("RunId", "StepNumber")
+                        .HasDatabaseName("IX_AiJobs_RunId_StepNumber");
 
                     b.HasIndex("CaseId", "StepType", "CreatedAt")
                         .HasDatabaseName("IX_AiJobs_CaseId_StepType_CreatedAt");
+
+                    b.HasIndex("CaseId", "StepType", "RunId", "StepNumber")
+                        .IsUnique()
+                        .HasDatabaseName("UX_AiJobs_CaseId_StepType_RunId_StepNumber_Active")
+                        .HasFilter("[Status] IN (0, 1)");
 
                     b.ToTable("AiJobs");
                 });
@@ -522,11 +558,24 @@ namespace Lawyer.Infrastructure.Migrations
                     b.Property<Guid>("CaseId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("ConflictStepMetadata")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("CurrentAccessibleStep")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<int>("CurrentStep")
                         .HasColumnType("int");
+
+                    b.Property<int>("LastCompletedStep")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("LawyerId")
                         .IsRequired()
@@ -537,6 +586,10 @@ namespace Lawyer.Infrastructure.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.Property<string>("RunId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -564,7 +617,8 @@ namespace Lawyer.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CaseId");
+                    b.HasIndex("CaseId", "RunId")
+                        .HasDatabaseName("IX_AppealWorkflows_CaseId_RunId");
 
                     b.ToTable("AppealWorkflows");
                 });
@@ -1690,8 +1744,16 @@ namespace Lawyer.Infrastructure.Migrations
                     b.Property<Guid>("CaseId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("ConflictStepMetadata")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("CurrentAccessibleStep")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<int>("CurrentStep")
                         .HasColumnType("int");
@@ -1699,6 +1761,11 @@ namespace Lawyer.Infrastructure.Migrations
                     b.Property<string>("ExecutiveTitleType")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("LastCompletedStep")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("LawyerId")
                         .IsRequired()
@@ -1709,6 +1776,10 @@ namespace Lawyer.Infrastructure.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.Property<string>("RunId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -1727,7 +1798,8 @@ namespace Lawyer.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CaseId");
+                    b.HasIndex("CaseId", "RunId")
+                        .HasDatabaseName("IX_ExecRequestWorkflows_CaseId_RunId");
 
                     b.ToTable("ExecRequestWorkflows");
                 });
@@ -2529,11 +2601,24 @@ namespace Lawyer.Infrastructure.Migrations
                     b.Property<Guid>("CaseId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("ConflictStepMetadata")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("CurrentAccessibleStep")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<int>("CurrentStep")
                         .HasColumnType("int");
+
+                    b.Property<int>("LastCompletedStep")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("LawyerId")
                         .IsRequired()
@@ -2544,6 +2629,10 @@ namespace Lawyer.Infrastructure.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.Property<string>("RunId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -2562,7 +2651,8 @@ namespace Lawyer.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CaseId");
+                    b.HasIndex("CaseId", "RunId")
+                        .HasDatabaseName("IX_LegalWarningWorkflows_CaseId_RunId");
 
                     b.ToTable("LegalWarningWorkflows");
                 });
@@ -3046,11 +3136,24 @@ namespace Lawyer.Infrastructure.Migrations
                     b.Property<Guid>("CaseId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("ConflictStepMetadata")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("CurrentAccessibleStep")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<int>("CurrentStep")
                         .HasColumnType("int");
+
+                    b.Property<int>("LastCompletedStep")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("LawyerId")
                         .IsRequired()
@@ -3061,6 +3164,10 @@ namespace Lawyer.Infrastructure.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.Property<string>("RunId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -3082,7 +3189,8 @@ namespace Lawyer.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CaseId");
+                    b.HasIndex("CaseId", "RunId")
+                        .HasDatabaseName("IX_RulingAnalysisWorkflows_CaseId_RunId");
 
                     b.ToTable("RulingAnalysisWorkflows");
                 });

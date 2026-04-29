@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Container } from '@mohamy/shared-ui';
 import { Tabs, Tab } from '@heroui/react';
 import { sileo } from 'sileo';
@@ -74,6 +75,7 @@ const PreparingStatementOfClaims = () => {
     tabsClassNames,
     tabProps,
     isClickableTab,
+    handleAdvanceStage,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: RootState) => s.preparingStatementOfClaimsSlice,
     thunks: statementOfClaimsThunks,
@@ -90,11 +92,16 @@ const PreparingStatementOfClaims = () => {
   });
 
   const caseType = workflowState.outputs[1] as TCaseDetails | null | undefined;
+  const safeCaseId = caseId ?? '';
+
+  const advanceToNextStep = useCallback(() => {
+    handleAdvanceStage(active, active + 1);
+  }, [active, handleAdvanceStage]);
 
   const renderedSteps = [
-    <AnalysisFactsSelectionStep
+      <AnalysisFactsSelectionStep
       key="facts"
-      caseId={caseId}
+      caseId={safeCaseId}
       facts={caseFacts}
       setFacts={setCaseFacts}
       selectedFacts={selectedFacts}
@@ -105,13 +112,13 @@ const PreparingStatementOfClaims = () => {
       onStart={nextStep}
       emptyStateText="لا توجد وقائع محفوظة داخل القضية الحالية. أضف البيانات أولاً من تفاصيل القضية."
     />,
-    <LawsuitCaseType key="lawsuit-case-type" caseId={caseId} nextStep={nextStep} selectedFacts={selectedFacts} />,
-    <LawsuitParties key="lawsuit-parties" caseId={caseId} nextStep={nextStep} caseType={caseType} selectedFacts={selectedFacts} />,
-    <LawsuitSubjects key="lawsuit-subjects" caseId={caseId} nextStep={nextStep} caseType={caseType} selectedFacts={selectedFacts} />,
-    <LawsuitFacts key="lawsuit-facts" caseId={caseId} nextStep={nextStep} caseType={caseType} selectedFacts={selectedFacts} />,
-    <LawsuitLegalBasis key="lawsuit-legal-basis" caseId={caseId} nextStep={nextStep} caseType={caseType} selectedFacts={selectedFacts} />,
-    <LawsuitRequests key="lawsuit-requests" caseId={caseId} nextStep={nextStep} caseType={caseType} selectedFacts={selectedFacts} />,
-    <FinalStatementOfClaims key="final-statement-of-claims" caseId={caseId} />,
+      <LawsuitCaseType key="lawsuit-case-type" caseId={safeCaseId} nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
+    <LawsuitParties key="lawsuit-parties" caseId={safeCaseId} nextStep={advanceToNextStep} caseType={caseType} selectedFacts={selectedFacts} />,
+    <LawsuitSubjects key="lawsuit-subjects" caseId={safeCaseId} nextStep={advanceToNextStep} caseType={caseType} selectedFacts={selectedFacts} />,
+    <LawsuitFacts key="lawsuit-facts" caseId={safeCaseId} nextStep={advanceToNextStep} caseType={caseType} selectedFacts={selectedFacts} />,
+    <LawsuitLegalBasis key="lawsuit-legal-basis" caseId={safeCaseId} nextStep={advanceToNextStep} caseType={caseType} selectedFacts={selectedFacts} />,
+    <LawsuitRequests key="lawsuit-requests" caseId={safeCaseId} nextStep={advanceToNextStep} caseType={caseType} selectedFacts={selectedFacts} />,
+    <FinalStatementOfClaims key="final-statement-of-claims" caseId={safeCaseId} />,
   ];
 
   if (isLoading) {
@@ -155,6 +162,8 @@ const PreparingStatementOfClaims = () => {
             lastSavedAt={lastSavedAt}
             onManualSave={handleManualSave}
             isSavingStep={isSavingStep}
+            currentAccessibleStep={workflowState.currentAccessibleStep}
+            lastCompletedStep={workflowState.lastCompletedStep}
           />
 
           <div className="w-full">

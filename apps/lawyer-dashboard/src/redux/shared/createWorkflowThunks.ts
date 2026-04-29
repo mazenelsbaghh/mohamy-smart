@@ -1,6 +1,7 @@
 import { createAsyncThunk, type AsyncThunk } from"@reduxjs/toolkit";
 import api from"../../APIs/api";
 import { axiosErrorHandler } from"@mohamy/shared-api";
+import type { WorkflowLifecycleSummary } from"../../types/workflowLifecycle";
 
 export interface IWorkflowDto {
  id?: number;
@@ -10,6 +11,12 @@ export interface IWorkflowDto {
  status: number | string;
  createdAt?: string | null;
  updatedAt?: string | null;
+ runId?: string | number | null;
+ currentAccessibleStep?: number;
+ lastCompletedStep?: number;
+ activeRequests?: WorkflowLifecycleSummary['activeRequests'];
+ stageConflicts?: WorkflowLifecycleSummary['stageConflicts'];
+ isReadOnly?: boolean;
 }
 
 type WorkflowWithSteps = IWorkflowDto & Record<`step${number}Output`, string | null>;
@@ -43,13 +50,17 @@ function getWorkflowThunkErrorMessage(error: unknown): string {
 }
 
 export interface IWorkflowThunks {
- startWorkflow: AsyncThunk<IWorkflowDto, { caseId: string }, object>;
- getWorkflow: AsyncThunk<WorkflowWithSteps, { caseId: string }, object>;
- getWorkflowVersions?: AsyncThunk<WorkflowWithSteps[], { caseId: string }, object>;
- getWorkflowById?: AsyncThunk<WorkflowWithSteps, { workflowId: number }, object>;
- runStep: AsyncThunk<unknown, { workflowId: number; stepNumber: number; input?: string }, object>;
- saveEditedStep: AsyncThunk<{ success: boolean }, { workflowId: number; stepNumber: number; parsedOutput: unknown }, object>;
- saveDraftStep: AsyncThunk<{ lastSavedAt?: string }, { routeId: number | string; stepNumber: number; payload: unknown }, object>;
+	 startWorkflow: AsyncThunk<IWorkflowDto, { caseId: string }, any>;
+	 getWorkflow: AsyncThunk<WorkflowWithSteps, { caseId: string }, any>;
+	 getWorkflowVersions?: AsyncThunk<WorkflowWithSteps[], { caseId: string }, any>;
+	 getWorkflowById?: AsyncThunk<WorkflowWithSteps, { workflowId: number }, any>;
+	 runStep: AsyncThunk<unknown, { workflowId: number; stepNumber: number; input?: string }, any>;
+	 saveEditedStep: AsyncThunk<{ success: boolean }, { workflowId: number; stepNumber: number; parsedOutput: unknown }, any>;
+	  saveDraftStep: AsyncThunk<{ lastSavedAt?: string }, { routeId: number | string; stepNumber: number; payload: unknown }, any>;
+	  startNewRun: AsyncThunk<WorkflowLifecycleSummary, { caseId: string }, any>;
+	  resumeCurrentRun: AsyncThunk<WorkflowLifecycleSummary, { caseId: string }, any>;
+	  advanceStage: AsyncThunk<WorkflowLifecycleSummary, { workflowId: number; fromStep: number; toStep: number }, any>;
+	  recoverConflict: AsyncThunk<WorkflowLifecycleSummary, { routeId: number | string; stepNumber: number }, any>;
 }
 
 export function createWorkflowThunks(controllerName: string, options?: CreateWorkflowThunksOptions): IWorkflowThunks {
@@ -148,28 +159,91 @@ export function createWorkflowThunks(controllerName: string, options?: CreateWor
  }
  );
 
- const saveDraftStep = createAsyncThunk(
- `${lowercaseName}/saveDraftStep`,
- async ({ routeId, stepNumber, payload }: { routeId: number | string; stepNumber: number; payload: unknown }, { rejectWithValue }) => {
- try {
- const res = await api.patch(
- `/${controllerName}/${routeId}/step/${stepNumber}/auto-save`,
- { stepIndex: stepNumber, isDraft: true, payload }
- );
- return res.data.data;
- } catch (error) {
- return rejectWithValue(axiosErrorHandler(error));
- }
- }
- );
+  const saveDraftStep = createAsyncThunk(
+  `${lowercaseName}/saveDraftStep`,
+  async ({ routeId, stepNumber, payload }: { routeId: number | string; stepNumber: number; payload: unknown }, { rejectWithValue }) => {
+  try {
+  const res = await api.patch(
+  `/${controllerName}/${routeId}/step/${stepNumber}/auto-save`,
+  { stepIndex: stepNumber, isDraft: true, payload }
+  );
+  return res.data.data;
+  } catch (error) {
+  return rejectWithValue(axiosErrorHandler(error));
+  }
+  }
+  );
 
- return {
- startWorkflow,
- getWorkflow,
- getWorkflowVersions,
- getWorkflowById,
- runStep,
- saveEditedStep,
- saveDraftStep,
- };
+  const startNewRun = createAsyncThunk(
+  `${lowercaseName}/startNewRun`,
+  async ({ caseId }: { caseId: string }, { rejectWithValue }) => {
+  try {
+  const res = await api.post(`/${controllerName}/${caseId}/start-new`);
+  return res.data.data as WorkflowLifecycleSummary;
+  } catch (error) {
+  return rejectWithValue(axiosErrorHandler(error));
+  }
+  }
+  );
+
+  const resumeCurrentRun = createAsyncThunk(
+  `${lowercaseName}/resumeCurrentRun`,
+  async ({ caseId }: { caseId: string }, { rejectWithValue }) => {
+  try {
+  const res = await api.get(`/${controllerName}/case/${caseId}/resume`);
+  return res.data.data as WorkflowLifecycleSummary;
+  } catch (error) {
+  return rejectWithValue(axiosErrorHandler(error));
+  }
+  }
+  );
+
+   const advancingWorkflowIds = new Set<number>();
+
+   const advanceStage = createAsyncThunk(
+   `${lowercaseName}/advanceStage`,
+   async ({ workflowId, fromStep, toStep }: { workflowId: number; fromStep: number; toStep: number }, { rejectWithValue }) => {
+   try {
+   const res = await api.post(`/${controllerName}/${workflowId}/advance-stage`, { fromStep, toStep });
+   return res.data.data as WorkflowLifecycleSummary;
+   } catch (error) {
+   return rejectWithValue(axiosErrorHandler(error));
+   } finally {
+   advancingWorkflowIds.delete(workflowId);
+   }
+   },
+   {
+   condition: ({ workflowId }) => {
+   if (advancingWorkflowIds.has(workflowId)) return false;
+   advancingWorkflowIds.add(workflowId);
+   return true;
+   },
+   }
+   );
+
+   const recoverConflict = createAsyncThunk(
+   `${lowercaseName}/recoverConflict`,
+   async ({ routeId, stepNumber }: { routeId: number | string; stepNumber: number }, { rejectWithValue }) => {
+   try {
+   const res = await api.post(`/${controllerName}/${routeId}/recover-conflict`, { stepNumber });
+   return res.data.data as WorkflowLifecycleSummary;
+   } catch (error) {
+   return rejectWithValue(axiosErrorHandler(error));
+   }
+   }
+   );
+
+   return {
+   startWorkflow,
+   getWorkflow,
+   getWorkflowVersions,
+   getWorkflowById,
+   runStep,
+   saveEditedStep,
+   saveDraftStep,
+   startNewRun,
+   resumeCurrentRun,
+   advanceStage,
+   recoverConflict,
+   };
 }

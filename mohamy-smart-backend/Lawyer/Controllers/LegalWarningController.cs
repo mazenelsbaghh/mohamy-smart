@@ -22,6 +22,22 @@ namespace Lawyer.Controllers
             _service = service;
         }
 
+        [HttpPost("{caseId}/start-new")]
+        public async Task<IActionResult> StartNewRun(Guid caseId, CancellationToken ct)
+        {
+            _logger.LogInformation("StartNewRun for LegalWarning Case {CaseId}", caseId);
+            var result = await _service.StartNewRunAsync(caseId, GetUserId().ToString(), ct);
+            return CreateResponse(result);
+        }
+
+        [HttpGet("case/{caseId}/resume")]
+        public async Task<IActionResult> ResumeCurrentRun(Guid caseId, CancellationToken ct)
+        {
+            _logger.LogInformation("ResumeCurrentRun for LegalWarning Case {CaseId}", caseId);
+            var result = await _service.ResumeCurrentRunAsync(caseId, GetUserId().ToString(), ct);
+            return CreateResponse(result);
+        }
+
         [HttpPost("start")]
         public async Task<IActionResult> StartWorkflow(
             [FromBody] StartLegalWarningRequest dto,
@@ -85,6 +101,20 @@ namespace Lawyer.Controllers
         {
             _logger.LogInformation("Abandoning LegalWarning workflow {Id}", id);
             var result = await _service.AbandonWorkflowAsync(id, GetUserId().ToString(), ct);
+            return CreateResponse(result);
+        }
+
+        [HttpPost("{id}/advance-stage")]
+        public async Task<IActionResult> AdvanceStage(int id, [FromBody] Application.Dtos.Workflows.TransitionStageRequestDto request, CancellationToken ct)
+        {
+            var result = await _service.AdvanceStageAsync(Guid.Empty, id, request.FromStep, request.ToStep, GetUserId().ToString(), ct);
+            return CreateResponse(result);
+        }
+
+        [HttpPost("{id}/recover-conflict")]
+        public async Task<IActionResult> RecoverConflict(int id, [FromBody] Application.Dtos.Workflows.RecoverConflictRequest request, CancellationToken ct)
+        {
+            var result = await _service.RecoverConflictAsync(Guid.Empty, id, request.StepNumber, GetUserId().ToString(), ct);
             return CreateResponse(result);
         }
     }

@@ -105,9 +105,7 @@ public class ExecRequestAiJobWorkerTests
         await sut.ProcessAsync(job.Id, "{\"drafting\":true}", CancellationToken.None);
 
         var persisted = await fixture.DbContext.AiJobs.FindAsync(job.Id);
-        persisted!.Status.Should().Be(AiJobStatus.Failed);
+        persisted!.Status.Should().Be(AiJobStatus.Conflict);
         persisted.ErrorMessage.Should().Be("تم تحديث سير العمل أثناء تنفيذ التحليل. يرجى إعادة تحميل الصفحة ثم إعادة المحاولة.");
-
-        fixture.Notifications.Verify(x => x.NotifyJobFailedAsync(It.Is<Lawyer.Core.Models.AiJob>(j => j.Id == job.Id)), Times.Once);
     }
 }

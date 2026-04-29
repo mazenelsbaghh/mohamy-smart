@@ -13,5 +13,10 @@ namespace Lawyer.Application.Dtos.Workflows
         public Dictionary<int, TStepOutput> Outputs { get; set; } = new();
         public DateTime CreatedAt { get; set; }
         public string? ExecuteTitleType { get; set; }
+        public string? RunId { get; set; }
+        public int CurrentAccessibleStep { get; set; }
+        public int LastCompletedStep { get; set; }
+        public object? ActiveRequest { get; set; }
+        public object? StageConflicts { get; set; }
     }
 }

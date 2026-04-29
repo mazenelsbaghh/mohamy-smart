@@ -1,4 +1,5 @@
 using Lawyer.Application.Common;
+using Lawyer.Application.Dtos.Workflows;
 using Lawyer.Application.IServices;
 using Lawyer.Application.IServices.AI;
 using Lawyer.Core.Enum;
@@ -58,6 +59,194 @@ namespace Lawyer.Application.Services.Workflows
         protected abstract TWorkflow CreateNewWorkflow(Guid caseId, string lawyerId);
         protected abstract string GetWorkflowTypeName();
 
+        public virtual async Task<Result<Dtos.Workflows.WorkflowStartNewResponseDto>> StartNewRunAsync(Guid caseId, string lawyerId, CancellationToken ct)
+        {
+            try
+            {
+                if (caseId == Guid.Empty) return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.BadRequest, "معرف القضية غير صالح");
+
+                var accessResult = await _caseAccessValidator.ValidateAsync(caseId, lawyerId, false, ct);
+                if (!accessResult.Succeeded)
+                {
+                    if (accessResult.Message == "القضية غير موجودة")
+                        return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.NotFound, accessResult.Message);
+                    return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.Forbidden, accessResult.Message);
+                }
+
+                var activeWorkflows = await _unitOfWork.Repository<TWorkflow>()
+                    .WhereAsync(x => x.CaseId == caseId && x.LawyerId == lawyerId && x.Status == WorkflowStatus.InProgress, ct);
+
+                foreach (var wf in activeWorkflows)
+                {
+                    wf.Status = WorkflowStatus.Abandoned;
+                    wf.UpdatedAt = DateTime.UtcNow;
+                    await _unitOfWork.Repository<TWorkflow>().Update(wf);
+                }
+
+                var workflow = CreateNewWorkflow(caseId, lawyerId);
+                workflow.RunId = Guid.NewGuid().ToString();
+                workflow.CurrentStep = 1;
+                workflow.CurrentAccessibleStep = 0;
+                workflow.LastCompletedStep = 0;
+                workflow.Status = WorkflowStatus.InProgress;
+                workflow.CreatedAt = DateTime.UtcNow;
+                workflow.UpdatedAt = DateTime.UtcNow;
+
+                await _unitOfWork.Repository<TWorkflow>().AddAsync(workflow);
+                await _unitOfWork.SaveChangesAsync(ct);
+
+                _logger.LogInformation("New workflow run {RunId} created for Case {CaseId}", workflow.RunId, caseId);
+
+                var (canStart, canResumeCurrent, canStartNew, currentRunCreatedAt) = await ComputeActionAvailabilityAsync(caseId, lawyerId, ct);
+
+                var dto = new Dtos.Workflows.WorkflowStartNewResponseDto(
+                    workflow.Id,
+                    workflow.RunId,
+                    workflow.CaseId,
+                    GetWorkflowTypeName(),
+                    workflow.Status.ToString(),
+                    workflow.CurrentAccessibleStep,
+                    workflow.LastCompletedStep,
+                    false,
+                    workflow.CreatedAt,
+                    workflow.UpdatedAt,
+                    canStart,
+                    canResumeCurrent,
+                    canStartNew,
+                    currentRunCreatedAt
+                );
+
+                return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Success(dto, "تم إنشاء سير عمل جديد بنجاح");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error starting new run for Case {CaseId}", caseId);
+                return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.InternalServerError, "حدث خطأ أثناء إنشاء سير العمل الجديد");
+            }
+        }
+        public virtual async Task<Result<TDto>> ResumeCurrentRunAsync(Guid caseId, string lawyerId, CancellationToken ct)
+        {
+            try
+            {
+                if (caseId == Guid.Empty) return Result<TDto>.Error(HttpStatusCode.BadRequest, "معرف القضية غير صالح");
+
+                var accessResult = await _caseAccessValidator.ValidateAsync(caseId, lawyerId, false, ct);
+                if (!accessResult.Succeeded)
+                {
+                    if (accessResult.Message == "القضية غير موجودة")
+                        return Result<TDto>.Error(HttpStatusCode.NotFound, accessResult.Message);
+                    return Result<TDto>.Error(HttpStatusCode.Forbidden, accessResult.Message);
+                }
+
+                var activeWorkflows = await _unitOfWork.Repository<TWorkflow>()
+                    .WhereAsync(x => x.CaseId == caseId && x.LawyerId == lawyerId && x.Status == WorkflowStatus.InProgress, ct);
+
+                TWorkflow workflow;
+
+                if (activeWorkflows.Any())
+                {
+                    workflow = activeWorkflows.OrderByDescending(w => w.UpdatedAt).First();
+                }
+                else
+                {
+                    var completedWorkflows = await _unitOfWork.Repository<TWorkflow>()
+                        .WhereAsync(x => x.CaseId == caseId && x.LawyerId == lawyerId && x.Status == WorkflowStatus.Completed, ct);
+
+                    if (completedWorkflows.Any())
+                    {
+                        workflow = completedWorkflows.OrderByDescending(w => w.UpdatedAt).First();
+                        var dto = MapToDto(workflow);
+                        ApplyActionAvailability(dto, false, true, true, workflow.CreatedAt);
+                        return Result<TDto>.Success(dto, "تم استئناف سير العمل المكتمل");
+                    }
+
+                    workflow = CreateNewWorkflow(caseId, lawyerId);
+                    workflow.RunId = Guid.NewGuid().ToString();
+                    workflow.CurrentStep = 1;
+                    workflow.CurrentAccessibleStep = 0;
+                    workflow.LastCompletedStep = 0;
+                    workflow.Status = WorkflowStatus.InProgress;
+                    workflow.CreatedAt = DateTime.UtcNow;
+                    workflow.UpdatedAt = DateTime.UtcNow;
+
+                    await _unitOfWork.Repository<TWorkflow>().AddAsync(workflow);
+                    await _unitOfWork.SaveChangesAsync(ct);
+
+                    _logger.LogInformation("ResumeCurrentRun created new workflow {RunId} for Case {CaseId}", workflow.RunId, caseId);
+                }
+
+                var result = MapToDto(workflow);
+                var (canStart, canResumeCurrent, canStartNew, currentRunCreatedAt) = await ComputeActionAvailabilityAsync(caseId, lawyerId, ct);
+                ApplyActionAvailability(result, canStart, canResumeCurrent, canStartNew, currentRunCreatedAt);
+                return Result<TDto>.Success(result, "تم استئناف سير العمل بنجاح");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resuming current run for Case {CaseId}", caseId);
+                return Result<TDto>.Error(HttpStatusCode.InternalServerError, "حدث خطأ أثناء استئناف سير العمل");
+            }
+        }
+
+        public virtual async Task<Result<TDto>> AdvanceStageAsync(Guid caseId, int workflowId, int fromStep, int toStep, string lawyerId, CancellationToken ct)
+        {
+            try
+            {
+                var workflow = await _unitOfWork.Repository<TWorkflow>().FirstOrDefaultAsync(x => x.Id == workflowId, ct);
+                if (workflow == null) return Result<TDto>.Error(HttpStatusCode.NotFound, "سير العمل غير موجود");
+                if (workflow.LawyerId != lawyerId) return Result<TDto>.Error(HttpStatusCode.Forbidden, "ليس لديك صلاحية");
+                if (workflow.Status != WorkflowStatus.InProgress) return Result<TDto>.Error(HttpStatusCode.BadRequest, "سير العمل ليس قيد التقدم");
+                if (fromStep < 1 || fromStep > TotalSteps) return Result<TDto>.Error(HttpStatusCode.BadRequest, "رقم خطوة غير صالح");
+                if (toStep != fromStep + 1) return Result<TDto>.Error(HttpStatusCode.BadRequest, "يمكن الانتقال خطوة واحدة فقط");
+                if (workflow.LastCompletedStep < fromStep) return Result<TDto>.Error(HttpStatusCode.BadRequest, "الخطوة المحددة لم تكتمل بعد");
+                if (toStep < 1 || toStep > TotalSteps) return Result<TDto>.Error(HttpStatusCode.BadRequest, "رقم خطوة غير صالح");
+
+                workflow.CurrentAccessibleStep = toStep;
+                workflow.UpdatedAt = DateTime.UtcNow;
+
+                await _unitOfWork.Repository<TWorkflow>().Update(workflow);
+                await _unitOfWork.SaveChangesAsync(ct);
+
+                return Result<TDto>.Success(MapToDto(workflow), "تم الانتقال إلى المرحلة التالية بنجاح");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error advancing stage for workflow {WorkflowId}", workflowId);
+                return Result<TDto>.Error(HttpStatusCode.InternalServerError, "حدث خطأ أثناء الانتقال إلى المرحلة التالية");
+            }
+        }
+        public abstract Task<Result<WorkflowStageConflictResponseDto>> RecoverConflictAsync(Guid caseId, int workflowId, int stepNumber, string lawyerId, CancellationToken ct);
+
+        public virtual async Task<Result<WorkflowStageConflictResponseDto>> RecoverConflictBaseAsync(Guid caseId, int workflowId, int stepNumber, string lawyerId, CancellationToken ct)
+        {
+            try
+            {
+                var workflow = await _unitOfWork.Repository<TWorkflow>().FirstOrDefaultAsync(x => x.Id == workflowId, ct);
+                if (workflow == null) return Result<WorkflowStageConflictResponseDto>.Error(HttpStatusCode.NotFound, "سير العمل غير موجود");
+                if (workflow.LawyerId != lawyerId) return Result<WorkflowStageConflictResponseDto>.Error(HttpStatusCode.Forbidden, "ليس لديك صلاحية");
+
+                workflow.ConflictStepMetadata = null;
+                workflow.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.Repository<TWorkflow>().Update(workflow);
+                await _unitOfWork.SaveChangesAsync(ct);
+
+                var response = new WorkflowStageConflictResponseDto(
+                    Guid.NewGuid().ToString(),
+                    stepNumber,
+                    "Recovered",
+                    "تم استعادة التعارض بنجاح",
+                    new List<string>(),
+                    DateTime.UtcNow
+                );
+
+                return Result<WorkflowStageConflictResponseDto>.Success(response, "تم استعادة التعارض بنجاح");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error recovering conflict for workflow {WorkflowId}", workflowId);
+                return Result<WorkflowStageConflictResponseDto>.Error(HttpStatusCode.InternalServerError, "حدث خطأ أثناء استعادة التعارض");
+            }
+        }
+
         public async Task<Result<TDto>> StartWorkflowBaseAsync(Guid caseId, string lawyerId, CancellationToken ct)
         {
             try
@@ -73,6 +262,13 @@ namespace Lawyer.Application.Services.Workflows
                 }
 
                 var workflow = CreateNewWorkflow(caseId, lawyerId);
+                workflow.RunId = Guid.NewGuid().ToString();
+                workflow.CurrentStep = 1;
+                workflow.CurrentAccessibleStep = 0;
+                workflow.LastCompletedStep = 0;
+                workflow.Status = WorkflowStatus.InProgress;
+                workflow.CreatedAt = DateTime.UtcNow;
+                workflow.UpdatedAt = DateTime.UtcNow;
                 await _unitOfWork.Repository<TWorkflow>().AddAsync(workflow);
                 await _unitOfWork.SaveChangesAsync(ct);
 
@@ -95,7 +291,10 @@ namespace Lawyer.Application.Services.Workflows
                 if (workflow == null) return Result<TDto>.Error(HttpStatusCode.NotFound, "سير العمل غير موجود");
                 if (workflow.LawyerId != lawyerId) return Result<TDto>.Error(HttpStatusCode.Forbidden, "ليس لديك صلاحية على هذا سير العمل");
 
-                return Result<TDto>.Success(MapToDto(workflow));
+                var dto = MapToDto(workflow);
+                var (canStart, canResumeCurrent, canStartNew, currentRunCreatedAt) = await ComputeActionAvailabilityAsync(workflow.CaseId, lawyerId, ct);
+                ApplyActionAvailability(dto, canStart, canResumeCurrent, canStartNew, currentRunCreatedAt);
+                return Result<TDto>.Success(dto);
             }
             catch (Exception ex)
             {
@@ -233,19 +432,18 @@ namespace Lawyer.Application.Services.Workflows
 
                 workflow.UpdatedAt = DateTime.UtcNow;
 
+                workflow.LastCompletedStep = Math.Max(workflow.LastCompletedStep, stepNumber);
+                workflow.CurrentStep = Math.Max(workflow.CurrentStep, Math.Min(stepNumber + 1, TotalSteps));
+
                 if (stepNumber == TotalSteps)
                 {
                     workflow.Status = WorkflowStatus.Completed;
-                }
-                else
-                {
-                    workflow.CurrentStep = stepNumber + 1;
                 }
 
                 await _unitOfWork.Repository<TWorkflow>().Update(workflow);
                 await _unitOfWork.SaveChangesAsync(ct);
 
-                return Result<object>.Success(new { stepNumber, output = cleanedJson, workflow.CurrentStep, workflow.Status });
+                return Result<object>.Success(new { stepNumber, output = cleanedJson, workflow.CurrentStep, workflow.CurrentAccessibleStep, workflow.LastCompletedStep, workflow.Status });
             }
             catch (SchemaValidationException)
             {
@@ -320,6 +518,33 @@ namespace Lawyer.Application.Services.Workflows
                 _logger.LogError(ex, "Error saving draft step {StepIndex} for workflow {WorkflowId}", request.StepIndex, workflowId);
                 return Result<object>.Error(HttpStatusCode.InternalServerError, "حدث خطأ أثناء حفظ المسودة تلقائياً");
             }
+        }
+
+        protected void ApplyActionAvailability(TDto dto, bool canStart, bool canResumeCurrent, bool canStartNew, DateTime? currentRunCreatedAt)
+        {
+            var type = dto!.GetType();
+            type.GetProperty("CanStart")?.SetValue(dto, canStart);
+            type.GetProperty("CanResumeCurrent")?.SetValue(dto, canResumeCurrent);
+            type.GetProperty("CanStartNew")?.SetValue(dto, canStartNew);
+            type.GetProperty("CurrentRunCreatedAt")?.SetValue(dto, currentRunCreatedAt);
+        }
+
+        protected async Task<(bool CanStart, bool CanResumeCurrent, bool CanStartNew, DateTime? CurrentRunCreatedAt)> ComputeActionAvailabilityAsync(Guid caseId, string lawyerId, CancellationToken ct)
+        {
+            var allWorkflows = await _unitOfWork.Repository<TWorkflow>()
+                .WhereAsync(x => x.CaseId == caseId && x.LawyerId == lawyerId, ct);
+
+            var inProgress = allWorkflows.Where(x => x.Status == WorkflowStatus.InProgress).ToList();
+            var anyRun = allWorkflows.Any();
+
+            var canStart = !inProgress.Any();
+            var canResumeCurrent = inProgress.Any();
+            var canStartNew = anyRun;
+            DateTime? currentRunCreatedAt = inProgress.Any()
+                ? inProgress.OrderByDescending(w => w.UpdatedAt).First().CreatedAt
+                : null;
+
+            return (canStart, canResumeCurrent, canStartNew, currentRunCreatedAt);
         }
 
         protected virtual string BuildStepSpecificUserPrompt(TWorkflow workflow, Case caseEntity, int stepNumber, string? input)

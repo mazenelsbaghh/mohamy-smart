@@ -73,6 +73,10 @@ namespace Lawyer.Application.IServices
 
         Task<Result<bool>> AbandonWorkflowAsync(Guid caseId, string lawyerId, CancellationToken ct);
 
+        Task<Result<Dtos.Workflows.WorkflowStartNewResponseDto>> StartNewCleanAsync(Guid caseId, string lawyerId, CancellationToken ct);
+
+        Task<Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>> ResumeCurrentRunAsync(Guid caseId, string lawyerId, CancellationToken ct);
+
         Task<Result<object>> SaveDraftAsync(Guid caseId, int stepNumber, Lawyer.Application.Dtos.Workflows.SaveWorkflowDraftRequest request, string lawyerId, CancellationToken ct);
 
         /// <summary>Aggregated summary of all step outputs for the given case.</summary>
@@ -82,5 +86,11 @@ namespace Lawyer.Application.IServices
         /// <summary>Lightweight initializer — validates the case and returns a stub summary with caseId.</summary>
         Task<Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>> InitializeWorkflowAsync(
             Guid caseId, string lawyerId, CancellationToken ct);
+
+        Task<Result<Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto>> AdvanceStageAsync(
+            Guid caseId, int fromStep, int toStep, string lawyerId, CancellationToken ct);
+
+        Task<Result<Dtos.Workflows.WorkflowStageConflictResponseDto>> RecoverConflictAsync(
+            Guid caseId, int stepNumber, string lawyerId, CancellationToken ct);
     }
 }

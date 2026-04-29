@@ -23,6 +23,7 @@ public sealed class AiJobWorkerTestFixture : IDisposable
     public Mock<IRulingAnalysisService> RulingAnalysisService { get; } = new();
     public Mock<IExecRequestService> ExecRequestService { get; } = new();
     public Mock<ICaseOcrService> CaseOcrService { get; } = new();
+    public Mock<IAiJobService> AiJobService { get; } = new();
     public Mock<ILogger<Lawyer.Application.Services.AiJobWorker>> Logger { get; } = new();
 
     public AiJobWorkerTestFixture()
@@ -53,6 +54,7 @@ public sealed class AiJobWorkerTestFixture : IDisposable
         RulingAnalysisService.Object,
         ExecRequestService.Object,
         CaseOcrService.Object,
+        AiJobService.Object,
         Logger.Object);
 
     public async Task<AiJob> SeedJobAsync(AiStepType stepType, Guid? caseId = null)

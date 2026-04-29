@@ -93,11 +93,11 @@ export const AgendaRollTable = () => {
  </div>
 
  <Input
- type="date" aria-label="اختر التاريخ"
- value={selectedDate}
- onValueChange={setSelectedDate}
- variant="bordered"
- className="w-44"
+	 type="date"
+	 value={selectedDate}
+	 onValueChange={setSelectedDate}
+	 variant="bordered"
+	 className="w-44"
  aria-label="تغيير التاريخ"
  />
  </div>

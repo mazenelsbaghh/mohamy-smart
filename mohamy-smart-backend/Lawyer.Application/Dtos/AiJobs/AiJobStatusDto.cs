@@ -10,6 +10,11 @@ namespace Lawyer.Application.Dtos.AiJobs
         string? ResultJson,
         string? ErrorMessage,
         DateTime CreatedAt,
-        DateTime? CompletedAt
+        DateTime? CompletedAt,
+        string? RunId,
+        string? WorkflowType,
+        int? StepNumber,
+        string? ErrorCode,
+        string? ConflictMessage
     );
 }

@@ -72,3 +72,25 @@ This contract defines visible behavior for every multi-stage workflow page.
 - Workflow pages must not infer next-stage access from output presence alone.
 - Workflow pages must not hydrate old job results after the active run changes.
 - Workflow pages must preserve selected facts or required inputs when refreshing active work.
+
+## Final Endpoint Names
+
+| Endpoint | Method | Path |
+|---|---|---|
+| Start new run | POST | `/{controller}/{caseId}/start-new` |
+| Resume current | GET | `/{controller}/case/{caseId}/resume` |
+| Advance stage | POST | `/{controller}/{id}/advance-stage` |
+| Recover conflict | POST | `/{controller}/{id}/recover-conflict` |
+| Active job by run | GET | `/cases/{caseId}/ai-jobs/active` |
+
+## UI State Names
+
+| State | Source | Description |
+|---|---|---|
+| `runId` | Backend response | Active run identity, scoped to workflow+case |
+| `currentAccessibleStep` | Backend response | Controls tab access, only advanced by explicit transition |
+| `lastCompletedStep` | Backend response | Highest step with valid output |
+| `activeRequests` | Backend response + SignalR | Active queued/processing jobs for current run |
+| `stageConflicts` | Backend response | Conflict metadata when retries exhaust |
+| `isReadOnly` | Backend response | True for historical snapshots |
+| `isAdvancingStage` | Frontend state | True while advance request is in flight |

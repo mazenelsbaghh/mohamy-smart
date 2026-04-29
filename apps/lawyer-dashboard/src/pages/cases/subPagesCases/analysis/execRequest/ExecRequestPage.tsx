@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Container } from '@mohamy/shared-ui';
 import { Tabs, Tab } from '@heroui/react';
 import { sileo } from 'sileo';
@@ -40,6 +41,7 @@ const ExecRequestPage = () => {
     tabsClassNames,
     tabProps,
     isClickableTab,
+    handleAdvanceStage,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: any) => s.execRequest,
     thunks: execRequestThunks,
@@ -54,6 +56,10 @@ const ExecRequestPage = () => {
 
   const classification = workflowState.outputs[1];
 
+  const advanceToNextStep = useCallback(() => {
+    handleAdvanceStage(active, active + 1);
+  }, [active, handleAdvanceStage]);
+
   const renderedStep = [
     <AnalysisFactsSelectionStep
       key="facts"
@@ -67,8 +73,8 @@ const ExecRequestPage = () => {
       continueLabel={classification ? 'الانتقال إلى التصنيف' : 'بدء تصنيف الطلب'}
       onStart={nextStep}
     />,
-    <ExecStep1Classification key="step1" nextStep={nextStep} selectedFacts={selectedFacts} />,
-    <ExecStep2Drafting key="step2" nextStep={nextStep} selectedFacts={selectedFacts} />,
+    <ExecStep1Classification key="step1" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
+    <ExecStep2Drafting key="step2" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <ExecStep3Assembly key="step3" selectedFacts={selectedFacts} />,
   ];
 
@@ -113,6 +119,8 @@ const ExecRequestPage = () => {
             lastSavedAt={lastSavedAt}
             onManualSave={handleManualSave}
             isSavingStep={isSavingStep}
+            currentAccessibleStep={workflowState.currentAccessibleStep}
+            lastCompletedStep={workflowState.lastCompletedStep}
           />
 
           <div className="w-full">

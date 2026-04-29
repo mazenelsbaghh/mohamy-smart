@@ -27,6 +27,7 @@ const ComplaintStep4RequestsDraft = ({ nextStep, selectedFacts }: TComplaintStep
   const { outputs } = useAppSelector((s) => s.adminComplaint);
   const violationAnalysis = outputs[3];
   const requestsDraft = outputs[4];
+  const requests = requestsDraft?.requests ?? [];
   const job = aiJobsState.jobs['AdminComplaintRequests'];
 
   const isProcessingJob = job?.status === 'Queued' || job?.status === 'Processing';
@@ -76,7 +77,7 @@ const ComplaintStep4RequestsDraft = ({ nextStep, selectedFacts }: TComplaintStep
         <>
           <AnalysisStageSidebarCard
             label="عدد الطلبات المحددة"
-            value={requestsDraft?.requests?.length || 0}
+            value={requests.length}
             valueClassName="text-5xl"
             description="تمت صياغة كافة طلبات الشكوى. يمكنك الآن إعداد مسودة الشكوى النهائية وتصديرها."
           />
@@ -88,9 +89,9 @@ const ComplaintStep4RequestsDraft = ({ nextStep, selectedFacts }: TComplaintStep
         </>
       }
     >
-      {requestsDraft?.requests?.length > 0 ? (
+      {requests.length > 0 ? (
         <AnalysisStageSectionCard label="الطلبات الأساسية">
-          <AnalysisStageNumberedList items={requestsDraft.requests} />
+          <AnalysisStageNumberedList items={requests} />
         </AnalysisStageSectionCard>
       ) : (
         <AnalysisStageSectionCard label="الطلبات الأساسية" className="text-center">

@@ -9,11 +9,13 @@ const HUB_URL = import.meta.env.VITE_API_BASE_URL.replace(/\/api\/v1\/?$/,'') +'
 /** Statuses that indicate a job is still in-flight and worth polling for. */
 const ACTIVE_STATUSES: AiJobStatus[] = ['Queued','Processing'];
 
-export function useAiJobSignalR(caseId: string | null, skipInitialFetch = false, workflowCreatedAt?: string | null) {
+export function useAiJobSignalR(caseId: string | null, skipInitialFetch = false, workflowCreatedAt?: string | null, activeRunId?: string | number | null) {
  const dispatch = useAppDispatch();
  const connectionRef = useRef<signalR.HubConnection | null>(null);
  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
  const jobs = useAppSelector((state) => state.aiJobs.jobs);
+ const runIdRef = useRef(activeRunId);
+ runIdRef.current = activeRunId;
 
  // Check if there are any active (Queued/Processing) jobs worth polling for
  const hasActiveJobs = Object.values(jobs).some(
@@ -42,12 +44,19 @@ export function useAiJobSignalR(caseId: string | null, skipInitialFetch = false,
 
  connectionRef.current = connection;
 
- const handleStatusChanged = (job: AiJob) => {
- if (workflowCreatedAt && new Date(job.createdAt.endsWith("Z") ? job.createdAt : `${job.createdAt}Z`).getTime() < new Date(workflowCreatedAt.endsWith("Z") ? workflowCreatedAt : `${workflowCreatedAt}Z`).getTime() - 10000) {
- return; // Ignore old jobs belonging to previous workflows
- }
- dispatch(upsertJob(job));
- };
+  const handleStatusChanged = (job: AiJob) => {
+  if (workflowCreatedAt && new Date(job.createdAt.endsWith("Z") ? job.createdAt : `${job.createdAt}Z`).getTime() < new Date(workflowCreatedAt.endsWith("Z") ? workflowCreatedAt : `${workflowCreatedAt}Z`).getTime() - 10000) {
+  return;
+  }
+  if (runIdRef.current != null && job.runId != null && String(job.runId) !== String(runIdRef.current)) {
+  return;
+  }
+  if (job.status === 'Conflict') {
+  dispatch(upsertJob({ ...job, status: 'Failed' }));
+  return;
+  }
+  dispatch(upsertJob(job));
+  };
 
  connection.on('JobStatusChanged', handleStatusChanged);
  connection.on('JobCompleted', handleStatusChanged);

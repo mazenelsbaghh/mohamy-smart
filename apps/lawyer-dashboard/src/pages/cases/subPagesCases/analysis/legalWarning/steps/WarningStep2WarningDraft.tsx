@@ -136,11 +136,11 @@ const WarningStep2LegalWarningBodyDraft = ({ nextStep, selectedFacts }: TWarning
  />
  </AnalysisStageSectionCard>
 
- {warningDraft?.keyPoints?.length > 0 && (
- <AnalysisStageSectionCard label="النقاط الرئيسية">
- <AnalysisStageNumberedList items={warningDraft?.keyPoints} />
- </AnalysisStageSectionCard>
- )}
+	 {(warningDraft?.keyPoints ?? []).length > 0 && (
+	 <AnalysisStageSectionCard label="النقاط الرئيسية">
+	 <AnalysisStageNumberedList items={warningDraft?.keyPoints ?? []} />
+	 </AnalysisStageSectionCard>
+	 )}
  </UnifiedStepShell>
  );
 };

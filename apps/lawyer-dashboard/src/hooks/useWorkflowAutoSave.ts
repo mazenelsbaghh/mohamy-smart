@@ -2,21 +2,25 @@ import { useCallback, useEffect, useRef, useState } from'react';
 
 interface AutoSaveConfig {
  delay?: number;
- mode?:'debounced' |'immediate';
+ mode?: 'debounced' | 'immediate';
  onSave: (payload: unknown) => Promise<void>;
+ disabled?: boolean;
 }
 
-export function useWorkflowAutoSave({ delay = 2000, mode ='debounced', onSave }: AutoSaveConfig) {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const pendingPayloadRef = useRef<unknown>(null);
-  const lastSavedDigestRef = useRef<string>('');
-  const isSavingRef = useRef(false);
-  const onSaveRef = useRef(onSave);
-  const mountedRef = useRef(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const flushCountRef = useRef(0);
+export function useWorkflowAutoSave({ delay = 2000, mode ='debounced', onSave, disabled = false }: AutoSaveConfig) {
+   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+   const pendingPayloadRef = useRef<unknown>(null);
+   const lastSavedDigestRef = useRef<string>('');
+   const isSavingRef = useRef(false);
+   const onSaveRef = useRef(onSave);
+   const mountedRef = useRef(true);
+   const [isSaving, setIsSaving] = useState(false);
+   const flushCountRef = useRef(0);
+   const disabledRef = useRef(disabled);
+   const pendingWhileDisabledRef = useRef<unknown>(null);
 
-  onSaveRef.current = onSave;
+   onSaveRef.current = onSave;
+   disabledRef.current = disabled;
 
   useEffect(() => {
   return () => { mountedRef.current = false; };
@@ -79,6 +83,11 @@ export function useWorkflowAutoSave({ delay = 2000, mode ='debounced', onSave }:
 
  const debouncedSave = useCallback(
  (payload: unknown) => {
+ if (disabledRef.current) {
+ pendingWhileDisabledRef.current = payload;
+ return;
+ }
+
  pendingPayloadRef.current = payload;
 
  if (mode ==='immediate') {
@@ -96,6 +105,14 @@ export function useWorkflowAutoSave({ delay = 2000, mode ='debounced', onSave }:
  },
  [delay, flush, mode]
  );
+
+ useEffect(() => {
+ if (!disabled && pendingWhileDisabledRef.current != null) {
+ const pending = pendingWhileDisabledRef.current;
+ pendingWhileDisabledRef.current = null;
+ void flush(pending);
+ }
+ }, [disabled, flush]);
 
  useEffect(() => {
  return () => {

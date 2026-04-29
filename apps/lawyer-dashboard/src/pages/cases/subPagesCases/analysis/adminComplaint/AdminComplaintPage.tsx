@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Container } from '@mohamy/shared-ui';
 import { Tabs, Tab } from '@heroui/react';
 import { sileo } from 'sileo';
@@ -44,6 +45,7 @@ const AdminComplaintPage = () => {
     tabsClassNames,
     tabProps,
     isClickableTab,
+    handleAdvanceStage,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: any) => s.adminComplaint,
     thunks: adminComplaintThunks,
@@ -58,6 +60,10 @@ const AdminComplaintPage = () => {
 
   const classification = workflowState.outputs[1];
 
+  const advanceToNextStep = useCallback(() => {
+    handleAdvanceStage(active, active + 1);
+  }, [active, handleAdvanceStage]);
+
   const renderedStep = [
     <AnalysisFactsSelectionStep
       key="facts"
@@ -71,10 +77,10 @@ const AdminComplaintPage = () => {
       continueLabel={classification ? 'الانتقال إلى التصنيف' : 'بدء التصنيف'}
       onStart={nextStep}
     />,
-    <ComplaintStep1Classification key="step1" nextStep={nextStep} selectedFacts={selectedFacts} />,
-    <ComplaintStep2FactsDraft key="step2" nextStep={nextStep} selectedFacts={selectedFacts} />,
-    <ComplaintStep3ViolationAnalysis key="step3" nextStep={nextStep} selectedFacts={selectedFacts} />,
-    <ComplaintStep4RequestsDraft key="step4" nextStep={nextStep} selectedFacts={selectedFacts} />,
+    <ComplaintStep1Classification key="step1" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
+    <ComplaintStep2FactsDraft key="step2" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
+    <ComplaintStep3ViolationAnalysis key="step3" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
+    <ComplaintStep4RequestsDraft key="step4" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <ComplaintStep5FinalAssembly key="step5" selectedFacts={selectedFacts} />,
   ];
 
@@ -119,6 +125,8 @@ const AdminComplaintPage = () => {
             lastSavedAt={lastSavedAt}
             onManualSave={handleManualSave}
             isSavingStep={isSavingStep}
+            currentAccessibleStep={workflowState.currentAccessibleStep}
+            lastCompletedStep={workflowState.lastCompletedStep}
           />
 
           <div className="w-full">

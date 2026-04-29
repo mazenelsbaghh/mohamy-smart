@@ -99,7 +99,7 @@ public class AiJobServiceTests
 
         var sut = new AiJobService(db, hangfireMock.Object, notificationsMock.Object, accessMock.Object);
 
-        var dto = new SubmitAiJobDto(stepType, "{}");
+        var dto = new SubmitAiJobDto(stepType, "{}", null, null, null);
 
         // Act
         // SubmitAsync calls GetActiveJobAsync and returns it if found.
@@ -148,7 +148,7 @@ public class AiJobServiceTests
         var sut = new AiJobService(db, hangfireMock.Object, notificationsMock.Object, accessMock.Object);
 
         // Act
-        var result = await sut.SubmitAsync(caseId, new SubmitAiJobDto(stepType, "{}"), "user123", CancellationToken.None);
+        var result = await sut.SubmitAsync(caseId, new SubmitAiJobDto(stepType, "{}", null, null, null), "user123", CancellationToken.None);
 
         // Assert
         result.Succeeded.Should().BeTrue();
@@ -165,7 +165,269 @@ public class AiJobServiceTests
         persisted.HangfireJobId.Should().Be("new-hangfire-id");
     }
 
-    // A stub to mimic SqlException which has a "Number" property
+    [Fact]
+    public async Task IgnoreStaleCompletion_OldRunJob_ShouldNotUpdateNewerRun()
+    {
+        await using var db = new AppDbContext(_dbOptions);
+        var caseId = Guid.NewGuid();
+        var oldRunId = "run-old";
+        var newRunId = "run-new";
+
+        var oldCase = new Case
+        {
+            Id = caseId,
+            LawyerId = Guid.NewGuid(),
+            Title = "Test Case",
+            Number = "123",
+            Court = "Test Court"
+        };
+        db.Cases.Add(oldCase);
+
+        var staleJob = new AiJob
+        {
+            Id = Guid.NewGuid(),
+            CaseId = caseId,
+            StepType = AiStepType.FactAnalysis,
+            Status = AiJobStatus.Processing,
+            RunId = oldRunId,
+            WorkflowType = "SmartAnalysis",
+            StepNumber = 1,
+        };
+        db.AiJobs.Add(staleJob);
+
+        var newJob = new AiJob
+        {
+            Id = Guid.NewGuid(),
+            CaseId = caseId,
+            StepType = AiStepType.FactAnalysis,
+            Status = AiJobStatus.Processing,
+            RunId = newRunId,
+            WorkflowType = "SmartAnalysis",
+            StepNumber = 1,
+        };
+        db.AiJobs.Add(newJob);
+        await db.SaveChangesAsync();
+
+        var hangfireMock = new Mock<IBackgroundJobClient>();
+        var notificationsMock = new Mock<IAiJobNotificationService>();
+        var accessMock = new Mock<ICaseAccessValidator>();
+        accessMock.Setup(x => x.ValidateAsync(caseId, "user123", false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Lawyer.Core.Exceptions.Result<bool> { Succeeded = true, Data = true, StatusCode = System.Net.HttpStatusCode.OK });
+
+        var sut = new AiJobService(db, hangfireMock.Object, notificationsMock.Object, accessMock.Object);
+
+        var result = await sut.IgnoreStaleCompletionAsync(staleJob.Id, newRunId, "user123", CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data.Should().BeTrue();
+
+        var persistedStale = await db.AiJobs.FindAsync(staleJob.Id);
+        persistedStale!.Status.Should().Be(AiJobStatus.Completed);
+        persistedStale.HangfireJobId.Should().BeNull();
+
+        var persistedNew = await db.AiJobs.FindAsync(newJob.Id);
+        persistedNew!.Status.Should().Be(AiJobStatus.Processing);
+    }
+
+    [Fact]
+    public async Task Submit_DuplicateForSameRunAndStep_ShouldReturnExistingJob()
+    {
+        await using var db = new AppDbContext(_dbOptions);
+        var caseId = Guid.NewGuid();
+        var runId = "run-1";
+        var workflowType = "SmartAnalysis";
+        var stepNumber = 1;
+        var stepType = AiStepType.FactAnalysis;
+
+        var oldCase = new Case
+        {
+            Id = caseId,
+            LawyerId = Guid.NewGuid(),
+            Title = "Test Case",
+            Number = "123",
+            Court = "Test Court"
+        };
+        db.Cases.Add(oldCase);
+
+        var existingJob = new AiJob
+        {
+            Id = Guid.NewGuid(),
+            CaseId = caseId,
+            StepType = stepType,
+            Status = AiJobStatus.Queued,
+            RunId = runId,
+            WorkflowType = workflowType,
+            StepNumber = stepNumber,
+        };
+        db.AiJobs.Add(existingJob);
+        await db.SaveChangesAsync();
+
+        var hangfireMock = new Mock<IBackgroundJobClient>();
+        var notificationsMock = new Mock<IAiJobNotificationService>();
+        var accessMock = new Mock<ICaseAccessValidator>();
+        accessMock.Setup(x => x.ValidateAsync(caseId, "user123", false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Lawyer.Core.Exceptions.Result<bool> { Succeeded = true, Data = true, StatusCode = System.Net.HttpStatusCode.OK });
+
+        var sut = new AiJobService(db, hangfireMock.Object, notificationsMock.Object, accessMock.Object);
+
+        var dto = new SubmitAiJobDto(stepType, "{}", runId, workflowType, stepNumber);
+        var result = await sut.SubmitAsync(caseId, dto, "user123", CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data.Should().NotBeNull();
+        result.Data!.Id.Should().Be(existingJob.Id);
+
+        hangfireMock.Verify(x => x.Create(It.IsAny<Hangfire.Common.Job>(), It.IsAny<Hangfire.States.IState>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetActiveJobByRun_ShouldReturnQueuedJobForMatchingRun()
+    {
+        await using var db = new AppDbContext(_dbOptions);
+        var caseId = Guid.NewGuid();
+        var runId = "run-queued";
+        var workflowType = "SmartAnalysis";
+        var stepNumber = 1;
+        var stepType = AiStepType.FactAnalysis;
+
+        var c = new Case
+        {
+            Id = caseId,
+            LawyerId = Guid.NewGuid(),
+            Title = "Test Case",
+            Number = "123",
+            Court = "Test Court"
+        };
+        db.Cases.Add(c);
+
+        var job = new AiJob
+        {
+            Id = Guid.NewGuid(),
+            CaseId = caseId,
+            StepType = stepType,
+            Status = AiJobStatus.Queued,
+            RunId = runId,
+            WorkflowType = workflowType,
+            StepNumber = stepNumber,
+        };
+        db.AiJobs.Add(job);
+        await db.SaveChangesAsync();
+
+        var hangfireMock = new Mock<IBackgroundJobClient>();
+        var notificationsMock = new Mock<IAiJobNotificationService>();
+        var accessMock = new Mock<ICaseAccessValidator>();
+        accessMock.Setup(x => x.ValidateAsync(caseId, "user123", false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Lawyer.Core.Exceptions.Result<bool> { Succeeded = true, Data = true, StatusCode = System.Net.HttpStatusCode.OK });
+
+        var sut = new AiJobService(db, hangfireMock.Object, notificationsMock.Object, accessMock.Object);
+
+        var result = await sut.GetActiveJobByRunAsync(caseId, runId, workflowType, stepNumber, "user123", CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data.Should().NotBeNull();
+        result.Data!.Id.Should().Be(job.Id);
+        result.Data.Status.Should().Be(AiJobStatus.Queued);
+        result.Data.RunId.Should().Be(runId);
+        result.Data.StepNumber.Should().Be(stepNumber);
+    }
+
+    [Fact]
+    public async Task GetActiveJobByRun_ShouldReturnProcessingJobForMatchingRun()
+    {
+        await using var db = new AppDbContext(_dbOptions);
+        var caseId = Guid.NewGuid();
+        var runId = "run-processing";
+        var workflowType = "SmartAnalysis";
+        var stepNumber = 2;
+        var stepType = AiStepType.FactAnalysis;
+
+        var c = new Case
+        {
+            Id = caseId,
+            LawyerId = Guid.NewGuid(),
+            Title = "Test Case",
+            Number = "123",
+            Court = "Test Court"
+        };
+        db.Cases.Add(c);
+
+        var job = new AiJob
+        {
+            Id = Guid.NewGuid(),
+            CaseId = caseId,
+            StepType = stepType,
+            Status = AiJobStatus.Processing,
+            RunId = runId,
+            WorkflowType = workflowType,
+            StepNumber = stepNumber,
+        };
+        db.AiJobs.Add(job);
+        await db.SaveChangesAsync();
+
+        var hangfireMock = new Mock<IBackgroundJobClient>();
+        var notificationsMock = new Mock<IAiJobNotificationService>();
+        var accessMock = new Mock<ICaseAccessValidator>();
+        accessMock.Setup(x => x.ValidateAsync(caseId, "user123", false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Lawyer.Core.Exceptions.Result<bool> { Succeeded = true, Data = true, StatusCode = System.Net.HttpStatusCode.OK });
+
+        var sut = new AiJobService(db, hangfireMock.Object, notificationsMock.Object, accessMock.Object);
+
+        var result = await sut.GetActiveJobByRunAsync(caseId, runId, workflowType, stepNumber, "user123", CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data.Should().NotBeNull();
+        result.Data!.Id.Should().Be(job.Id);
+        result.Data.Status.Should().Be(AiJobStatus.Processing);
+        result.Data.RunId.Should().Be(runId);
+        result.Data.StepNumber.Should().Be(stepNumber);
+    }
+
+    [Fact]
+    public async Task GetActiveJobByRun_ShouldReturnNullWhenNoActiveJobForRun()
+    {
+        await using var db = new AppDbContext(_dbOptions);
+        var caseId = Guid.NewGuid();
+        var runId = "run-missing";
+        var workflowType = "SmartAnalysis";
+        var stepNumber = 1;
+
+        var c = new Case
+        {
+            Id = caseId,
+            LawyerId = Guid.NewGuid(),
+            Title = "Test Case",
+            Number = "123",
+            Court = "Test Court"
+        };
+        db.Cases.Add(c);
+
+        var completedJob = new AiJob
+        {
+            Id = Guid.NewGuid(),
+            CaseId = caseId,
+            StepType = AiStepType.FactAnalysis,
+            Status = AiJobStatus.Completed,
+            RunId = runId,
+            WorkflowType = workflowType,
+            StepNumber = stepNumber,
+        };
+        db.AiJobs.Add(completedJob);
+        await db.SaveChangesAsync();
+
+        var hangfireMock = new Mock<IBackgroundJobClient>();
+        var notificationsMock = new Mock<IAiJobNotificationService>();
+        var accessMock = new Mock<ICaseAccessValidator>();
+        accessMock.Setup(x => x.ValidateAsync(caseId, "user123", false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Lawyer.Core.Exceptions.Result<bool> { Succeeded = true, Data = true, StatusCode = System.Net.HttpStatusCode.OK });
+
+        var sut = new AiJobService(db, hangfireMock.Object, notificationsMock.Object, accessMock.Object);
+
+        var result = await sut.GetActiveJobByRunAsync(caseId, runId, workflowType, stepNumber, "user123", CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data.Should().BeNull();
+    }
+
     private class SqlExceptionStub : Exception
     {
         public int Number { get; }

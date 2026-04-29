@@ -42,6 +42,9 @@ namespace Lawyer.Services
             errorMessage = job.ErrorMessage,
             createdAt = job.CreatedAt,
             completedAt = job.CompletedAt,
+            runId = job.RunId,
+            workflowType = job.WorkflowType,
+            stepNumber = job.StepNumber,
         };
     }
 }

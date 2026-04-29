@@ -41,7 +41,7 @@ LANDING_PORT        := 3000
 # ── Phony Targets ────────────────────────────────────────────────
 .PHONY: help \
         dev down logs ps build rebuild \
-        prod prod-down prod-logs prod-build \
+        prod prod-down prod-logs prod-build server-migrate \
         backend backend-rebuild lawyer admin landing \
         db-shell migrate migrate-add \
         install bundle-report \
@@ -127,6 +127,7 @@ help: ## Show this help message
 	echo "  prod-logs    Stream production-oriented stack logs"; \
 	echo "  prod-build   Rebuild production-oriented images"; \
 	echo "  server-logs  Stream live backend logs from the REMOTE production server"; \
+	echo "  server-migrate Apply EF Core migrations only on the REMOTE production server"; \
 	echo ""; \
 	echo "Services:"; \
 	echo "  backend      Start backend + SQL Server only"; \
@@ -225,6 +226,16 @@ server-logs: ## Stream live backend logs from the REMOTE production server
 	@echo "Connecting to production server (91.108.121.110) to stream live backend logs..."
 	@echo "Press Ctrl+C to exit."
 	ssh -o StrictHostKeyChecking=no root@91.108.121.110 "docker logs -f mohamy-smart-backend-1"
+
+server-migrate: ## Apply EF Core migrations only on the REMOTE production server
+	@echo "Applying EF Core migrations on production server (91.108.121.110)..."
+	ssh -o StrictHostKeyChecking=no root@91.108.121.110 'set -e; \
+		cd /opt/mohamy-smart; \
+		NETWORK=$$(docker inspect $$(docker compose --env-file .env.docker.prod -f docker-compose.prod.yml ps -q sqlserver) --format "{{range \$$name, \$$network := .NetworkSettings.Networks}}{{\$$name}}{{end}}"); \
+		docker run --rm --env-file .env.docker.prod --network "$$NETWORK" \
+			-v "$$(pwd)/mohamy-smart-backend:/src" -w /src \
+			mcr.microsoft.com/dotnet/sdk:9.0 \
+			bash -lc "dotnet tool install --global dotnet-ef --version 9.* >/dev/null 2>&1 || true; export PATH=\"\$$PATH:/root/.dotnet/tools\"; dotnet restore Lawyer/Lawyer.csproj; dotnet ef database update --project Lawyer.Infrastructure --startup-project Lawyer"'
 
 # ══════════════════════════════════════════════════════════════════
 #  Service-Scoped Startup
@@ -376,4 +387,3 @@ push: ## Push all changes to GitHub (uses MSG="Latest update" by default)
 	git commit -m "$(MSG)" || true
 	git pull --rebase origin main
 	git push origin main
-

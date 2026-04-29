@@ -27,6 +27,8 @@ import api from '../../../../../APIs/api';
 import { DEFENSE_MEMO_STEP_DEFS, WORKFLOW_TAB_CLASSNAMES, WORKFLOW_TAB_PROPS } from '../../../../../components/analysisWorkflow/workflowConstants';
 import { useWorkflowOrchestrator } from '../../../../../hooks/useWorkflowOrchestrator';
 
+const DEFENSE_STEP_NUMBER_MAP: Record<number, number> = { 1: 1, 2: 2, 3: 4, 4: 5 };
+
 const DefenseMemoPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -44,7 +46,6 @@ const DefenseMemoPage = () => {
   const {
     active,
     setActive,
-    nextStep,
     isClickableTab,
     caseFacts,
     setCaseFacts,
@@ -58,6 +59,7 @@ const DefenseMemoPage = () => {
     isSavingStep,
     isReadOnly,
     workflowState: orchestratorState,
+    handleAdvanceStage,
   } = useWorkflowOrchestrator({
     sliceSelector: (s) => s.smartAnalysis,
     thunks: smartAnalysisThunks,
@@ -129,7 +131,7 @@ const DefenseMemoPage = () => {
       const parsed = parseWorkflowJobResult(job.resultJson!);
       if (parsed) dispatch(hydrateStep({ stepNumber, result: parsed }));
     },
-    onStepSave: async (stepNumber, payload, dispatch) => {
+    onStepSave: async (stepNumber, _payload, dispatch) => {
       if (stepNumber !== 2) return;
       const saveCaseId = orchestratorState.caseId ?? caseId;
       const defensesOutput = orchestratorState.outputs[2];
@@ -144,6 +146,12 @@ const DefenseMemoPage = () => {
       sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' });
     },
   });
+
+  const advanceToNextStep = useCallback(() => {
+    const from = DEFENSE_STEP_NUMBER_MAP[active];
+    const to = DEFENSE_STEP_NUMBER_MAP[active + 1];
+    if (from != null && to != null) handleAdvanceStage(from, to);
+  }, [active, handleAdvanceStage]);
 
   useEffect(() => {
     if (!caseId) return;
@@ -187,14 +195,14 @@ const DefenseMemoPage = () => {
       dispatch(thunkSubmitAiJob({
         caseId,
         stepType: 'FactAnalysis',
-        inputJson: JSON.stringify({ caseId, caseFacts: factsText })
+        inputJson: JSON.stringify({ caseId, caseFacts: factsText, runId: orchestratorState.runId })
       })).unwrap().then(() => {
         setActive(1);
       }).catch((error: unknown) => {
         sileo.error({ title: `حدث خطأ: ${typeof error === 'string' ? error : 'مشكلة بالاتصال'}` });
       });
     }
-  }, [factAnalysisJob?.status, selectedFacts, caseId, dispatch, setActive]);
+  }, [factAnalysisJob?.status, selectedFacts, caseId, dispatch, setActive, orchestratorState.runId]);
 
   useEffect(() => {
     const { FactAnalysis, GenerateDefenses, FinalRequirements, DefenseMemoDraft } = aiJobs.jobs;
@@ -237,15 +245,15 @@ const DefenseMemoPage = () => {
       onStart={handleStartFactAnalysis}
       isStarting={isFactJobActive}
     />,
-    <LegalAnalysis key="analysis" finalFacts={finalFacts} caseFacts={facts} nextStep={nextStep} caseId={caseId} />,
+    <LegalAnalysis key="analysis" finalFacts={finalFacts} caseFacts={facts} nextStep={advanceToNextStep} caseId={caseId} />,
     <DefensesList
       key="defenses"
       caseId={caseId}
       finalFacts={finalFacts}
-      nextStep={nextStep}
+      nextStep={advanceToNextStep}
       onDefensesMutated={saveDefensesStep}
     />,
-    <FinalRequirements key="final-req" caseId={caseId} finalFacts={finalFacts} nextStep={nextStep} />,
+    <FinalRequirements key="final-req" caseId={caseId} finalFacts={finalFacts} nextStep={advanceToNextStep} />,
     <FinalNote key="final-note" caseId={caseId} />,
   ];
 
@@ -294,6 +302,8 @@ const DefenseMemoPage = () => {
                 lastSavedAt={lastSavedAt}
                 onManualSave={handleManualSave}
                 isSavingStep={isSavingStep}
+                currentAccessibleStep={orchestratorState.currentAccessibleStep}
+                lastCompletedStep={orchestratorState.lastCompletedStep}
               />
 
               <div className="w-full">

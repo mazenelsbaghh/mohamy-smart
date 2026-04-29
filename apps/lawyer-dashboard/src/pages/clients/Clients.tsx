@@ -144,7 +144,7 @@ const Clients = () => {
  <TableRow key={i}>
  <TableCell>
  <div className="flex items-center gap-3">
- <div className="client-avatar small" className="bg-[var(--surface-muted,#e5e7eb)]">م</div>
+	 <div className="client-avatar small bg-[var(--surface-muted,#e5e7eb)]">م</div>
  <div>
  <span className="block font-semibold text-transparent">اسم موكل تجريبي</span>
  <span className="block text-xs text-transparent">0123456789</span>

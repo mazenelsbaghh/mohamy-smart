@@ -1,6 +1,6 @@
 import React from 'react';
-import { IoDocumentTextOutline, IoInformationCircleOutline, IoSparklesOutline } from 'react-icons/io5';
-import { Progress } from "@heroui/react";
+import { IoAlertCircleOutline, IoDocumentTextOutline, IoInformationCircleOutline, IoSparklesOutline } from 'react-icons/io5';
+import { Button, Progress } from "@heroui/react";
 
 export type LoaderStage = {
     id: string;
@@ -15,6 +15,13 @@ interface SmartAnalysisLoaderProps {
     activeStepIndex?: number;
     stages?: LoaderStage[];
     showSafeNavigateBanner?: boolean;
+    runId?: string | number | null;
+    stageNumber?: number;
+    hasConflict?: boolean;
+    conflictMessage?: string;
+    onRetry?: () => void;
+    onReload?: () => void;
+    jobStatus?: 'Queued' | 'Processing' | 'Completed' | 'Failed';
 }
 
 const SmartAnalysisLoader: React.FC<SmartAnalysisLoaderProps> = ({
@@ -24,10 +31,46 @@ const SmartAnalysisLoader: React.FC<SmartAnalysisLoaderProps> = ({
     activeStepIndex = 1,
     stages,
     showSafeNavigateBanner = true,
+    hasConflict,
+    conflictMessage = 'حدث تعارض في تحديث سير العمل. يرجى إعادة المحاولة.',
+    onRetry,
+    onReload,
+    jobStatus,
 }) => {
-    // When `stages` is provided, render the explicit stepper using stage statuses;
-    // otherwise fall back to the legacy `steps`/`activeStepIndex` view.
     const useStages = Array.isArray(stages) && stages.length > 0;
+
+    if (jobStatus === 'Failed' || (hasConflict && jobStatus !== 'Queued' && jobStatus !== 'Processing')) {
+        return (
+            <div className="w-full flex-1 flex flex-col items-center justify-center p-8 lg:p-12 min-h-[500px] border app-border shadow-sm app-surface rounded-2xl" dir="rtl">
+                <IoAlertCircleOutline className="w-16 h-16 text-danger mb-4" />
+                <h2 className="text-2xl font-bold text-danger mb-2">
+                    {hasConflict ? 'حدث تعارض' : 'فشل التحليل'}
+                </h2>
+                <p className="text-sm app-text-muted mb-6 max-w-md text-center">
+                    {conflictMessage || 'تعذّر إكمال التحليل بعد إعادة التحميل. يرجى إعادة المحاولة.'}
+                </p>
+                <div className="flex gap-3">
+                    {onRetry && (
+                        <Button color="primary" variant="flat" onPress={onRetry} size="lg" className="font-tajawal font-medium px-8">
+                            إعادة المحاولة
+                        </Button>
+                    )}
+                    {onReload && (
+                        <Button color="default" variant="flat" onPress={onReload} size="lg" className="font-tajawal font-medium px-8">
+                            إعادة التحميل
+                        </Button>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    const displayTitle = hasConflict && jobStatus === 'Queued'
+        ? 'جاري إعادة الاتصال بالتحليل...'
+        : steps[activeStepIndex] || title;
+    const displaySubtitle = hasConflict && jobStatus === 'Queued'
+        ? 'يتم الآن إعادة الاتصال بالتحليل السابق. يرجى الانتظار...'
+        : subtitle;
     return (
         <div className="w-full flex-1 flex flex-col items-center justify-center p-8 lg:p-12 relative overflow-hidden min-h-[500px] border app-border shadow-sm app-surface rounded-2xl" dir="rtl">
             {showSafeNavigateBanner && (
@@ -49,10 +92,10 @@ const SmartAnalysisLoader: React.FC<SmartAnalysisLoaderProps> = ({
                             المعالجة الذكية نشطة
                         </span>
                         <h2 className="text-2xl md:text-3xl font-bold text-[var(--title-color)] leading-tight">
-                            {steps[activeStepIndex] || title}
+                            {displayTitle}
                         </h2>
                         <p className="app-text-muted text-sm mt-1 leading-relaxed">
-                            {subtitle}
+                            {displaySubtitle}
                         </p>
                     </div>
 

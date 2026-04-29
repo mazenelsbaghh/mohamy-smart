@@ -13,7 +13,6 @@ import { resetAiJobs } from '../../../redux/aiJobs/aiJobsSlice';
 import { WORKFLOW_THUNKS_MAP, isWorkflowCompleted as sharedIsWorkflowCompleted, buildWorkflowHref as sharedBuildHref } from'../../../redux/shared/workflowUtils';
 
 import api from '../../../APIs/api';
-import type { IWorkflowDto } from '../../../redux/shared/createWorkflowThunks';
 import type { DraftWorkflowState } from'../../../redux/shared/workflowTypes';
 
 type DbSnapshot = {

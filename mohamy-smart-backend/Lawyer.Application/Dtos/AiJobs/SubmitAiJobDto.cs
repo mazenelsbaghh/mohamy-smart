@@ -4,6 +4,9 @@ namespace Lawyer.Application.Dtos.AiJobs
 {
     public record SubmitAiJobDto(
         AiStepType StepType,
-        string? InputJson
+        string? InputJson,
+        string? RunId,
+        string? WorkflowType,
+        int? StepNumber
     );
 }

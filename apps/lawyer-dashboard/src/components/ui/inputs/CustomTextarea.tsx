@@ -1,17 +1,12 @@
 import { Textarea } from"@heroui/react";
+import type { ComponentProps } from"react";
 
 
-type TCustomTextarea = {
- label: string;
- placeholder: string;
- variant:'flat' |'faded' |'bordered';
- rows?: number;
- readOnly?: boolean;
- value?: string;
- onChange?: React.ChangeEventHandler<HTMLInputElement>;
- isInvalid?: boolean;
- errorMessage?: string;
-}
+type TCustomTextarea = ComponentProps<typeof Textarea> & {
+	 label: string;
+	 placeholder: string;
+	 variant:'flat' |'faded' |'bordered';
+	}
 
 const CustomTextarea = ({ label, placeholder, variant,rows, readOnly, value, onChange, isInvalid, errorMessage, ...rest }: TCustomTextarea) => {
  return (

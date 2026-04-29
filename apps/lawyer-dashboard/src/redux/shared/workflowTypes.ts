@@ -1,4 +1,5 @@
 import type { IWorkflowDto } from'./createWorkflowThunks';
+import type { ActiveStageRequest, WorkflowStageConflict } from'../../types/workflowLifecycle';
 
 export type WorkflowStatus ='NotStarted' |'InProgress' |'Completed' |'Abandoned';
 
@@ -11,8 +12,13 @@ export interface BaseWorkflowState {
  lastSavedAt: string | null;
  workflowVersions: IWorkflowDto[];
  isReadOnly: boolean;
- snapshotId: number | null;
- snapshotLabel: string | null;
+  snapshotId: number | null;
+  snapshotLabel: string | null;
+  runId: string | number | null;
+  currentAccessibleStep: number;
+  lastCompletedStep: number;
+  activeRequests: ActiveStageRequest[];
+  stageConflicts: WorkflowStageConflict[];
  
  loadingState: {
  isStarting: boolean;
@@ -20,6 +26,7 @@ export interface BaseWorkflowState {
  isRunningStep: boolean;
  isSavingStep: boolean;
  isAutoSaving: boolean;
+ isAdvancingStage: boolean;
  };
  
  errorState: {

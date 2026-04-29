@@ -36,6 +36,7 @@ namespace Lawyer.Application.Services
         private readonly IRulingAnalysisService _rulingAnalysisService;
         private readonly IExecRequestService _execRequestService;
         private readonly ICaseOcrService _ocrService;
+        private readonly IAiJobService _aiJobService;
         private readonly ILogger<AiJobWorker> _logger;
 
 
@@ -59,6 +60,7 @@ namespace Lawyer.Application.Services
             IRulingAnalysisService rulingAnalysisService,
             IExecRequestService execRequestService,
             ICaseOcrService ocrService,
+            IAiJobService aiJobService,
             ILogger<AiJobWorker> logger)
         {
             _db = db;
@@ -73,6 +75,7 @@ namespace Lawyer.Application.Services
             _rulingAnalysisService = rulingAnalysisService;
             _execRequestService = execRequestService;
             _ocrService = ocrService;
+            _aiJobService = aiJobService;
             _logger = logger;
         }
 
@@ -96,11 +99,6 @@ namespace Lawyer.Application.Services
                 return;
             }
 
-            job.Status = AiJobStatus.Processing;
-            job.StartedAt = DateTime.UtcNow;
-            await _db.SaveChangesAsync(ct);
-            await _notifications.NotifyJobStatusChangedAsync(job);
-
             try
             {
                 var caseEntity = await _db.Cases
@@ -108,7 +106,29 @@ namespace Lawyer.Application.Services
                     .Select(c => new { c.Id, c.Lawyer })
                     .FirstOrDefaultAsync(ct);
                 var systemUserId = caseEntity?.Lawyer?.ApplicationUserId.ToString() ?? "";
-                var resultJson = await ExecuteStepAsync(job.StepType, job.CaseId, inputJson, systemUserId, ct);
+
+                var staleRun = await GetStaleRunDecisionAsync(job, ct);
+                if (staleRun.Ignore)
+                {
+                    if (!string.IsNullOrWhiteSpace(staleRun.ActiveRunId))
+                    {
+                        await _aiJobService.IgnoreStaleCompletionAsync(job.Id, staleRun.ActiveRunId, systemUserId, ct);
+                    }
+                    else
+                    {
+                        await MarkJobIgnoredAsStaleAsync(job.Id, ct);
+                    }
+
+                    _logger.LogInformation("AiJobWorker: Job {JobId} ({StepType}) ignored before execution because RunId {RunId} is no longer active.", jobId, job.StepType, job.RunId);
+                    return;
+                }
+
+                job.Status = AiJobStatus.Processing;
+                job.StartedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync(ct);
+                await _notifications.NotifyJobStatusChangedAsync(job);
+
+                var resultJson = await ExecuteStepAsync(job, inputJson, systemUserId, ct);
                 await dbContext.Entry(job).ReloadAsync(ct);
 
                 if (IsCancelledByUser(job))
@@ -128,7 +148,7 @@ namespace Lawyer.Application.Services
             catch (WorkflowConcurrencyException ex)
             {
                 _logger.LogWarning(ex, "AiJobWorker: Job {JobId} ({StepType}) hit a workflow concurrency conflict.", jobId, job.StepType);
-                await PersistJobFailureAsync(jobId, WorkflowConcurrencyMessage, ct);
+                await PersistJobConflictAsync(jobId, WorkflowConcurrencyMessage, ct);
             }
             catch (Exception ex)
             {
@@ -141,8 +161,11 @@ namespace Lawyer.Application.Services
         private static bool IsCancelledByUser(AiJob job) =>
             job.Status == AiJobStatus.Failed && string.Equals(job.ErrorMessage, UserCancelledMessage, StringComparison.Ordinal);
 
-        private async Task<string> ExecuteStepAsync(AiStepType step, Guid caseId, string? inputJson, string systemUserId, CancellationToken ct)
+        private async Task<string> ExecuteStepAsync(AiJob job, string? inputJson, string systemUserId, CancellationToken ct)
         {
+            var step = job.StepType;
+            var caseId = job.CaseId;
+
             switch (step)
             {
                 case AiStepType.FactAnalysis:
@@ -239,41 +262,42 @@ namespace Lawyer.Application.Services
                 case AiStepType.AppealBriefRequests:
                 case AiStepType.AppealBriefLegalBasis:
                 case AiStepType.AppealBriefAssembly:
-                    return await ExecuteAppealBriefStepAsync(step, caseId, inputJson, ct);
+                    return await ExecuteAppealBriefStepAsync(step, caseId, inputJson, ct, job.RunId, job.WorkflowType, job.StepNumber);
                 case AiStepType.AdminComplaintClassification:
                 case AiStepType.AdminComplaintFacts:
                 case AiStepType.AdminComplaintViolation:
                 case AiStepType.AdminComplaintRequests:
                 case AiStepType.AdminComplaintAssembly:
-                    return await ExecuteAdminComplaintStepAsync(step, caseId, inputJson, ct);
+                    return await ExecuteAdminComplaintStepAsync(step, caseId, inputJson, ct, job.RunId, job.WorkflowType, job.StepNumber);
                 case AiStepType.RulingAnalysisOperative:
                 case AiStepType.RulingAnalysisReasoning:
                 case AiStepType.RulingAnalysisDefectEvaluation:
                 case AiStepType.RulingAnalysisFeasibilityReport:
-                    return await ExecuteRulingAnalysisStepAsync(step, caseId, inputJson, ct);
+                    return await ExecuteRulingAnalysisStepAsync(step, caseId, inputJson, ct, job.RunId, job.WorkflowType, job.StepNumber);
                 case AiStepType.LegalWarningClassification:
                 case AiStepType.LegalWarningBodyDraft:
                 case AiStepType.LegalWarningAssembly:
-                    return await ExecuteLegalWarningStepAsync(step, caseId, inputJson, ct);
+                    return await ExecuteLegalWarningStepAsync(step, caseId, inputJson, ct, job.RunId, job.WorkflowType, job.StepNumber);
                 case AiStepType.ExecRequestClassification:
                 case AiStepType.ExecRequestDrafting:
                 case AiStepType.ExecRequestAssembly:
-                    return await ExecuteExecRequestStepAsync(step, caseId, inputJson, ct);
+                    return await ExecuteExecRequestStepAsync(step, caseId, inputJson, ct, job.RunId, job.WorkflowType, job.StepNumber);
                 default:
                     throw new NotImplementedException($"Step type {step} not yet implemented in AiJobWorker.");
             }
         }
 
-        private async Task<string> ExecuteAdminComplaintStepAsync(AiStepType step, Guid caseId, string? inputJson, CancellationToken ct)
+        private async Task<string> ExecuteAdminComplaintStepAsync(AiStepType step, Guid caseId, string? inputJson, CancellationToken ct, string? runId = null, string? workflowType = null, int? stepNumber = null)
         {
-            var workflow = await ResolveLatestWorkflowAsync(
+            var workflow = await ResolveWorkflowForJobAsync(
                 _db.AdminComplaintWorkflows, 
                 caseId, 
+                runId,
                 (cId, lId, token) => _adminComplaintService.StartWorkflowAsync(new Lawyer.Application.Dtos.AdminComplaint.StartComplaintWorkflowRequest { CaseId = cId }, lId, token), 
                 ct);
             var result = await _adminComplaintService.RunStepAsync(
                 workflow.Id,
-                Lawyer.Application.Services.Workflows.PipelineRegistry.GetStepNumber(step),
+                stepNumber ?? Lawyer.Application.Services.Workflows.PipelineRegistry.GetStepNumber(step),
                 new RunComplaintStepRequest { Input = inputJson },
                 workflow.LawyerId,
                 ct);
@@ -281,16 +305,17 @@ namespace Lawyer.Application.Services
             return SerializeWorkflowResult(step, result);
         }
 
-        private async Task<string> ExecuteLegalWarningStepAsync(AiStepType step, Guid caseId, string? inputJson, CancellationToken ct)
+        private async Task<string> ExecuteLegalWarningStepAsync(AiStepType step, Guid caseId, string? inputJson, CancellationToken ct, string? runId = null, string? workflowType = null, int? stepNumber = null)
         {
-            var workflow = await ResolveLatestWorkflowAsync(
+            var workflow = await ResolveWorkflowForJobAsync(
                 _db.LegalWarningWorkflows, 
                 caseId, 
+                runId,
                 (cId, lId, token) => _legalWarningService.StartWorkflowAsync(new Lawyer.Application.Dtos.LegalWarning.StartLegalWarningRequest { CaseId = cId }, lId, token), 
                 ct);
             var result = await _legalWarningService.RunStepAsync(
                 workflow.Id,
-                Lawyer.Application.Services.Workflows.PipelineRegistry.GetStepNumber(step),
+                stepNumber ?? Lawyer.Application.Services.Workflows.PipelineRegistry.GetStepNumber(step),
                 new RunWarningStepRequest { Input = inputJson },
                 workflow.LawyerId,
                 ct);
@@ -298,16 +323,17 @@ namespace Lawyer.Application.Services
             return SerializeWorkflowResult(step, result);
         }
 
-        private async Task<string> ExecuteRulingAnalysisStepAsync(AiStepType step, Guid caseId, string? inputJson, CancellationToken ct)
+        private async Task<string> ExecuteRulingAnalysisStepAsync(AiStepType step, Guid caseId, string? inputJson, CancellationToken ct, string? runId = null, string? workflowType = null, int? stepNumber = null)
         {
-            var workflow = await ResolveLatestWorkflowAsync(
+            var workflow = await ResolveWorkflowForJobAsync(
                 _db.RulingAnalysisWorkflows, 
                 caseId, 
+                runId,
                 (cId, lId, token) => _rulingAnalysisService.StartWorkflowAsync(new Lawyer.Application.Dtos.RulingAnalysis.StartRulingWorkflowRequest { CaseId = cId }, lId, token), 
                 ct);
             var result = await _rulingAnalysisService.RunStepAsync(
                 workflow.Id,
-                Lawyer.Application.Services.Workflows.PipelineRegistry.GetStepNumber(step),
+                stepNumber ?? Lawyer.Application.Services.Workflows.PipelineRegistry.GetStepNumber(step),
                 new RunRulingStepRequest { Input = inputJson },
                 workflow.LawyerId,
                 ct);
@@ -315,16 +341,17 @@ namespace Lawyer.Application.Services
             return SerializeWorkflowResult(step, result);
         }
 
-        private async Task<string> ExecuteExecRequestStepAsync(AiStepType step, Guid caseId, string? inputJson, CancellationToken ct)
+        private async Task<string> ExecuteExecRequestStepAsync(AiStepType step, Guid caseId, string? inputJson, CancellationToken ct, string? runId = null, string? workflowType = null, int? stepNumber = null)
         {
-            var workflow = await ResolveLatestWorkflowAsync(
+            var workflow = await ResolveWorkflowForJobAsync(
                 _db.ExecRequestWorkflows, 
                 caseId, 
+                runId,
                 (cId, lId, token) => _execRequestService.StartWorkflowAsync(new Lawyer.Application.Dtos.ExecRequest.StartExecRequestRequest { CaseId = cId }, lId, token), 
                 ct);
             var result = await _execRequestService.RunStepAsync(
                 workflow.Id,
-                Lawyer.Application.Services.Workflows.PipelineRegistry.GetStepNumber(step),
+                stepNumber ?? Lawyer.Application.Services.Workflows.PipelineRegistry.GetStepNumber(step),
                 new RunExecStepRequest { Input = inputJson },
                 workflow.LawyerId,
                 ct);
@@ -332,16 +359,17 @@ namespace Lawyer.Application.Services
             return SerializeWorkflowResult(step, result);
         }
 
-        private async Task<string> ExecuteAppealBriefStepAsync(AiStepType step, Guid caseId, string? inputJson, CancellationToken ct)
+        private async Task<string> ExecuteAppealBriefStepAsync(AiStepType step, Guid caseId, string? inputJson, CancellationToken ct, string? runId = null, string? workflowType = null, int? stepNumber = null)
         {
-            var workflow = await ResolveLatestWorkflowAsync(
+            var workflow = await ResolveWorkflowForJobAsync(
                 _db.AppealWorkflows, 
                 caseId, 
+                runId,
                 (cId, lId, token) => _appealBriefService.StartWorkflowBaseAsync(cId, lId, token), 
                 ct);
             var result = await _appealBriefService.RunStepAsync(
                 workflow.Id,
-                Lawyer.Application.Services.Workflows.PipelineRegistry.GetStepNumber(step),
+                stepNumber ?? Lawyer.Application.Services.Workflows.PipelineRegistry.GetStepNumber(step),
                 new RunStepRequest { Input = inputJson },
                 workflow.LawyerId,
                 ct);
@@ -404,6 +432,31 @@ namespace Lawyer.Application.Services
             await _notifications.NotifyJobFailedAsync(job);
         }
 
+        private async Task PersistJobConflictAsync(Guid jobId, string errorMessage, CancellationToken ct)
+        {
+            var dbContext = (DbContext)_db;
+            dbContext.ChangeTracker.Clear();
+
+            var job = await _db.AiJobs.FindAsync(new object[] { jobId }, ct);
+            if (job == null)
+            {
+                _logger.LogWarning("AiJobWorker: Job {JobId} disappeared before conflict state could be persisted.", jobId);
+                return;
+            }
+
+            if (IsCancelledByUser(job))
+            {
+                _logger.LogInformation("AiJobWorker: Job {JobId} ({StepType}) was cancelled during conflict. Keeping cancelled state.", jobId, job.StepType);
+                return;
+            }
+
+            job.Status = AiJobStatus.Conflict;
+            job.ErrorMessage = errorMessage;
+            job.CompletedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+            await _notifications.NotifyJobFailedAsync(job);
+        }
+
         private async Task<string> ExecuteOcrStepAsync(Guid caseId, string? inputJson, string systemUserId, CancellationToken ct)
         {
             var text = inputJson ?? "";
@@ -412,27 +465,33 @@ namespace Lawyer.Application.Services
             return JsonSerializer.Serialize(result.Data, _jsonOptions);
         }
 
-        private async Task<TWorkflow> ResolveLatestWorkflowAsync<TWorkflow>(
+        private async Task<TWorkflow> ResolveWorkflowForJobAsync<TWorkflow>(
             IQueryable<TWorkflow> workflows, 
             Guid caseId, 
+            string? runId,
             Func<Guid, string, CancellationToken, Task> createWorkflowAction,
             CancellationToken ct) 
             where TWorkflow : Lawyer.Core.Models.WorkflowBase
         {
-            var workflow = await workflows
-                .AsNoTracking()
-                .Where(w => w.CaseId == caseId)
-                .OrderByDescending(w => w.CreatedAt)
-                .FirstOrDefaultAsync(ct);
+            var workflowQuery = workflows.AsNoTracking().Where(w => w.CaseId == caseId);
+
+            var workflow = !string.IsNullOrWhiteSpace(runId)
+                ? await workflowQuery.FirstOrDefaultAsync(w => w.RunId == runId, ct)
+                : await workflowQuery
+                    .OrderByDescending(w => w.CreatedAt)
+                    .FirstOrDefaultAsync(ct);
+
+            if (workflow == null && !string.IsNullOrWhiteSpace(runId))
+            {
+                throw new InvalidOperationException($"Workflow run {runId} was not found for Case {caseId}");
+            }
 
             if (workflow == null)
             {
                 var lawyerId = await GetLawyerIdForCaseAsync(caseId, ct);
                 await createWorkflowAction(caseId, lawyerId, ct);
 
-                workflow = await workflows
-                    .AsNoTracking()
-                    .Where(w => w.CaseId == caseId)
+                workflow = await workflowQuery
                     .OrderByDescending(w => w.CreatedAt)
                     .FirstOrDefaultAsync(ct);
 
@@ -441,6 +500,77 @@ namespace Lawyer.Application.Services
             }
 
             return workflow;
+        }
+
+        private async Task<(bool Ignore, string? ActiveRunId)> GetStaleRunDecisionAsync(AiJob job, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(job.RunId) || string.IsNullOrWhiteSpace(job.WorkflowType))
+            {
+                return (false, null);
+            }
+
+            if (job.WorkflowType == "preparing-statement-of-claims")
+            {
+                return (false, null);
+            }
+
+            var exact = await FindWorkflowByRunAsync(job.WorkflowType, job.CaseId, job.RunId, ct);
+            var active = await FindLatestActiveWorkflowAsync(job.WorkflowType, job.CaseId, ct);
+
+            if (exact == null)
+            {
+                return (true, active?.RunId);
+            }
+
+            if (exact.Status != WorkflowStatus.InProgress)
+            {
+                return (true, active?.RunId);
+            }
+
+            if (active != null && active.RunId != job.RunId)
+            {
+                return (true, active.RunId);
+            }
+
+            return (false, null);
+        }
+
+        private async Task<WorkflowBase?> FindWorkflowByRunAsync(string workflowType, Guid caseId, string runId, CancellationToken ct)
+        {
+            return workflowType switch
+            {
+                "appeal-brief" => await _db.AppealWorkflows.AsNoTracking().FirstOrDefaultAsync(w => w.CaseId == caseId && w.RunId == runId, ct),
+                "admin-complaint" => await _db.AdminComplaintWorkflows.AsNoTracking().FirstOrDefaultAsync(w => w.CaseId == caseId && w.RunId == runId, ct),
+                "ruling-analysis" => await _db.RulingAnalysisWorkflows.AsNoTracking().FirstOrDefaultAsync(w => w.CaseId == caseId && w.RunId == runId, ct),
+                "legal-warning" => await _db.LegalWarningWorkflows.AsNoTracking().FirstOrDefaultAsync(w => w.CaseId == caseId && w.RunId == runId, ct),
+                "exec-request" => await _db.ExecRequestWorkflows.AsNoTracking().FirstOrDefaultAsync(w => w.CaseId == caseId && w.RunId == runId, ct),
+                _ => null,
+            };
+        }
+
+        private async Task<WorkflowBase?> FindLatestActiveWorkflowAsync(string workflowType, Guid caseId, CancellationToken ct)
+        {
+            return workflowType switch
+            {
+                "appeal-brief" => await _db.AppealWorkflows.AsNoTracking().Where(w => w.CaseId == caseId && w.Status == WorkflowStatus.InProgress).OrderByDescending(w => w.UpdatedAt).FirstOrDefaultAsync(ct),
+                "admin-complaint" => await _db.AdminComplaintWorkflows.AsNoTracking().Where(w => w.CaseId == caseId && w.Status == WorkflowStatus.InProgress).OrderByDescending(w => w.UpdatedAt).FirstOrDefaultAsync(ct),
+                "ruling-analysis" => await _db.RulingAnalysisWorkflows.AsNoTracking().Where(w => w.CaseId == caseId && w.Status == WorkflowStatus.InProgress).OrderByDescending(w => w.UpdatedAt).FirstOrDefaultAsync(ct),
+                "legal-warning" => await _db.LegalWarningWorkflows.AsNoTracking().Where(w => w.CaseId == caseId && w.Status == WorkflowStatus.InProgress).OrderByDescending(w => w.UpdatedAt).FirstOrDefaultAsync(ct),
+                "exec-request" => await _db.ExecRequestWorkflows.AsNoTracking().Where(w => w.CaseId == caseId && w.Status == WorkflowStatus.InProgress).OrderByDescending(w => w.UpdatedAt).FirstOrDefaultAsync(ct),
+                _ => null,
+            };
+        }
+
+        private async Task MarkJobIgnoredAsStaleAsync(Guid jobId, CancellationToken ct)
+        {
+            var job = await _db.AiJobs.FindAsync(new object[] { jobId }, ct);
+            if (job == null) return;
+
+            job.Status = AiJobStatus.Completed;
+            job.ErrorCode = "StaleIgnored";
+            job.CompletedAt = DateTime.UtcNow;
+            job.HangfireJobId = null;
+            await _db.SaveChangesAsync(ct);
         }
 
         private async Task<string> GetLawyerIdForCaseAsync(Guid caseId, CancellationToken ct)

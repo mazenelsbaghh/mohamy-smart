@@ -1,3 +1,5 @@
+using System;
+
 namespace Lawyer.Application.Dtos.AdminComplaint
 {
     public class AdminComplaintWorkflowDto
@@ -13,5 +15,16 @@ namespace Lawyer.Application.Dtos.AdminComplaint
         public string? Step4Output { get; set; }
         public string? Step5Output { get; set; }
         public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public string? RunId { get; set; }
+        public int CurrentAccessibleStep { get; set; }
+        public int LastCompletedStep { get; set; }
+        public object? ActiveRequests { get; set; }
+        public object? StageConflicts { get; set; }
+        public bool IsReadOnly { get; set; }
+        public bool CanStart { get; set; }
+        public bool CanResumeCurrent { get; set; }
+        public bool CanStartNew { get; set; }
+        public DateTime? CurrentRunCreatedAt { get; set; }
     }
 }

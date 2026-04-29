@@ -29,6 +29,24 @@ namespace Lawyer.Controllers
         private string GetLawyerId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
 
         [Authorize]
+        [HttpPost("{caseId:guid}/start-new")]
+        public async Task<IActionResult> StartNewRun(Guid caseId, CancellationToken ct)
+        {
+            _logger.LogInformation("StartNewRun for PreparingStatementOfClaims Case {CaseId}", caseId);
+            var result = await _service.StartNewCleanAsync(caseId, GetLawyerId(), ct);
+            return CreateResponse(result);
+        }
+
+        [Authorize]
+        [HttpGet("case/{caseId}/resume")]
+        public async Task<IActionResult> ResumeCurrentRun(Guid caseId, CancellationToken ct)
+        {
+            _logger.LogInformation("ResumeCurrentRun for PreparingStatementOfClaims Case {CaseId}", caseId);
+            var result = await _service.ResumeCurrentRunAsync(caseId, GetLawyerId(), ct);
+            return CreateResponse(result);
+        }
+
+        [Authorize]
         [HttpGet("case/{caseId}")]
         public async Task<IActionResult> GetSummaryByCase(Guid caseId, CancellationToken ct)
         {
@@ -232,6 +250,22 @@ namespace Lawyer.Controllers
             CancellationToken ct)
         {
             var result = await _service.SaveDraftAsync(caseId, stepNumber, dto, GetLawyerId(), ct);
+            return CreateResponse(result);
+        }
+
+        [Authorize]
+        [HttpPost("{caseId:guid}/advance-stage")]
+        public async Task<IActionResult> AdvanceStage(Guid caseId, [FromBody] Lawyer.Application.Dtos.Workflows.TransitionStageRequestDto request, CancellationToken ct)
+        {
+            var result = await _service.AdvanceStageAsync(caseId, request.FromStep, request.ToStep, GetLawyerId(), ct);
+            return CreateResponse(result);
+        }
+
+        [Authorize]
+        [HttpPost("{caseId:guid}/recover-conflict")]
+        public async Task<IActionResult> RecoverConflict(Guid caseId, [FromBody] Lawyer.Application.Dtos.Workflows.RecoverConflictRequest request, CancellationToken ct)
+        {
+            var result = await _service.RecoverConflictAsync(caseId, request.StepNumber, GetLawyerId(), ct);
             return CreateResponse(result);
         }
     }

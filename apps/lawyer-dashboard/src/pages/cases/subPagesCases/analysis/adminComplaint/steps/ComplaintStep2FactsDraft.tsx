@@ -31,6 +31,7 @@ const ComplaintStep2FactsDraft = ({ nextStep, selectedFacts }: TComplaintStep2Pr
   const { outputs } = useAppSelector((s) => s.adminComplaint);
   const classification = outputs[1];
   const factsDraft = outputs[2];
+  const keyFacts = factsDraft?.keyFacts ?? [];
   const job = aiJobsState.jobs['AdminComplaintFacts'];
   const [localText, setLocalText] = useState('');
   const workflowId = useAppSelector(s => s.adminComplaint.workflowId);
@@ -106,7 +107,7 @@ const ComplaintStep2FactsDraft = ({ nextStep, selectedFacts }: TComplaintStep2Pr
         <>
           <AnalysisStageSidebarCard
             label={isAutoSaving ? 'جارِ الحفظ...' : (lastSaved ? 'وقائع مستخرجة' : 'وقائع مستخرجة')}
-            value={factsDraft?.keyFacts?.length || 0}
+            value={keyFacts.length}
             valueClassName="text-5xl"
             description={lastSaved ? `آخر حفظ ${lastSaved}` : "تمت صياغة الوقائع. الخطوة التالية هي ربط هذه الوقائع بالمخالفات والأضرار الواقعة."}
           />
@@ -130,9 +131,9 @@ const ComplaintStep2FactsDraft = ({ nextStep, selectedFacts }: TComplaintStep2Pr
         />
       </AnalysisStageSectionCard>
 
-      {factsDraft?.keyFacts?.length > 0 && (
+      {keyFacts.length > 0 && (
         <AnalysisStageSectionCard label="النقاط الزمنية والمحورية في الوقائع">
-          <AnalysisStageNumberedList items={factsDraft.keyFacts} />
+          <AnalysisStageNumberedList items={keyFacts} />
         </AnalysisStageSectionCard>
       )}
     </UnifiedStepShell>

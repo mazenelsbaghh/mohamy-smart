@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Lawyer.Application.Dtos.Workflows;
 using Lawyer.Application.Services.Workflows;
 using Lawyer.Application.Common;
 
@@ -66,7 +67,12 @@ namespace Lawyer.Application.Services
             Step1Output = w.Step1Output,
             Step2Output = w.Step2Output,
             Step3Output = w.Step3Output,
-            CreatedAt = w.CreatedAt
+            CreatedAt = w.CreatedAt,
+            UpdatedAt = w.UpdatedAt,
+            RunId = w.RunId,
+            CurrentAccessibleStep = w.CurrentAccessibleStep,
+            LastCompletedStep = w.LastCompletedStep,
+            IsReadOnly = w.Status != WorkflowStatus.InProgress
         };
         protected override string BuildPreviousStepsContext(ExecRequestWorkflow workflow, int currentStep)
         {
@@ -96,5 +102,12 @@ namespace Lawyer.Application.Services
 
         public Task<Result<object>> RunStepAsync(int workflowId, int stepNumber, RunExecStepRequest request, string lawyerId, CancellationToken ct)
             => RunStepBaseAsync(workflowId, stepNumber, request.Input, lawyerId, ct);
+
+        public override Task<Result<ExecRequestWorkflowDto>> ResumeCurrentRunAsync(Guid caseId, string lawyerId, CancellationToken ct)
+            => base.ResumeCurrentRunAsync(caseId, lawyerId, ct);
+        public override Task<Result<ExecRequestWorkflowDto>> AdvanceStageAsync(Guid caseId, int workflowId, int fromStep, int toStep, string lawyerId, CancellationToken ct)
+            => base.AdvanceStageAsync(caseId, workflowId, fromStep, toStep, lawyerId, ct);
+        public override Task<Result<WorkflowStageConflictResponseDto>> RecoverConflictAsync(Guid caseId, int workflowId, int stepNumber, string lawyerId, CancellationToken ct)
+            => RecoverConflictBaseAsync(caseId, workflowId, stepNumber, lawyerId, ct);
     }
 }

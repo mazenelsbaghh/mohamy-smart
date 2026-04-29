@@ -5,7 +5,7 @@ import thunkGetAllAiJobs from"./thunk/thunkGetAllAiJobs";
 import thunkCancelAiJob from"./thunk/thunkCancelAiJob";
 import thunkSubmitAiJob from"./thunk/thunkSubmitAiJob";
 
-export type AiJobStatus ='Queued' |'Processing' |'Completed' |'Failed';
+export type AiJobStatus ='Queued' |'Processing' |'Completed' |'Failed' |'Conflict';
 
 export type AiStepType =
  |'FactAnalysis' |'GenerateDefenses' |'AnalysisDefense' |'FinalRequirements'
@@ -28,36 +28,50 @@ export type AiStepType =
  |'AppealBriefRequests' |'AppealBriefLegalBasis' |'AppealBriefAssembly';
 
 export type AiJob = {
- id: string;
- caseId: string;
- stepType: AiStepType;
- status: AiJobStatus;
- resultJson: string | null;
- errorMessage: string | null;
- createdAt: string;
- completedAt: string | null;
+  id: string;
+  caseId: string;
+  stepType: AiStepType;
+  status: AiJobStatus;
+  resultJson: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  runId?: string | number | null;
+  workflowType?: string | null;
+  stepNumber?: number | null;
+  errorCode?: string | null;
+  conflictMessage?: string | null;
 };
 
 type TAiJobsState = {
- jobs: Partial<Record<AiStepType, AiJob>>;
- loading: TLoading;
- error: string | null;
+  jobs: Partial<Record<AiStepType, AiJob>>;
+  loading: TLoading;
+  error: string | null;
+  activeRunId: string | number | null;
 };
 
 const initialState: TAiJobsState = {
- jobs: {},
- loading:'idle',
- error: null,
+  jobs: {},
+  loading:'idle',
+  error: null,
+  activeRunId: null,
 };
 
 const aiJobsSlice = createSlice({
  name:'aiJobs',
  initialState,
  reducers: {
- upsertJob(state, action: PayloadAction<AiJob>) {
- state.jobs[action.payload.stepType] = action.payload;
- },
- resetAiJobs(state) {
+  upsertJob(state, action: PayloadAction<AiJob>) {
+  const job = action.payload;
+  if (state.activeRunId !== null && job.runId !== undefined && job.runId !== null && String(job.runId) !== String(state.activeRunId)) {
+  return;
+  }
+  state.jobs[job.stepType] = job;
+  },
+  setActiveRunId(state, action: PayloadAction<string | number | null>) {
+  state.activeRunId = action.payload;
+  },
+  resetAiJobs(state) {
  state.jobs = {};
  state.loading ='idle';
  state.error = null;
@@ -95,5 +109,5 @@ const aiJobsSlice = createSlice({
  },
 });
 
-export const { upsertJob, resetAiJobs } = aiJobsSlice.actions;
+export const { upsertJob, resetAiJobs, setActiveRunId } = aiJobsSlice.actions;
 export default aiJobsSlice.reducer;

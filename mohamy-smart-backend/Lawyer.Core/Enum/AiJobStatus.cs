@@ -6,5 +6,6 @@ namespace Lawyer.Core.Enum
         Processing = 1,
         Completed = 2,
         Failed = 3,
+        Conflict = 4,
     }
 }

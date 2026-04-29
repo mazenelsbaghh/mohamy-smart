@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Container } from '@mohamy/shared-ui';
 import { Tabs, Tab } from '@heroui/react';
 import { sileo } from 'sileo';
@@ -40,6 +41,7 @@ const LegalWarningPage = () => {
     tabsClassNames,
     tabProps,
     isClickableTab,
+    handleAdvanceStage,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: any) => s.legalWarning,
     thunks: legalWarningThunks,
@@ -54,6 +56,10 @@ const LegalWarningPage = () => {
 
   const classification = workflowState.outputs[1];
 
+  const advanceToNextStep = useCallback(() => {
+    handleAdvanceStage(active, active + 1);
+  }, [active, handleAdvanceStage]);
+
   const renderedStep = [
     <AnalysisFactsSelectionStep
       key="facts"
@@ -67,8 +73,8 @@ const LegalWarningPage = () => {
       continueLabel={classification ? 'الانتقال إلى التصنيف' : 'بدء تصنيف الإنذار'}
       onStart={nextStep}
     />,
-    <WarningStep1Classification key="step1" nextStep={nextStep} selectedFacts={selectedFacts} />,
-    <WarningStep2WarningDraft key="step2" nextStep={nextStep} selectedFacts={selectedFacts} />,
+    <WarningStep1Classification key="step1" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
+    <WarningStep2WarningDraft key="step2" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <WarningStep3FinalAssembly key="step3" selectedFacts={selectedFacts} />,
   ];
 
@@ -113,6 +119,8 @@ const LegalWarningPage = () => {
             lastSavedAt={lastSavedAt}
             onManualSave={handleManualSave}
             isSavingStep={isSavingStep}
+            currentAccessibleStep={workflowState.currentAccessibleStep}
+            lastCompletedStep={workflowState.lastCompletedStep}
           />
 
           <div className="w-full">
