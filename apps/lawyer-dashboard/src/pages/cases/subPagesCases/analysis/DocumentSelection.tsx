@@ -45,8 +45,8 @@ const DocumentSelection = () => {
    dispatch(resetAiJobs());
 
    if (link === 'defense-memo' || link === 'preparing-statement-of-claims') {
-   const existingFresh = searchParams.get('fresh') === '1' ? '?fresh=1' : '';
-   navigate(`${pathname}/${link}${existingFresh || (searchParams.get('snapshot') ? `?snapshot=${searchParams.get('snapshot')}` : '')}`, { state: facts });
+   const query = searchParams.get('snapshot') ? `?snapshot=${searchParams.get('snapshot')}` : '?fresh=1';
+   navigate(`${pathname}/${link}${query}`, { state: facts });
    return;
    }
 

@@ -17,6 +17,8 @@ namespace Lawyer.Application.Dtos.PreparingStatementOfClaims
         /// <summary>"InProgress" | "Completed" | "NotStarted"</summary>
         public string Status { get; set; } = "NotStarted";
 
+        public DateTime? CreatedAt { get; set; }
+
         public DateTime? UpdatedAt { get; set; }
 
         [JsonPropertyName("step1Output")]

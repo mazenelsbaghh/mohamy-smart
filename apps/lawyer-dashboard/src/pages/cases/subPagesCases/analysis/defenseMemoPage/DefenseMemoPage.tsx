@@ -3,7 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { sileo } from 'sileo';
 import { useAppDispatch, useAppSelector } from '../../../../../hooks/reduxHooks';
-import { hydrateStep, resetAnalysis, smartAnalysisThunks, abandonSmartAnalysisWorkflow } from '../../../../../redux/analysis/smartAnalysisSlice';
+import {
+  hydrateStep,
+  resetAnalysis,
+  smartAnalysisThunks,
+  abandonSmartAnalysisWorkflow,
+  restoreWorkflowSnapshot as restoreSnapshot,
+} from '../../../../../redux/analysis/smartAnalysisSlice';
 import thunkSubmitAiJob from '../../../../../redux/aiJobs/thunk/thunkSubmitAiJob';
 import { parseJobResult, parseWorkflowJobResult } from '@mohamy/shared-utils';
 
@@ -76,7 +82,7 @@ const DefenseMemoPage = () => {
       if (outputs[5]) return 4;
       if (outputs[4]) return 4;
       if (outputs[2]) return 3;
-      if (outputs[1]) return 2;
+      if (outputs[1]) return 1;
 
       if (isActive((jobs as Record<string, { status?: string } | undefined>).DefenseMemoDraft)) return 4;
       if (isActive((jobs as Record<string, { status?: string } | undefined>).FinalRequirements)) return 3;
@@ -168,7 +174,7 @@ const DefenseMemoPage = () => {
     if (factAnalysisJob?.status === 'Completed' && !freshRunRef.current) {
       const factsText = selectedFacts.join('\n\n');
       setFinalFacts(factsText);
-      nextStep();
+      setActive(1);
       return;
     }
 
@@ -183,12 +189,12 @@ const DefenseMemoPage = () => {
         stepType: 'FactAnalysis',
         inputJson: JSON.stringify({ caseId, caseFacts: factsText })
       })).unwrap().then(() => {
-        nextStep();
+        setActive(1);
       }).catch((error: unknown) => {
         sileo.error({ title: `حدث خطأ: ${typeof error === 'string' ? error : 'مشكلة بالاتصال'}` });
       });
     }
-  }, [factAnalysisJob?.status, selectedFacts, caseId, dispatch, nextStep]);
+  }, [factAnalysisJob?.status, selectedFacts, caseId, dispatch, setActive]);
 
   useEffect(() => {
     const { FactAnalysis, GenerateDefenses, FinalRequirements, DefenseMemoDraft } = aiJobs.jobs;

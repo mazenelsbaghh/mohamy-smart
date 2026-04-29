@@ -15,6 +15,8 @@ import WorkflowStepBar from '../../../../../components/analysisWorkflow/Workflow
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
 import { STATEMENT_OF_CLAIMS_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
+import type { RootState } from '../../../../../redux/store';
+import type { TCaseDetails, TStatementOfClaimsOutputs } from '../../../../../redux/shared/workflowTypes';
 
 const STATEMENT_JOB_STEP_MAP = {
   LawsuitCaseType: 1,
@@ -25,16 +27,20 @@ const STATEMENT_JOB_STEP_MAP = {
   LawsuitRequests: 6,
 } as const;
 
-const STATEMENT_COMPUTE_MAX_STEP = (outputs: any, jobs: Record<string, { status?: string } | undefined>) => {
+const STATEMENT_COMPUTE_MAX_STEP = (
+  outputs: TStatementOfClaimsOutputs,
+  jobs: Record<string, { status?: string } | undefined>,
+) => {
   const isActive = (job: { status?: string } | undefined | null) =>
     job?.status === 'Completed' || job?.status === 'Processing' || job?.status === 'Queued';
 
-  if (outputs[7] || outputs[6]) return 7;
-  if (outputs[5]) return 6;
-  if (outputs[4]) return 5;
-  if (outputs[3]) return 4;
-  if (outputs[2]) return 3;
-  if (outputs[1]) return 2;
+  if (outputs[7]) return 7;
+  if (outputs[6]) return 6;
+  if (outputs[5]) return 5;
+  if (outputs[4]) return 4;
+  if (outputs[3]) return 3;
+  if (outputs[2]) return 2;
+  if (outputs[1]) return 1;
 
   if (isActive(jobs.LawsuitRequests)) return 6;
   if (isActive(jobs.LawsuitLegalBasis)) return 5;
@@ -50,7 +56,6 @@ const PreparingStatementOfClaims = () => {
   const {
     active,
     nextStep,
-    maxStepAllowed,
     handleTabChange,
     caseId,
     isReadOnly,
@@ -70,7 +75,7 @@ const PreparingStatementOfClaims = () => {
     tabProps,
     isClickableTab,
   } = useWorkflowOrchestrator({
-    sliceSelector: (s: any) => s.preparingStatementOfClaimsSlice,
+    sliceSelector: (s: RootState) => s.preparingStatementOfClaimsSlice,
     thunks: statementOfClaimsThunks,
     restoreSnapshot: restoreStatementSnapshot,
     resetWorkflow: resetStatementOfClaims,
@@ -78,13 +83,13 @@ const PreparingStatementOfClaims = () => {
     maxSteps: 7,
     steps: STATEMENT_OF_CLAIMS_STEP_DEFS,
     isCaseIdBased: true,
-    abandonThunk: abandonStatementOfClaimsWorkflow as any,
+    abandonThunk: abandonStatementOfClaimsWorkflow,
     computeMaxStepAllowed: STATEMENT_COMPUTE_MAX_STEP,
     jobStepMap: STATEMENT_JOB_STEP_MAP,
     onError: (error) => { sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' }); },
   });
 
-  const caseType = workflowState.outputs[1] as any;
+  const caseType = workflowState.outputs[1] as TCaseDetails | null | undefined;
 
   const renderedSteps = [
     <AnalysisFactsSelectionStep

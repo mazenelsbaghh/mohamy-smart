@@ -170,7 +170,7 @@ export function createWorkflowSlice<TStepOutputs, TReducers extends SliceCaseRed
   state.caseId = action.payload.caseId ?? null;
   state.currentStep = action.payload.currentStep ?? 1;
   state.status = mapStatus(action.payload.status);
-  state.createdAt = action.payload.createdAt ?? null;
+  state.createdAt = action.payload.createdAt ?? action.payload.updatedAt ?? null;
   state.lastSavedAt = action.payload.updatedAt ?? action.payload.createdAt ?? null;
   state.outputs = cloneInitialDraftOutputs();
   state.isReadOnly = false;

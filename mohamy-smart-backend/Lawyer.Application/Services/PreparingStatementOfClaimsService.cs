@@ -1136,6 +1136,9 @@ namespace Lawyer.Application.Services
                 if (!accessResult.Succeeded)
                     return Result<bool>.Error(accessResult.StatusCode, accessResult.Message);
 
+                var caseTypes = await _unitOfWork.Repository<Core.Models.LawSuitCaseType>().WhereAsync(x => x.CaseId == caseId, ct);
+                foreach (var caseType in caseTypes) _unitOfWork.Repository<Core.Models.LawSuitCaseType>().Delete(caseType);
+
                 var parties = await _unitOfWork.Repository<Core.Models.LawSuitParty>().WhereAsync(x => x.CaseId == caseId, ct);
                 foreach (var p in parties) _unitOfWork.Repository<Core.Models.LawSuitParty>().Delete(p);
 
@@ -1442,12 +1445,14 @@ namespace Lawyer.Application.Services
 
                 // Return a minimal stub — PrepStatements does not persist a workflow entity,
                 // step data is stored in individual tables as each step completes.
+                var now = DateTime.UtcNow;
                 var summary = new Dtos.PreparingStatementOfClaims.StatementOfClaimsSummaryDto
                 {
                     CaseId = caseId,
                     CurrentStep = 0,
                     Status = "NotStarted",
-                    UpdatedAt = DateTime.UtcNow
+                    CreatedAt = now,
+                    UpdatedAt = now
                 };
 
                 _logger.LogInformation("Initialized PrepStatements workflow stub for Case {CaseId}", caseId);

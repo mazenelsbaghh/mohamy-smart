@@ -1,6 +1,8 @@
 using System.Reflection;
 using FluentAssertions;
 using Hangfire;
+using Hangfire.Common;
+using Hangfire.States;
 using Lawyer.Application.Dtos.AiJobs;
 using Lawyer.Application.IServices;
 using Lawyer.Application.Services;
@@ -8,6 +10,7 @@ using Lawyer.Core.Enum;
 using Lawyer.Core.Models;
 using Lawyer.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Moq;
 using Xunit;
 
@@ -21,6 +24,7 @@ public class AiJobServiceTests
     {
         _dbOptions = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .ConfigureWarnings(warnings => warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
     }
 
@@ -105,6 +109,60 @@ public class AiJobServiceTests
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeNull();
         result.Data!.Id.Should().Be(newerJob.Id); // Ensures the newer job was fetched
+    }
+
+    [Fact]
+    public async Task SubmitAsync_ShouldRefreshCreatedAt_WhenReusingCompletedJob()
+    {
+        // Arrange
+        await using var db = new AppDbContext(_dbOptions);
+        var caseId = Guid.NewGuid();
+        var stepType = AiStepType.LegalWarningClassification;
+        var originalCreatedAt = DateTime.UtcNow.AddHours(-2);
+
+        var completedJob = new AiJob
+        {
+            Id = Guid.NewGuid(),
+            CaseId = caseId,
+            StepType = stepType,
+            Status = AiJobStatus.Completed,
+            ResultJson = "{\"old\":true}",
+            CompletedAt = DateTime.UtcNow.AddHours(-1),
+            HangfireJobId = "old-hangfire-id",
+            CreatedAt = originalCreatedAt
+        };
+
+        db.AiJobs.Add(completedJob);
+        await db.SaveChangesAsync();
+
+        var hangfireMock = new Mock<IBackgroundJobClient>();
+        hangfireMock
+            .Setup(x => x.Create(It.IsAny<Job>(), It.IsAny<IState>()))
+            .Returns("new-hangfire-id");
+
+        var notificationsMock = new Mock<IAiJobNotificationService>();
+        var accessMock = new Mock<ICaseAccessValidator>();
+        accessMock.Setup(x => x.ValidateAsync(caseId, "user123", false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Lawyer.Core.Exceptions.Result<bool> { Succeeded = true, Data = true, StatusCode = System.Net.HttpStatusCode.OK });
+
+        var sut = new AiJobService(db, hangfireMock.Object, notificationsMock.Object, accessMock.Object);
+
+        // Act
+        var result = await sut.SubmitAsync(caseId, new SubmitAiJobDto(stepType, "{}"), "user123", CancellationToken.None);
+
+        // Assert
+        result.Succeeded.Should().BeTrue();
+        result.Data.Should().NotBeNull();
+        result.Data!.Id.Should().Be(completedJob.Id);
+        result.Data.Status.Should().Be(AiJobStatus.Queued);
+        result.Data.CreatedAt.Should().BeAfter(originalCreatedAt);
+        result.Data.CompletedAt.Should().BeNull();
+        result.Data.ResultJson.Should().BeNull();
+
+        var persisted = await db.AiJobs.FindAsync(completedJob.Id);
+        persisted.Should().NotBeNull();
+        persisted!.CreatedAt.Should().Be(result.Data.CreatedAt);
+        persisted.HangfireJobId.Should().Be("new-hangfire-id");
     }
 
     // A stub to mimic SqlException which has a "Number" property

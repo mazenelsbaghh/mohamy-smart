@@ -17,8 +17,23 @@ export type {
 
 import type { TFactAnalysis, TDefenses, TDefense, TFinalRequirementsWrapper, TAnalysisDefenses } from'../shared/workflowTypes';
 
-// Thunks
-export const smartAnalysisThunks = createWorkflowThunks('SmartAnalysis');
+const smartAnalysisBaseThunks = createWorkflowThunks('SmartAnalysis');
+
+const startSmartAnalysisWorkflow = createAsyncThunk(
+ 'smartAnalysis/startWorkflow',
+ async ({ caseId }: { caseId: string }) => ({
+ id: undefined,
+ caseId,
+ currentStep: 1,
+ status:'InProgress',
+ createdAt: new Date().toISOString(),
+ })
+);
+
+export const smartAnalysisThunks = {
+ ...smartAnalysisBaseThunks,
+ startWorkflow: startSmartAnalysisWorkflow,
+};
 
 export const thunkGetDefenseAnalysis = createAsyncThunk('smartAnalysis/getDefenseAnalysis',
  async ({ defenseId }: { defenseId: string }, { rejectWithValue }) => {

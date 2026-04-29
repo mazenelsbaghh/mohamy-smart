@@ -1,0 +1,45 @@
+# ============================================
+# Antigravity Workspace Ignore File
+# يمنع Antigravity من فهرسة الملفات التقيلة
+# ============================================
+
+# --- AI Agent Caches (الأكبر: .claude = 2.7GB!) ---
+.claude/
+.agents/
+.agent/
+.opencode/
+.specify/
+
+# --- Node.js Dependencies ---
+node_modules/
+
+# --- Build Outputs ---
+dist/
+build/
+.next/
+.turbo/
+coverage/
+
+# --- .NET Build Outputs ---
+bin/
+obj/
+
+# --- Python Virtual Environments ---
+.pdfvenv/
+venv/
+.venv/
+
+# --- Git Internals ---
+.git/
+
+# --- OS & IDE Files ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Logs & Temp Files ---
+*.log
+*.tmp
+*.swp
+build_*.txt

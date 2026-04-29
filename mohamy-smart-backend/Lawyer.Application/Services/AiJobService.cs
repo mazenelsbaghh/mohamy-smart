@@ -195,6 +195,7 @@ namespace Lawyer.Application.Services
             job.CompletedAt = null;
             job.StartedAt = null;
             job.HangfireJobId = null;
+            job.CreatedAt = DateTime.UtcNow;
             return job;
         }
 

@@ -182,6 +182,23 @@ const LegalAnalysis = ({ finalFacts, caseFacts, nextStep, caseId }: TLegalAnalys
  }));
  };
 
+ if (!normalizedFactAnalysis) {
+ return (
+ <UnifiedStepShell
+ isLoading={!hasFactFailed}
+ hasFailed={hasFactFailed}
+ errorMessage={factErrorMessage}
+ onRetry={retryFactAnalysis}
+ loadingTitle="جاري التحليل القانوني الذكي للوقائع..."
+ loadingSubtitle="يقوم النظام بدراسة الوقائع وتحديد التكييف القانوني، وبناء خريطة للأدلة."
+ steps={DEFENSE_MEMO_STEPS}
+ currentStepIndex={1}
+ >
+ <></>
+ </UnifiedStepShell>
+ );
+ }
+
  return (
  <UnifiedStepShell
  isLoading={showLoading}

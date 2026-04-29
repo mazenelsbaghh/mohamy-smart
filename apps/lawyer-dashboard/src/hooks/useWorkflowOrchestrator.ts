@@ -144,6 +144,7 @@ export function useWorkflowOrchestrator<
   const prevStep = useCallback(() => setActive((c) => (c > 0 ? c - 1 : c)), []);
   const [initialAutoJumpDone, setInitialAutoJumpDone] = useState(false);
   const freshRunInProgressRef = useRef(false);
+  const freshSessionRef = useRef(false);
 
   const isActiveJob = useCallback(
     (job: { status?: string } | undefined | null) =>
@@ -243,6 +244,7 @@ export function useWorkflowOrchestrator<
 
     if (isFreshRun) {
       freshRunInProgressRef.current = true;
+      freshSessionRef.current = true;
       setInitialAutoJumpDone(false);
     }
 
@@ -257,7 +259,9 @@ export function useWorkflowOrchestrator<
             .unwrap()
             .then((created) => {
               freshRunInProgressRef.current = false;
-              navigate(`${pathname}?workflowId=${created.id}`, { replace: true });
+              setActive(0);
+              setInitialAutoJumpDone(true);
+              navigate(isCaseIdBased ? pathname : `${pathname}?workflowId=${created.id}`, { replace: true });
             })
             .catch((e: unknown) => { freshRunInProgressRef.current = false; onError?.(e, 'start'); });
 
@@ -270,7 +274,9 @@ export function useWorkflowOrchestrator<
           .unwrap()
           .then((created) => {
             freshRunInProgressRef.current = false;
-            navigate(`${pathname}?workflowId=${created.id}`, { replace: true });
+            setActive(0);
+            setInitialAutoJumpDone(true);
+            navigate(isCaseIdBased ? pathname : `${pathname}?workflowId=${created.id}`, { replace: true });
           })
           .catch((e: unknown) => { freshRunInProgressRef.current = false; onError?.(e, 'start'); });
       }
@@ -278,6 +284,11 @@ export function useWorkflowOrchestrator<
     }
 
     freshRunInProgressRef.current = false;
+
+    if (freshSessionRef.current) {
+      dispatch(resetWorkflow());
+      return;
+    }
 
     if (selectedWorkflowId && thunks.getWorkflowById) {
       dispatch(thunks.getWorkflowById({ workflowId: selectedWorkflowId }));
