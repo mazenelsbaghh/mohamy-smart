@@ -1139,6 +1139,8 @@ namespace Lawyer.Application.Services
                 if (!accessResult.Succeeded)
                     return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(accessResult.StatusCode, accessResult.Message);
 
+                await CreateStatementSnapshotIfNeededAsync(caseId, lawyerId, ct);
+
                 var caseTypes = await _unitOfWork.Repository<Core.Models.LawSuitCaseType>().WhereAsync(x => x.CaseId == caseId, ct);
                 foreach (var ct2 in caseTypes) _unitOfWork.Repository<Core.Models.LawSuitCaseType>().Delete(ct2);
 
@@ -1201,6 +1203,139 @@ namespace Lawyer.Application.Services
                 _logger.LogError(ex, "Error in StartNewClean for Case {CaseId}", caseId);
                 return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.InternalServerError, "حدث خطأ أثناء تنظيف بيانات صحيفة الدعوى");
             }
+        }
+
+        private async Task CreateStatementSnapshotIfNeededAsync(Guid caseId, string lawyerId, CancellationToken ct)
+        {
+            var outputs = new Dictionary<string, object?>();
+            var highestStep = 0;
+
+            var caseType = await _unitOfWork.Repository<Core.Models.LawSuitCaseType>()
+                .FirstOrDefaultAsync(x => x.CaseId == caseId, ct);
+            if (caseType != null)
+            {
+                outputs["1"] = new LawSuitCaseTypeResponseDto
+                {
+                    CaseId = caseId,
+                    CaseMainType = caseType.CaseMainType,
+                    CaseSubType = caseType.CaseSubType,
+                    CourtType = caseType.CourtType,
+                    ProceduralNature = caseType.ProceduralNature,
+                    IsUrgentOrSummary = caseType.IsUrgentOrSummary,
+                    JustificationSummary = caseType.JustificationSummary
+                };
+                highestStep = 1;
+            }
+
+            var parties = await _unitOfWork.Repository<Core.Models.LawSuitParty>()
+                .WhereAsync(x => x.CaseId == caseId, ct);
+            if (parties.Any())
+            {
+                outputs["2"] = new LawSuitPartiesResponseDto
+                {
+                    CaseId = caseId,
+                    Parties = parties.Select(p => new PartyDto
+                    {
+                        Id = p.Id,
+                        Name = p.Name,
+                        Role = p.Role,
+                        Type = p.Type,
+                        LegalCapacity = p.LegalCapacity,
+                        Address = p.Address,
+                        NationalId = p.NationalId
+                    }).ToList()
+                };
+                highestStep = 2;
+            }
+
+            var subject = await _unitOfWork.Repository<Core.Models.LawSuitSubject>()
+                .FirstOrDefaultAsync(x => x.CaseId == caseId, ct);
+            if (subject != null)
+            {
+                outputs["3"] = new LawSuitSubjectsResponseDto
+                {
+                    CaseId = caseId,
+                    SubjectTitle = subject.SubjectTitle,
+                    SubjectFullText = subject.SubjectFullText
+                };
+                highestStep = 3;
+            }
+
+            var facts = await _unitOfWork.Repository<Core.Models.LawSuitFacts>()
+                .FirstOrDefaultAsync(x => x.CaseId == caseId, ct);
+            if (facts != null)
+            {
+                outputs["4"] = new LawSuitFactsResponseDto
+                {
+                    CaseId = caseId,
+                    FactsNarrative = facts.FactsNarrative
+                };
+                highestStep = 4;
+            }
+
+            var legalTexts = await _unitOfWork.Repository<Core.Models.LawSuitLegalText>()
+                .WhereAsync(x => x.CaseId == caseId, ct);
+            var cassationRulings = await _unitOfWork.Repository<Core.Models.LawSuitCassationRuling>()
+                .WhereAsync(x => x.CaseId == caseId, ct);
+            if (legalTexts.Any() || cassationRulings.Any())
+            {
+                outputs["5"] = new LawSuitLegalBasisResponseDto
+                {
+                    CaseId = caseId,
+                    LegalTexts = legalTexts.Select(t => new LegalTextDto
+                    {
+                        Id = t.Id,
+                        LawName = t.LawName,
+                        ArticleNumber = t.ArticleNumber,
+                        ArticleText = t.ArticleText,
+                        ApplicationNotes = t.ApplicationNotes
+                    }).ToList(),
+                    CassationRulings = cassationRulings.Select(r => new CassationRulingDto
+                    {
+                        Id = r.Id,
+                        Court = r.Court,
+                        AppealNumber = r.AppealNumber,
+                        JudicialYear = r.JudicialYear,
+                        SessionDate = r.SessionDate,
+                        RulingText = r.RulingText,
+                        ApplicationNotes = r.ApplicationNotes
+                    }).ToList()
+                };
+                highestStep = 5;
+            }
+
+            var requests = await _unitOfWork.Repository<Core.Models.LawSuitRequest>()
+                .WhereAsync(x => x.CaseId == caseId, ct);
+            if (requests.Any())
+            {
+                outputs["6"] = new LawSuitRequestsResponseDto
+                {
+                    CaseId = caseId,
+                    PrincipalRequests = requests.Where(r => r.RequestType == Core.Models.LawSuitRequestType.Principal).Select(MapRequestItem).ToList(),
+                    SubsidiaryRequests = requests.Where(r => r.RequestType == Core.Models.LawSuitRequestType.Subsidiary).Select(MapRequestItem).ToList(),
+                    ProceduralRequests = requests.Where(r => r.RequestType == Core.Models.LawSuitRequestType.Procedural).Select(MapRequestItem).ToList()
+                };
+                highestStep = 6;
+            }
+
+            if (outputs.Count == 0) return;
+
+            var snapshot = new Core.Models.WorkflowSnapshot
+            {
+                CaseId = caseId,
+                LawyerId = await ResolveCanonicalSnapshotLawyerIdAsync(caseId, lawyerId, ct),
+                WorkflowType = "preparing-statement-of-claims",
+                OutputsJson = JsonSerializer.Serialize(outputs),
+                CurrentStep = highestStep >= 7 ? 7 : highestStep + 1,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _unitOfWork.Repository<Core.Models.WorkflowSnapshot>().AddAsync(snapshot);
+        }
+
+        private async Task<string> ResolveCanonicalSnapshotLawyerIdAsync(Guid caseId, string fallbackLawyerId, CancellationToken ct)
+        {
+            var caseEntity = await _unitOfWork.Repository<Core.Models.Case>().FirstOrDefaultAsync(x => x.Id == caseId, ct);
+            return caseEntity?.LawyerId.ToString() ?? fallbackLawyerId;
         }
 
         public async Task<Result<bool>> AbandonWorkflowAsync(Guid caseId, string lawyerId, CancellationToken ct)

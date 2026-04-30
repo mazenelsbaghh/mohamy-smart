@@ -12,6 +12,7 @@ import WorkflowStepBar from '../../../../../components/analysisWorkflow/Workflow
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
 import { EXEC_REQUEST_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
+import type { RootState } from '../../../../../redux/store';
 
 const EXEC_JOB_STEP_MAP = {
   ExecRequestClassification: 1,
@@ -43,7 +44,7 @@ const ExecRequestPage = () => {
     isClickableTab,
     handleAdvanceStage,
   } = useWorkflowOrchestrator({
-    sliceSelector: (s: any) => s.execRequest,
+    sliceSelector: (s: RootState) => s.execRequest,
     thunks: execRequestThunks,
     restoreSnapshot: restoreExecRequestSnapshot,
     resetWorkflow: resetExecRequest,

@@ -42,7 +42,7 @@ const WorkflowStepBar = ({
   const resolvedRunStatus = searchParams.get('fresh') === '1'
     ? 'new' as const
     : searchParams.get('snapshot')
-      ? 'readonly' as const
+      ? (searchParams.get('editable') === '1' ? 'restored' as const : 'readonly' as const)
       : 'current' as const;
 
   const statusLabel: Record<string, { text: string; className: string }> = {
@@ -57,6 +57,10 @@ const WorkflowStepBar = ({
     readonly: {
       text: 'عرض فقط — لقطة',
       className: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700/50',
+    },
+    restored: {
+      text: 'نسخة مستعادة قابلة للتعديل',
+      className: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-700/50',
     },
   };
 

@@ -1,13 +1,23 @@
 import { CustomCard, Container } from '@mohamy/shared-ui';
-import { IoWarningOutline, IoArrowBackOutline } from 'react-icons/io5';
+import { IoWarningOutline, IoArrowBackOutline, IoTimeOutline } from 'react-icons/io5';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../../hooks/reduxHooks';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import thunkGetSingleCase from '../../../../redux/cases/thunk/thunkGetSingleCase';
 import CaseHeaderBanner from '../../../../components/header/CaseHeaderBanner';
 import SkeletonForm from '../../../../components/skeleton/SkeletonForm';
 import { resetAiJobs } from '../../../../redux/aiJobs/aiJobsSlice';
+import type { AiJob } from '../../../../redux/aiJobs/aiJobsSlice';
+import thunkGetAllAiJobs from '../../../../redux/aiJobs/thunk/thunkGetAllAiJobs';
+import { getAiJobProgressLabel, getWorkflowIdForAiJob, isActiveAiJob } from '../../../../redux/aiJobs/workflowJobMetadata';
 import { WORKFLOW_CATALOG } from './workflowCatalog';
+import api from '../../../../APIs/api';
+
+type DbSnapshot = {
+  id: number;
+  workflowType: string;
+  createdAt: string;
+};
 
 const DocumentSelection = () => {
   const navigate = useNavigate();
@@ -17,7 +27,9 @@ const DocumentSelection = () => {
 
   const dispatch = useAppDispatch();
   const { singleCase, loading } = useAppSelector((rootState) => rootState.cases);
+  const aiJobs = useAppSelector((rootState) => rootState.aiJobs.jobs);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [snapshots, setSnapshots] = useState<DbSnapshot[]>([]);
 
   const loadedCaseId = singleCase?.id?.toString();
   useEffect(() => {
@@ -25,6 +37,21 @@ const DocumentSelection = () => {
       dispatch(thunkGetSingleCase({ id }));
     }
   }, [dispatch, id, loadedCaseId]);
+
+  useEffect(() => {
+    if (!id) return;
+    api.get(`/WorkflowSnapshots/case/${id}`)
+      .then((res) => {
+        const data = res?.data?.data;
+        if (Array.isArray(data)) setSnapshots(data);
+      })
+      .catch(() => { /* snapshots are optional on this screen */ });
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    dispatch(thunkGetAllAiJobs({ caseId: id }));
+  }, [dispatch, id]);
 
   const facts = typeof state === 'string' && state !== '' ? state.trim() : (singleCase?.facts?.trim() || '');
   const hasFacts = Boolean(facts);
@@ -93,8 +120,23 @@ const DocumentSelection = () => {
     text: item.description,
     stepCount: item.totalSteps,
     link: item.route,
+    workflowType: item.id,
     icon: <item.icon className="text-4xl" />,
   }));
+
+  const activeJobByWorkflow = useMemo(() => {
+    const result: Record<string, AiJob> = {};
+    for (const job of Object.values(aiJobs)) {
+      if (!job || job.caseId !== id || !isActiveAiJob(job)) continue;
+      const workflowId = getWorkflowIdForAiJob(job);
+      if (!workflowId) continue;
+      const existing = result[workflowId];
+      if (!existing || new Date(job.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
+        result[workflowId] = job;
+      }
+    }
+    return result;
+  }, [aiJobs, id]);
 
   return (
     <section className="py-8 min-h-screen">
@@ -156,7 +198,10 @@ const DocumentSelection = () => {
             )}
 
             <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${!hasFacts ? 'opacity-40 pointer-events-none grayscale-[50%]' : ''}`}>
-              {workflowOptions.map((option) => (
+              {workflowOptions.map((option) => {
+                const activeJob = activeJobByWorkflow[option.workflowType];
+                const activeJobLabel = activeJob ? getAiJobProgressLabel(activeJob) : null;
+                return (
                 <CustomCard
                   key={option.link}
                   className="border border-[var(--border-color)] dark:border-white/10 bg-[var(--white-color)] hover:border-[var(--main-color)] cursor-pointer transition-colors flex flex-col p-8 lg:p-10 group relative overflow-hidden"
@@ -176,6 +221,24 @@ const DocumentSelection = () => {
                         <span>يتطلب {option.stepCount} خطوات</span>
                       </div>
 
+                      {activeJobLabel && (
+                        <div className="inline-flex items-center gap-2 text-xs font-bold text-[var(--main-color)] bg-[var(--accent-soft)] px-4 py-2 rounded-full border border-[var(--accent-soft-strong)]">
+                          <IoTimeOutline className="text-sm" />
+                          {activeJobLabel}
+                        </div>
+                      )}
+
+                      {snapshots.filter((snapshot) => snapshot.workflowType === option.workflowType).length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/cases/${id}`, { state: { activeTab: 'history' } })}
+                          className="inline-flex items-center gap-2 text-xs font-bold text-[var(--main-color)] bg-[var(--accent-soft)] px-4 py-2 rounded-full border border-[var(--accent-soft-strong)] hover:bg-[var(--accent-soft-strong)] transition-colors"
+                        >
+                          {snapshots.filter((snapshot) => snapshot.workflowType === option.workflowType).length} نسخة سابقة
+                          <IoArrowBackOutline className="text-sm" />
+                        </button>
+                      )}
+
                       {errors[option.link] && (
                         <div className="w-full px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/50 text-red-700 dark:text-red-400 text-sm font-bold text-center">
                           {errors[option.link]}
@@ -183,11 +246,11 @@ const DocumentSelection = () => {
                       )}
 
                       <button
-                        onClick={() => void handleNavigateToWorkflow(option.link)}
+                        onClick={() => activeJob ? handleResumeWorkflow(option.link) : void handleNavigateToWorkflow(option.link)}
                         disabled={!hasFacts}
-                        className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-bold transition-colors bg-[var(--main-color)] text-white hover:opacity-90 hover:shadow-md shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-bold transition-colors text-white hover:opacity-90 hover:shadow-md shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${activeJob ? 'bg-blue-600 hover:bg-blue-700' : 'bg-[var(--main-color)]'}`}
                       >
-                        ابدأ الإعداد
+                        {activeJobLabel ?? 'ابدأ الإعداد'}
                         <IoArrowBackOutline className="text-lg" />
                       </button>
 
@@ -211,7 +274,8 @@ const DocumentSelection = () => {
                     </div>
                   </div>
                 </CustomCard>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

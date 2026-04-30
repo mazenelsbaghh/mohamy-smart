@@ -12,6 +12,7 @@ import WorkflowStepBar from '../../../../../components/analysisWorkflow/Workflow
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
 import { LEGAL_WARNING_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
+import type { RootState } from '../../../../../redux/store';
 
 const WARNING_JOB_STEP_MAP = {
   LegalWarningClassification: 1,
@@ -43,7 +44,7 @@ const LegalWarningPage = () => {
     isClickableTab,
     handleAdvanceStage,
   } = useWorkflowOrchestrator({
-    sliceSelector: (s: any) => s.legalWarning,
+    sliceSelector: (s: RootState) => s.legalWarning,
     thunks: legalWarningThunks,
     restoreSnapshot: restoreLegalWarningSnapshot,
     resetWorkflow: resetLegalWarning,

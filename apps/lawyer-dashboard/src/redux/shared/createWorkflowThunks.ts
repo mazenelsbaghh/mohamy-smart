@@ -11,6 +11,7 @@ export interface IWorkflowDto {
  status: number | string;
  createdAt?: string | null;
  updatedAt?: string | null;
+ workflowType?: string | null;
  runId?: string | number | null;
  currentAccessibleStep?: number;
  lastCompletedStep?: number;
@@ -50,17 +51,17 @@ function getWorkflowThunkErrorMessage(error: unknown): string {
 }
 
 export interface IWorkflowThunks {
-	 startWorkflow: AsyncThunk<IWorkflowDto, { caseId: string }, any>;
-	 getWorkflow: AsyncThunk<WorkflowWithSteps, { caseId: string }, any>;
-	 getWorkflowVersions?: AsyncThunk<WorkflowWithSteps[], { caseId: string }, any>;
-	 getWorkflowById?: AsyncThunk<WorkflowWithSteps, { workflowId: number }, any>;
-	 runStep: AsyncThunk<unknown, { workflowId: number; stepNumber: number; input?: string }, any>;
-	 saveEditedStep: AsyncThunk<{ success: boolean }, { workflowId: number; stepNumber: number; parsedOutput: unknown }, any>;
-	  saveDraftStep: AsyncThunk<{ lastSavedAt?: string }, { routeId: number | string; stepNumber: number; payload: unknown }, any>;
-	  startNewRun: AsyncThunk<WorkflowLifecycleSummary, { caseId: string }, any>;
-	  resumeCurrentRun: AsyncThunk<WorkflowLifecycleSummary, { caseId: string }, any>;
-	  advanceStage: AsyncThunk<WorkflowLifecycleSummary, { workflowId: number; fromStep: number; toStep: number }, any>;
-	  recoverConflict: AsyncThunk<WorkflowLifecycleSummary, { routeId: number | string; stepNumber: number }, any>;
+	 startWorkflow: AsyncThunk<IWorkflowDto, { caseId: string }, { rejectValue: unknown }>;
+	 getWorkflow: AsyncThunk<WorkflowWithSteps, { caseId: string }, { rejectValue: unknown }>;
+	 getWorkflowVersions?: AsyncThunk<WorkflowWithSteps[], { caseId: string }, { rejectValue: unknown }>;
+	 getWorkflowById?: AsyncThunk<WorkflowWithSteps, { workflowId: number }, { rejectValue: unknown }>;
+	 runStep: AsyncThunk<unknown, { workflowId: number; stepNumber: number; input?: string }, { rejectValue: unknown }>;
+	 saveEditedStep: AsyncThunk<{ success: boolean }, { workflowId: number; stepNumber: number; parsedOutput: unknown }, { rejectValue: unknown }>;
+	  saveDraftStep: AsyncThunk<{ lastSavedAt?: string }, { routeId: number | string; stepNumber: number; payload: unknown }, { rejectValue: unknown }>;
+	  startNewRun: AsyncThunk<WorkflowLifecycleSummary, { caseId: string }, { rejectValue: unknown }>;
+	  resumeCurrentRun: AsyncThunk<WorkflowLifecycleSummary, { caseId: string }, { rejectValue: unknown }>;
+	  advanceStage: AsyncThunk<WorkflowLifecycleSummary, { workflowId: number; fromStep: number; toStep: number }, { rejectValue: unknown }>;
+	  recoverConflict: AsyncThunk<WorkflowLifecycleSummary, { routeId: number | string; stepNumber: number }, { rejectValue: unknown }>;
 }
 
 export function createWorkflowThunks(controllerName: string, options?: CreateWorkflowThunksOptions): IWorkflowThunks {

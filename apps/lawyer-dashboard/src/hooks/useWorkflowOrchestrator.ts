@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import type { AsyncThunk, ActionCreatorWithoutPayload, ActionCreatorWithPayload } from '@reduxjs/toolkit';
+import type { ActionCreatorWithoutPayload, ActionCreatorWithPayload } from '@reduxjs/toolkit';
 import { useAppDispatch, useAppSelector } from './reduxHooks';
 import thunkGetSingleCase from '../redux/cases/thunk/thunkGetSingleCase';
 import type { IWorkflowThunks } from '../redux/shared/createWorkflowThunks';
@@ -48,7 +48,7 @@ export interface UseWorkflowOrchestratorConfig<
   maxSteps: number;
   steps: StepMeta[];
   isCaseIdBased?: boolean;
-  abandonThunk?: AsyncThunk<any, string, any>;
+  abandonThunk?: unknown;
   stepNumberMapFn?: (activeStep: number) => number | null;
   computeMaxStepAllowed?: (outputs: TOutputs, jobs: Record<string, { status?: string } | undefined>) => number;
   jobStepMap?: Record<TJobKeys, number>;
@@ -127,6 +127,7 @@ export function useWorkflowOrchestrator<
   const selectedWorkflowId = Number.isFinite(workflowIdParam) && workflowIdParam > 0 ? workflowIdParam : null;
   const snapshotIdParam = searchParams.get('snapshot');
   const isFreshRun = searchParams.get('fresh') === '1';
+  const isEditableSnapshot = searchParams.get('editable') === '1';
 
   const workflowState = useAppSelector(sliceSelector) as ReturnType<typeof sliceSelector>;
   const { singleCase } = useAppSelector((rootState) => rootState.cases);
@@ -138,6 +139,7 @@ export function useWorkflowOrchestrator<
     resetWorkflow: typeof resetWorkflow === 'function' ? resetWorkflow : undefined,
     fallbackStep: maxSteps,
     onLoaded: (step: number) => setActive(Math.min(step, maxSteps)),
+    readOnly: !isEditableSnapshot,
   });
 
   useAiJobSignalR(caseId, isFreshRun, workflowState.createdAt, workflowState.runId);
@@ -152,8 +154,10 @@ export function useWorkflowOrchestrator<
   const nextStep = useCallback(() => setActive((c) => (c < maxSteps ? c + 1 : c)), [maxSteps]);
   const prevStep = useCallback(() => setActive((c) => (c > 0 ? c - 1 : c)), []);
   const [initialAutoJumpDone, setInitialAutoJumpDone] = useState(false);
+  const [freshRunInProgress, setFreshRunInProgress] = useState(false);
   const freshRunInProgressRef = useRef(false);
   const freshSessionRef = useRef(false);
+  const initDoneRef = useRef<string | null>(null);
 
   const isActiveJob = useCallback(
     (job: { status?: string } | undefined | null) =>
@@ -190,7 +194,18 @@ export function useWorkflowOrchestrator<
     return 0;
   }, [workflowState.outputs, aiJobs.jobs, maxSteps, computeMaxStepAllowed, jobStepMap, isActiveJob, workflowState.runId, workflowState.currentAccessibleStep]);
 
+  const hasActiveAiJobs = Object.values(aiJobs.jobs).some(
+    (j) => j && (j.status === 'Queued' || j.status === 'Processing')
+  );
+
   useEffect(() => {
+    if (freshSessionRef.current && !isFreshRun && active !== 0 && !hasActiveAiJobs && maxStepAllowed === 0) {
+      setActive(0);
+    }
+  }, [active, hasActiveAiJobs, isFreshRun, maxStepAllowed]);
+
+  useEffect(() => {
+    if (selectedWorkflowId) return;
     if (isFreshRun) return;
     if (!initialAutoJumpDone && maxStepAllowed > 0) {
       if (computeAutoResumeTarget) {
@@ -201,11 +216,7 @@ export function useWorkflowOrchestrator<
       }
       setInitialAutoJumpDone(true);
     }
-  }, [maxStepAllowed, initialAutoJumpDone, isFreshRun]);
-
-  const hasActiveAiJobs = Object.values(aiJobs.jobs).some(
-    (j) => j && (j.status === 'Queued' || j.status === 'Processing')
-  );
+  }, [maxStepAllowed, initialAutoJumpDone, isFreshRun, selectedWorkflowId, computeAutoResumeTarget, workflowState.outputs, aiJobs.jobs]);
 
   const getActiveJobStep = useCallback(
     (jobs: Array<{ stepType?: string; stepNumber?: number | null; status?: string }> | Record<string, { stepNumber?: number | null; status?: string } | undefined>) => {
@@ -215,8 +226,8 @@ export function useWorkflowOrchestrator<
 
       for (const [jobKey, job] of entries) {
         if (!job || (job.status !== 'Queued' && job.status !== 'Processing')) continue;
-        if (typeof job.stepNumber === 'number' && job.stepNumber > 0) return job.stepNumber;
         if (jobStepMap && jobKey in jobStepMap) return jobStepMap[jobKey as TJobKeys];
+        if (typeof job.stepNumber === 'number' && job.stepNumber > 0) return job.stepNumber;
       }
 
       return null;
@@ -277,18 +288,28 @@ export function useWorkflowOrchestrator<
     return () => {
       dispatch(resetWorkflow());
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
   useEffect(() => {
     if (!caseId) return;
     if (snapshotModeRef.current || snapshotIdParam) return;
 
+    if (freshSessionRef.current && !isFreshRun) return;
+
+    const initKey = `${caseId}-${selectedWorkflowId ?? ''}`;
+    if (initDoneRef.current === initKey) return;
+    initDoneRef.current = initKey;
+
     if (isFreshRun) {
       freshRunInProgressRef.current = true;
+      setFreshRunInProgress(true);
       freshSessionRef.current = true;
       setInitialAutoJumpDone(false);
     }
 
+    setActive(0);
+    setInitialAutoJumpDone(false);
     dispatch(resetWorkflow());
 
     if (isFreshRun) {
@@ -298,22 +319,24 @@ export function useWorkflowOrchestrator<
         .unwrap()
         .then((result) => {
           freshRunInProgressRef.current = false;
+          setFreshRunInProgress(false);
           setActive(0);
           setInitialAutoJumpDone(true);
           dispatch(setActiveRunId(result.runId));
           resetForNewRun(result.runId);
-          freshSessionRef.current = false;
           const targetPath = isCaseIdBased ? pathname : `${pathname}?workflowId=${result.id ?? ''}`;
           navigate(targetPath, { replace: true });
         })
         .catch((e: unknown) => {
           freshRunInProgressRef.current = false;
+          setFreshRunInProgress(false);
           onError?.(e, 'start');
         });
       return;
     }
 
     freshRunInProgressRef.current = false;
+    setFreshRunInProgress(false);
 
     if (freshSessionRef.current) {
       dispatch(resetWorkflow());
@@ -321,7 +344,31 @@ export function useWorkflowOrchestrator<
     }
 
     if (selectedWorkflowId && thunks.getWorkflowById) {
-      dispatch(thunks.getWorkflowById({ workflowId: selectedWorkflowId }));
+      dispatch(resetAiJobs());
+      dispatch(setActiveRunId(null));
+      dispatch(thunks.getWorkflowById({ workflowId: selectedWorkflowId }))
+        .unwrap()
+        .then(async (result) => {
+          dispatch(setActiveRunId(result.runId ?? null));
+          const jobs = result.runId != null
+            ? await dispatch(thunkGetAllAiJobs({
+              caseId,
+              runId: result.runId,
+              workflowType: result.workflowType,
+              includeLegacyActive: false,
+            })).unwrap().catch(() => [])
+            : [];
+          const activeJobStep = getActiveJobStep(jobs);
+          const accessibleStep = typeof result.currentAccessibleStep === 'number'
+            ? result.currentAccessibleStep
+            : result.currentStep ?? 0;
+          const targetStep = activeJobStep ?? (accessibleStep > 0 ? accessibleStep : 0);
+          setActive(Math.min(Math.max(targetStep, 0), maxSteps));
+          setInitialAutoJumpDone(true);
+        })
+        .catch((error: unknown) => {
+          onError?.(error, 'fetch');
+        });
       return;
     }
 
@@ -353,30 +400,48 @@ export function useWorkflowOrchestrator<
           onError?.(error, 'fetch');
         }
       });
-  }, [dispatch, caseId, selectedWorkflowId, snapshotIdParam, isFreshRun, isCaseIdBased, abandonThunk, thunks, navigate, pathname, snapshotModeRef, resetForNewRun, getActiveJobStep]);
+  }, [dispatch, caseId, selectedWorkflowId, snapshotIdParam, isFreshRun, isCaseIdBased, abandonThunk, thunks, navigate, pathname, snapshotModeRef, resetForNewRun, getActiveJobStep, maxSteps, onError, resetWorkflow]);
+
+  useEffect(() => {
+    if (!snapshotIdParam || !isEditableSnapshot) return;
+    dispatch(resetAiJobs());
+    dispatch(setActiveRunId(null));
+  }, [dispatch, snapshotIdParam, isEditableSnapshot]);
 
   const ls = workflowState.loadingState as Record<string, unknown>;
+  const isLoadingSelectedWorkflow = selectedWorkflowId != null && workflowState.workflowId !== selectedWorkflowId;
   const isLoading = ls.isFetchingWorkflow === true || ls.isGetting === true || ls.isStarting === true ||
+    isLoadingSelectedWorkflow ||
     (!workflowState.workflowId && !isCaseIdBased && workflowState.runId == null) ||
-    freshRunInProgressRef.current;
+    freshRunInProgress;
 
   const isClickableTab = useCallback(
     (index: number) => {
       if (index === 0) return true;
+      if (selectedWorkflowId != null && workflowState.workflowId !== selectedWorkflowId) return false;
       if (workflowState.runId != null) {
         const stepNumber = stepNumberMapFn ? stepNumberMapFn(index) : index;
         if (stepNumber === null) return false;
-        if (stepNumber <= (workflowState.currentAccessibleStep ?? 0)) return true;
         const activeReqs = workflowState.activeRequests ?? [];
         const hasActiveRequest = activeReqs.some(
           (r) => r.stepNumber === stepNumber && (r.status === 'Queued' || r.status === 'Processing')
         );
         if (hasActiveRequest) return true;
+        if (jobStepMap) {
+          const hasActiveMappedJob = Object.entries(jobStepMap).some(([jobKey, mappedStep]) => {
+            const job = (aiJobs.jobs as Record<string, { status?: string } | undefined>)[jobKey];
+            return Number(mappedStep) === index && (job?.status === 'Queued' || job?.status === 'Processing');
+          });
+          if (hasActiveMappedJob) return true;
+        }
+        if (stepNumber === 1 && (workflowState.currentAccessibleStep ?? 0) === 0) return active >= index;
+        if (stepNumber <= (workflowState.lastCompletedStep ?? 0)) return true;
+        if (stepNumber <= (workflowState.currentAccessibleStep ?? 0)) return true;
         return false;
       }
       return index <= Math.max(active, maxStepAllowed);
     },
-    [active, maxStepAllowed, stepNumberMapFn, workflowState.runId, workflowState.currentAccessibleStep, workflowState.activeRequests],
+    [active, aiJobs.jobs, jobStepMap, maxStepAllowed, selectedWorkflowId, stepNumberMapFn, workflowState.workflowId, workflowState.runId, workflowState.lastCompletedStep, workflowState.currentAccessibleStep, workflowState.activeRequests],
   );
 
   const handleTabChange = useCallback(
@@ -424,13 +489,14 @@ export function useWorkflowOrchestrator<
   useEffect(() => {
     if (!onJobCompletedRef.current) return;
     if (freshRunInProgressRef.current) return;
+    if (freshSessionRef.current && !isFreshRun) return;
     const jobs = aiJobs.jobs as Record<string, { status?: string; resultJson?: string; id?: string; completedAt?: string; createdAt?: string } | undefined>;
     for (const [jobKey, job] of Object.entries(jobs)) {
       if (job?.status === 'Completed' && job.resultJson) {
         onJobCompletedRef.current(jobKey, job, workflowState.outputs, dispatch);
       }
     }
-  }, [aiJobs.jobs, workflowState.outputs, dispatch]);
+  }, [aiJobs.jobs, workflowState.outputs, dispatch, isFreshRun]);
 
   return {
     active,

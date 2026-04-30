@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CustomCard } from '@mohamy/shared-ui';
 import { sileo } from 'sileo';
@@ -29,12 +29,21 @@ type CurrentVersion = {
   workflowId: number | null;
 };
 
+const SNAPSHOT_RESTORE_CONTROLLERS: Record<string, string> = {
+ 'appeal-brief': 'AppealBrief',
+ 'admin-complaint': 'AdminComplaint',
+ 'ruling-analysis': 'RulingAnalysis',
+ 'legal-warning': 'LegalWarning',
+ 'exec-request': 'ExecRequest',
+};
+
 const SnapshotsHistory = ({ caseId }: Props) => {
  const [snapshots, setSnapshots] = useState<DbSnapshot[]>([]);
  const [loading, setLoading] = useState(true);
  const [editingId, setEditingId] = useState<number | null>(null);
  const [editValue, setEditValue] = useState('');
  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+ const [restoringId, setRestoringId] = useState<number | null>(null);
  const navigate = useNavigate();
 
  // Pull active workflow state from Redux for all 7 workflow types so the user can also see
@@ -74,7 +83,7 @@ const SnapshotsHistory = ({ caseId }: Props) => {
  return list;
  }, [smartAnalysis, statementOfClaims, appealBrief, adminComplaint, rulingAnalysis, legalWarning, execRequest]);
 
- const refresh = async () => {
+ const refresh = useCallback(async () => {
  try {
  const res = await api.get(`/WorkflowSnapshots/case/${caseId}`);
  if (Array.isArray(res?.data?.data)) setSnapshots(res.data.data);
@@ -83,9 +92,9 @@ const SnapshotsHistory = ({ caseId }: Props) => {
  } finally {
  setLoading(false);
  }
- };
+ }, [caseId]);
 
- useEffect(() => { void refresh();   }, [caseId]);
+ useEffect(() => { void refresh();   }, [refresh]);
 
  const grouped = useMemo(() => {
  const map = new Map<string, DbSnapshot[]>();
@@ -133,6 +142,32 @@ const SnapshotsHistory = ({ caseId }: Props) => {
  navigate(`/cases/${caseId}/document-selection/${catalog.route}?snapshot=${snapshot.id}`);
  };
 
+ const handleRestore = async (snapshot: DbSnapshot) => {
+ const catalog = WORKFLOW_CATALOG.find((w) => w.id === snapshot.workflowType);
+ if (!catalog) {
+ sileo.error({ title: 'نوع المسار غير معروف' });
+ return;
+ }
+
+ const controller = SNAPSHOT_RESTORE_CONTROLLERS[snapshot.workflowType];
+ if (!controller) {
+ navigate(`/cases/${caseId}/document-selection/${catalog.route}?snapshot=${snapshot.id}&editable=1`);
+ return;
+ }
+
+ setRestoringId(snapshot.id);
+ try {
+ const res = await api.post(`/${controller}/${caseId}/start-from-snapshot/${snapshot.id}`);
+ const workflowId = res?.data?.data?.id;
+ if (!workflowId) throw new Error('Missing workflow id');
+ navigate(`/cases/${caseId}/document-selection/${catalog.route}?workflowId=${workflowId}`);
+ } catch {
+ sileo.error({ title: 'تعذر استعادة النسخة للعمل عليها' });
+ } finally {
+ setRestoringId(null);
+ }
+ };
+
  if (loading) {
  return <div className="text-center py-8 app-text-muted">جارٍ تحميل النسخ السابقة…</div>;
  }
@@ -155,7 +190,7 @@ const SnapshotsHistory = ({ caseId }: Props) => {
  <div className="flex items-center justify-between flex-wrap gap-2">
  <div>
  <h2 className="text-lg font-bold text-[var(--title-color)]">النسخ السابقة المحفوظة</h2>
- <p className="text-sm app-text-muted mt-1">جميع النسخ السابقة لكل مسارات هذه القضية. اضغط "مراجعة" لفتح أي نسخة للقراءة.</p>
+ <p className="text-sm app-text-muted mt-1">جميع النسخ السابقة لكل مسارات هذه القضية. يمكنك مراجعة أي نسخة أو استكمالها كنسخة عمل قابلة للتعديل.</p>
  </div>
  <span className="text-sm font-bold text-[var(--main-color)] bg-[var(--accent-soft)] px-3 py-1 rounded-full border border-[var(--accent-soft-strong)]">
  {totalCount} نسخة
@@ -258,8 +293,16 @@ const SnapshotsHistory = ({ caseId }: Props) => {
  </div>
  <div className="flex items-center gap-2 shrink-0">
  <button
+ onClick={() => handleRestore(s)}
+ disabled={restoringId === s.id}
+ className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-[var(--main-color)] text-white text-xs font-bold hover:bg-opacity-90 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+ >
+ <IoArrowBackOutline />
+ {restoringId === s.id ? 'جارٍ الاستعادة...' : 'استكمال'}
+ </button>
+ <button
  onClick={() => handleOpen(s)}
- className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-[var(--main-color)] text-white text-xs font-bold hover:bg-opacity-90 transition-colors cursor-pointer"
+ className="inline-flex items-center gap-1 px-4 py-2 rounded-full border app-border text-[var(--title-color)] text-xs font-bold hover:bg-[var(--accent-soft)] transition-colors cursor-pointer"
  >
  <IoArrowBackOutline />
  مراجعة

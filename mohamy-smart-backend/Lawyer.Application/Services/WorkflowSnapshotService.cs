@@ -34,13 +34,14 @@ namespace Lawyer.Application.Services
                     .FirstOrDefaultAsync(c => c.Id == caseId, ct);
                 if (caseEntity == null)
                     return Result<WorkflowSnapshotDto>.Error(HttpStatusCode.NotFound, "القضية غير موجودة");
-                if (!string.Equals(caseEntity.LawyerId.ToString(), lawyerId, StringComparison.OrdinalIgnoreCase))
+                var ownerIds = await ResolveSnapshotOwnerIdsAsync(lawyerId, ct);
+                if (!ownerIds.Contains(caseEntity.LawyerId.ToString()))
                     return Result<WorkflowSnapshotDto>.Error(HttpStatusCode.Forbidden, "ليس لديك صلاحية على هذه القضية");
 
                 var snapshot = new WorkflowSnapshot
                 {
                     CaseId = caseId,
-                    LawyerId = lawyerId,
+                    LawyerId = caseEntity.LawyerId.ToString(),
                     WorkflowType = workflowType,
                     OutputsJson = outputsJson,
                     CurrentStep = currentStep,
@@ -66,8 +67,10 @@ namespace Lawyer.Application.Services
         {
             try
             {
+                var ownerIds = await ResolveSnapshotOwnerIdsAsync(lawyerId, ct);
+                var ownerIdArray = ownerIds.ToArray();
                 var snapshots = await _unitOfWork.Repository<WorkflowSnapshot>()
-                    .WhereAsync(x => x.CaseId == caseId && x.LawyerId == lawyerId, ct);
+                    .WhereAsync(x => x.CaseId == caseId && ownerIdArray.Contains(x.LawyerId), ct);
 
                 var dtos = snapshots
                     .OrderByDescending(s => s.CreatedAt)
@@ -91,7 +94,8 @@ namespace Lawyer.Application.Services
                     .FirstOrDefaultAsync(x => x.Id == id, ct);
                 if (snapshot == null)
                     return Result<WorkflowSnapshotDto>.Error(HttpStatusCode.NotFound, "النسخة غير موجودة");
-                if (snapshot.LawyerId != lawyerId)
+                var ownerIds = await ResolveSnapshotOwnerIdsAsync(lawyerId, ct);
+                if (!ownerIds.Contains(snapshot.LawyerId))
                     return Result<WorkflowSnapshotDto>.Error(HttpStatusCode.Forbidden, "ليس لديك صلاحية");
 
                 return Result<WorkflowSnapshotDto>.Success(MapToDto(snapshot));
@@ -111,7 +115,8 @@ namespace Lawyer.Application.Services
                     .FirstOrDefaultAsync(x => x.Id == id, ct);
                 if (snapshot == null)
                     return Result<bool>.Error(HttpStatusCode.NotFound, "النسخة غير موجودة");
-                if (snapshot.LawyerId != lawyerId)
+                var ownerIds = await ResolveSnapshotOwnerIdsAsync(lawyerId, ct);
+                if (!ownerIds.Contains(snapshot.LawyerId))
                     return Result<bool>.Error(HttpStatusCode.Forbidden, "ليس لديك صلاحية");
 
                 _unitOfWork.Repository<WorkflowSnapshot>().Delete(snapshot);
@@ -134,7 +139,8 @@ namespace Lawyer.Application.Services
                     .FirstOrDefaultAsync(x => x.Id == id, ct);
                 if (snapshot == null)
                     return Result<bool>.Error(HttpStatusCode.NotFound, "النسخة غير موجودة");
-                if (snapshot.LawyerId != lawyerId)
+                var ownerIds = await ResolveSnapshotOwnerIdsAsync(lawyerId, ct);
+                if (!ownerIds.Contains(snapshot.LawyerId))
                     return Result<bool>.Error(HttpStatusCode.Forbidden, "ليس لديك صلاحية");
 
                 snapshot.Label = label;
@@ -160,6 +166,21 @@ namespace Lawyer.Application.Services
             Label = s.Label,
             CreatedAt = s.CreatedAt,
         };
+
+        private async Task<HashSet<string>> ResolveSnapshotOwnerIdsAsync(string lawyerId, CancellationToken ct)
+        {
+            var ownerIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(lawyerId)) ownerIds.Add(lawyerId);
+            if (!Guid.TryParse(lawyerId, out var parsedId)) return ownerIds;
+
+            var lawyer = await _unitOfWork.Repository<Lawyer.Core.Models.Lawyer>()
+                .FirstOrDefaultAsync(x => x.Id == parsedId || x.ApplicationUserId == parsedId, ct);
+            if (lawyer == null) return ownerIds;
+
+            ownerIds.Add(lawyer.Id.ToString());
+            ownerIds.Add(lawyer.ApplicationUserId.ToString());
+            return ownerIds;
+        }
     }
 
     public class WorkflowSnapshotDto

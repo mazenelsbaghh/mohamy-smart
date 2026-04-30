@@ -91,7 +91,7 @@ export function useWorkflowFacts({ workflowPrefix, caseId, runId }: UseWorkflowF
  // First time: select all facts
  setSelectedFacts(parsedFacts);
  }
- }, [singleCase?.facts, caseId, workflowPrefix]);
+ }, [singleCase?.facts, caseId, workflowPrefix, runId]);
 
  // Persist selectedFacts + knownFacts whenever the user changes their selection
  const hasInitializedSelection = useRef(false);
@@ -140,9 +140,17 @@ export function useWorkflowFacts({ workflowPrefix, caseId, runId }: UseWorkflowF
       localStorage.removeItem(SELECTED_FACTS_KEY(workflowPrefix, caseId, activeRunIdRef.current));
       localStorage.removeItem(KNOWN_FACTS_KEY(workflowPrefix, caseId, activeRunIdRef.current));
     }
-    setSelectedFacts([]);
     activeRunIdRef.current = newRunId;
-  }, [workflowPrefix, caseId]);
+
+    const parsedFacts = parseCaseFacts(singleCase?.facts);
+    setCaseFacts(parsedFacts);
+    setSelectedFacts(parsedFacts);
+
+    if (caseId) {
+      saveJson(SELECTED_FACTS_KEY(workflowPrefix, caseId, newRunId), parsedFacts);
+      saveJson(KNOWN_FACTS_KEY(workflowPrefix, caseId, newRunId), parsedFacts);
+    }
+  }, [workflowPrefix, caseId, singleCase?.facts]);
 
   return {
     caseFacts,

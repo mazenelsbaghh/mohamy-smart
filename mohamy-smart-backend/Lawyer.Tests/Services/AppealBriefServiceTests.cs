@@ -41,6 +41,9 @@ public class AppealBriefServiceTests : IDisposable
 
         _aiProviderFactory.Setup(x => x.GetProvider()).Returns(_aiProvider.Object);
         _aiProviderFactory.Setup(x => x.GetModelForStepAsync(AiStepType.AppealBriefJudgmentData)).ReturnsAsync("test-model");
+        _caseAccessValidator
+            .Setup(v => v.ValidateAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Result<bool> { Data = true, Succeeded = true, StatusCode = System.Net.HttpStatusCode.OK });
     }
 
     [Fact]
@@ -80,6 +83,59 @@ public class AppealBriefServiceTests : IDisposable
 
         using var json = System.Text.Json.JsonDocument.Parse(persistedWorkflow.Step1Output!);
         json.RootElement.GetProperty("fullAppealText").GetString().Should().Contain("رفض الاستئناف");
+    }
+
+    [Fact]
+    public async Task StartNewRunAsync_ShouldSnapshotLatestCompletedAppealBeforeCreatingNewRun()
+    {
+        var caseId = Guid.NewGuid();
+        var lawyerId = Guid.NewGuid().ToString();
+        var workflowId = await SeedWorkflowAsync(caseId, lawyerId);
+
+        var workflow = await _dbContext.AppealWorkflows.FindAsync(workflowId);
+        workflow.Should().NotBeNull();
+        workflow!.Status = WorkflowStatus.Completed;
+        workflow.CurrentStep = 6;
+        workflow.CurrentAccessibleStep = 6;
+        workflow.LastCompletedStep = 6;
+        workflow.Step1Output = """
+        {
+          "judgmentData": { "courtName": "محكمة النقض", "caseNumber": "321/2026" },
+          "fullAppealText": "بيانات الحكم القديمة"
+        }
+        """;
+        workflow.Step2Output = """
+        {
+          "fullAppealText": "تحليل أسباب الحكم القديم"
+        }
+        """;
+        workflow.UpdatedAt = DateTime.UtcNow.AddMinutes(-1);
+        await _dbContext.SaveChangesAsync();
+        _dbContext.ChangeTracker.Clear();
+
+        var service = CreateSut();
+
+        var result = await service.StartNewRunAsync(caseId, lawyerId, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue($"Status: {result.StatusCode}. Message: {result.Message}");
+        result.Data.Should().NotBeNull();
+        result.Data!.Id.Should().NotBe(workflowId);
+        result.Data.CurrentAccessibleStep.Should().Be(0);
+
+        var archivedWorkflow = await _dbContext.AppealWorkflows.FindAsync(workflowId);
+        archivedWorkflow.Should().NotBeNull();
+        archivedWorkflow!.Status.Should().Be(WorkflowStatus.Abandoned);
+
+        var snapshot = await _dbContext.WorkflowSnapshots.SingleAsync(s => s.CaseId == caseId && s.WorkflowType == "appeal-brief");
+        using var snapshotJson = System.Text.Json.JsonDocument.Parse(snapshot.OutputsJson);
+        snapshotJson.RootElement.GetProperty("1").GetProperty("fullAppealText").GetString().Should().Be("بيانات الحكم القديمة");
+        snapshotJson.RootElement.GetProperty("2").GetProperty("fullAppealText").GetString().Should().Be("تحليل أسباب الحكم القديم");
+
+        var newWorkflow = await _dbContext.AppealWorkflows.FindAsync(result.Data.Id);
+        newWorkflow.Should().NotBeNull();
+        newWorkflow!.Status.Should().Be(WorkflowStatus.InProgress);
+        newWorkflow.CurrentAccessibleStep.Should().Be(0);
+        newWorkflow.Step1Output.Should().BeNull();
     }
 
     private AppealBriefService CreateSut()

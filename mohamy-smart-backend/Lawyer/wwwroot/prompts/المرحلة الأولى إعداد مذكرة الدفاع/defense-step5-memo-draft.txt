@@ -35,15 +35,23 @@ MANDATORY DOCUMENT STRUCTURE (IN ORDER):
 
 1) OPENING:
    - Start with "بسم الله الرحمن الرحيم" centered and bold.
-   - Court name centered: {court_name}
-   - Case information centered: "القضية رقم {case_number} — {case_type}"
+   - If court name is provided, write it centered exactly as provided: {court_name}. If it is empty, omit the court line entirely. Never write placeholder text such as "بدون محكمة" or "المحكمة المختصة".
+   - If case type is already included in the case number, do not repeat it. Case information should normally be: "القضية رقم {case_number}" and only append "— {case_type}" when it adds non-duplicated information.
    - Title centered and prominent: "مذكــــــــرة بدفـــــــاع"
-   - Hearing line: "بالدعوى رقم {case_number} لسنة {current_year} {case_type}، جلســـــــــــــــــــة / /{current_year}"
+   - Add a formal parties block immediately after the title:
+     * "من السيد / [name of the represented party]"
+     * "ضـد"
+     * "السيد / [name of the opposing party]"
+     Determine the represented party from the input line "المدافع عن": if it says "الموكل", use the client name; if it says "الخصم", use the opponent name. The other party becomes the opposing party. If a party name is empty, omit that party line gracefully.
+     In HTML, the represented party name MUST be wrapped in <strong>...</strong>. The opposing party name SHOULD also be wrapped in <strong>...</strong>.
+   - Hearing line should be based only on available data: "بالدعوى رقم {case_number}". Do not append "لسنة {current_year}" if the year is already present in {case_number}. Do not invent a hearing date; if no session date is provided, omit the session date phrase.
 
 2) FACTS SECTION (الوقائع):
    - Title: "الوقــــــائــــــع" — underlined, centered, bold.
-   - MUST be a CONNECTED NARRATIVE — not bullet points.
-   - Weave all facts from legalFactsSummary into a flowing, coherent legal narrative.
+   - Use the facts exactly as provided and keep their legal sequence.
+   - If the provided facts describe one continuous transaction or one document, merge them into one coherent fact instead of fragmenting it into many artificial events.
+   - The section may use concise numbered/list-style legal paragraphs when that better matches the court memo style. Do not force unnecessary long narrative padding.
+   - Weave all facts from legalFactsSummary into a coherent legal presentation.
    - Include defendant positions as part of the narrative with proper transitions.
    - Use judicial language: "ثابت بالأوراق", "ثبت من المحضر", "جاء بأقوال", etc.
    - This section should be substantial — at least 3-4 paragraphs of connected prose.
@@ -51,6 +59,7 @@ MANDATORY DOCUMENT STRUCTURE (IN ORDER):
 3) DEFENSES SECTION (الدفاع):
    - Title: "الدفـــــــــــاع" — underlined, centered, bold.
    - Opening line: "بادئ ذي بدء وقبل الخوض في الموضوع وعلى ضوء ما جاء بأوراق الدعوى ومستنداتها نلتمس في دعواه وذلك تأسيساً على:"
+   - The defenses must be visually clean and easy to scan, not one large text block.
 
    FOR EACH DEFENSE, present a COMPLETE LEGAL ARGUMENT with flowing prose including ALL of the following:
    a) التأصيل القانوني (Legal Foundation): Write the introduction/explanation as connected prose explaining the legal basis of this defense.
@@ -65,31 +74,36 @@ MANDATORY DOCUMENT STRUCTURE (IN ORDER):
       - The FULL ruling text as provided in the input
       - Must include the complete ruling text
 
-   ORGANIZE defenses under these sub-headings with smooth transitions:
+   ORGANIZE defenses under these sub-headings with smooth transitions, but include a sub-heading only if there is at least one approved defense of that type:
    - "من حيث الشكل" (Formal Defenses) — for type "Formal"
    - "وفي الموضوع" (Substantive Defenses) — for type "Substantive"
    - "الدفوع المتعلقة بالأدلة" (Evidentiary Defenses) — for type "Evidentiary"
+   - Each category heading MUST be output as a separate centered underlined <h3>.
+   - Each individual defense title MUST be output as a separate bold right-aligned <h4>, formatted like: "أولًا: [defense title]", "ثانيًا: [defense title]".
+   - Defense body paragraphs must come under their defense title only; do not merge two defenses into one paragraph.
+   - Use short legal paragraphs within each defense so the Word document remains readable.
 
    CRITICAL: Each defense must read as a COMPLETE, DETAILED legal argument — not a summary.
    Use transitional phrases between defenses: "وحيث أن...", "ومن ثم...", "الأمر الذي يؤدي إلى...", "ويؤكد ذلك...".
 
 4) REQUESTS SECTION (الطلبات):
-   - Transition: "عدل المحكمة الموقرة، لتلك الاسباب، وللأسباب الأفضل التي تضيفها وتبينها عدالة المحكمة، نلتمس من عدلكم الحكم"
-   - "أولا: الطلبات الأصلية" — list primary requests (requestLevel = "أصلي")
-   - "ثانياً: الطلبات الاحتياطية" — list subsidiary requests, marking each as (احتياطي) or (احتياطي كلي)
+   - Transition: "لذلك وللأسباب الأفضل التي تراها عدالة المحكمة، يلتمس الحاضر عن الطرف الممثل الحكم"
+   - Present the final requests exactly as provided and in their order.
+   - If requestLevel values are provided, group them under "أولًا: الطلبات الأصلية" and "ثانيًا: الطلبات الاحتياطية" only when there are matching requests. If no clear category exists, list the requests directly as "أولًا، ثانيًا، ثالثًا..." without inventing categories.
    - Each request must be presented exactly as provided in the input.
 
 5) CLOSING:
-   - "وكيل {defended_name}" — right-aligned, bold.
+   - "وكيل <strong>{defended_name}</strong>" — right-aligned, with the defended name bold.
    - "المحامي" — right-aligned.
 
 --------------------------------------------------
 HTML FORMATTING REQUIREMENTS:
 - Use <h2> for main section titles (الوقائع, الدفاع, الطلبات)
-- Use <h3> for sub-section titles (من حيث الشكل, وفي الموضوع, etc.)
-- Use <h4> for request categories and defense sub-headings
+- Use <h3 style="text-align:center;text-decoration:underline;font-weight:800;"> for defense category titles (من حيث الشكل, وفي الموضوع, الدفوع المتعلقة بالأدلة)
+- Use <h4 style="text-align:right;font-weight:800;"> for each individual defense title and request category
 - All body text in <p style="line-height:2;text-align:justify;">
 - Use <strong> for emphasis and labels
+- In the opening and closing, wrap the represented party / defended party name in <strong>...</strong>
 - Use <hr style="border:none;border-top:1px solid rgba(0,0,0,0.08);margin:24px 0;"> between major sections
 - Title headings: style="text-align:center;font-size:1.2rem;font-weight:800;"
 - Sub-headings: style="font-size:1rem;font-weight:700;margin:16px 0 8px;"
@@ -109,7 +123,8 @@ LENGTH AND QUALITY REQUIREMENTS:
 QUALITY CONTROL CHECKLIST:
 - Document starts with بسم الله الرحمن الرحيم
 - Court header with case number and type
-- Facts section is narrative prose (not bullets)
+- Formal parties block includes the represented party and opposing party when names are available
+- Facts section preserves the real sequence and does not split one continuous fact into artificial fragments
 - All approved defenses are included with COMPLETE reasoning
 - Defenses categorized correctly (شكلية/موضوعية/إثباتية)
 - All legal texts quoted in full
@@ -123,4 +138,4 @@ QUALITY CONTROL CHECKLIST:
 --------------------------------------------------
 CRITICAL RULE: Always rely on the latest Egyptian laws and legislations across all branches, updated to the year 2026. (يجب دائماً الاعتماد على أحدث القوانين والتشريعات المصرية بمختلف فروعها وأنواعها، وتعديلاتها السارية حتى عام 2026 في جميع التحليلات والردود).
 
-CRITICAL RULE: DATA FIDELITY — The input data contains lawyer-verified information from prior analysis steps. You MUST: (1) Use the EXACT case number and type as provided. (2) Include ALL approved defenses — none may be omitted. (3) Include ALL final requests — none may be omitted. (4) Quote ALL legal texts and precedents in FULL — never summarize. (5) If any field is empty or absent, skip it gracefully without mentioning it.
+CRITICAL RULE: DATA FIDELITY — The input data contains lawyer-verified information from prior analysis steps. You MUST: (1) Use the EXACT case number and type as provided, without duplicating the year or case type. (2) Use the represented party according to "المدافع عن" and never switch the signature to the other party. (3) Include ALL approved defenses — none may be omitted. (4) Include ALL final requests — none may be omitted. (5) Quote ALL legal texts and precedents in FULL — never summarize. (6) If any field is empty or absent, skip it gracefully without mentioning it.

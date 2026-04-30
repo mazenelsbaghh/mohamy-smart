@@ -28,6 +28,27 @@ import { DEFENSE_MEMO_STEP_DEFS, WORKFLOW_TAB_CLASSNAMES, WORKFLOW_TAB_PROPS } f
 import { useWorkflowOrchestrator } from '../../../../../hooks/useWorkflowOrchestrator';
 
 const DEFENSE_STEP_NUMBER_MAP: Record<number, number> = { 1: 1, 2: 2, 3: 4, 4: 5 };
+const DEFENSE_JOB_STEP_MAP = {
+  FactAnalysis: 1,
+  GenerateDefenses: 2,
+  AnalysisDefense: 2,
+  FinalRequirements: 3,
+  DefenseMemoDraft: 4,
+} as const;
+
+type DefenseJobKey = keyof typeof DEFENSE_JOB_STEP_MAP;
+type DefenseJobMap = Partial<Record<DefenseJobKey, { status?: string } | undefined>>;
+
+const isRunningDefenseJob = (job: { status?: string } | undefined | null) =>
+  job?.status === 'Queued' || job?.status === 'Processing';
+
+const getRunningDefenseTargetStep = (jobs: DefenseJobMap) => {
+  if (isRunningDefenseJob(jobs.DefenseMemoDraft)) return 4;
+  if (isRunningDefenseJob(jobs.FinalRequirements)) return 3;
+  if (isRunningDefenseJob(jobs.GenerateDefenses) || isRunningDefenseJob(jobs.AnalysisDefense)) return 2;
+  if (isRunningDefenseJob(jobs.FactAnalysis)) return 1;
+  return 0;
+};
 
 const DefenseMemoPage = () => {
   const dispatch = useAppDispatch();
@@ -93,14 +114,10 @@ const DefenseMemoPage = () => {
 
       return 0;
     },
+    jobStepMap: DEFENSE_JOB_STEP_MAP,
     computeAutoResumeTarget: (outputs, jobs) => {
-      const isRunning = (job: { status?: string } | undefined | null) =>
-        job?.status === 'Queued' || job?.status === 'Processing';
-
-      if (isRunning((jobs as Record<string, { status?: string } | undefined>).DefenseMemoDraft)) return 4;
-      if (isRunning((jobs as Record<string, { status?: string } | undefined>).FinalRequirements)) return 3;
-      if (isRunning((jobs as Record<string, { status?: string } | undefined>).GenerateDefenses)) return 2;
-      if (isRunning((jobs as Record<string, { status?: string } | undefined>).FactAnalysis)) return 1;
+      const runningTarget = getRunningDefenseTargetStep(jobs as DefenseJobMap);
+      if (runningTarget) return runningTarget;
 
       if (outputs[5]) return 4;
       if (outputs[4]) return 3;
@@ -179,8 +196,15 @@ const DefenseMemoPage = () => {
   }, [normalizedFacts, finalFacts]);
 
   const handleStartFactAnalysis = useCallback(() => {
+    const factsText = selectedFacts.join('\n\n');
+
+    if (isFactJobActive) {
+      setFinalFacts(factsText || finalFacts || caseFacts.join('\n\n') || facts);
+      setActive(1);
+      return;
+    }
+
     if (factAnalysisJob?.status === 'Completed' && !freshRunRef.current) {
-      const factsText = selectedFacts.join('\n\n');
       setFinalFacts(factsText);
       setActive(1);
       return;
@@ -188,7 +212,6 @@ const DefenseMemoPage = () => {
 
     freshRunRef.current = false;
 
-    const factsText = selectedFacts.join('\n\n');
     setFinalFacts(factsText);
 
     if (caseId) {
@@ -202,19 +225,34 @@ const DefenseMemoPage = () => {
         sileo.error({ title: `حدث خطأ: ${typeof error === 'string' ? error : 'مشكلة بالاتصال'}` });
       });
     }
-  }, [factAnalysisJob?.status, selectedFacts, caseId, dispatch, setActive, orchestratorState.runId]);
+  }, [caseFacts, caseId, dispatch, factAnalysisJob?.status, finalFacts, facts, isFactJobActive, orchestratorState.runId, selectedFacts, setActive]);
+
+  useEffect(() => {
+    const runningTarget = getRunningDefenseTargetStep(aiJobs.jobs as DefenseJobMap);
+    if (!runningTarget || active >= runningTarget) return;
+
+    if (runningTarget === 1 && !finalFacts) {
+      const factsText = selectedFacts.length
+        ? selectedFacts.join('\n\n')
+        : caseFacts.length
+          ? caseFacts.join('\n\n')
+          : facts;
+      setFinalFacts(factsText);
+    }
+
+    setActive(runningTarget);
+  }, [active, aiJobs.jobs, caseFacts, facts, finalFacts, selectedFacts, setActive]);
 
   useEffect(() => {
     const { FactAnalysis, GenerateDefenses, FinalRequirements, DefenseMemoDraft } = aiJobs.jobs;
-    const isActive = (s?: string) => s === 'Queued' || s === 'Processing';
 
-    if (isActive(FactAnalysis?.status) && orchestratorState.outputs[1])
+    if (isRunningDefenseJob(FactAnalysis) && orchestratorState.outputs[1])
       dispatch(hydrateStep({ stepNumber: 1, result: null }));
-    if (isActive(GenerateDefenses?.status) && orchestratorState.outputs[2])
+    if (isRunningDefenseJob(GenerateDefenses) && orchestratorState.outputs[2])
       dispatch(hydrateStep({ stepNumber: 2, result: null }));
-    if (isActive(FinalRequirements?.status) && orchestratorState.outputs[4])
+    if (isRunningDefenseJob(FinalRequirements) && orchestratorState.outputs[4])
       dispatch(hydrateStep({ stepNumber: 4, result: null }));
-    if (isActive(DefenseMemoDraft?.status) && orchestratorState.outputs[5])
+    if (isRunningDefenseJob(DefenseMemoDraft) && orchestratorState.outputs[5])
       dispatch(hydrateStep({ stepNumber: 5, result: null }));
   }, [aiJobs.jobs, orchestratorState.outputs, dispatch]);
 
@@ -323,7 +361,7 @@ const DefenseMemoPage = () => {
                         <span className="text-lg">{step.icon}</span>
                         <span className="hidden md:inline text-nowrap">{step.label}</span>
                       </div>
-                    } isDisabled={!isClickableTab(index)}>
+                    } isDisabled={active !== index && !isClickableTab(index)}>
                       {renderedStep[index]}
                     </Tab>
                   ))}

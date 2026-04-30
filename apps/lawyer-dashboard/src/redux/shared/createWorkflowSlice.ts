@@ -65,17 +65,25 @@ export function createWorkflowSlice<TStepOutputs, TReducers extends SliceCaseRed
  resetWorkflow: () => createInitialState(),
  restoreSnapshot: (
  state: Draft<TypedWorkflowState<TStepOutputs>>,
- action: PayloadAction<{ outputs: TStepOutputs; currentStep?: number; lastSavedAt?: string | null; snapshotId?: number; snapshotLabel?: string | null }>
+ action: PayloadAction<{ outputs: TStepOutputs; currentStep?: number; lastSavedAt?: string | null; snapshotId?: number; snapshotLabel?: string | null; readOnly?: boolean }>
  ) => {
- const { outputs, currentStep, lastSavedAt, snapshotId, snapshotLabel } = action.payload;
+ const { outputs, currentStep, lastSavedAt, snapshotId, snapshotLabel, readOnly = true } = action.payload;
+ const highestOutputStep = Object.entries(outputs as Record<string, unknown>).reduce((highest, [key, value]) => {
+ const step = Number(key);
+ if (!Number.isFinite(step) || value == null || value === '') return highest;
+ if (typeof value === 'object' && Object.keys(value as object).length === 0) return highest;
+ return Math.max(highest, step);
+ }, 0);
  state.outputs = outputs as Draft<TStepOutputs>;
  state.currentStep = currentStep ?? 1;
+ state.currentAccessibleStep = highestOutputStep;
+ state.lastCompletedStep = highestOutputStep;
  state.createdAt = null;
  state.lastSavedAt = lastSavedAt ?? null;
- state.isReadOnly = true;
+ state.isReadOnly = readOnly;
  state.snapshotId = snapshotId ?? null;
  state.snapshotLabel = snapshotLabel ?? null;
- state.status = 'Completed';
+ state.status = readOnly ? 'Completed' : 'InProgress';
  },
  hydrateStep: (state: Draft<TypedWorkflowState<TStepOutputs>>, action: PayloadAction<{ stepNumber: number; result: unknown }>) => {
  const { stepNumber, result } = action.payload;

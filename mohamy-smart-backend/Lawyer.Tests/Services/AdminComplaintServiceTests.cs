@@ -86,6 +86,176 @@ public class AdminComplaintServiceTests : IDisposable
         json.RootElement.GetProperty("legalBasis").GetString().Should().Contain("هذه الشكوى تدخل في اختصاص");
     }
 
+    [Fact]
+    public async Task StartFromSnapshotAsync_ShouldCreateEditableRunWithSnapshotOutputs()
+    {
+        var caseId = Guid.NewGuid();
+        var lawyerId = Guid.NewGuid().ToString();
+        var activeWorkflowId = await SeedWorkflowAsync(caseId, lawyerId);
+
+        var snapshot = new WorkflowSnapshot
+        {
+            CaseId = caseId,
+            LawyerId = lawyerId,
+            WorkflowType = "admin-complaint",
+            CurrentStep = 2,
+            OutputsJson = """
+            {
+              "1": { "complaintType": "تظلم إداري", "targetAuthority": "الجهة الإدارية" },
+              "2": { "factsSummary": "وقائع النسخة السابقة" }
+            }
+            """
+        };
+        _dbContext.WorkflowSnapshots.Add(snapshot);
+        await _dbContext.SaveChangesAsync();
+
+        var service = CreateSut();
+
+        var result = await service.StartFromSnapshotAsync(caseId, snapshot.Id, lawyerId, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue($"Status: {result.StatusCode}. Message: {result.Message}");
+        result.Data.Should().NotBeNull();
+
+        var restoredWorkflow = await _dbContext.AdminComplaintWorkflows.FindAsync(result.Data!.Id);
+        restoredWorkflow.Should().NotBeNull();
+        restoredWorkflow!.Status.Should().Be(WorkflowStatus.InProgress);
+        restoredWorkflow.RunId.Should().NotBeNullOrWhiteSpace();
+        restoredWorkflow.Step1Output.Should().Contain("تظلم إداري");
+        restoredWorkflow.Step2Output.Should().Contain("وقائع النسخة السابقة");
+        restoredWorkflow.CurrentAccessibleStep.Should().Be(2);
+        restoredWorkflow.LastCompletedStep.Should().Be(2);
+
+        var previousWorkflow = await _dbContext.AdminComplaintWorkflows.FindAsync(activeWorkflowId);
+        previousWorkflow.Should().NotBeNull();
+        previousWorkflow!.Status.Should().Be(WorkflowStatus.Abandoned);
+
+        var snapshots = await _dbContext.WorkflowSnapshots
+            .Where(s => s.CaseId == caseId && s.WorkflowType == "admin-complaint")
+            .ToListAsync();
+        snapshots.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task StartFromSnapshotAsync_ShouldAcceptSnapshotStoredWithLawyerProfileId()
+    {
+        var caseId = Guid.NewGuid();
+        var applicationUserId = Guid.NewGuid();
+        var lawyerProfileId = Guid.NewGuid();
+        var lawyerId = applicationUserId.ToString();
+
+        if (!await _dbContext.CaseTypes.AnyAsync(x => x.Id == 1))
+        {
+            _dbContext.CaseTypes.Add(new CaseType { Id = 1, Title = "Administrative Complaint" });
+            await _dbContext.SaveChangesAsync();
+        }
+
+        _dbContext.Users.Add(new ApplicationUser
+        {
+            Id = applicationUserId,
+            UserName = "lawyer@test.local",
+            FullName = "Test Lawyer"
+        });
+        _dbContext.Set<Lawyer.Core.Models.Lawyer>().Add(new Lawyer.Core.Models.Lawyer
+        {
+            Id = lawyerProfileId,
+            ApplicationUserId = applicationUserId
+        });
+        _dbContext.Cases.Add(new Case
+        {
+            Id = caseId,
+            CaseTypeId = 1,
+            LawyerId = lawyerProfileId,
+            Title = "طعن على قرار إداري",
+            Number = "123/2026",
+            Court = "مجلس الدولة",
+            ClientName = "أحمد علي",
+            ApponentName = "الجهة الإدارية",
+            Description = "قرار إداري ألحق ضررًا مباشرًا بالموكل.",
+            Facts = "صدر القرار دون تسبيب كافٍ.",
+            LegalClaims = "وقف تنفيذ القرار.",
+            Status = CaseStatus.Open
+        });
+        _dbContext.AdminComplaintWorkflows.Add(new AdminComplaintWorkflow
+        {
+            CaseId = caseId,
+            LawyerId = lawyerId,
+            RowVersion = [1]
+        });
+        var snapshot = new WorkflowSnapshot
+        {
+            CaseId = caseId,
+            LawyerId = lawyerProfileId.ToString(),
+            WorkflowType = "admin-complaint",
+            CurrentStep = 1,
+            OutputsJson = """
+            {
+              "1": { "complaintType": "تظلم إداري" }
+            }
+            """
+        };
+        _dbContext.WorkflowSnapshots.Add(snapshot);
+        await _dbContext.SaveChangesAsync();
+        _dbContext.ChangeTracker.Clear();
+
+        var service = CreateSut();
+
+        var result = await service.StartFromSnapshotAsync(caseId, snapshot.Id, lawyerId, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue($"Status: {result.StatusCode}. Message: {result.Message}");
+        result.Data.Should().NotBeNull();
+        var restoredWorkflow = await _dbContext.AdminComplaintWorkflows.FindAsync(result.Data!.Id);
+        restoredWorkflow.Should().NotBeNull();
+        restoredWorkflow!.Step1Output.Should().Contain("تظلم إداري");
+    }
+
+    [Fact]
+    public async Task StartFromSnapshotAsync_ShouldNotCreateAnotherSnapshotForCompletedCurrentRun()
+    {
+        var caseId = Guid.NewGuid();
+        var lawyerId = Guid.NewGuid().ToString();
+        var completedWorkflowId = await SeedWorkflowAsync(caseId, lawyerId);
+
+        var completedWorkflow = await _dbContext.AdminComplaintWorkflows.FindAsync(completedWorkflowId);
+        completedWorkflow.Should().NotBeNull();
+        completedWorkflow!.Status = WorkflowStatus.Completed;
+        completedWorkflow.CurrentStep = 5;
+        completedWorkflow.CurrentAccessibleStep = 5;
+        completedWorkflow.LastCompletedStep = 5;
+        completedWorkflow.Step1Output = """{ "complaintType": "شكوى مكتملة" }""";
+
+        var snapshot = new WorkflowSnapshot
+        {
+            CaseId = caseId,
+            LawyerId = lawyerId,
+            WorkflowType = "admin-complaint",
+            CurrentStep = 1,
+            OutputsJson = """
+            {
+              "1": { "complaintType": "نسخة سابقة" }
+            }
+            """
+        };
+        _dbContext.WorkflowSnapshots.Add(snapshot);
+        await _dbContext.SaveChangesAsync();
+        _dbContext.ChangeTracker.Clear();
+
+        var service = CreateSut();
+
+        var result = await service.StartFromSnapshotAsync(caseId, snapshot.Id, lawyerId, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue($"Status: {result.StatusCode}. Message: {result.Message}");
+        result.Data.Should().NotBeNull();
+
+        var snapshots = await _dbContext.WorkflowSnapshots
+            .Where(s => s.CaseId == caseId && s.WorkflowType == "admin-complaint")
+            .ToListAsync();
+        snapshots.Should().ContainSingle();
+
+        var originalCompleted = await _dbContext.AdminComplaintWorkflows.FindAsync(completedWorkflowId);
+        originalCompleted.Should().NotBeNull();
+        originalCompleted!.Status.Should().Be(WorkflowStatus.Completed);
+    }
+
     private AdminComplaintService CreateSut()
     {
         var validatorMock = new Mock<Lawyer.Application.IServices.ICaseAccessValidator>();

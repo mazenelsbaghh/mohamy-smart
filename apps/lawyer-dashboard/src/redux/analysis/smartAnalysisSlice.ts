@@ -5,6 +5,9 @@ import { createAsyncThunk } from'@reduxjs/toolkit';
 import api from'../../APIs/api';
 import { axiosErrorHandler } from"@mohamy/shared-api";
 import type { IWorkflowDto, IWorkflowThunks } from '../shared/createWorkflowThunks';
+import type { ActiveStageRequest, WorkflowLifecycleSummary } from '../../types/workflowLifecycle';
+import type { AiJob } from '../aiJobs/aiJobsSlice';
+import { isActiveAiJob, workflowMatchesFilter, WORKFLOW_STEP_METADATA } from '../aiJobs/workflowJobMetadata';
 
 export type {
  TDefense,
@@ -19,6 +22,114 @@ export type {
 import type { TFactAnalysis, TDefenses, TDefense, TFinalRequirementsWrapper, TAnalysisDefenses } from'../shared/workflowTypes';
 
 const smartAnalysisBaseThunks = createWorkflowThunks('SmartAnalysis');
+
+type SmartAnalysisSummary = {
+ caseId: string;
+ step1Output?: unknown;
+ step2Output?: unknown;
+ step3Output?: unknown;
+ step4Output?: unknown;
+ step5Output?: unknown;
+ lastSavedAt?: string | null;
+};
+
+type SmartAnalysisLifecyclePayload = WorkflowLifecycleSummary & {
+ step1Output?: unknown;
+ step2Output?: unknown;
+ step3Output?: unknown;
+ step4Output?: unknown;
+ step5Output?: unknown;
+};
+
+const newRunId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+const mapSmartAnalysisSummaryToLifecycle = (
+ caseId: string,
+ summary: Partial<SmartAnalysisSummary>,
+ runId = caseId,
+ activeRequests: ActiveStageRequest[] = [],
+): SmartAnalysisLifecyclePayload => {
+ const outputs = [
+  summary.step1Output,
+  summary.step2Output,
+  summary.step3Output,
+  summary.step4Output,
+  summary.step5Output,
+ ];
+ const highestStep = outputs.reduce<number>((highest, value, index) => (
+  value !== null && value !== undefined && value !== '' ? index + 1 : highest
+ ), 0);
+ const now = new Date().toISOString();
+
+ return {
+  runId,
+  caseId,
+  workflowType: 'SmartAnalysis',
+  status: highestStep >= 5 ? 'Completed' : 'InProgress',
+  createdAt: summary.lastSavedAt ?? now,
+  updatedAt: summary.lastSavedAt ?? now,
+  currentAccessibleStep: highestStep,
+  lastCompletedStep: highestStep,
+  isReadOnly: false,
+  activeRequests,
+  stageConflicts: [],
+  canStart: highestStep === 0,
+  canResumeCurrent: highestStep > 0 && highestStep < 5,
+  canStartNew: highestStep > 0,
+  currentRunCreatedAt: summary.lastSavedAt ?? null,
+  step1Output: summary.step1Output,
+  step2Output: summary.step2Output,
+  step3Output: summary.step3Output,
+  step4Output: summary.step4Output,
+  step5Output: summary.step5Output,
+ };
+};
+
+const mapSmartAnalysisJobsToActiveRequests = (jobs: AiJob[], runId: string | number): ActiveStageRequest[] =>
+ jobs
+  .filter((job) => {
+   if (!isActiveAiJob(job)) return false;
+   if (!workflowMatchesFilter(job, 'SmartAnalysis')) return false;
+   return job.runId == null || String(job.runId) === String(runId);
+  })
+  .map((job) => ({
+   requestId: job.id,
+   stepNumber: job.stepNumber ?? WORKFLOW_STEP_METADATA[job.stepType]?.stepNumber ?? 1,
+   stepType: job.stepType,
+   status: job.status,
+   createdAt: job.createdAt,
+  }));
+
+const startNewSmartAnalysisRun = createAsyncThunk<WorkflowLifecycleSummary, { caseId: string }>(
+ 'smartAnalysis/startNewRun',
+ async ({ caseId }, { rejectWithValue }) => {
+  try {
+   await api.post(`/SmartAnalysis/${caseId}/abandon`);
+   return mapSmartAnalysisSummaryToLifecycle(caseId, {}, newRunId());
+  } catch (error) {
+   return rejectWithValue(axiosErrorHandler(error));
+  }
+ }
+);
+
+const resumeSmartAnalysisRun = createAsyncThunk<WorkflowLifecycleSummary, { caseId: string }>(
+ 'smartAnalysis/resumeCurrentRun',
+ async ({ caseId }, { rejectWithValue }) => {
+  try {
+   const res = await api.get(`/SmartAnalysis/case/${caseId}`);
+   const runId = caseId;
+   let activeRequests: ActiveStageRequest[] = [];
+   try {
+    const jobsRes = await api.get(`/cases/${caseId}/ai-jobs?workflowType=SmartAnalysis`);
+    const jobs = (jobsRes.data?.data ?? []) as AiJob[];
+    activeRequests = mapSmartAnalysisJobsToActiveRequests(jobs, runId);
+   } catch { /* active jobs are best-effort on resume */ }
+   return mapSmartAnalysisSummaryToLifecycle(caseId, res.data.data as Partial<SmartAnalysisSummary>, runId, activeRequests);
+  } catch (error) {
+   return rejectWithValue(axiosErrorHandler(error));
+  }
+ }
+);
 
 const startSmartAnalysisWorkflow = createAsyncThunk<IWorkflowDto, { caseId: string }>(
  'smartAnalysis/startWorkflow',
@@ -37,6 +148,8 @@ const startSmartAnalysisWorkflow = createAsyncThunk<IWorkflowDto, { caseId: stri
 export const smartAnalysisThunks: IWorkflowThunks = {
 	 ...smartAnalysisBaseThunks,
 	 startWorkflow: startSmartAnalysisWorkflow,
+  startNewRun: startNewSmartAnalysisRun,
+  resumeCurrentRun: resumeSmartAnalysisRun,
 	};
 
 export const thunkGetDefenseAnalysis = createAsyncThunk('smartAnalysis/getDefenseAnalysis',
@@ -309,13 +422,22 @@ export const smartAnalysisSlice = createWorkflowSlice<{
  };
  currentStep?: number;
  lastSavedAt?: string | null;
+ readOnly?: boolean;
  }>) => {
+ const highestOutputStep = Object.entries(action.payload.outputs as Record<string, unknown>).reduce((highest, [key, value]) => {
+ const step = Number(key);
+ if (!Number.isFinite(step) || value == null || value === '') return highest;
+ if (typeof value === 'object' && Object.keys(value as object).length === 0) return highest;
+ return Math.max(highest, step);
+ }, 0);
  state.workflowId = null;
  state.caseId = state.caseId ?? null;
  state.currentStep = action.payload.currentStep ?? 5;
- state.status ="Completed";
+ state.currentAccessibleStep = highestOutputStep;
+ state.lastCompletedStep = highestOutputStep;
+ state.status = action.payload.readOnly === false ? "InProgress" : "Completed";
  state.lastSavedAt = action.payload.lastSavedAt ?? null;
- state.isReadOnly = true;
+ state.isReadOnly = action.payload.readOnly ?? true;
  state.outputs[1] = action.payload.outputs[1] ?? null;
  state.outputs[2] = action.payload.outputs[2] ?? null;
  state.outputs[3] = action.payload.outputs[3] ?? null;

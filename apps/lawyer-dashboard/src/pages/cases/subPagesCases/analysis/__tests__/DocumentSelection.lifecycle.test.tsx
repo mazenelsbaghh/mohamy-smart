@@ -31,11 +31,26 @@ vi.mock('../../../../redux/cases/thunk/thunkGetSingleCase', () => ({
   }),
 }));
 
+vi.mock('../../../../../APIs/api', () => ({
+  default: {
+    get: vi.fn().mockRejectedValue(new Error('snapshots unavailable in test')),
+  },
+}));
+
+vi.mock('../../../../../redux/aiJobs/thunk/thunkGetAllAiJobs', () => ({
+  default: Object.assign(vi.fn().mockReturnValue({ type: 'aiJobs/getAll/mock' }), {
+    pending: { type: 'aiJobs/getAll/pending' },
+    fulfilled: { type: 'aiJobs/getAll/fulfilled' },
+    rejected: { type: 'aiJobs/getAll/rejected' },
+  }),
+}));
+
 vi.mock('../../../../redux/aiJobs/aiJobsSlice', () => ({
   resetAiJobs: () => ({ type: 'aiJobs/resetAiJobs' }),
 }));
 
 let _caseOverrides: Record<string, unknown> | null = null;
+let _aiJobsOverrides: Record<string, unknown> = {};
 
 function mockRootState() {
   return {
@@ -43,7 +58,7 @@ function mockRootState() {
       singleCase: _caseOverrides ? { id: 'case-123', title: 'قضية تجريبية', status: 'Active', facts: 'واقعة تجريبية', ..._caseOverrides } : null,
       loading: _caseOverrides ? 'succeeded' : 'idle',
     },
-    aiJobs: { jobs: {}, loading: 'idle', error: null, activeRunId: null },
+    aiJobs: { jobs: _aiJobsOverrides, loading: 'idle', error: null, activeRunId: null },
   };
 }
 
@@ -51,7 +66,7 @@ function makeStore() {
   return configureStore({
     reducer: {
       cases: () => mockRootState().cases,
-      aiJobs: () => ({ jobs: {}, loading: 'idle', error: null, activeRunId: null }),
+      aiJobs: () => mockRootState().aiJobs,
     },
   });
 }
@@ -77,6 +92,7 @@ let DocumentSelection: React.ComponentType;
 beforeEach(async () => {
   vi.clearAllMocks();
   _caseOverrides = null;
+  _aiJobsOverrides = {};
 
   vi.resetModules();
 
@@ -175,5 +191,43 @@ describe('DocumentSelection lifecycle', () => {
     expect(resumePath).not.toBe(startNewPath);
     expect(startNewPath).toContain('fresh=1');
     expect(resumePath).not.toContain('fresh=1');
+  });
+
+  it('shows active AI job progress instead of a fresh start action', async () => {
+    _caseOverrides = {
+      id: 'case-123',
+      title: 'قضية تجريبية',
+      status: 'Active',
+      facts: 'واقعة تجريبية',
+    };
+    _aiJobsOverrides = {
+      FactAnalysis: {
+        id: 'job-active',
+        caseId: 'case-123',
+        stepType: 'FactAnalysis',
+        status: 'Processing',
+        resultJson: null,
+        errorMessage: null,
+        createdAt: '2026-04-30T00:00:00.000Z',
+        completedAt: null,
+        runId: null,
+        workflowType: null,
+        stepNumber: null,
+      },
+    };
+
+    renderDocumentSelection();
+
+    const progressLabels = screen.getAllByText('جاري تحميل الخطوة الأولى');
+    expect(progressLabels.length).toBeGreaterThan(0);
+
+    const progressButton = progressLabels.find((label) => label.closest('button'));
+    expect(progressButton).toBeDefined();
+    fireEvent.click(progressButton!.closest('button')!);
+
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
+    const navigatedPath = mockNavigate.mock.calls[0][0] as string;
+    expect(navigatedPath).toContain('/defense-memo');
+    expect(navigatedPath).not.toContain('fresh=1');
   });
 });

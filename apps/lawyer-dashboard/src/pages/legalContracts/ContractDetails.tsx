@@ -8,6 +8,54 @@ import { motion } from'framer-motion';
 import { FiArrowRight, FiCopy, FiPrinter } from'react-icons/fi';
 import { sileo } from"sileo";
 
+type ContractSection = {
+ title: string;
+ lines: string[];
+};
+
+const normalizeSectionTitle = (title: string) => title.replace(/_/g,' ').trim();
+
+const parseContractSections = (content: string): ContractSection[] => {
+ const sections: ContractSection[] = [];
+ let current: ContractSection | null = null;
+
+ content.split(/\r?\n/).forEach((rawLine) => {
+ const line = rawLine.trim();
+ const match = line.match(/^===\s*(.+?)\s*===$/);
+ if (match) {
+ if (current) sections.push(current);
+ current = { title: normalizeSectionTitle(match[1]), lines: [] };
+ return;
+ }
+ if (!current) {
+ current = { title:'العقد', lines: [] };
+ }
+ current.lines.push(rawLine);
+ });
+
+ if (current) sections.push(current);
+ return sections.filter(section => section.title || section.lines.some(line => line.trim()));
+};
+
+const renderContractLine = (line: string, index: number) => {
+ const trimmed = line.trim();
+ if (!trimmed) return null;
+ const isClause = /^(?:البند\s+)?(?:الأول|الثاني|الثالث|الرابع|الخامس|السادس|السابع|الثامن|التاسع|العاشر|\d+[).-])/.test(trimmed);
+ const isSignature = /^(?:الطرف|التوقيع|التاريخ)\s*:/.test(trimmed);
+ return (
+ <p
+ key={`${trimmed}-${index}`}
+ className={[
+ 'whitespace-pre-wrap text-[1.08rem] leading-9 text-[var(--text-color)] print:text-black',
+ isClause ?'mt-4 font-bold text-[var(--title-color)]' :'',
+ isSignature ?'font-semibold' :'',
+ ].filter(Boolean).join(' ')}
+ >
+ {trimmed}
+ </p>
+ );
+};
+
 const ContractDetails: React.FC = () => {
  const { id } = useParams<{ id: string }>();
  const navigate = useNavigate();
@@ -84,6 +132,8 @@ const ContractDetails: React.FC = () => {
  );
  }
 
+ const sections = parseContractSections(currentContract.generatedContent);
+
  return (
  <motion.div 
  initial={{ opacity: 0 }}
@@ -123,18 +173,31 @@ const ContractDetails: React.FC = () => {
 
  {/* Main Document Body */}
  <Card className="print:shadow-none print:border-none shadow-sm border app-border dark:border-zinc-800">
- <CardBody className="p-8 md:p-12">
- <div 
- className="prose prose-slate dark:prose-invert max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-center"
+ <CardBody className="p-0">
+ <article
+ className="bg-[color-mix(in_srgb,var(--bg-color)_50%,white)] px-5 py-6 dark:bg-zinc-950 print:bg-white md:px-10 md:py-10"
  dir="rtl"
  >
- {/* Rendering plain text with line breaks as paragraphs for basic markdown safety */}
- {currentContract.generatedContent.split('\n').map((paragraph, idx) => (
- <p key={idx} className="min-h-[1.5rem]">
- {paragraph}
- </p>
- ))}
+ <div className="mx-auto max-w-4xl bg-white px-6 py-8 shadow-sm ring-1 ring-black/5 dark:bg-zinc-900 dark:ring-white/10 print:shadow-none print:ring-0 md:px-12 md:py-12">
+ {sections.map((section, sectionIndex) => {
+ const isTitle = section.title ==='عنوان العقد' || sectionIndex === 0;
+ return (
+ <section key={`${section.title}-${sectionIndex}`} className={sectionIndex === 0 ?'' :'mt-8 border-t app-border pt-6 print:border-gray-300'}>
+ <h2 className={[
+ 'font-bold text-[var(--title-color)] print:text-black',
+ isTitle ?'mb-6 text-center text-2xl leading-10' :'mb-4 text-right text-xl',
+ ].join(' ')}
+ >
+ {section.title}
+ </h2>
+ <div className={isTitle ?'text-center' :'text-right'}>
+ {section.lines.map(renderContractLine)}
  </div>
+ </section>
+ );
+ })}
+ </div>
+ </article>
  </CardBody>
  </Card>
 

@@ -50,7 +50,7 @@ const Login = () => {
  const match = resultMsg.match(/خلال (\d+) ثانية/);
  if (match && match[1]) secondsToWait = parseInt(match[1], 10);
  }
- } catch (err: any) {
+ } catch (err: unknown) {
  if (typeof err === 'string') {
  const match = err.match(/خلال (\d+) ثانية/);
  if (match && match[1]) secondsToWait = parseInt(match[1], 10);

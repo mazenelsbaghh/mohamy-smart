@@ -90,6 +90,8 @@ type DefenseMemoSnapshot = {
  lastSavedAt?: string | null;
 };
 
+type DocxRun = { text: string; bold?: boolean; underline?: boolean };
+
 
 
 const FONT ='Traditional Arabic';
@@ -126,6 +128,10 @@ const stripHtmlTags = (html: string): string => {
 };
 
 const markdownEscape = (value: string | undefined | null) => (value || '').trim();
+const normalizeMemoCourtName = (value: string | undefined | null) => {
+ const trimmed = (value ||'').trim();
+ return trimmed ==='بدون محكمة' ?'' : trimmed;
+};
 
 const buildMarkdown = (summary: TSummary, memoHtml: string): string => {
  const facts = summary?.factAnalysis?.legalFactsSummary || [];
@@ -189,8 +195,50 @@ const buildDocxFromHtml = (html: string): Document => {
  const container = document.createElement('div');
  container.innerHTML = html;
 
- const blockElements = container.querySelectorAll('p, h1, h2, h3, h4, h5, h6, hr, div');
+ const appendDocxParagraph = (
+ runs: DocxRun[],
+ alignment: (typeof AlignmentType)[keyof typeof AlignmentType],
+ size = BODY_SIZE,
+ spacingAfter = 80,
+ ) => {
+ const lines: DocxRun[][] = [[]];
+ runs.forEach((run) => {
+ const parts = run.text.split(/\r?\n/);
+ parts.forEach((part, index) => {
+ if (index > 0) lines.push([]);
+ if (part) lines[lines.length - 1].push({ ...run, text: part });
+ });
+ });
+
+ lines
+ .filter(line => line.some(run => run.text.trim()))
+ .forEach(line => {
+ paragraphs.push(new Paragraph({
+ alignment,
+ spacing: { after: spacingAfter, line: LINE_SPACING },
+ children: line.map(r => new TextRun({
+ text: r.text,
+ bold: r.bold ?? false,
+ underline: r.underline ? { type: UnderlineType.SINGLE } : undefined,
+ size,
+ font: FONT,
+ })),
+ }));
+ });
+ };
+
+ const blockSelector ='p, h1, h2, h3, h4, h5, h6, hr, div, ul, ol, li';
+ const blockElements = container.querySelectorAll(blockSelector);
  const blockNodes: Element[] = [];
+ const pushElementBlocks = (element: Element) => {
+ const tag = element.tagName.toLowerCase();
+ const nestedBlocks = Array.from(element.children).filter(child => child.matches(blockSelector));
+ if (tag ==='div' && nestedBlocks.length > 0) {
+ nestedBlocks.forEach(pushElementBlocks);
+ return;
+ }
+ blockNodes.push(element);
+ };
  container.childNodes.forEach((node) => {
  if (node.nodeType === Node.TEXT_NODE) {
  const text = node.textContent?.trim();
@@ -200,7 +248,7 @@ const buildDocxFromHtml = (html: string): Document => {
  blockNodes.push(wrapper);
  }
  } else if (node.nodeType === Node.ELEMENT_NODE) {
- blockNodes.push(node as Element);
+ pushElementBlocks(node as Element);
  }
  });
 
@@ -222,52 +270,57 @@ const buildDocxFromHtml = (html: string): Document => {
  if (!textContent && tagName !=='p') continue;
 
  if (isHeading) {
- const runs: { text: string; bold?: boolean }[] = [];
+ const runs: DocxRun[] = [];
  block.childNodes.forEach((child) => {
  if (child.nodeType === Node.TEXT_NODE) {
  const t = child.textContent?.trim();
  if (t) runs.push({ text: t, bold: true });
  } else if (child.nodeType === Node.ELEMENT_NODE) {
  const el = child as Element;
- const isBold = el.tagName.toLowerCase() ==='strong' || el.tagName.toLowerCase() ==='b';
- runs.push({ text: el.textContent ||'', bold: true });
- if (!isBold) runs[runs.length - 1].bold = false;
+ const childTag = el.tagName.toLowerCase();
+ const isBold = childTag ==='strong' || childTag ==='b';
+ const isUnderlined = childTag ==='u';
+ runs.push({ text: el.textContent ||'', bold: isBold, underline: isUnderlined });
  }
  });
  if (runs.length > 0 && runs.some(r => r.text)) {
- paragraphs.push(new Paragraph({
- alignment: AlignmentType.CENTER,
- spacing: { after: 120, line: LINE_SPACING },
- children: runs.map(r => new TextRun({
- text: r.text,
- bold: true,
- size: HEADING_SIZE,
- font: FONT,
- })),
- }));
+ const isMajorHeading = tagName ==='h1' || tagName ==='h2';
+ const isCategoryHeading = tagName ==='h3';
+ const headingSize = isMajorHeading ? HEADING_SIZE : tagName ==='h4' ? BODY_SIZE + 2 : BODY_SIZE;
+ const headingAlignment = tagName ==='h4' ? AlignmentType.RIGHT : AlignmentType.CENTER;
+ appendDocxParagraph(
+ runs.map(r => ({ ...r, bold: true, underline: isMajorHeading || isCategoryHeading || r.underline })),
+ headingAlignment,
+ headingSize,
+ 120,
+ );
  }
  continue;
  }
 
- const runs: { text: string; bold?: boolean }[] = [];
- const collectRuns = (node: Node) => {
+ const runs: DocxRun[] = [];
+ if (tagName ==='li') {
+ runs.push({ text:'- ', bold: false });
+ }
+ const collectRuns = (node: Node, inherited: Omit<DocxRun, 'text'> = {}) => {
  if (node.nodeType === Node.TEXT_NODE) {
  const t = node.textContent ||'';
- if (t) runs.push({ text: t, bold: false });
+ if (t) runs.push({ text: t, bold: inherited.bold ?? false, underline: inherited.underline });
  } else if (node.nodeType === Node.ELEMENT_NODE) {
  const el = node as Element;
  const elTag = el.tagName.toLowerCase();
  if (elTag ==='strong' || elTag ==='b') {
- const t = el.textContent ||'';
- if (t) runs.push({ text: t, bold: true });
+ el.childNodes.forEach(child => collectRuns(child, { ...inherited, bold: true }));
+ } else if (elTag ==='u') {
+ el.childNodes.forEach(child => collectRuns(child, { ...inherited, underline: true }));
  } else if (elTag ==='br') {
- runs.push({ text:'' });
+ runs.push({ text:'\n' });
  } else {
- el.childNodes.forEach(collectRuns);
+ el.childNodes.forEach(child => collectRuns(child, inherited));
  }
  }
  };
- block.childNodes.forEach(collectRuns);
+ block.childNodes.forEach(child => collectRuns(child));
 
  if (runs.length === 0 && textContent) {
  runs.push({ text: textContent, bold: false });
@@ -275,16 +328,7 @@ const buildDocxFromHtml = (html: string): Document => {
 
  const nonEmptyRuns = runs.filter(r => r.text || r.bold);
  if (nonEmptyRuns.length > 0) {
- paragraphs.push(new Paragraph({
- alignment: AlignmentType.JUSTIFIED,
- spacing: { after: 80, line: LINE_SPACING },
- children: nonEmptyRuns.map(r => new TextRun({
- text: r.text,
- bold: r.bold ?? false,
- size: BODY_SIZE,
- font: FONT,
- })),
- }));
+ appendDocxParagraph(nonEmptyRuns, AlignmentType.JUSTIFIED);
  }
  }
 
@@ -321,7 +365,7 @@ const FinalNote = ({ caseId }: { caseId?: string }) => {
  caseId:'',
  caseNumber: factAnalysis?.caseNumber ||'',
  caseType: factAnalysis?.caseType ||'',
- courtName: factAnalysis?.courtName ||'',
+ courtName: normalizeMemoCourtName(factAnalysis?.courtName || singleCase?.court),
  clientName: singleCase?.clientName ||'',
  apponentName: singleCase?.apponentName ||'',
  factAnalysis,
@@ -433,7 +477,7 @@ const FinalNote = ({ caseId }: { caseId?: string }) => {
  caseId,
  caseNumber: factAnalysis?.caseNumber || singleCase?.number ||'',
  caseType: factAnalysis?.caseType ||'',
- courtName: factAnalysis?.courtName || singleCase?.court ||'',
+ courtName: normalizeMemoCourtName(factAnalysis?.courtName || singleCase?.court),
  clientName: singleCase?.clientName ||'',
  apponentName: singleCase?.apponentName ||'',
  defendingParty: (singleCase as unknown as { defendingParty?: string })?.defendingParty ||'client',

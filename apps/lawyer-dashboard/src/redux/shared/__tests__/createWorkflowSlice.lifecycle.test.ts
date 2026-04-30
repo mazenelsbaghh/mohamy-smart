@@ -226,3 +226,40 @@ describe('conflict response reducer', () => {
     expect(state.currentAccessibleStep).toBe(1);
   });
 });
+
+describe('restoreSnapshot reducer', () => {
+  it('restores snapshots as read-only by default', () => {
+    const { store, slice } = makeStore();
+
+    store.dispatch(slice.actions.restoreSnapshot({
+      outputs: { 1: { old: true } },
+      currentStep: 1,
+      snapshotId: 12,
+      snapshotLabel: 'نسخة قديمة',
+    }));
+
+    const state = store.getState().testWorkflow as TypedWorkflowState<TestOutputs>;
+    expect(state.isReadOnly).toBe(true);
+    expect(state.status).toBe('Completed');
+    expect(state.snapshotId).toBe(12);
+    expect(state.currentAccessibleStep).toBe(1);
+    expect(state.lastCompletedStep).toBe(1);
+  });
+
+  it('restores editable snapshots as an in-progress working copy', () => {
+    const { store, slice } = makeStore();
+
+    store.dispatch(slice.actions.restoreSnapshot({
+      outputs: { 1: { old: true } },
+      currentStep: 1,
+      snapshotId: 12,
+      readOnly: false,
+    }));
+
+    const state = store.getState().testWorkflow as TypedWorkflowState<TestOutputs>;
+    expect(state.isReadOnly).toBe(false);
+    expect(state.status).toBe('InProgress');
+    expect(state.outputs[1]).toEqual({ old: true });
+    expect(state.currentAccessibleStep).toBe(1);
+  });
+});

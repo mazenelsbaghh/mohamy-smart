@@ -114,6 +114,7 @@ const SmartAnalysisLoader: React.FC<SmartAnalysisLoaderProps> = ({
                                     size="sm"
                                     isIndeterminate={true}
                                     color="primary"
+                                    aria-label="تحليل ذكي"
                                     className="w-full"
                                     classNames={{
                                         indicator: "bg-[var(--main-color)]",

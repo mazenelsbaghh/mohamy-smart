@@ -2,12 +2,13 @@ import { createAsyncThunk } from"@reduxjs/toolkit";
 import api from"../../../APIs/api";
 import { axiosErrorHandler } from"@mohamy/shared-api";
 import type { AiJob } from'../aiJobsSlice';
+import { isActiveAiJob, workflowMatchesFilter } from '../workflowJobMetadata';
 
 /** Prevents concurrent duplicate fetches for the same case. */
 const inflightFetches = new Set<string>();
 
 const thunkGetAllAiJobs = createAsyncThunk('aiJobs/getAll',
- async ({ caseId, since, runId, workflowType, stepNumber }: { caseId: string; since?: string | null; runId?: string | number | null; workflowType?: string | null; stepNumber?: number | null }, { rejectWithValue }) => {
+ async ({ caseId, since, runId, workflowType, stepNumber, includeLegacyActive = true }: { caseId: string; since?: string | null; runId?: string | number | null; workflowType?: string | null; stepNumber?: number | null; includeLegacyActive?: boolean }, { rejectWithValue }) => {
   inflightFetches.add(caseId);
   try {
   const params = new URLSearchParams();
@@ -16,8 +17,14 @@ const thunkGetAllAiJobs = createAsyncThunk('aiJobs/getAll',
   const query = params.toString() ? `?${params.toString()}` : '';
   const res = await api.get(`/cases/${caseId}/ai-jobs${query}`);
   let jobs = res.data.data as AiJob[];
+  if (workflowType) {
+  jobs = jobs.filter((job) => workflowMatchesFilter(job, workflowType));
+  }
   if (runId != null) {
-  jobs = jobs.filter((job) => job.runId != null && String(job.runId) === String(runId));
+  jobs = jobs.filter((job) => {
+  if (job.runId != null) return String(job.runId) === String(runId);
+  return includeLegacyActive && isActiveAiJob(job) && workflowMatchesFilter(job, workflowType);
+  });
   }
   if (since) {
   const sinceTime = new Date(since.endsWith("Z") ? since : `${since}Z`).getTime();
@@ -47,7 +54,7 @@ const thunkGetAllAiJobs = createAsyncThunk('aiJobs/getAll',
  },
  {
  // Drop the dispatch silently if a fetch for this case is already in-flight
-  condition: ({ caseId }: { caseId: string; since?: string | null; runId?: string | number | null; workflowType?: string | null; stepNumber?: number | null }) => {
+  condition: ({ caseId }: { caseId: string; since?: string | null; runId?: string | number | null; workflowType?: string | null; stepNumber?: number | null; includeLegacyActive?: boolean }) => {
  if (inflightFetches.has(caseId)) return false;
  return true;
  },

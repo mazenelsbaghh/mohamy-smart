@@ -40,13 +40,8 @@ export const WORKFLOW_THUNKS_MAP: Record<string, IWorkflowThunks> = {
   'exec-request': execRequestThunks,
 };
 
-const NON_VERSIONED_WORKFLOWS = new Set(['defense-memo', 'preparing-statement-of-claims']);
-
 export function buildWorkflowHref(route: string, workflowId: number | null, caseId: string): string {
   const basePath = `/cases/${caseId}/document-selection/${route}`;
-  if (NON_VERSIONED_WORKFLOWS.has(route)) {
-    return `${basePath}?fresh=1`;
-  }
   if (workflowId) {
     return `${basePath}?workflowId=${workflowId}`;
   }

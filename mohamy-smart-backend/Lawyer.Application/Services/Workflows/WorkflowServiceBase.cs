@@ -73,11 +73,11 @@ namespace Lawyer.Application.Services.Workflows
                     return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.Forbidden, accessResult.Message);
                 }
 
-                var activeWorkflows = await _unitOfWork.Repository<TWorkflow>()
-                    .WhereAsync(x => x.CaseId == caseId && x.LawyerId == lawyerId && x.Status == WorkflowStatus.InProgress, ct);
+                var activeWorkflows = await GetWorkflowsToArchiveBeforeNewRunAsync(caseId, lawyerId, ct);
 
                 foreach (var wf in activeWorkflows)
                 {
+                    await CreateWorkflowSnapshotAsync(wf, lawyerId, ct);
                     wf.Status = WorkflowStatus.Abandoned;
                     wf.UpdatedAt = DateTime.UtcNow;
                     await _unitOfWork.Repository<TWorkflow>().Update(wf);
@@ -124,6 +124,177 @@ namespace Lawyer.Application.Services.Workflows
                 return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.InternalServerError, "حدث خطأ أثناء إنشاء سير العمل الجديد");
             }
         }
+
+        private async Task<List<TWorkflow>> GetWorkflowsToArchiveBeforeNewRunAsync(Guid caseId, string lawyerId, CancellationToken ct)
+        {
+            var activeWorkflows = (await _unitOfWork.Repository<TWorkflow>()
+                    .WhereAsync(x => x.CaseId == caseId && x.LawyerId == lawyerId && x.Status == WorkflowStatus.InProgress, ct))
+                .OrderByDescending(w => w.UpdatedAt)
+                .ToList();
+
+            if (activeWorkflows.Count > 0) return activeWorkflows;
+
+            var latestCompleted = (await _unitOfWork.Repository<TWorkflow>()
+                    .WhereAsync(x => x.CaseId == caseId && x.LawyerId == lawyerId && x.Status == WorkflowStatus.Completed, ct))
+                .OrderByDescending(w => w.UpdatedAt)
+                .FirstOrDefault();
+
+            return latestCompleted == null ? [] : [latestCompleted];
+        }
+
+        private async Task<List<TWorkflow>> GetInProgressWorkflowsToArchiveAsync(Guid caseId, string lawyerId, CancellationToken ct)
+        {
+            return (await _unitOfWork.Repository<TWorkflow>()
+                    .WhereAsync(x => x.CaseId == caseId && x.LawyerId == lawyerId && x.Status == WorkflowStatus.InProgress, ct))
+                .OrderByDescending(w => w.UpdatedAt)
+                .ToList();
+        }
+
+        private async Task CreateWorkflowSnapshotAsync(TWorkflow workflow, string lawyerId, CancellationToken ct)
+        {
+            var outputs = new Dictionary<string, object?>();
+            for (int step = 1; step <= TotalSteps; step++)
+            {
+                var raw = workflow.GetStepOutput(step);
+                if (string.IsNullOrWhiteSpace(raw)) continue;
+                try { outputs[step.ToString()] = JsonSerializer.Deserialize<object>(raw); }
+                catch { outputs[step.ToString()] = raw; }
+            }
+
+            if (outputs.Count == 0) return;
+
+            var snapshotLawyerId = await ResolveCanonicalSnapshotLawyerIdAsync(workflow.CaseId, lawyerId, ct);
+
+            var snapshot = new WorkflowSnapshot
+            {
+                CaseId = workflow.CaseId,
+                LawyerId = snapshotLawyerId,
+                WorkflowType = GetWorkflowTypeName(),
+                OutputsJson = JsonSerializer.Serialize(outputs),
+                CurrentStep = workflow.CurrentStep,
+                CreatedAt = DateTime.UtcNow,
+            };
+            await _unitOfWork.Repository<WorkflowSnapshot>().AddAsync(snapshot);
+        }
+
+        public virtual async Task<Result<Dtos.Workflows.WorkflowStartNewResponseDto>> StartFromSnapshotAsync(Guid caseId, int snapshotId, string lawyerId, CancellationToken ct)
+        {
+            try
+            {
+                if (caseId == Guid.Empty) return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.BadRequest, "معرف القضية غير صالح");
+                if (snapshotId <= 0) return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.BadRequest, "معرف النسخة غير صالح");
+
+                var accessResult = await _caseAccessValidator.ValidateAsync(caseId, lawyerId, false, ct);
+                if (!accessResult.Succeeded)
+                {
+                    if (accessResult.Message == "القضية غير موجودة")
+                        return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.NotFound, accessResult.Message);
+                    return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.Forbidden, accessResult.Message);
+                }
+
+                var snapshot = await _unitOfWork.Repository<WorkflowSnapshot>()
+                    .FirstOrDefaultAsync(x => x.Id == snapshotId, ct);
+                if (snapshot == null) return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.NotFound, "النسخة غير موجودة");
+                if (snapshot.CaseId != caseId || !await SnapshotBelongsToRequesterAsync(snapshot, lawyerId, ct))
+                    return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.Forbidden, "ليس لديك صلاحية");
+                if (!string.Equals(snapshot.WorkflowType, GetWorkflowTypeName(), StringComparison.OrdinalIgnoreCase))
+                    return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.BadRequest, "نوع النسخة لا يطابق مسار العمل");
+
+                var activeWorkflows = await GetInProgressWorkflowsToArchiveAsync(caseId, lawyerId, ct);
+
+                foreach (var wf in activeWorkflows)
+                {
+                    wf.Status = WorkflowStatus.Abandoned;
+                    wf.UpdatedAt = DateTime.UtcNow;
+                    await _unitOfWork.Repository<TWorkflow>().Update(wf);
+                }
+
+                var workflow = CreateNewWorkflow(caseId, lawyerId);
+                workflow.RunId = Guid.NewGuid().ToString();
+                workflow.Status = WorkflowStatus.InProgress;
+                workflow.CreatedAt = DateTime.UtcNow;
+                workflow.UpdatedAt = DateTime.UtcNow;
+
+                var highestOutputStep = HydrateWorkflowFromSnapshot(workflow, snapshot.OutputsJson);
+                workflow.CurrentStep = Math.Clamp(snapshot.CurrentStep > 0 ? snapshot.CurrentStep : highestOutputStep, 1, TotalSteps);
+                if (highestOutputStep > workflow.CurrentStep) workflow.CurrentStep = highestOutputStep;
+                workflow.CurrentAccessibleStep = highestOutputStep;
+                workflow.LastCompletedStep = highestOutputStep;
+
+                await _unitOfWork.Repository<TWorkflow>().AddAsync(workflow);
+                await _unitOfWork.SaveChangesAsync(ct);
+
+                var (canStart, canResumeCurrent, canStartNew, currentRunCreatedAt) = await ComputeActionAvailabilityAsync(caseId, lawyerId, ct);
+
+                var dto = new Dtos.Workflows.WorkflowStartNewResponseDto(
+                    workflow.Id,
+                    workflow.RunId,
+                    workflow.CaseId,
+                    GetWorkflowTypeName(),
+                    workflow.Status.ToString(),
+                    workflow.CurrentAccessibleStep,
+                    workflow.LastCompletedStep,
+                    false,
+                    workflow.CreatedAt,
+                    workflow.UpdatedAt,
+                    canStart,
+                    canResumeCurrent,
+                    canStartNew,
+                    currentRunCreatedAt
+                );
+
+                return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Success(dto, "تم استعادة النسخة كإصدار قابل للتعديل");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error starting workflow from snapshot {SnapshotId} for Case {CaseId}", snapshotId, caseId);
+                return Result<Dtos.Workflows.WorkflowStartNewResponseDto>.Error(HttpStatusCode.InternalServerError, "حدث خطأ أثناء استعادة النسخة");
+            }
+        }
+
+        private async Task<string> ResolveCanonicalSnapshotLawyerIdAsync(Guid caseId, string fallbackLawyerId, CancellationToken ct)
+        {
+            var caseEntity = await _unitOfWork.Repository<Case>().FirstOrDefaultAsync(x => x.Id == caseId, ct);
+            return caseEntity?.LawyerId.ToString() ?? fallbackLawyerId;
+        }
+
+        private async Task<bool> SnapshotBelongsToRequesterAsync(WorkflowSnapshot snapshot, string lawyerId, CancellationToken ct)
+        {
+            if (string.Equals(snapshot.LawyerId, lawyerId, StringComparison.OrdinalIgnoreCase)) return true;
+            if (!Guid.TryParse(lawyerId, out var parsedLawyerId)) return false;
+
+            var lawyer = await _unitOfWork.Repository<Lawyer.Core.Models.Lawyer>()
+                .FirstOrDefaultAsync(x => x.ApplicationUserId == parsedLawyerId || x.Id == parsedLawyerId, ct);
+            if (lawyer == null) return false;
+
+            return string.Equals(snapshot.LawyerId, lawyer.Id.ToString(), StringComparison.OrdinalIgnoreCase)
+                || string.Equals(snapshot.LawyerId, lawyer.ApplicationUserId.ToString(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private int HydrateWorkflowFromSnapshot(TWorkflow workflow, string outputsJson)
+        {
+            if (string.IsNullOrWhiteSpace(outputsJson)) return 0;
+
+            using var doc = JsonDocument.Parse(outputsJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object) return 0;
+
+            var highestOutputStep = 0;
+            foreach (var property in doc.RootElement.EnumerateObject())
+            {
+                if (!int.TryParse(property.Name, out var step) || step < 1 || step > TotalSteps) continue;
+
+                var value = property.Value.ValueKind == JsonValueKind.String
+                    ? property.Value.GetString()
+                    : property.Value.GetRawText();
+                if (string.IsNullOrWhiteSpace(value)) continue;
+
+                workflow.SetStepOutput(step, value);
+                highestOutputStep = Math.Max(highestOutputStep, step);
+            }
+
+            return highestOutputStep;
+        }
+
         public virtual async Task<Result<TDto>> ResumeCurrentRunAsync(Guid caseId, string lawyerId, CancellationToken ct)
         {
             try
@@ -341,7 +512,7 @@ namespace Lawyer.Application.Services.Workflows
                     var snapshot = new WorkflowSnapshot
                     {
                         CaseId = workflow.CaseId,
-                        LawyerId = lawyerId,
+                        LawyerId = await ResolveCanonicalSnapshotLawyerIdAsync(workflow.CaseId, lawyerId, ct),
                         WorkflowType = GetWorkflowTypeName(),
                         OutputsJson = JsonSerializer.Serialize(outputs),
                         CurrentStep = workflow.CurrentStep,

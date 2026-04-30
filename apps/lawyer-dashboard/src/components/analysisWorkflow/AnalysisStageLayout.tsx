@@ -31,6 +31,8 @@ type AnalysisStageActionButtonProps = {
  onClick: () => void;
  disabled?: boolean;
  variant?:'primary' |'secondary';
+ iconClassName?: string;
+ isBusy?: boolean;
 };
 
 type AnalysisStageDocumentCardProps = {
@@ -149,6 +151,8 @@ export const AnalysisStageActionButton = ({
  onClick,
  disabled = false,
  variant ='primary',
+ iconClassName ='',
+ isBusy = false,
 }: AnalysisStageActionButtonProps) => {
  const classes = variant ==='primary'
  ? disabled
@@ -161,10 +165,11 @@ export const AnalysisStageActionButton = ({
  type="button"
  onClick={onClick}
  disabled={disabled}
- className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-bold transition-colors shadow-sm ${classes}`}
+ aria-busy={isBusy || undefined}
+ className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-bold transition-all duration-200 shadow-sm active:scale-[0.99] motion-reduce:transition-none motion-reduce:transform-none ${classes}`}
  >
  <span>{label}</span>
- <Icon className="text-lg" />
+ <Icon className={`text-lg ${iconClassName}`.trim()} />
  </button>
  );
 };

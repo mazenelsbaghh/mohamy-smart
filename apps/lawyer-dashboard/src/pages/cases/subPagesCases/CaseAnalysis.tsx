@@ -1,16 +1,20 @@
 import { CustomCard } from'@mohamy/shared-ui';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 import { Link, useNavigate } from'react-router-dom';
 import {
  IoArrowBackOutline, IoWarningOutline, IoDocumentTextOutline,
- IoCheckmarkCircle, IoFlash, IoList, IoBriefcaseOutline, IoPeopleOutline, IoAddOutline,
+ IoCheckmarkCircle, IoFlash, IoList, IoBriefcaseOutline, IoPeopleOutline, IoAddOutline, IoTimeOutline,
 } from'react-icons/io5';
 
 import { useAppDispatch, useAppSelector } from'../../../hooks/reduxHooks';
 import { WORKFLOW_CATALOG } from'./analysis/workflowCatalog';
 import { resetAiJobs } from '../../../redux/aiJobs/aiJobsSlice';
+import type { AiJob } from '../../../redux/aiJobs/aiJobsSlice';
+import thunkGetAllAiJobs from '../../../redux/aiJobs/thunk/thunkGetAllAiJobs';
+import { getAiJobProgressLabel, getWorkflowIdForAiJob, isActiveAiJob } from '../../../redux/aiJobs/workflowJobMetadata';
 import { WORKFLOW_THUNKS_MAP, isWorkflowCompleted as sharedIsWorkflowCompleted, buildWorkflowHref as sharedBuildHref } from'../../../redux/shared/workflowUtils';
+import { buildWorkflowSnapshotPayload } from '../../../redux/shared/workflowSnapshotUtils';
 
 import api from '../../../APIs/api';
 import type { DraftWorkflowState } from'../../../redux/shared/workflowTypes';
@@ -27,15 +31,10 @@ type DbSnapshot = {
 
 async function createSnapshotInDb(workflowKey: string, caseId: string, state: DraftWorkflowState) {
  try {
- const hasData = Object.values(state.outputs).some(v => v != null && v !== '' && (typeof v !== 'object' || Object.keys(v as object).length > 0));
- if (!hasData) return;
+ const payload = buildWorkflowSnapshotPayload(workflowKey, caseId, state);
+ if (!payload) return;
 
- await api.post('/WorkflowSnapshots', {
- caseId,
- workflowType: workflowKey,
- outputsJson: JSON.stringify(state.outputs),
- currentStep: state.currentStep ?? 1,
- });
+ await api.post('/WorkflowSnapshots', payload);
  	} catch {
   import('sileo').then(({ sileo }) => sileo.error({ title: "فشل في حفظ مسودة التحليل مؤقتاً" }));
  	}
@@ -48,6 +47,7 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  const navigate = useNavigate();
 
  const [dbSnapshots, setDbSnapshots] = useState<DbSnapshot[]>([]);
+ const aiJobsState = useAppSelector((s) => s.aiJobs);
 
  // Load snapshots from database
  useEffect(() => {
@@ -60,6 +60,11 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
 	.catch(() => {});
  }, [caseId]);
 
+ useEffect(() => {
+  if (!caseId) return;
+  dispatch(thunkGetAllAiJobs({ caseId }));
+ }, [dispatch, caseId]);
+
  const smartAnalysis = useAppSelector((s) => s.smartAnalysis);
  const statementOfClaims = useAppSelector((s) => s.preparingStatementOfClaimsSlice);
  const appealBrief = useAppSelector((s) => s.appealBrief);
@@ -69,6 +74,20 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  const execRequest = useAppSelector((s) => s.execRequest);
 
   const workflowThunks = WORKFLOW_THUNKS_MAP;
+
+ const activeJobByWorkflow = useMemo(() => {
+  const result: Record<string, AiJob> = {};
+  for (const job of Object.values(aiJobsState.jobs)) {
+   if (!job || job.caseId !== caseId || !isActiveAiJob(job)) continue;
+   const workflowId = getWorkflowIdForAiJob(job);
+   if (!workflowId) continue;
+   const existing = result[workflowId];
+   if (!existing || new Date(job.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
+    result[workflowId] = job;
+   }
+  }
+  return result;
+ }, [aiJobsState.jobs, caseId]);
 
  // Workflow states are fetched by the parent CaseDetails page on mount
 
@@ -162,16 +181,13 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
 
   dispatch(resetAiJobs());
 
-  if (workflowKey === 'defense-memo' || workflowKey === 'preparing-statement-of-claims') {
   const draft = drafts.find(d => d.key === workflowKey);
-  if (draft) {
-  if (workflowKey === 'defense-memo') {
-  await createSnapshotInDb('defense-memo', caseId, smartAnalysis);
-  } else {
-  await createSnapshotInDb('preparing-statement-of-claims', caseId, statementOfClaims);
-  }
+  if (draft && workflowKey === 'defense-memo') {
+  await createSnapshotInDb(workflowKey, caseId, draft.state);
   await refreshSnapshots();
   }
+
+  if (workflowKey === 'defense-memo' || workflowKey === 'preparing-statement-of-claims') {
   navigate(`/cases/${caseId}/document-selection/${route}?fresh=1`, { state: facts });
   return;
   }
@@ -183,7 +199,7 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  }
 
  try {
- const created = await dispatch(thunks.startWorkflow({ caseId })).unwrap();
+ const created = await dispatch(thunks.startNewRun({ caseId })).unwrap();
  navigate(`/cases/${caseId}/document-selection/${route}?workflowId=${created.id}`, { state: facts });
  } catch (error) {
  import('sileo').then(({ sileo }) => sileo.error({ title: typeof error === 'string' ? error : 'تعذر بدء نسخة جديدة من المسار' }));
@@ -258,8 +274,11 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  {WORKFLOW_CATALOG.map((catalogItem, idx) => {
  const draft = drafts.find(d => d.key === catalogItem.id);
  const stage = draft ? getAnalysisStage(draft.key, draft.state) : null;
+ const activeJob = activeJobByWorkflow[catalogItem.id];
+ const activeJobLabel = activeJob ? getAiJobProgressLabel(activeJob) : null;
  const isCompleted = draft ? isWorkflowCompletedLocal(draft.key, draft.state) : false;
- const isInProgress = Boolean(draft && !isCompleted);
+ const isRunning = Boolean(activeJob);
+ const isInProgress = Boolean((draft && !isCompleted) || isRunning);
  // All 7 workflows now use the unified WorkflowSnapshots system on the backend.
  const workflowDbSnapshots = dbSnapshots.filter(s => s.workflowType === catalogItem.id);
  const archivedVersions: Array<{ id: number | string; createdAt: string; label?: string | null }> =
@@ -274,8 +293,8 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  >
  <div className="flex items-center gap-2.5">
  <div
- className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isCompleted ?'text-[var(--blue-color)]' : isInProgress ?'text-[var(--success-color)]' :'app-text-muted'}`}
- style={{ backgroundColor: isCompleted ?'var(--info-soft)' : isInProgress ?'var(--success-soft)' :'var(--surface-soft)' }}
+ className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isRunning ?'text-[var(--main-color)]' : isCompleted ?'text-[var(--blue-color)]' : isInProgress ?'text-[var(--success-color)]' :'app-text-muted'}`}
+ style={{ backgroundColor: isRunning ?'var(--accent-soft)' : isCompleted ?'var(--info-soft)' : isInProgress ?'var(--success-soft)' :'var(--surface-soft)' }}
  >
  <catalogItem.icon className="text-base" />
  </div>
@@ -283,7 +302,11 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  </div>
 
  <div>
- {isCompleted ? (
+ {isRunning ? (
+ <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--main-color)] border border-[var(--accent-soft-strong)]">
+ <IoTimeOutline className="text-xs" /> جاري التنفيذ
+ </span>
+ ) : isCompleted ? (
  <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-[var(--info-soft)] text-[var(--blue-color)] border border-[var(--info-soft)]">
  <IoCheckmarkCircle className="text-xs" /> منجزة
  </span>
@@ -297,7 +320,9 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  </div>
 
  <div className="text-xs app-text-muted">
- {stage ? (
+ {isRunning && activeJobLabel ? (
+ <span className="flex items-center gap-1 text-[var(--main-color)] font-bold"><IoTimeOutline />{activeJobLabel}</span>
+ ) : stage ? (
  <div className="flex flex-col gap-1">
  <span className="flex items-center gap-1">{stage.icon}{stage.label}</span>
  {versionCount > 1 && (
@@ -313,18 +338,20 @@ const CaseAnalysis = ({ caseId, facts }: { caseId: string; facts: string }) => {
  <div className="flex flex-wrap justify-end gap-2">
             <Link
                to={buildHref(catalogItem.route, draft?.state.workflowId)}
-               state={facts}
+              state={facts}
               className={`inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors
-                ${isCompleted 
+                ${isRunning
+                  ? "bg-[var(--main-color)] text-white hover:brightness-95 shadow-sm"
+                  : isCompleted
                   ? "bg-[var(--main-color)] text-white hover:brightness-95 shadow-sm" 
                   : isInProgress 
                     ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm" 
                     : canStartAnalysis 
                       ? "border border-[var(--main-color)] text-[var(--main-color)] hover:bg-[var(--accent-soft)]" 
                       : "border app-border text-[var(--text-color)] cursor-not-allowed pointer-events-none opacity-60"}`}
-              onClick={(e) => { if (!canStartAnalysis && !draft) e.preventDefault(); }}
+              onClick={(e) => { if (!canStartAnalysis && !draft && !activeJob) e.preventDefault(); }}
             >
-              {isCompleted ? "مراجعة النسخة الحالية" : isInProgress ? "استكمال النسخة الحالية" : "ابدأ"}
+              {isRunning ? activeJobLabel ?? "جاري التنفيذ" : isCompleted ? "مراجعة النسخة الحالية" : isInProgress ? "استكمال النسخة الحالية" : "ابدأ"}
               <IoArrowBackOutline />
             </Link>
             {(isInProgress || isCompleted) && (

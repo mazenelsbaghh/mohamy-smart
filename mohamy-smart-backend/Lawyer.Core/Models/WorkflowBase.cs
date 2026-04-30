@@ -19,7 +19,7 @@ namespace Lawyer.Core.Models
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         [System.ComponentModel.DataAnnotations.Timestamp]
-        public byte[] RowVersion { get; set; } = null!;
+        public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
         [System.ComponentModel.DataAnnotations.Schema.NotMapped]
         public abstract int TotalSteps { get; }

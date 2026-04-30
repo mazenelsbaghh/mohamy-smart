@@ -690,11 +690,13 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 if (!accessResult.Succeeded)
                     return Result<DefenseMemoDraftResponseDto>.Error(accessResult.StatusCode, accessResult.Message);
 
-                var systemPrompt = await LoadDefenseMemoPromptAsync(request, ct);
+                var normalizedRequest = NormalizeDefenseMemoRequest(request, caseEntity);
+
+                var systemPrompt = await LoadDefenseMemoPromptAsync(normalizedRequest, ct);
                 if (systemPrompt == null)
                     return Result<DefenseMemoDraftResponseDto>.Error(HttpStatusCode.InternalServerError, "Defense memo prompt file not found");
 
-                var userPrompt = BuildDefenseMemoUserPrompt(request);
+                var userPrompt = BuildDefenseMemoUserPrompt(normalizedRequest);
 
                 _logger.LogInformation("Generating defense memo draft for Case ID: {CaseId}", request.CaseId);
 
@@ -975,6 +977,8 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 return null;
 
             var defendedName = request.DefendingParty == "client" ? request.ClientName : request.ApponentName;
+            if (string.IsNullOrWhiteSpace(defendedName))
+                defendedName = request.ClientName;
 
             return template
                 .Replace("{court_name}", request.CourtName)
@@ -982,6 +986,44 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 .Replace("{case_type}", request.CaseType)
                 .Replace("{current_year}", DateTime.UtcNow.Year.ToString())
                 .Replace("{defended_name}", defendedName);
+        }
+
+        private static DefenseMemoDraftRequestDto NormalizeDefenseMemoRequest(
+            DefenseMemoDraftRequestDto request,
+            Core.Models.Case caseEntity)
+        {
+            var defendingParty = IsKnownDefendingParty(caseEntity.DefendingParty)
+                ? caseEntity.DefendingParty
+                : IsKnownDefendingParty(request.DefendingParty)
+                    ? request.DefendingParty
+                    : "client";
+
+            return new DefenseMemoDraftRequestDto
+            {
+                CaseId = request.CaseId,
+                CaseNumber = FirstNonBlank(request.CaseNumber, caseEntity.Number),
+                CaseType = FirstNonBlank(request.CaseType, caseEntity.CaseType?.Title),
+                CourtName = NormalizeCourtName(FirstNonBlank(request.CourtName, caseEntity.Court)),
+                ClientName = FirstNonBlank(request.ClientName, caseEntity.ClientName),
+                ApponentName = FirstNonBlank(request.ApponentName, caseEntity.ApponentName),
+                DefendingParty = defendingParty,
+                LegalFactsSummary = request.LegalFactsSummary,
+                DefendantsPositions = request.DefendantsPositions,
+                ApprovedDefenses = request.ApprovedDefenses,
+                FinalRequests = request.FinalRequests
+            };
+        }
+
+        private static bool IsKnownDefendingParty(string? value)
+            => value == "client" || value == "opponent";
+
+        private static string FirstNonBlank(params string?[] values)
+            => values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim() ?? string.Empty;
+
+        private static string NormalizeCourtName(string? value)
+        {
+            var trimmed = value?.Trim() ?? string.Empty;
+            return trimmed == "بدون محكمة" ? string.Empty : trimmed;
         }
 
         private static string BuildDefenseMemoUserPrompt(DefenseMemoDraftRequestDto request)

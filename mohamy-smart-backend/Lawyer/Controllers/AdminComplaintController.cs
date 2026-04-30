@@ -28,6 +28,13 @@ namespace Lawyer.Controllers
             return CreateResponse(result);
         }
 
+        [HttpPost("{caseId}/start-from-snapshot/{snapshotId:int}")]
+        public async Task<IActionResult> StartFromSnapshot(Guid caseId, int snapshotId, CancellationToken ct)
+        {
+            var result = await _service.StartFromSnapshotAsync(caseId, snapshotId, GetLawyerId(), ct);
+            return CreateResponse(result);
+        }
+
         [HttpGet("case/{caseId}/resume")]
         public async Task<IActionResult> ResumeCurrentRun(Guid caseId, CancellationToken ct)
         {

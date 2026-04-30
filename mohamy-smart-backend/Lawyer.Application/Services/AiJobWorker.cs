@@ -509,7 +509,7 @@ namespace Lawyer.Application.Services
                 return (false, null);
             }
 
-            if (job.WorkflowType == "preparing-statement-of-claims")
+            if (job.WorkflowType == "preparing-statement-of-claims" || job.WorkflowType == "SmartAnalysis")
             {
                 return (false, null);
             }

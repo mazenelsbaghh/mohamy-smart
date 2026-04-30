@@ -13,6 +13,7 @@ import WorkflowStepBar from '../../../../../components/analysisWorkflow/Workflow
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
 import { RULING_ANALYSIS_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
+import type { RootState } from '../../../../../redux/store';
 
 const RULING_JOB_STEP_MAP = {
   RulingAnalysisOperative: 1,
@@ -45,7 +46,7 @@ const RulingAnalysisPage = () => {
     isClickableTab,
     handleAdvanceStage,
   } = useWorkflowOrchestrator({
-    sliceSelector: (s: any) => s.rulingAnalysis,
+    sliceSelector: (s: RootState) => s.rulingAnalysis,
     thunks: rulingAnalysisThunks,
     restoreSnapshot: restoreRulingAnalysisSnapshot,
     resetWorkflow: resetRulingAnalysis,

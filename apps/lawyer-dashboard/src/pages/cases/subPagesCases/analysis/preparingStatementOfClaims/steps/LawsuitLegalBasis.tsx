@@ -89,7 +89,7 @@ const LawsuitLegalBasis = ({ caseId, nextStep, caseType, selectedFacts = [] }: L
  applicationNotes: String(r.applicationNotes ?? r.ApplicationNotes ??''),
  })),
  };
-  }, []);
+  }, [caseId]);
 
   const {
   isLoading,

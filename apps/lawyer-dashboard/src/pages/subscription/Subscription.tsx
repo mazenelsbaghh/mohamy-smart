@@ -92,7 +92,7 @@ const Subscription = () => {
   } finally {
   setCheckingPlan(null);
   }
-  }, [dispatch, billingCycle, selectedPlanIdForPayment, closePaymentModal]);
+  }, [dispatch, billingCycle, selectedPlanIdForPayment, closePaymentModal, user?.profileId]);
 
  const usagePercent = useMemo(() => {
  if (!lawyerPlan) return 0;

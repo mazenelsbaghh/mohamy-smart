@@ -9,6 +9,7 @@ export type RestorePayload<TOutputs> = {
  lastSavedAt?: string | null;
  snapshotId?: number;
  snapshotLabel?: string | null;
+ readOnly?: boolean;
 };
 
 /**
@@ -23,8 +24,9 @@ export function useWorkflowSnapshotLoader<TOutputs>(params: {
  fallbackStep?: number;
  onLoaded?: (currentStep: number) => void;
  stepMapFn?: (step: number) => number;
+ readOnly?: boolean;
 }): { snapshotModeRef: React.MutableRefObject<boolean> } {
- const { snapshotId, restoreSnapshot, resetWorkflow, fallbackStep = 1, onLoaded, stepMapFn } = params;
+ const { snapshotId, restoreSnapshot, resetWorkflow, fallbackStep = 1, onLoaded, stepMapFn, readOnly = true } = params;
  const dispatch = useAppDispatch();
  const snapshotModeRef = useRef(false);
 
@@ -51,6 +53,7 @@ export function useWorkflowSnapshotLoader<TOutputs>(params: {
   lastSavedAt: snapshot.createdAt ?? null,
   snapshotId: numId,
   snapshotLabel: snapshot.label ?? null,
+  readOnly,
   }));
   snapshotModeRef.current = true;
   onLoaded?.(mappedStep);

@@ -14,6 +14,7 @@ import WorkflowStepBar from '../../../../../components/analysisWorkflow/Workflow
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
 import { ADMIN_COMPLAINT_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
+import type { RootState } from '../../../../../redux/store';
 
 const COMPLAINT_JOB_STEP_MAP = {
   AdminComplaintClassification: 1,
@@ -47,7 +48,7 @@ const AdminComplaintPage = () => {
     isClickableTab,
     handleAdvanceStage,
   } = useWorkflowOrchestrator({
-    sliceSelector: (s: any) => s.adminComplaint,
+    sliceSelector: (s: RootState) => s.adminComplaint,
     thunks: adminComplaintThunks,
     restoreSnapshot: restoreAdminComplaintSnapshot,
     resetWorkflow: resetAdminComplaint,
