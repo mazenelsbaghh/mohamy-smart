@@ -53,7 +53,6 @@ namespace Lawyer.Application.Common
 
             if (IsValidJson(text)) return text;
 
-            var objectStart = text.IndexOf('{');
             if (objectStart >= 0)
             {
                 int braceCount = 0;
@@ -76,6 +75,9 @@ namespace Lawyer.Application.Common
                     var candidate = text.Substring(objectStart, objectEnd - objectStart + 1).Trim();
                     if (IsValidJson(candidate)) return candidate;
                 }
+
+                var candidateRepair = RepairTruncatedJson(text.Substring(objectStart).Trim());
+                if (IsValidJson(candidateRepair)) return candidateRepair;
             }
 
             var arrayStart = text.IndexOf('[');
@@ -101,9 +103,13 @@ namespace Lawyer.Application.Common
                     var candidate = text.Substring(arrayStart, arrayEnd - arrayStart + 1).Trim();
                     if (IsValidJson(candidate)) return candidate;
                 }
+
+                var candidateRepair = RepairTruncatedJson(text.Substring(arrayStart).Trim());
+                if (IsValidJson(candidateRepair)) return candidateRepair;
             }
 
-            var repaired = RepairTruncatedJson(text);
+            var cleanedText = CleanJsonResponse(text);
+            var repaired = RepairTruncatedJson(cleanedText);
             if (IsValidJson(repaired)) return repaired;
 
             return text;

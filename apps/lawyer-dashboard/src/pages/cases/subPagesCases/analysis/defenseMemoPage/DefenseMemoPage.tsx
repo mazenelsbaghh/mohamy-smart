@@ -27,7 +27,7 @@ import api from '../../../../../APIs/api';
 import { DEFENSE_MEMO_STEP_DEFS, WORKFLOW_TAB_CLASSNAMES, WORKFLOW_TAB_PROPS } from '../../../../../components/analysisWorkflow/workflowConstants';
 import { useWorkflowOrchestrator } from '../../../../../hooks/useWorkflowOrchestrator';
 
-const DEFENSE_STEP_NUMBER_MAP: Record<number, number> = { 1: 1, 2: 2, 3: 4, 4: 5 };
+
 const DEFENSE_JOB_STEP_MAP = {
   FactAnalysis: 1,
   GenerateDefenses: 2,
@@ -67,6 +67,7 @@ const DefenseMemoPage = () => {
   const {
     active,
     setActive,
+    nextStep,
     isClickableTab,
     caseFacts,
     setCaseFacts,
@@ -80,7 +81,6 @@ const DefenseMemoPage = () => {
     isSavingStep,
     isReadOnly,
     workflowState: orchestratorState,
-    handleAdvanceStage,
   } = useWorkflowOrchestrator({
     sliceSelector: (s) => s.smartAnalysis,
     thunks: smartAnalysisThunks,
@@ -164,11 +164,7 @@ const DefenseMemoPage = () => {
     },
   });
 
-  const advanceToNextStep = useCallback(() => {
-    const from = DEFENSE_STEP_NUMBER_MAP[active];
-    const to = DEFENSE_STEP_NUMBER_MAP[active + 1];
-    if (from != null && to != null) handleAdvanceStage(from, to);
-  }, [active, handleAdvanceStage]);
+
 
   useEffect(() => {
     if (!caseId) return;
@@ -283,15 +279,15 @@ const DefenseMemoPage = () => {
       onStart={handleStartFactAnalysis}
       isStarting={isFactJobActive}
     />,
-    <LegalAnalysis key="analysis" finalFacts={finalFacts} caseFacts={facts} nextStep={advanceToNextStep} caseId={caseId} />,
+    <LegalAnalysis key="analysis" finalFacts={finalFacts} caseFacts={facts} nextStep={nextStep} caseId={caseId} />,
     <DefensesList
       key="defenses"
       caseId={caseId}
       finalFacts={finalFacts}
-      nextStep={advanceToNextStep}
+      nextStep={nextStep}
       onDefensesMutated={saveDefensesStep}
     />,
-    <FinalRequirements key="final-req" caseId={caseId} finalFacts={finalFacts} nextStep={advanceToNextStep} />,
+    <FinalRequirements key="final-req" caseId={caseId} finalFacts={finalFacts} nextStep={nextStep} />,
     <FinalNote key="final-note" caseId={caseId} />,
   ];
 
