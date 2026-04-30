@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { IoAlertCircleOutline, IoSparklesOutline, IoClose, IoShieldCheckmarkOutline } from 'react-icons/io5';
 import { LuCheck, LuChevronDown, LuChevronUp } from 'react-icons/lu';
 
@@ -68,7 +68,7 @@ const MemoConfirmModal = ({
  );
 
  // Re-sync when modal opens
- useMemo(() => {
+ useEffect(() => {
   if (isOpen) {
    setSelectedDefenseIds(new Set(approvedIds));
    setSelectedRequestIds(new Set(finalRequests.map(r => r.id)));
