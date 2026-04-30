@@ -53,6 +53,7 @@ namespace Lawyer.Application.Common
 
             if (IsValidJson(text)) return text;
 
+            var objectStart = text.IndexOf('{');
             if (objectStart >= 0)
             {
                 int braceCount = 0;
