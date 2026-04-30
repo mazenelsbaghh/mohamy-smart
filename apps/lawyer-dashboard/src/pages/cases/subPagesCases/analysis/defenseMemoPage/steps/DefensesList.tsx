@@ -406,7 +406,10 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  })
  })).unwrap();
  sileo.success({ title:'مساعدك الذكي شغال الآن...' });
- nextStep();
+ // Navigation is handled by DefenseMemoPage's auto-jump effect which detects
+ // the running FinalRequirements job and navigates to tab 3 automatically.
+ // Calling nextStep() here would cause a double-navigation race condition
+ // (effect sets active=3, then nextStep increments to 4, skipping Requests).
  } catch (error) {
  sileo.error({ title: `حدث خطأ: ${error}` });
  } finally {
