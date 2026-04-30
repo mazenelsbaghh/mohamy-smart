@@ -19,5 +19,7 @@ namespace Lawyer.Application.IServices
         Task<Result<AiJobStatusDto?>> GetActiveJobByRunAsync(Guid caseId, string runId, string workflowType, int stepNumber, string userId, CancellationToken ct);
         Task<Result<bool>> IgnoreStaleCompletionAsync(Guid jobId, string activeRunId, string userId, CancellationToken ct);
         Task<Result<AiJobStatusDto>> MarkConflictAsync(Guid jobId, string errorCode, string conflictMessage, string userId, CancellationToken ct);
+        
+        Task CleanupStuckJobsAsync(CancellationToken ct);
     }
 }

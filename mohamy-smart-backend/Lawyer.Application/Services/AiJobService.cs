@@ -231,6 +231,29 @@ namespace Lawyer.Application.Services
             return Result<AiJobStatusDto>.Success(ToDto(job));
         }
 
+        public async Task CleanupStuckJobsAsync(CancellationToken ct)
+        {
+            var cutoffTime = DateTime.UtcNow.AddHours(-1);
+
+            var stuckJobs = await _db.AiJobs
+                .Where(j => (j.Status == AiJobStatus.Processing || j.Status == AiJobStatus.Queued)
+                            && j.CreatedAt < cutoffTime)
+                .ToListAsync(ct);
+
+            if (!stuckJobs.Any())
+                return;
+
+            foreach (var job in stuckJobs)
+            {
+                job.Status = AiJobStatus.Failed;
+                job.ErrorMessage = "Job auto-cancelled due to stuck processing state (timeout).";
+                job.ErrorCode = "Timeout";
+                job.CompletedAt = DateTime.UtcNow;
+            }
+
+            await _db.SaveChangesAsync(ct);
+        }
+
         private static AiJobStatusDto ToDto(AiJob j) => new(
             j.Id, j.CaseId, j.StepType, j.Status,
             j.ResultJson, j.ErrorMessage, j.CreatedAt, j.CompletedAt,

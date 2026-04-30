@@ -291,10 +291,10 @@ namespace Lawyer.Application.Services.SmartAnalysis
         {
             try
             {
-                var hasTitleOverride = !string.IsNullOrWhiteSpace(request.DefenseTitle);
+                var hasTitleOverride = request.DefenseId == Guid.Empty;
 
-                if (request.DefenseId == Guid.Empty && !hasTitleOverride)
-                    return Result<AnalyzeDefenseResponseDto>.Error(System.Net.HttpStatusCode.BadRequest, "معرف الدفع غير صالح");
+                if (hasTitleOverride && string.IsNullOrWhiteSpace(request.DefenseTitle))
+                    return Result<AnalyzeDefenseResponseDto>.Error(System.Net.HttpStatusCode.BadRequest, "يجب تحديد عنوان الدفع أو معرف دفع صالح");
 
                 Core.Models.Defense? storedDefense = null;
                 Core.Models.Defense defense;
@@ -305,7 +305,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
 
                     defense = new Core.Models.Defense
                     {
-                        Id = request.DefenseId == Guid.Empty ? Guid.NewGuid() : request.DefenseId,
+                        Id = Guid.NewGuid(),
                         CaseId = request.CaseId,
                         Type = Core.Enum.DefenseType.Substantive,
                         DefenseTitle = request.DefenseTitle.Trim(),

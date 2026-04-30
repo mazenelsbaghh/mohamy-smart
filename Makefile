@@ -40,8 +40,9 @@ LANDING_PORT        := 3000
 
 # ── Phony Targets ────────────────────────────────────────────────
 .PHONY: help \
-        dev down logs ps build rebuild \
+        dev down logs logs-backend logs-frontend ps build rebuild \
         prod prod-down prod-logs prod-build server-migrate \
+        server-logs server-logs-all \
         backend backend-rebuild lawyer admin landing \
         db-shell migrate migrate-add \
         install bundle-report \
@@ -173,9 +174,17 @@ down: ## Stop the development stack (preserves DB state)
 	$(REQUIRE_ENV)
 	docker compose down
 
-logs: ## Stream development stack logs
+logs: ## Stream development stack logs (all services)
 	$(REQUIRE_ENV)
 	docker compose logs -f
+
+logs-backend: ## Stream development backend logs only
+	$(REQUIRE_ENV)
+	docker compose logs -f --tail=200 backend
+
+logs-frontend: ## Stream development frontend (lawyer-dashboard) logs only
+	$(REQUIRE_ENV)
+	docker compose logs -f --tail=200 lawyer-dashboard
 
 ps: ## List running development services
 	$(REQUIRE_ENV)
@@ -214,9 +223,19 @@ prod-down: ## Stop the production-oriented stack
 	$(REQUIRE_ENV_PROD)
 	docker compose --env-file $(ENV_PROD_FILE) -f $(COMPOSE_PROD_FILE) down
 
-prod-logs: ## Stream production-oriented stack logs
+prod-logs: ## Stream production-oriented stack logs (all services, LOCAL prod stack)
 	$(REQUIRE_ENV_PROD)
 	docker compose --env-file $(ENV_PROD_FILE) -f $(COMPOSE_PROD_FILE) logs -f
+
+server-logs: ## Stream backend logs from the REMOTE production server
+	@echo "Streaming backend logs from production server..."
+	ssh -o StrictHostKeyChecking=no root@91.108.121.110 \
+		'cd /opt/mohamy-smart && docker compose --env-file .env.docker.prod -f docker-compose.prod.yml logs -f --tail=300 backend'
+
+server-logs-all: ## Stream ALL service logs from the REMOTE production server
+	@echo "Streaming all logs from production server..."
+	ssh -o StrictHostKeyChecking=no root@91.108.121.110 \
+		'cd /opt/mohamy-smart && docker compose --env-file .env.docker.prod -f docker-compose.prod.yml logs -f --tail=200'
 
 prod-build: ## Rebuild production-oriented images
 	$(REQUIRE_ENV_PROD)

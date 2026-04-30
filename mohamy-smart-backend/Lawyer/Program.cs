@@ -461,6 +461,16 @@ if (!app.Environment.IsEnvironment("Testing"))
 	{
 		Authorization = new[] { new Lawyer.Filters.HangfireAuthorizationFilter() }
 	});
+
+	using (var scope = app.Services.CreateScope())
+	{
+		var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+		recurringJobManager.AddOrUpdate<IAiJobService>(
+			"CleanupStuckAiJobs",
+			service => service.CleanupStuckJobsAsync(CancellationToken.None),
+			"*/15 * * * *" // Run every 15 minutes
+		);
+	}
 }
 
 app.Run();
