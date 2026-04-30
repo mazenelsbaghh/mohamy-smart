@@ -288,7 +288,7 @@ const DefenseMemoPage = () => {
       onDefensesMutated={saveDefensesStep}
     />,
     <FinalRequirements key="final-req" caseId={caseId} finalFacts={finalFacts} nextStep={nextStep} />,
-    <FinalNote key="final-note" caseId={caseId} />,
+    <FinalNote key="final-note" caseId={caseId} isActiveTab={active === 4} />,
   ];
 
   return (

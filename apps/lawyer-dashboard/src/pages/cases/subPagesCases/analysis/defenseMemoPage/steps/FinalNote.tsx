@@ -348,7 +348,7 @@ const buildDocxFromHtml = (html: string): Document => {
  });
 };
 
-const FinalNote = ({ caseId }: { caseId?: string }) => {
+const FinalNote = ({ caseId, isActiveTab }: { caseId?: string; isActiveTab?: boolean }) => {
  const dispatch = useAppDispatch();
  const smartOutputs = useAppSelector((state) => state.smartAnalysis.outputs);
  const loadingState = useAppSelector((state) => state.smartAnalysis.loadingState);
@@ -544,14 +544,15 @@ const FinalNote = ({ caseId }: { caseId?: string }) => {
  }));
  }, [dispatch, caseId, buildAiInputJson]);
 
- useEffect(() => {
- if (hasAutoSubmitted.current) return;
- if (!hasApprovedDefenses) return;
- if (hasContent) return;
- if (isGenerating) return;
- hasAutoSubmitted.current = true;
- setIsMemoConfirmOpen(true);
- }, [hasApprovedDefenses, hasContent, isGenerating]);
+  useEffect(() => {
+    if (!isActiveTab) return;
+    if (hasAutoSubmitted.current) return;
+    if (!hasApprovedDefenses) return;
+    if (hasContent) return;
+    if (isGenerating) return;
+    hasAutoSubmitted.current = true;
+    setIsMemoConfirmOpen(true);
+  }, [isActiveTab, hasApprovedDefenses, hasContent, isGenerating]);
 
  useEffect(() => {
  if (memoHtml && editorRef.current && editorRef.current.innerHTML !== memoHtml) {
