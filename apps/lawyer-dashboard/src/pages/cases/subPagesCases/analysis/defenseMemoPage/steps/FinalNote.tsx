@@ -544,6 +544,14 @@ const FinalNote = ({ caseId, isActiveTab }: { caseId?: string; isActiveTab?: boo
  }));
  }, [dispatch, caseId, buildAiInputJson]);
 
+  // Reset the auto-submit flag when user navigates away from this tab
+  // so the modal re-opens when they return
+  useEffect(() => {
+    if (!isActiveTab) {
+      hasAutoSubmitted.current = false;
+    }
+  }, [isActiveTab]);
+
   useEffect(() => {
     if (!isActiveTab) return;
     if (hasAutoSubmitted.current) return;
