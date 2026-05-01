@@ -90,6 +90,25 @@ export interface UseWorkflowOrchestratorReturn<TOutputs extends Record<number, u
 
 const WORKFLOW_NOT_FOUND_ERROR = 'Workflow not found';
 
+const workflowResultToOutputs = <TOutputs extends Record<number, unknown>>(
+  result: { [key: string]: unknown },
+  maxSteps: number,
+): TOutputs => {
+  const outputs: Record<number, unknown> = {};
+  for (let step = 1; step <= maxSteps; step += 1) {
+    outputs[step] = result[`step${step}Output`];
+  }
+  return outputs as TOutputs;
+};
+
+const jobsArrayToRecord = (
+  jobs: Array<{ stepType?: string; stepNumber?: number | null; status?: string }>,
+): Record<string, { stepNumber?: number | null; status?: string } | undefined> =>
+  jobs.reduce<Record<string, { stepNumber?: number | null; status?: string } | undefined>>((acc, job) => {
+    if (job.stepType) acc[job.stepType] = job;
+    return acc;
+  }, {});
+
 export function useWorkflowOrchestrator<
   TOutputs extends Record<number, unknown>,
   TJobKeys extends string = string,
@@ -362,7 +381,10 @@ export function useWorkflowOrchestrator<
           const accessibleStep = typeof result.currentAccessibleStep === 'number'
             ? result.currentAccessibleStep
             : result.currentStep ?? 0;
-          const targetStep = activeJobStep ?? (accessibleStep > 0 ? accessibleStep : 0);
+          const resumeTarget = computeAutoResumeTarget
+            ? computeAutoResumeTarget(workflowResultToOutputs<TOutputs>(result as unknown as Record<string, unknown>, maxSteps), jobsArrayToRecord(jobs))
+            : 0;
+          const targetStep = activeJobStep ?? (resumeTarget > 0 ? resumeTarget : accessibleStep > 0 ? accessibleStep : 0);
           setActive(Math.min(Math.max(targetStep, 0), maxSteps));
           setInitialAutoJumpDone(true);
         })
@@ -382,7 +404,10 @@ export function useWorkflowOrchestrator<
           workflowType: result.workflowType,
         })).unwrap().catch(() => []);
         const activeJobStep = getActiveJobStep(jobs);
-        const targetStep = activeJobStep ?? (result.currentAccessibleStep > 0 ? result.currentAccessibleStep : 0);
+        const resumeTarget = computeAutoResumeTarget
+          ? computeAutoResumeTarget(workflowResultToOutputs<TOutputs>(result as unknown as Record<string, unknown>, maxSteps), jobsArrayToRecord(jobs))
+          : 0;
+        const targetStep = activeJobStep ?? (resumeTarget > 0 ? resumeTarget : result.currentAccessibleStep > 0 ? result.currentAccessibleStep : 0);
         setActive(targetStep);
         setInitialAutoJumpDone(true);
       })
@@ -400,7 +425,7 @@ export function useWorkflowOrchestrator<
           onError?.(error, 'fetch');
         }
       });
-  }, [dispatch, caseId, selectedWorkflowId, snapshotIdParam, isFreshRun, isCaseIdBased, abandonThunk, thunks, navigate, pathname, snapshotModeRef, resetForNewRun, getActiveJobStep, maxSteps, onError, resetWorkflow]);
+  }, [dispatch, caseId, selectedWorkflowId, snapshotIdParam, isFreshRun, isCaseIdBased, abandonThunk, thunks, navigate, pathname, snapshotModeRef, resetForNewRun, getActiveJobStep, maxSteps, onError, resetWorkflow, computeAutoResumeTarget]);
 
   useEffect(() => {
     if (!snapshotIdParam || !isEditableSnapshot) return;

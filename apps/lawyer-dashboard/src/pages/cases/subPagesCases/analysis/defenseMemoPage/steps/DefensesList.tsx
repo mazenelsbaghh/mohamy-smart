@@ -222,7 +222,7 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  id: defenseId,
  defenseTitle: options.titleOverride,
  basisFromCase:'دفع مضاف يدويًا بواسطة المحامي',
- scope:'دفع مضاف',
+ scope:'',
  strength:'Medium' as const,
  categoryLabel:'دفع موضوعي',
  categoryTone:'substantive' as const,
@@ -637,8 +637,7 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  {item.basisFromCase?.replace(/^[a-z_]+\s*[-:]\s*/i,'')}
  </p>
 
- <div className="flex items-center justify-between pt-3 mt-1 border-t border-black/5" dir="rtl">
- <span className="text-xs app-text-subtle dark:app-text-subtle font-bold app-surface-soft px-2 py-1 rounded">{item.scope}</span>
+ <div className="flex items-center justify-end pt-3 mt-1 border-t border-black/5" dir="rtl">
  {explanationsCache[item.id] ? (
  <div className="flex items-center gap-1.5">
  <span className="text-xs font-bold text-[var(--success-color)] dark:text-green-300 bg-[var(--success-soft)] dark:bg-green-950/40 border border-[var(--success-soft)] dark:border-green-800/50 px-2.5 py-1.5 rounded-lg flex items-center gap-1">

@@ -20,12 +20,11 @@ namespace Lawyer.Application.Services.Workflows
                 }
             },
             new PipelineDefinition { 
-                Id = "statement-of-claims", Name = "إعداد الدعوى", TotalSteps = 6, CategoryOrder = 2,
+                Id = "statement-of-claims", Name = "إعداد الدعوى", TotalSteps = 5, CategoryOrder = 2,
                 Steps = new() {
                     new PipelineStepDefinition { StepType = AiStepType.LawsuitCaseType, DisplayName = "نوع القضية" },
                     new PipelineStepDefinition { StepType = AiStepType.LawsuitParties, DisplayName = "الأطراف" },
-                    new PipelineStepDefinition { StepType = AiStepType.LawsuitSubjects, DisplayName = "الموضوعات" },
-                    new PipelineStepDefinition { StepType = AiStepType.LawsuitFacts, DisplayName = "الوقائع" },
+                    new PipelineStepDefinition { StepType = AiStepType.LawsuitSubjects, DisplayName = "موضوع الدعوى ووقائعها" },
                     new PipelineStepDefinition { StepType = AiStepType.LawsuitLegalBasis, DisplayName = "السند القانوني" },
                     new PipelineStepDefinition { StepType = AiStepType.LawsuitRequests, DisplayName = "الطلبات" }
                 }

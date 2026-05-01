@@ -47,8 +47,7 @@ UPDATE AiStageModelConfigs
    SET ModelIdentifier = @Flash, UpdatedAt = @Now, UpdatedBy = @Admin
  WHERE StepType IN (
         4,   -- FinalRequirements               — الطلبات الختامية
-        12,  -- LawsuitSubjects                 — موضوعات الدعوى
-        13,  -- LawsuitFacts                    — وقائع الدعوى
+        12,  -- LawsuitSubjects                 — موضوع الدعوى ووقائعها
         15,  -- LawsuitRequests                 — طلبات الدعوى
         20,  -- Ocr                             — التعرف البصري
         21,  -- ClarifyFacts                    — تقييم اكتمال الوقائع

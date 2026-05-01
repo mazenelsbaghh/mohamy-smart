@@ -57,13 +57,13 @@ export const WORKFLOW_STEP_METADATA: Partial<Record<AiStepType, WorkflowStepMeta
     workflowType: 'preparing-statement-of-claims',
     workflowId: 'preparing-statement-of-claims',
     stepNumber: 3,
-    progressLabel: 'جاري صياغة الموضوع',
+    progressLabel: 'جاري صياغة موضوع الدعوى ووقائعها',
   },
   LawsuitFacts: {
     workflowType: 'preparing-statement-of-claims',
     workflowId: 'preparing-statement-of-claims',
-    stepNumber: 4,
-    progressLabel: 'جاري إعداد الوقائع',
+    stepNumber: 3,
+    progressLabel: 'جاري صياغة موضوع الدعوى ووقائعها',
   },
   LawsuitLegalBasis: {
     workflowType: 'preparing-statement-of-claims',

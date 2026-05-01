@@ -26,11 +26,11 @@ const LawsuitCaseType = ({ caseId, nextStep, selectedFacts }: TLawsuitCaseType) 
   ? JSON.stringify({ caseId, facts: selectedFacts.join('\n\n') })
   : JSON.stringify({ caseId }), [caseId, selectedFacts]);
 
- const { isLoading, hasFailed, errorMessage, retry, submit } = useAnalysisStep<TCaseDetails>({
- caseId,
- stepType:'LawsuitCaseType',
- autoSubmit: true,
- inputJson,
+	 const { isLoading, hasFailed, errorMessage, retry, submit } = useAnalysisStep<TCaseDetails>({
+	 caseId,
+	 stepType:'LawsuitCaseType',
+	 autoSubmit: !hydratedData,
+	 inputJson,
  onHydrate: (parsed) => {
  dispatch(hydrateStatementStep({ stepNumber: 1, result: parsed }));
  },

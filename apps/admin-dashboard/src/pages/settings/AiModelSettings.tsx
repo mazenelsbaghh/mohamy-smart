@@ -15,6 +15,10 @@ const MODEL_OPTIONS = [
  { key:'gemini-3.1-pro-preview', label:'Pro 3.1' },
 ];
 
+const LAWSUIT_SUBJECTS_STEP = 12;
+const LAWSUIT_FACTS_STEP = 13;
+const hiddenStepTypes = new Set([LAWSUIT_FACTS_STEP]);
+
 const AiModelSettings = () => {
  const dispatch = useAppDispatch();
  const { configs, isLoading, error } = useAppSelector((state) => state.aiModelConfig);
@@ -43,7 +47,12 @@ const AiModelSettings = () => {
 
  const groupedConfigs = useMemo(() => {
  const groups: Record<string, typeof configs> = {};
- configs.forEach(c => {
+ configs
+ .filter(c => !hiddenStepTypes.has(c.stepType))
+ .map(c => c.stepType === LAWSUIT_SUBJECTS_STEP
+ ? { ...c, displayName:'موضوع الدعوى ووقائعها' }
+ : c)
+ .forEach(c => {
  if (!groups[c.category]) {
  groups[c.category] = [];
  }
@@ -57,8 +66,9 @@ const AiModelSettings = () => {
  };
 
  const handleSave = async () => {
-  const updates: UpdateAiModelConfigItem[] = Object.entries(localConfigs)
+ const updates: UpdateAiModelConfigItem[] = Object.entries(localConfigs)
     .filter(([, modelIdentifier]) => modelIdentifier !== '')
+    .filter(([stepType]) => !hiddenStepTypes.has(Number(stepType)))
     .map(([stepType, modelIdentifier]) => ({
     stepType: Number(stepType),
     modelIdentifier,
@@ -71,7 +81,9 @@ const AiModelSettings = () => {
  };
 
  const hasChanges = useMemo(() => {
- return configs.some(c => localConfigs[c.stepType] !== c.modelIdentifier);
+ return configs
+ .filter(c => !hiddenStepTypes.has(c.stepType))
+ .some(c => localConfigs[c.stepType] !== c.modelIdentifier);
  }, [configs, localConfigs]);
 
  return (

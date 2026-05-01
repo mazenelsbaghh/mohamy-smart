@@ -10,12 +10,12 @@ AiStepType values: LawsuitCaseType=20, LawsuitParties=21, LawsuitFacts=22,
 |                               |                      |                            | procedural_nature, is_urgent_or_summary, justification_summary |
 | lawsuit-step2-parties.txt     | LawsuitParties (21)  | LawsuitPartiesStepOutput   | parties[] → name, role, type, legal_capacity, address       |
 | lawsuit-step3-facts.txt       | LawsuitFacts (22)    | LawsuitFactsStepOutput     | facts_narrative                                             |
-| lawsuit-step4-subject.txt     | LawsuitSubjects (23) | LawsuitSubjectsStepOutput  | subject_title, subject_full_text                            |
+| lawsuit-step3-facts.txt       | LawsuitSubjects (23) | LawsuitSubjectsStepOutput  | subject_title="موضوع الدعوى ووقائعها", subject_full_text=facts_narrative |
 | lawsuit-step5-legal-basis.txt | LawsuitLegalBasis(24)| LawsuitLegalBasisStepOutput| legal_texts[], cassation_rulings[]                          |
 | lawsuit-step6-requests.txt    | LawsuitRequests (25) | LawsuitRequestsStepOutput  | principal_requests[], subsidiary_requests[],                |
 |                               |                      |                            | procedural_requests[]                                       |
 
 Notes:
-- PreparingStatementOfClaimsService loads all 6 prompts from these files at runtime.
+- PreparingStatementOfClaimsService uses lawsuit-step3-facts.txt for both LawsuitSubjects and LawsuitFacts so "موضوع الدعوى" and "الوقائع" remain one source.
 - Strongly-typed DTOs are defined in StepOutputDtos.cs → LawsuitCaseTypeStepOutput etc.
 - StepOutputSchemas.Normalize() maps integer values 20-25 to their respective DTOs.

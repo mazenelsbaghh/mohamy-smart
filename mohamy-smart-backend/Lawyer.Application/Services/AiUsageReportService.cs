@@ -199,7 +199,7 @@ namespace Lawyer.Application.Services
                     : "غير معروف";
 
                 var perStep = records
-                    .GroupBy(r => r.AiStepType)
+                    .GroupBy(r => NormalizeUsageStep(r.AiStepType))
                     .Select(g => new StepUsageDto
                     {
                         StepType = (int)g.Key,
@@ -243,7 +243,7 @@ namespace Lawyer.Application.Services
                                     RequestCount = workflowGroup.Count(),
                                     TotalCostUsd = workflowGroup.Sum(x => x.Record.EstimatedCostUsd),
                                     Steps = workflowGroup
-                                        .GroupBy(x => x.Record.AiStepType)
+                                        .GroupBy(x => NormalizeUsageStep(x.Record.AiStepType))
                                         .Select(stepGroup => new StepUsageDto
                                         {
                                             StepType = (int)stepGroup.Key,
@@ -321,7 +321,7 @@ namespace Lawyer.Application.Services
                             RequestCount = workflowGroup.Count(),
                             TotalCostUsd = workflowGroup.Sum(x => x.Record.EstimatedCostUsd),
                             Steps = workflowGroup
-                                .GroupBy(x => x.Record.AiStepType)
+                                .GroupBy(x => NormalizeUsageStep(x.Record.AiStepType))
                                 .Select(stepGroup => new StepUsageDto
                                 {
                                     StepType = (int)stepGroup.Key,
@@ -484,6 +484,12 @@ namespace Lawyer.Application.Services
             _ => null
         };
 
+        private static AiStepType NormalizeUsageStep(AiStepType stepType) => stepType switch
+        {
+            AiStepType.LawsuitFacts => AiStepType.LawsuitSubjects,
+            _ => stepType
+        };
+
         private static string GetStepDisplayName(AiStepType stepType) => stepType switch
         {
             AiStepType.FactAnalysis => "تحليل الوقائع",
@@ -494,8 +500,8 @@ namespace Lawyer.Application.Services
 
             AiStepType.LawsuitCaseType => "تحديد نوع الدعوى",
             AiStepType.LawsuitParties => "استخراج الأطراف",
-            AiStepType.LawsuitSubjects => "تحديد الموضوع",
-            AiStepType.LawsuitFacts => "صياغة الوقائع",
+            AiStepType.LawsuitSubjects => "موضوع الدعوى ووقائعها",
+            AiStepType.LawsuitFacts => "موضوع الدعوى ووقائعها",
             AiStepType.LawsuitLegalBasis => "التأسيس القانوني",
             AiStepType.LawsuitRequests => "صياغة الطلبات",
             AiStepType.StatementOfClaimsDraft => "المسودة النهائية لصحيفة الدعوى",

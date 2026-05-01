@@ -60,7 +60,7 @@ Location: `wwwroot/prompts/المرحلة الثانية إعداد صحيفة �
 | 1    | LawsuitCaseType (20)        | lawsuit-step1-case-type.txt      | Classify the case type          |
 | 2    | LawsuitParties (21)         | lawsuit-step2-parties.txt        | Extract parties                 |
 | 3    | LawsuitFacts (22)           | lawsuit-step3-facts.txt          | Format facts narrative          |
-| 4    | LawsuitSubjects (23)        | lawsuit-step4-subject.txt        | Determine lawsuit subject       |
+| 4    | LawsuitSubjects (23)        | lawsuit-step3-facts.txt          | Use facts narrative as lawsuit subject |
 | 5    | LawsuitLegalBasis (24)      | lawsuit-step5-legal-basis.txt    | Identify legal basis            |
 | 6    | LawsuitRequests (25)        | lawsuit-step6-requests.txt       | Draft requests                  |
 

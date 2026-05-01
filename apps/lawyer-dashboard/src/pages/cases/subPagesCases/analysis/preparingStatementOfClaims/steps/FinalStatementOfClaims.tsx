@@ -4,7 +4,6 @@ import { IoCheckmarkOutline, IoCloudDownloadOutline } from'react-icons/io5';
 import {
  AlignmentType,
  Document,
- HeadingLevel,
  Packer,
  Paragraph,
  TextRun,
@@ -24,6 +23,59 @@ type TFinalStatementOfClaims = {
  caseId: string;
 };
 
+const asRecord = (value: unknown): Record<string, unknown> =>
+ value && typeof value ==='object' ? value as Record<string, unknown> : {};
+
+const asString = (value: unknown): string =>
+ typeof value ==='string' ? value : value == null ? '' : String(value);
+
+const asArray = <T,>(value: unknown): T[] => Array.isArray(value) ? value as T[] : [];
+
+const escapeHtml = (value: string): string =>
+ value
+ .replace(/&/g, '&amp;')
+ .replace(/</g, '&lt;')
+ .replace(/>/g, '&gt;')
+ .replace(/"/g, '&quot;')
+ .replace(/'/g, '&#039;');
+
+const splitParagraphs = (value: string): string[] =>
+ value
+ .split(/\n+/)
+ .map((paragraph) => paragraph.trim())
+ .filter(Boolean);
+
+const isLegacyFinalDraft = (value: string): boolean =>
+ Boolean(value) &&
+ !value.includes('وأعلنته بالآتي') &&
+ (
+ value.includes('بسم الله الرحمن الرحيم') ||
+ value.includes('أولاً: نوع الدعوى والاختصاص') ||
+ value.includes('ثانياً: أطراف الدعوى') ||
+ value.includes('ثالثاً: موضوع الدعوى') ||
+ value.includes('رابعاً: الوقائع') ||
+ value.includes('ثالثاً: موضوع الدعوى ووقائعها')
+ );
+
+const normalizeCourtName = (courtType: string): string =>
+ courtType || 'المحكمة المختصة';
+
+const createDocxParagraph = (
+ text: string,
+ options: { align?: (typeof AlignmentType)[keyof typeof AlignmentType]; bold?: boolean; size?: number; spacingAfter?: number } = {},
+) => new Paragraph({
+ alignment: options.align ?? AlignmentType.JUSTIFIED,
+ bidirectional: true,
+ spacing: { after: options.spacingAfter ?? 80, line: 320 },
+ children: [new TextRun({
+  text,
+  bold: options.bold ?? true,
+  font: 'Arial',
+  size: options.size ?? 30,
+  rightToLeft: true,
+ })],
+});
+
 const FinalStatementOfClaims = ({ caseId }: TFinalStatementOfClaims) => {
  const dispatch = useAppDispatch();
  const editorRef = useRef<HTMLDivElement>(null);
@@ -37,20 +89,91 @@ const FinalStatementOfClaims = ({ caseId }: TFinalStatementOfClaims) => {
  const stateLoading = useAppSelector((state) => state.preparingStatementOfClaimsSlice.loadingState);
  const isSaving = stateLoading?.isAutoSaving;
  const outputs = useAppSelector((state) => state.preparingStatementOfClaimsSlice.outputs);
- const lawsuitCaseType = outputs[1] as TCaseDetails | undefined;
- const lawsuitParties = outputs[2] as TLawsuitParties | undefined;
- const lawsuitSubjects = outputs[3] as TLawsuitSubjects | undefined;
- const lawsuitFact = outputs[4] as { factsNarrative: string } | undefined;
- const lawsuitLegalBasis = outputs[5] as TLawsuitLegalBasis | undefined;
- const lawsuitRequests = outputs[6] as TLawsuitRequests | undefined;
- const normalizedLawsuitRequests = useMemo(() => lawsuitRequests
- ? {
- ...lawsuitRequests,
- principalRequests: lawsuitRequests.principalRequests ?? [],
- subsidiaryRequests: lawsuitRequests.subsidiaryRequests ?? [],
- proceduralRequests: lawsuitRequests.proceduralRequests ?? [],
- }
- : undefined, [lawsuitRequests]);
+ const lawsuitCaseType = useMemo(() => {
+ const raw = asRecord(outputs[1]);
+ if (Object.keys(raw).length === 0) return undefined;
+ return {
+ caseId: asString(raw.caseId ?? raw.CaseId),
+ caseMainType: asString(raw.caseMainType ?? raw.case_main_type ?? raw.CaseMainType),
+ caseSubType: asString(raw.caseSubType ?? raw.case_sub_type ?? raw.CaseSubType),
+ courtType: asString(raw.courtType ?? raw.court_type ?? raw.CourtType),
+ proceduralNature: asString(raw.proceduralNature ?? raw.procedural_nature ?? raw.ProceduralNature),
+ isUrgentOrSummary: asString(raw.isUrgentOrSummary ?? raw.is_urgent_or_summary ?? raw.IsUrgentOrSummary),
+ justificationSummary: asString(raw.justificationSummary ?? raw.justification_summary ?? raw.JustificationSummary),
+ } as TCaseDetails;
+ }, [outputs]);
+
+ const lawsuitParties = useMemo(() => {
+ const raw = outputs[2];
+ const sourceParties = Array.isArray(raw) ? raw : (asRecord(raw).parties ?? asRecord(raw).Parties);
+ const parties = asArray<Record<string, unknown>>(sourceParties).map((party, index) => ({
+ id: asString(party.id ?? party.Id) || String(index + 1),
+ name: asString(party.name ?? party.Name),
+ role: asString(party.role ?? party.Role),
+ type: asString(party.type ?? party.Type),
+ legalCapacity: asString(party.legalCapacity ?? party.legal_capacity ?? party.LegalCapacity),
+ address: asString(party.address ?? party.Address),
+ nationalId: asString(party.nationalId ?? party.national_id ?? party.NationalId),
+ }));
+ return parties.length > 0 ? { caseId, parties } as TLawsuitParties : undefined;
+ }, [caseId, outputs]);
+
+ const lawsuitSubjects = useMemo(() => {
+ const raw = asRecord(outputs[3]);
+ if (Object.keys(raw).length === 0) return undefined;
+ return {
+ caseId: asString(raw.caseId ?? raw.CaseId),
+ subjectTitle: asString(raw.subjectTitle ?? raw.subject_title ?? raw.SubjectTitle),
+ subjectFullText: asString(raw.subjectFullText ?? raw.subject_full_text ?? raw.SubjectFullText),
+ } as TLawsuitSubjects;
+ }, [outputs]);
+
+ const lawsuitFact = useMemo(() => {
+ const raw = asRecord(outputs[4]);
+ const factsNarrative = asString(raw.factsNarrative ?? raw.facts_narrative ?? raw.FactsNarrative);
+ const fallbackNarrative = lawsuitSubjects?.subjectFullText ?? '';
+ const narrative = factsNarrative || fallbackNarrative;
+ return narrative ? { factsNarrative: narrative } : undefined;
+ }, [outputs, lawsuitSubjects]);
+
+ const lawsuitLegalBasis = useMemo(() => {
+ const raw = asRecord(outputs[5]);
+ if (Object.keys(raw).length === 0) return undefined;
+ const legalTexts = asArray<Record<string, unknown>>(raw.legalTexts ?? raw.legal_texts ?? raw.LegalTexts).map((text, index) => ({
+ id: asString(text.id ?? text.Id) || String(index + 1),
+ lawName: asString(text.lawName ?? text.law_name ?? text.LawName),
+ articleNumber: asString(text.articleNumber ?? text.article_number ?? text.ArticleNumber),
+ articleText: asString(text.articleText ?? text.article_text ?? text.ArticleText),
+ applicationNotes: asString(text.applicationNotes ?? text.application_notes ?? text.ApplicationNotes),
+ }));
+ const cassationRulings = asArray<Record<string, unknown>>(raw.cassationRulings ?? raw.cassation_rulings ?? raw.CassationRulings).map((ruling, index) => ({
+ id: asString(ruling.id ?? ruling.Id) || String(index + 1),
+ court: asString(ruling.court ?? ruling.Court),
+ appealNumber: asString(ruling.appealNumber ?? ruling.appeal_number ?? ruling.AppealNumber),
+ judicialYear: asString(ruling.judicialYear ?? ruling.judicial_year ?? ruling.JudicialYear),
+ sessionDate: asString(ruling.sessionDate ?? ruling.session_date ?? ruling.SessionDate),
+ rulingText: asString(ruling.rulingText ?? ruling.ruling_text ?? ruling.RulingText),
+ applicationNotes: asString(ruling.applicationNotes ?? ruling.application_notes ?? ruling.ApplicationNotes),
+ }));
+ return { caseId: asString(raw.caseId ?? raw.CaseId), legalTexts, cassationRulings } as TLawsuitLegalBasis;
+ }, [outputs]);
+
+ const normalizedLawsuitRequests = useMemo(() => {
+ const raw = asRecord(outputs[6]);
+ if (Object.keys(raw).length === 0) return undefined;
+ const normalizeRequests = (value: unknown) => asArray<Record<string, unknown>>(value).map((request, index) => ({
+ id: asString(request.id ?? request.Id) || String(index + 1),
+ requestNumber: Number(request.requestNumber ?? request.request_number ?? request.RequestNumber ?? index + 1),
+ requestText: asString(request.requestText ?? request.request_text ?? request.RequestText),
+ legalReference: asString(request.legalReference ?? request.legal_reference ?? request.LegalReference),
+ }));
+ return {
+ caseId: asString(raw.caseId ?? raw.CaseId),
+ principalRequests: normalizeRequests(raw.principalRequests ?? raw.principal_requests ?? raw.PrincipalRequests),
+ subsidiaryRequests: normalizeRequests(raw.subsidiaryRequests ?? raw.subsidiary_requests ?? raw.SubsidiaryRequests),
+ proceduralRequests: normalizeRequests(raw.proceduralRequests ?? raw.procedural_requests ?? raw.ProceduralRequests),
+ } as TLawsuitRequests;
+ }, [outputs]);
 
  const hasAllSections = Boolean(
  lawsuitCaseType &&
@@ -73,84 +196,47 @@ const FinalStatementOfClaims = ({ caseId }: TFinalStatementOfClaims) => {
  ...normalizedLawsuitRequests.subsidiaryRequests.map((item) => ({ ...item, type:'احتياطية' })),
  ...normalizedLawsuitRequests.proceduralRequests.map((item) => ({ ...item, type:'إجرائية' })),
  ];
+ const claimantName = escapeHtml(claimant?.name || '........................................................');
+ const claimantAddress = escapeHtml(claimant?.address || '........................................................');
+ const claimantNationalId = claimant?.nationalId ? `، ويحمل بطاقة رقم قومي / ${escapeHtml(claimant.nationalId)}` : '';
+ const defendantName = escapeHtml(defendant?.name || '........................................................');
+ const defendantAddress = escapeHtml(defendant?.address || '........................................................');
+ const courtName = escapeHtml(normalizeCourtName(lawsuitCaseType.courtType));
+ const claimSubject = escapeHtml(lawsuitCaseType.caseSubType || lawsuitCaseType.caseMainType || lawsuitSubjects.subjectTitle || 'دعوى');
+ const factsParagraphs = splitParagraphs(lawsuitFact.factsNarrative);
+ const legalParagraphs = lawsuitLegalBasis.legalTexts.flatMap((text, index) => [
+ `${index + 1}- ${text.lawName ? `${text.lawName} - ` : ''}${text.articleNumber ? `المادة ${text.articleNumber}: ` : ''}${text.articleText}`,
+ text.applicationNotes ? `ملاحظات التطبيق: ${text.applicationNotes}` : '',
+ ]).filter(Boolean);
+ const cassationParagraphs = lawsuitLegalBasis.cassationRulings.map((ruling, index) =>
+ `${index + 1}- ${ruling.court || 'محكمة النقض'}${ruling.appealNumber ? ` - الطعن رقم ${ruling.appealNumber}` : ''}${ruling.judicialYear ? ` لسنة ${ruling.judicialYear}` : ''}${ruling.sessionDate ? ` - جلسة ${ruling.sessionDate}` : ''}. ${ruling.rulingText}${ruling.applicationNotes ? ` ملاحظات التطبيق: ${ruling.applicationNotes}` : ''}`
+ );
+ const requestParagraphs = allRequests.map((request, index) =>
+ `${index + 1}- (${request.type}) ${request.requestText}${request.legalReference ? ` السند: ${request.legalReference}` : ''}`
+ );
+ const finalRequestText = requestParagraphs.length > 0
+ ? requestParagraphs.join(' ')
+ : `الحكم للطالب بطلباته في ${claimSubject}.`;
 
  return `
- <p style="text-align:center;font-size:18px;font-weight:700;margin-bottom:8px;">بسم الله الرحمن الرحيم</p>
- <p style="text-align:center;font-size:16px;font-weight:700;margin-bottom:4px;">${lawsuitCaseType.courtType ||'المحكمة المختصة'}</p>
- <p style="text-align:center;font-size:14px;color:#666;margin-bottom:16px;">${lawsuitCaseType.caseMainType} / ${lawsuitCaseType.caseSubType}</p>
-
- <h2 style="text-align:center;font-size:22px;font-weight:800;margin-bottom:20px;">صحيفة دعوى</h2>
-
- <div style="margin-bottom:16px;">
- <div style="margin-bottom:6px;">
- <span style="font-weight:700;">المدعي /</span>
- <span style="margin-right:8px;">${claimant?.name ??'---'}</span>
- <span style="color:#666;">(${claimant?.legalCapacity ?? claimant?.role ??'مدع'})</span>
+ <div style="font-family:Arial, sans-serif;color:#111;font-size:18px;font-weight:700;line-height:1.9;text-align:justify;direction:rtl;">
+ <p style="text-align:center;font-size:21px;margin:0 0 8px;">صحيفة ${claimSubject}</p>
+ <p style="margin:0 0 8px;">إنه في يوم ........................ الموافق .... / .... / ........ الساعة ........</p>
+ <p style="margin:0 0 8px;">بناءً على طلب السيد / ${claimantName}</p>
+ <p style="margin:0 0 8px;">المقيم / ${claimantAddress}${claimantNationalId}</p>
+ <p style="margin:0 0 8px;">ومحله المختار مكتب الأستاذ / ........................................................ المحامي.</p>
+ <p style="margin:0 0 8px;">أنا ................................ محضر ${courtName} قد انتقلت في تاريخه إلى حيث إقامة:</p>
+ <p style="margin:0 0 8px;">السيد / ${defendantName}</p>
+ <p style="margin:0 0 8px;">ويعلن في / ${defendantAddress}</p>
+ <p style="margin:0 0 12px;">مخاطباً مع / ........................................................</p>
+ <p style="text-align:center;font-size:20px;margin:0 0 12px;">وأعلنته بالآتي</p>
+ ${factsParagraphs.map((paragraph, index) => `<p style="margin:0 0 8px;">${index + 1}- ${escapeHtml(paragraph)}</p>`).join('')}
+ ${legalParagraphs.length > 0 ? legalParagraphs.map((paragraph) => `<p style="margin:0 0 8px;">${escapeHtml(paragraph)}</p>`).join('') : ''}
+ ${cassationParagraphs.length > 0 ? cassationParagraphs.map((paragraph) => `<p style="margin:0 0 8px;">${escapeHtml(paragraph)}</p>`).join('') : ''}
+ <p style="text-align:center;font-size:20px;margin:12px 0 8px;">بنـــاء عليــــه</p>
+ <p style="margin:0 0 8px;">أنا المحضر سالف الذكر قد انتقلت إلى حيث إقامة المعلن إليه وسلمته صورة من هذه الصحيفة للعلم بما جاء بها ونفاذ مفعولها قانوناً، وكلفته بالحضور أمام ${courtName}، وذلك بجلستها التي ستنعقد علناً في تمام الساعة التاسعة وما بعدها من صباح يوم ................ الموافق .... / .... / ........ لسماع الحكم بـ: ${escapeHtml(finalRequestText)}، مع إلزام المعلن إليه بالمصروفات ومقابل أتعاب المحاماة، وشمول الحكم بالنفاذ المعجل وبلا كفالة.</p>
+ <p style="text-align:left;margin:0;">ولأجل العلم /</p>
  </div>
- <div>
- <span style="font-weight:700;">ضــد /</span>
- <span style="margin-right:8px;">${defendant?.name ??'---'}</span>
- <span style="color:#666;">(${defendant?.legalCapacity ?? defendant?.role ??'مدعى عليه'})</span>
- </div>
- </div>
-
- <hr style="border:none;border-top:1px solid #ddd;margin:20px 0;" />
-
- <h3 style="font-size:17px;font-weight:700;margin-bottom:10px;">أولاً: نوع الدعوى والاختصاص</h3>
- <p style="margin-bottom:8px;">${lawsuitCaseType.justificationSummary}</p>
- <p style="margin-bottom:4px;"><strong>الطبيعة الإجرائية:</strong> ${lawsuitCaseType.proceduralNature}</p>
- <p style="margin-bottom:16px;"><strong>صفة الاستعجال:</strong> ${lawsuitCaseType.isUrgentOrSummary}</p>
-
- <h3 style="font-size:17px;font-weight:700;margin-bottom:10px;">ثانياً: أطراف الدعوى</h3>
- ${lawsuitParties.parties.map((party, index) => `
- <p style="margin-bottom:8px;">
- <strong>${index + 1}. ${party.name}</strong> - ${party.role} - ${party.legalCapacity}<br />
- العنوان: ${party.address ||'غير مذكور'}${party.nationalId ? `<br />الرقم القومي: ${party.nationalId}` :''}
- </p>
- `).join('')}
-
- <h3 style="font-size:17px;font-weight:700;margin-bottom:10px;">ثالثاً: موضوع الدعوى</h3>
- <p style="margin-bottom:4px;"><strong>${lawsuitSubjects.subjectTitle}</strong></p>
- <p style="margin-bottom:16px;">${lawsuitSubjects.subjectFullText}</p>
-
- <h3 style="font-size:17px;font-weight:700;margin-bottom:10px;">رابعاً: الوقائع</h3>
- ${lawsuitFact.factsNarrative
- .split(/\n+/)
- .map((paragraph) => paragraph.trim())
- .filter(Boolean)
- .map((paragraph) => `<p style="margin-bottom:8px;">${paragraph}</p>`)
- .join('')}
-
- <h3 style="font-size:17px;font-weight:700;margin-bottom:10px;">خامساً: الأساس القانوني</h3>
- ${lawsuitLegalBasis.legalTexts.map((text, index) => `
- <p style="margin-bottom:8px;">
- <strong>${index + 1}. ${text.lawName} - المادة ${text.articleNumber}</strong><br />
- ${text.articleText}${text.applicationNotes ? `<br />ملاحظات التطبيق: ${text.applicationNotes}` :''}
- </p>
- `).join('')}
-
- ${lawsuitLegalBasis.cassationRulings.length > 0 ? `
- <h3 style="font-size:17px;font-weight:700;margin-bottom:10px;">سادساً: أحكام النقض المؤيدة</h3>
- ${lawsuitLegalBasis.cassationRulings.map((ruling, index) => `
- <p style="margin-bottom:8px;">
- <strong>${index + 1}. ${ruling.court}</strong><br />
- الطعن رقم ${ruling.appealNumber} لسنة ${ruling.judicialYear} - جلسة ${ruling.sessionDate}<br />
- ${ruling.rulingText}${ruling.applicationNotes ? `<br />ملاحظات التطبيق: ${ruling.applicationNotes}` :''}
- </p>
- `).join('')}
- ` :''}
-
- <h3 style="font-size:17px;font-weight:700;margin-bottom:10px;">الطلبات</h3>
- <p style="margin-bottom:8px;">يلتمس الطالب الحكم له بالطلبات الآتية:</p>
- ${allRequests.map((request, index) => `
- <p style="margin-bottom:6px;padding-right:12px;">
- ${index + 1}. <strong>(${request.type})</strong> ${request.requestText}${request.legalReference ? `<br />السند: ${request.legalReference}` :''}
- </p>
- `).join('')}
-
- <hr style="border:none;border-top:1px solid #ddd;margin:20px 0;" />
- <p style="text-align:center;font-weight:700;margin-bottom:8px;">ولأجل العلم ،،،</p>
- <p style="text-align:center;color:#666;">تحريرًا في: ${new Date().toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' })}</p>
  `;
  }, [
  hasAllSections,
@@ -181,7 +267,7 @@ const FinalStatementOfClaims = ({ caseId }: TFinalStatementOfClaims) => {
  if (!editorRef.current || initialized) return;
 
  const draftHtml = outputs[7] as string | undefined;
- if (draftHtml) {
+ if (draftHtml && !isLegacyFinalDraft(draftHtml)) {
  editorRef.current.innerHTML = sanitizeHtml(draftHtml);
  setInitialized(true);
  } else if (documentHtml) {
@@ -198,26 +284,27 @@ const FinalStatementOfClaims = ({ caseId }: TFinalStatementOfClaims) => {
  }, [documentHtml]);
 
  const downloadDocx = async () => {
- const lines = (editorRef.current?.innerText ||'')
+ const lines = (editorRef.current?.innerText || '')
  .split('\n')
  .map((line) => line.trim())
  .filter(Boolean);
 
  const doc = new Document({
  sections: [{
- children: lines.map((line) => new Paragraph({
- alignment: AlignmentType.RIGHT,
- heading:
- line.startsWith('أولاً') ||
- line.startsWith('ثانياً') ||
- line.startsWith('ثالثاً') ||
- line.startsWith('رابعاً') ||
- line.startsWith('خامساً') ||
- line.startsWith('سادساً') ||
- line ==='الطلبات'
- ? HeadingLevel.HEADING_2
- : undefined,
- children: [new TextRun({ text: line, size: 24, font:'Arial' })],
+ properties: {
+ page: {
+ size: { width: 12191, height: 17123 },
+ margin: { top: 567, right: 1134, bottom: 425, left: 2268 },
+ },
+ },
+ children: lines.map((line) => createDocxParagraph(line, {
+ align: line.includes('وأعلنته بالآتي') || line.includes('بنـــاء عليــــه') || line.startsWith('صحيفة ')
+ ? AlignmentType.CENTER
+ : line.includes('ولأجل العلم')
+ ? AlignmentType.LEFT
+ : AlignmentType.JUSTIFIED,
+ size: line.startsWith('صحيفة ') ? 34 : 30,
+ spacingAfter: line.includes('وأعلنته بالآتي') || line.includes('بنـــاء عليــــه') ? 120 : 80,
  })),
  }],
  });

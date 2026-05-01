@@ -33,7 +33,7 @@ const LawsuitSubjects = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLa
  const { isLoading, hasFailed, errorMessage, retry, submit } = useAnalysisStep<TLawsuitSubjects>({
  caseId,
  stepType:'LawsuitSubjects',
- autoSubmit: true,
+ autoSubmit: !hydratedData,
  inputJson,
  onHydrate: (parsed) => {
  dispatch(hydrateStatementStep({ stepNumber: 3, result: parsed }));
@@ -61,9 +61,9 @@ const LawsuitSubjects = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLa
  hasFailed={hasFailed && !data}
  errorMessage={errorMessage}
  onRetry={retry}
- loadingTitle="جاري صياغة موضوع صحيفة الدعوى..."
- loadingSubtitle="يقوم النظام ببناء عنوان الدعوى ونص موضوعها بصورة قانونية منسقة ومتسقة مع بيانات القضية والأطراف."
- title={data ? "صياغة موضوع الصحيفة" : undefined}
+ loadingTitle="جاري صياغة موضوع الدعوى ووقائعها..."
+ loadingSubtitle="يقوم النظام بصياغة السرد الواقعي المعتمد للصحيفة باعتباره موضوع الدعوى ووقائعها في قسم واحد."
+ title={data ? "موضوع الدعوى ووقائعها" : undefined}
  actions={data ? (
  caseType ? (
  <Chip color="warning" variant="flat" size="sm">
@@ -76,11 +76,11 @@ const LawsuitSubjects = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLa
  <AnalysisStageSidebarCard
  label="وضع المرحلة"
  value="جاهز"
- description="بعد اعتماد هذا الجزء يمكن الانتقال مباشرة إلى ترتيب الوقائع."
+ description="هذا النص هو السرد المعتمد الذي سيظهر في الصحيفة كموضوع الدعوى ووقائعها."
  />
 
  <AnalysisStageActionButton
- label="الانتقال إلى الوقائع"
+ label="اعتماد النص والانتقال"
  icon={IoArrowBackOutline}
  onClick={handlePrimaryAction}
  disabled={isLoading}
@@ -98,13 +98,13 @@ const LawsuitSubjects = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLa
  >
   {data && (
   <>
-  <AnalysisStageSectionCard label="عنوان الموضوع">
+ <AnalysisStageSectionCard label="عنوان القسم">
   <p className="text-sm app-text-muted leading-relaxed whitespace-pre-wrap">
   {data.subjectTitle}
   </p>
   </AnalysisStageSectionCard>
 
-  <AnalysisStageSectionCard label="تفصيل الموضوع">
+ <AnalysisStageSectionCard label="موضوع الدعوى ووقائعها">
   <p className="text-sm app-text-muted leading-relaxed whitespace-pre-wrap">
   {data.subjectFullText}
   </p>

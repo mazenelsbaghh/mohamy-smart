@@ -439,7 +439,7 @@ namespace Lawyer.Application.Services
                 if (!accessResult.Succeeded)
                     return Result<LawSuitSubjectsResponseDto>.Error(accessResult.StatusCode, accessResult.Message);
 
-                var promptTemplatePath = Path.Combine(_contentRootPath, "wwwroot", "prompts", "المرحلة الثانية إعداد صحيفة الدعوى", "lawsuit-step4-subject.txt");
+                var promptTemplatePath = Path.Combine(_contentRootPath, "wwwroot", "prompts", "المرحلة الثانية إعداد صحيفة الدعوى", "lawsuit-step3-facts.txt");
                 if (!File.Exists(promptTemplatePath))
                     return Result<LawSuitSubjectsResponseDto>.Error(HttpStatusCode.InternalServerError, "Prompt file not found");
 
@@ -454,7 +454,7 @@ namespace Lawyer.Application.Services
 
                 var aiProvider = _aiProviderFactory.GetProvider();
                 var subjectsModel = await _aiProviderFactory.GetModelForStepAsync(AiStepType.LawsuitSubjects);
-                var systemPromptContent = await _promptCache.GetAsync(Path.Combine("المرحلة الثانية إعداد صحيفة الدعوى", "lawsuit-step4-subject.txt"), cancellationToken);
+                var systemPromptContent = await _promptCache.GetAsync(Path.Combine("المرحلة الثانية إعداد صحيفة الدعوى", "lawsuit-step3-facts.txt"), cancellationToken);
                 var aiResult = await aiProvider.SendChatCompletionAsync(
                     systemPromptContent,
                     finalPrompt,
@@ -472,8 +472,8 @@ namespace Lawyer.Application.Services
                     aiResult.Data.Usage,
                     CancellationToken.None);
 
-                var parsedResponse = ParseLawSuitSubjectsJson(aiResult.Data.Content);
-                if (parsedResponse == null)
+                var parsedFactsResponse = ParseLawSuitFactsJson(aiResult.Data.Content);
+                if (parsedFactsResponse == null)
                     return Result<LawSuitSubjectsResponseDto>.Error(HttpStatusCode.InternalServerError, "فشل في تحليل استجابة موضوع الدعوى");
 
                 // Delete existing subjects for this case
@@ -483,20 +483,40 @@ namespace Lawyer.Application.Services
                 foreach (var existing in existingRecords)
                     _unitOfWork.Repository<Core.Models.LawSuitSubject>().Delete(existing);
 
+                var existingFacts = await _unitOfWork.Repository<Core.Models.LawSuitFacts>()
+                    .WhereAsync(x => x.CaseId == request.CaseId, cancellationToken);
+
+                foreach (var existing in existingFacts)
+                    _unitOfWork.Repository<Core.Models.LawSuitFacts>().Delete(existing);
+
                 // Save new subject
                 var lawSuitSubject = new Core.Models.LawSuitSubject
                 {
                     CaseId = request.CaseId,
-                    SubjectTitle = parsedResponse.SubjectTitle,
-                    SubjectFullText = parsedResponse.SubjectFullText
+                    SubjectTitle = "موضوع الدعوى ووقائعها",
+                    SubjectFullText = parsedFactsResponse.FactsNarrative
                 };
 
                 await _unitOfWork.Repository<Core.Models.LawSuitSubject>().AddAsync(lawSuitSubject);
+
+                var lawSuitFacts = new Core.Models.LawSuitFacts
+                {
+                    CaseId = request.CaseId,
+                    FactsNarrative = parsedFactsResponse.FactsNarrative
+                };
+
+                await _unitOfWork.Repository<Core.Models.LawSuitFacts>().AddAsync(lawSuitFacts);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
 
                 _logger.LogInformation("LawSuit Subjects saved for Case ID: {CaseId}", request.CaseId);
 
-                parsedResponse.CaseId = request.CaseId;
+                var parsedResponse = new LawSuitSubjectsResponseDto
+                {
+                    CaseId = request.CaseId,
+                    SubjectTitle = lawSuitSubject.SubjectTitle,
+                    SubjectFullText = lawSuitSubject.SubjectFullText
+                };
+
                 return Result<LawSuitSubjectsResponseDto>.Success(parsedResponse, "تم تحديد موضوع الدعوى بنجاح");
             }
             catch (Exception ex)

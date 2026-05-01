@@ -33,11 +33,11 @@ const LawsuitParties = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLaw
  [caseId, selectedFacts, caseType?.caseMainType, caseType?.caseSubType, caseType?.courtType],
  );
 
- const { isLoading, hasFailed, errorMessage, submit, retry } = useAnalysisStep<TLawsuitParties>({
- caseId,
- stepType:'LawsuitParties',
- autoSubmit: true,
- inputJson,
+	 const { isLoading, hasFailed, errorMessage, submit, retry } = useAnalysisStep<TLawsuitParties>({
+	 caseId,
+	 stepType:'LawsuitParties',
+	 autoSubmit: !lawsuitParties,
+	 inputJson,
  onHydrate: (parsed) => {
  dispatch(hydrateStatementStep({ stepNumber: 2, result: parsed }));
  },

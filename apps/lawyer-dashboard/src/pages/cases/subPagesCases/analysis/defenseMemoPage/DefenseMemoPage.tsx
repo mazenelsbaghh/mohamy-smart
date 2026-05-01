@@ -103,13 +103,14 @@ const DefenseMemoPage = () => {
         job?.status === 'Completed' || job?.status === 'Processing' || job?.status === 'Queued';
 
       if (outputs[5]) return 4;
-      if (outputs[4]) return 4;
-      if (outputs[2]) return 3;
+      if (outputs[4]) return 3;
+      if (outputs[3]) return 2;
+      if (outputs[2]) return 2;
       if (outputs[1]) return 1;
 
       if (isActive((jobs as Record<string, { status?: string } | undefined>).DefenseMemoDraft)) return 4;
       if (isActive((jobs as Record<string, { status?: string } | undefined>).FinalRequirements)) return 3;
-      if (isActive((jobs as Record<string, { status?: string } | undefined>).GenerateDefenses)) return 2;
+      if (isActive((jobs as Record<string, { status?: string } | undefined>).GenerateDefenses) || isActive((jobs as Record<string, { status?: string } | undefined>).AnalysisDefense)) return 2;
       if (isActive((jobs as Record<string, { status?: string } | undefined>).FactAnalysis)) return 1;
 
       return 0;
@@ -121,6 +122,7 @@ const DefenseMemoPage = () => {
 
       if (outputs[5]) return 4;
       if (outputs[4]) return 3;
+      if (outputs[3]) return 2;
       if (outputs[2]) return 2;
       if (outputs[1]) return 1;
 

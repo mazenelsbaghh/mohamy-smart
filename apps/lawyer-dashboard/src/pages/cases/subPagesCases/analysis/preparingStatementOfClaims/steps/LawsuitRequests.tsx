@@ -11,7 +11,7 @@ import { hydrateStatementStep } from"../../../../../../redux/analysis/preparingS
 import type { TLawsuitRequests } from"../../../../../../redux/shared/workflowTypes";
 import { buildAnalysisInput } from"../../../../../../components/analysisWorkflow/analysisFacts";
 import { IoArrowBackOutline } from"react-icons/io5";
-import { useAppDispatch } from"../../../../../../hooks/reduxHooks";
+import { useAppDispatch, useAppSelector } from"../../../../../../hooks/reduxHooks";
 
 type LawsuitRequestsProps = {
  nextStep: () => void;
@@ -20,8 +20,43 @@ type LawsuitRequestsProps = {
  selectedFacts?: string[];
 };
 
+const asRecord = (value: unknown): Record<string, unknown> =>
+ value && typeof value ==='object' ? value as Record<string, unknown> : {};
+
+const asArray = (value: unknown): Record<string, unknown>[] =>
+ Array.isArray(value) ? value as Record<string, unknown>[] : [];
+
+const asString = (value: unknown): string =>
+ typeof value ==='string' ? value : value == null ? '' : String(value);
+
+const normalizeRequestItems = (value: unknown) => asArray(value).map((request, index) => ({
+ id: asString(request.id ?? request.Id) || String(index + 1),
+ requestNumber: Number(request.requestNumber ?? request.request_number ?? request.RequestNumber ?? index + 1),
+ requestText: asString(request.requestText ?? request.request_text ?? request.RequestText),
+ legalReference: asString(request.legalReference ?? request.legal_reference ?? request.LegalReference),
+}));
+
+const normalizeRequests = (value: unknown, caseId: string): TLawsuitRequests | null => {
+ const raw = asRecord(value);
+ if (Object.keys(raw).length === 0) return null;
+
+ return {
+ caseId: asString(raw.caseId ?? raw.CaseId) || caseId,
+ principalRequests: normalizeRequestItems(raw.principalRequests ?? raw.principal_requests ?? raw.PrincipalRequests),
+ subsidiaryRequests: normalizeRequestItems(raw.subsidiaryRequests ?? raw.subsidiary_requests ?? raw.SubsidiaryRequests),
+ proceduralRequests: normalizeRequestItems(raw.proceduralRequests ?? raw.procedural_requests ?? raw.ProceduralRequests),
+ };
+};
+
 const LawsuitRequests = ({ caseId, nextStep, caseType, selectedFacts = [] }: LawsuitRequestsProps) => {
- const dispatch = useAppDispatch();
+	 const dispatch = useAppDispatch();
+	 const rawHydratedData = useAppSelector(
+	 (state) => state.preparingStatementOfClaimsSlice.outputs[6],
+	 );
+ const hydratedData = useMemo(
+ () => normalizeRequests(rawHydratedData, caseId),
+ [rawHydratedData, caseId],
+ );
 
  const inputJson = useMemo(
  () =>
@@ -42,27 +77,21 @@ const LawsuitRequests = ({ caseId, nextStep, caseType, selectedFacts = [] }: Law
 
  const {
  isLoading,
- hasFailed,
- errorMessage,
- result: lawsuitRequests,
- submit,
- retry,
- } = useAnalysisStep<TLawsuitRequests>({
- caseId,
- stepType:'LawsuitRequests',
- autoSubmit: true,
- inputJson,
- onHydrate,
- });
+	 hasFailed,
+	 errorMessage,
+	 result,
+	 submit,
+	 retry,
+	 } = useAnalysisStep<TLawsuitRequests>({
+	 caseId,
+	 stepType:'LawsuitRequests',
+	 autoSubmit: !hydratedData,
+	 inputJson,
+	 onHydrate,
+	 });
 
- const normalizedRequests = lawsuitRequests
- ? {
- ...lawsuitRequests,
- principalRequests: lawsuitRequests.principalRequests ?? [],
- subsidiaryRequests: lawsuitRequests.subsidiaryRequests ?? [],
- proceduralRequests: lawsuitRequests.proceduralRequests ?? [],
- }
- : null;
+	 const lawsuitRequests = hydratedData ?? result;
+ const normalizedRequests = normalizeRequests(lawsuitRequests, caseId);
 
  const requestGroups = normalizedRequests
  ? [
@@ -74,8 +103,8 @@ const LawsuitRequests = ({ caseId, nextStep, caseType, selectedFacts = [] }: Law
 
  return (
  <UnifiedStepShell
- isLoading={isLoading}
- hasFailed={hasFailed}
+	 isLoading={isLoading && !lawsuitRequests}
+	 hasFailed={hasFailed && !lawsuitRequests}
  errorMessage={errorMessage}
  onRetry={retry}
  loadingTitle="جاري تنسيق الطلبات الختامية..."

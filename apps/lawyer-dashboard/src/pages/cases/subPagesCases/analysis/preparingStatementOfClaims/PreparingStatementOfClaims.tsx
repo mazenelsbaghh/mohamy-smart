@@ -2,12 +2,12 @@ import { useCallback } from 'react';
 import { Container } from '@mohamy/shared-ui';
 import { Tabs, Tab } from '@heroui/react';
 import { sileo } from 'sileo';
+import { useAppDispatch } from '../../../../../hooks/reduxHooks';
 import { useWorkflowOrchestrator } from '../../../../../hooks/useWorkflowOrchestrator';
 import { abandonStatementOfClaimsWorkflow, resetStatementOfClaims, restoreStatementSnapshot, statementOfClaimsThunks } from '../../../../../redux/analysis/preparingStatementOfClaims/preparingStatementOfClaimsUnifiedSlice';
 import LawsuitCaseType from './steps/LawsuitCaseType';
 import LawsuitParties from './steps/LawsuitParties';
 import LawsuitSubjects from './steps/LawsuitSubjects';
-import LawsuitFacts from './steps/LawsuitFacts';
 import LawsuitLegalBasis from './steps/LawsuitLegalBasis';
 import LawsuitRequests from './steps/LawsuitRequests';
 import FinalStatementOfClaims from './steps/FinalStatementOfClaims';
@@ -53,9 +53,28 @@ const STATEMENT_COMPUTE_MAX_STEP = (
   return 0;
 };
 
+const STATEMENT_VISIBLE_STEP_INDEXES = [0, 1, 2, 3, 5, 6, 7] as const;
+const STATEMENT_VISIBLE_STEP_DEFS = STATEMENT_VISIBLE_STEP_INDEXES.map((stepIndex) => {
+  const step = STATEMENT_OF_CLAIMS_STEP_DEFS[stepIndex];
+  return stepIndex === 3 ? { ...step, label: 'موضوع الدعوى ووقائعها' } : step;
+});
+
+const mapStatementStepToVisibleIndex = (step: number) => {
+  if (step <= 3) return step;
+  if (step === 4) return 3;
+  return step - 1;
+};
+
+const mapStatementStepToVisibleStep = (step: number) => {
+  if (step === 4) return 3;
+  return step;
+};
+
 const PreparingStatementOfClaims = () => {
+  const dispatch = useAppDispatch();
   const {
     active,
+    setActive,
     nextStep,
     handleTabChange,
     caseId,
@@ -98,6 +117,32 @@ const PreparingStatementOfClaims = () => {
     handleAdvanceStage(active, active + 1);
   }, [active, handleAdvanceStage]);
 
+  const advanceToNextVisibleStep = useCallback(async () => {
+    if (active !== 3) {
+      await handleAdvanceStage(active, active + 1);
+      return;
+    }
+
+    const workflowId = workflowState.workflowId;
+    if (!workflowId) {
+      setActive(5);
+      return;
+    }
+
+    try {
+      await dispatch(statementOfClaimsThunks.advanceStage({ workflowId, fromStep: 3, toStep: 4 })).unwrap();
+      await dispatch(statementOfClaimsThunks.advanceStage({ workflowId, fromStep: 4, toStep: 5 })).unwrap();
+      setActive(5);
+    } catch (error) {
+      sileo.error({ title: typeof error === 'string' ? error : 'تعذر الانتقال إلى الأساس القانوني' });
+    }
+  }, [active, dispatch, handleAdvanceStage, setActive, workflowState.workflowId]);
+
+  const visibleActive = mapStatementStepToVisibleIndex(active);
+  const selectedVisibleStep = mapStatementStepToVisibleStep(active);
+  const visibleCurrentAccessibleStep = mapStatementStepToVisibleIndex(workflowState.currentAccessibleStep);
+  const visibleLastCompletedStep = mapStatementStepToVisibleIndex(workflowState.lastCompletedStep ?? 0);
+
   const renderedSteps = [
       <AnalysisFactsSelectionStep
       key="facts"
@@ -114,8 +159,8 @@ const PreparingStatementOfClaims = () => {
     />,
       <LawsuitCaseType key="lawsuit-case-type" caseId={safeCaseId} nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <LawsuitParties key="lawsuit-parties" caseId={safeCaseId} nextStep={advanceToNextStep} caseType={caseType} selectedFacts={selectedFacts} />,
-    <LawsuitSubjects key="lawsuit-subjects" caseId={safeCaseId} nextStep={advanceToNextStep} caseType={caseType} selectedFacts={selectedFacts} />,
-    <LawsuitFacts key="lawsuit-facts" caseId={safeCaseId} nextStep={advanceToNextStep} caseType={caseType} selectedFacts={selectedFacts} />,
+    <LawsuitSubjects key="lawsuit-subjects" caseId={safeCaseId} nextStep={advanceToNextVisibleStep} caseType={caseType} selectedFacts={selectedFacts} />,
+    null,
     <LawsuitLegalBasis key="lawsuit-legal-basis" caseId={safeCaseId} nextStep={advanceToNextStep} caseType={caseType} selectedFacts={selectedFacts} />,
     <LawsuitRequests key="lawsuit-requests" caseId={safeCaseId} nextStep={advanceToNextStep} caseType={caseType} selectedFacts={selectedFacts} />,
     <FinalStatementOfClaims key="final-statement-of-claims" caseId={safeCaseId} />,
@@ -129,7 +174,7 @@ const PreparingStatementOfClaims = () => {
             <SmartAnalysisLoader
               title="جاري تجهيز مساحة العمل"
               subtitle="يرجى الانتظار بينما نقوم باسترجاع بيانات القضية..."
-              steps={STATEMENT_OF_CLAIMS_STEP_DEFS.map(s => s.label)}
+              steps={STATEMENT_VISIBLE_STEP_DEFS.map(s => s.label)}
               activeStepIndex={0}
             />
           </div>
@@ -154,40 +199,43 @@ const PreparingStatementOfClaims = () => {
           )}
 
           <WorkflowStepBar
-            steps={STATEMENT_OF_CLAIMS_STEP_DEFS}
-            active={active}
+            steps={STATEMENT_VISIBLE_STEP_DEFS}
+            active={visibleActive}
             workflowTitle="إعداد الصحيفة"
             isAutoSaving={isAutoSaving}
             autoSaveError={autoSaveError}
             lastSavedAt={lastSavedAt}
             onManualSave={handleManualSave}
             isSavingStep={isSavingStep}
-            currentAccessibleStep={workflowState.currentAccessibleStep}
-            lastCompletedStep={workflowState.lastCompletedStep}
+            currentAccessibleStep={visibleCurrentAccessibleStep}
+            lastCompletedStep={visibleLastCompletedStep}
           />
 
           <div className="w-full">
             <Tabs
               aria-label="مراحل إعداد صحيفة الدعوى"
-              selectedKey={active.toString()}
+              selectedKey={selectedVisibleStep.toString()}
               onSelectionChange={handleTabChange}
               classNames={tabsClassNames}
               {...tabProps}
             >
-              {STATEMENT_OF_CLAIMS_STEP_DEFS.map((step, index) => (
+              {STATEMENT_VISIBLE_STEP_INDEXES.map((stepIndex, visibleIndex) => {
+                const step = STATEMENT_VISIBLE_STEP_DEFS[visibleIndex];
+                return (
                 <Tab
-                  key={index.toString()}
+                  key={stepIndex.toString()}
                   title={
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{step.icon}</span>
                       <span className="hidden md:inline text-nowrap">{step.label}</span>
                     </div>
                   }
-                  isDisabled={!isClickableTab(index)}
+                  isDisabled={!isClickableTab(stepIndex)}
                 >
-                  {renderedSteps[index]}
+                  {renderedSteps[stepIndex]}
                 </Tab>
-              ))}
+                );
+              })}
             </Tabs>
           </div>
         </div>
