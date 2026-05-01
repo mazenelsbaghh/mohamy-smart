@@ -31,8 +31,8 @@ namespace Lawyer.Application.Services
         // Required sections in AI output — used for validation
         private static readonly string[] RequiredSections = new[]
         {
-            "عنوان_العقد", "أطراف_العقد", "موضوع_العقد",
-            "البنود_الأساسية", "أحكام_عامة", "التوقيعات"
+            "عنوان_العقد", "افتتاحية_وأطراف", "البند_التمهيدي",
+            "بنود_العقد", "التوقيعات"
         };
 
         private const int MaxRetryAttempts = 1;

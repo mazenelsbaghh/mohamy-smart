@@ -36,7 +36,6 @@ FIXED JSON SCHEMA (DO NOT MODIFY):
     {
       "defense_title": "string",
       "basis_from_case": "string",
-      "scope": "string",
       "strength": "Strong | Medium | Weak"
     }
   ],
@@ -44,7 +43,6 @@ FIXED JSON SCHEMA (DO NOT MODIFY):
     {
       "defense_title": "string",
       "basis_from_case": "string",
-      "scope": "string",
       "strength": "Strong | Medium | Weak"
     }
   ],
@@ -52,7 +50,6 @@ FIXED JSON SCHEMA (DO NOT MODIFY):
     {
       "defense_title": "string",
       "basis_from_case": "string",
-      "scope": "string",
       "strength": "Strong | Medium | Weak"
     }
   ]
@@ -85,11 +82,6 @@ basis_from_case:
   - evidence_map limitations
   - defendants_positions
 - Must not include speculation or legal argumentation.
-
-scope:
-- MUST be written in formal Arabic and be one of:
-  - "على المتهم وحده"
-  - "على جميع المتهمين"
 
 strength:
 - MUST be exactly one of the following English values:

@@ -129,7 +129,7 @@ FIXED JSON SCHEMA (DO NOT MODIFY KEYS OR STRUCTURE):
 FIELD PURPOSE CLARIFICATION:
 
 introduction:
-- Legal framing of the defense, its scope, and relevance to the case.
+- Legal framing of the defense and its relevance to the case.
 
 factual_basis:
 - Extraction of ONLY facts relevant to this defense, strictly from facts_text.

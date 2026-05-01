@@ -14,6 +14,16 @@ type ContractSection = {
 };
 
 const normalizeSectionTitle = (title: string) => title.replace(/_/g,' ').trim();
+const CONTRACT_MARKER_TITLES = new Set([
+ 'عنوان العقد',
+ 'افتتاحية وأطراف',
+ 'البند التمهيدي',
+ 'بنود العقد',
+ 'التوقيعات',
+]);
+
+const isClauseHeading = (value: string) =>
+ /^(?:البند\s+(?:التمهيدي|الأول|الثاني|الثالث|الرابع|الخامس|السادس|السابع|الثامن|التاسع|العاشر|الحادي عشر|الثاني عشر|الثالث عشر|الرابع عشر|الخامس عشر|السادس عشر|السابع عشر|الثامن عشر|التاسع عشر|العشرون|الحادي والعشرون|الثاني والعشرون|الثالث والعشرون|الرابع والعشرون|الخامس والعشرون))$/.test(value.trim());
 
 const parseContractSections = (content: string): ContractSection[] => {
  const sections: ContractSection[] = [];
@@ -40,15 +50,15 @@ const parseContractSections = (content: string): ContractSection[] => {
 const renderContractLine = (line: string, index: number) => {
  const trimmed = line.trim();
  if (!trimmed) return null;
- const isClause = /^(?:البند\s+)?(?:الأول|الثاني|الثالث|الرابع|الخامس|السادس|السابع|الثامن|التاسع|العاشر|\d+[).-])/.test(trimmed);
- const isSignature = /^(?:الطرف|التوقيع|التاريخ)\s*:/.test(trimmed);
+ const isClause = isClauseHeading(trimmed);
+ const isSignature = /^(?:الطرف|الاسـ|الاسم|التوقيـ|التوقيع|الرقم القومي|الشاهد|الشهـ|الشهود)/.test(trimmed);
  return (
  <p
  key={`${trimmed}-${index}`}
  className={[
- 'whitespace-pre-wrap text-[1.08rem] leading-9 text-[var(--text-color)] print:text-black',
- isClause ?'mt-4 font-bold text-[var(--title-color)]' :'',
- isSignature ?'font-semibold' :'',
+ 'whitespace-pre-wrap text-[1.32rem] font-bold leading-[2.15] text-black print:text-black md:text-[1.45rem]',
+ isClause ?'mt-4 text-center underline underline-offset-4 leading-10' :'text-justify',
+ isSignature ?'text-center leading-[1.9]' :'',
  ].filter(Boolean).join(' ')}
  >
  {trimmed}
@@ -175,27 +185,55 @@ const ContractDetails: React.FC = () => {
  <Card className="print:shadow-none print:border-none shadow-sm border app-border dark:border-zinc-800">
  <CardBody className="p-0">
  <article
- className="bg-[color-mix(in_srgb,var(--bg-color)_50%,white)] px-5 py-6 dark:bg-zinc-950 print:bg-white md:px-10 md:py-10"
+ className="contract-print-surface bg-[color-mix(in_srgb,var(--bg-color)_50%,white)] px-5 py-6 dark:bg-zinc-950 print:bg-white md:px-10 md:py-10"
  dir="rtl"
  >
- <div className="mx-auto max-w-4xl bg-white px-6 py-8 shadow-sm ring-1 ring-black/5 dark:bg-zinc-900 dark:ring-white/10 print:shadow-none print:ring-0 md:px-12 md:py-12">
+ <style>{`
+ @media print {
+   @page { size: A4; margin: 12mm 18mm 14mm; }
+   body { background: white !important; }
+   .contract-print-footer { position: fixed; bottom: 5mm; left: 18mm; right: 18mm; display: flex !important; justify-content: space-between; font-family: "Traditional Arabic", Arial, sans-serif; font-size: 16pt; font-weight: 700; color: #000; }
+   .contract-print-page { box-shadow: none !important; border: 0 !important; padding: 0 !important; max-width: none !important; }
+ }
+ `}</style>
+ <div className="contract-print-page relative mx-auto max-w-4xl bg-white px-6 py-8 shadow-sm ring-1 ring-black/5 dark:bg-zinc-900 dark:ring-white/10 print:shadow-none print:ring-0 md:px-12 md:py-12">
  {sections.map((section, sectionIndex) => {
  const isTitle = section.title ==='عنوان العقد' || sectionIndex === 0;
+ const isMarkerOnly = CONTRACT_MARKER_TITLES.has(section.title);
  return (
- <section key={`${section.title}-${sectionIndex}`} className={sectionIndex === 0 ?'' :'mt-8 border-t app-border pt-6 print:border-gray-300'}>
- <h2 className={[
- 'font-bold text-[var(--title-color)] print:text-black',
- isTitle ?'mb-6 text-center text-2xl leading-10' :'mb-4 text-right text-xl',
- ].join(' ')}
- >
+ <section key={`${section.title}-${sectionIndex}`} className={sectionIndex === 0 ?'' :'mt-2'}>
+ {!isMarkerOnly && (
+ <h2 className="mb-3 text-center text-[1.35rem] font-bold text-black underline underline-offset-4 print:text-black">
  {section.title}
  </h2>
+ )}
  <div className={isTitle ?'text-center' :'text-right'}>
- {section.lines.map(renderContractLine)}
+ {section.lines.map((line, lineIndex) => {
+ const trimmed = line.trim();
+ if (!trimmed) return null;
+ if (isTitle) {
+ return (
+ <p
+ key={`${trimmed}-${lineIndex}`}
+ className={[
+ 'text-center font-bold text-black print:text-black',
+ lineIndex === 0 ?'text-[2rem] leading-[1.8] md:text-[2.35rem]' :'text-[1.55rem] leading-[1.7] md:text-[1.75rem]',
+ ].join(' ')}
+ >
+ {trimmed}
+ </p>
+ );
+ }
+ return renderContractLine(line, lineIndex);
+ })}
  </div>
  </section>
  );
  })}
+ <div className="contract-print-footer pointer-events-none mt-10 hidden border-t border-transparent pt-3 text-[1rem] font-bold text-black print:flex">
+ <span>الطرف الثاني</span>
+ <span>الطرف الأول</span>
+ </div>
  </div>
  </article>
  </CardBody>
