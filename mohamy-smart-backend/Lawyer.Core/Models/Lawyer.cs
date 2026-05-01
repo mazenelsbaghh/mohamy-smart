@@ -21,6 +21,7 @@ namespace Lawyer.Core.Models
 		public ICollection<LawyerSubscription> LawyerSubscriptions { get; set; } = new List<LawyerSubscription>();
 		public ICollection<Client> Clients { get; set; } = new List<Client>();
 		public ICollection<Review> Reviews { get; set; } = new List<Review>();
+		public ICollection<PowerOfAttorney> PowerOfAttorneys { get; set; } = new List<PowerOfAttorney>();
 
 	}
 }

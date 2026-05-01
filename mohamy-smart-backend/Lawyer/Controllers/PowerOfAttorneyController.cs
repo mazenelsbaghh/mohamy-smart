@@ -49,6 +49,9 @@ namespace Lawyer.Controllers
             if (!validationResult.IsValid)
                 return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).FirstOrDefault());
 
+            if (!dto.ClientId.HasValue || dto.ClientId.Value == Guid.Empty)
+                return BadRequest("معرف العميل مطلوب");
+
             var isAdmin = User.IsInRole("Admin");
             if (!isAdmin)
             {
@@ -56,11 +59,45 @@ namespace Lawyer.Controllers
                 var lawyerResult = await _lawyerIdResolver.ResolveAsync(userContext, null, cancellationToken);
                 if (!lawyerResult.Succeeded)
                     return CreateResponse(lawyerResult);
-                if (!await ClientBelongsToLawyerAsync(dto.ClientId, lawyerResult.Data))
+                if (!await ClientBelongsToLawyerAsync(dto.ClientId.Value, lawyerResult.Data))
                     return Forbid();
             }
 
             var result = await _poaService.CreatePowerOfAttorneyAsync(dto);
+            if (!result.Succeeded)
+                return CreateResponse(result);
+
+            return CreateResponse(result);
+        }
+
+        [HttpPost("mine")]
+        public async Task<IActionResult> CreateMine([FromBody] PowerOfAttorneyDto dto, CancellationToken cancellationToken)
+        {
+            var validationResult = await _validator.ValidateAsync(dto);
+            if (!validationResult.IsValid)
+                return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).FirstOrDefault());
+
+            var userContext = _userContextProvider.GetCurrentContext();
+            var lawyerResult = await _lawyerIdResolver.ResolveAsync(userContext, null, cancellationToken);
+            if (!lawyerResult.Succeeded)
+                return CreateResponse(lawyerResult);
+
+            var result = await _poaService.CreateLawyerPowerOfAttorneyAsync(dto, lawyerResult.Data);
+            if (!result.Succeeded)
+                return CreateResponse(result);
+
+            return CreateResponse(result);
+        }
+
+        [HttpGet("mine")]
+        public async Task<IActionResult> GetMine(CancellationToken cancellationToken)
+        {
+            var userContext = _userContextProvider.GetCurrentContext();
+            var lawyerResult = await _lawyerIdResolver.ResolveAsync(userContext, null, cancellationToken);
+            if (!lawyerResult.Succeeded)
+                return CreateResponse(lawyerResult);
+
+            var result = await _poaService.GetPowerOfAttorneysByLawyerAsync(lawyerResult.Data);
             if (!result.Succeeded)
                 return CreateResponse(result);
 
@@ -104,7 +141,9 @@ namespace Lawyer.Controllers
                 if (poa == null)
                     return NotFound();
 
-                if (!await ClientBelongsToLawyerAsync(poa.ClientId, lawyerResult.Data))
+                var ownsClientPoa = poa.ClientId.HasValue && await ClientBelongsToLawyerAsync(poa.ClientId.Value, lawyerResult.Data);
+                var ownsLawyerPoa = poa.LawyerId.HasValue && poa.LawyerId.Value == lawyerResult.Data;
+                if (!ownsClientPoa && !ownsLawyerPoa)
                     return Forbid();
             }
 

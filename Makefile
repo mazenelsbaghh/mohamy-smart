@@ -406,3 +406,5 @@ push: ## Push all changes to GitHub (uses MSG="Latest update" by default)
 	git commit -m "$(MSG)" || true
 	git pull --rebase origin main
 	git push origin main
+	
+# docker system prune -a

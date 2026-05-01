@@ -4,8 +4,11 @@ namespace Lawyer.Core.Models
 {
     public class PowerOfAttorney : BaseEntity<Guid>
     {
-        public Guid ClientId { get; set; }
-        public Client Client { get; set; } = null!;
+        public Guid? ClientId { get; set; }
+        public Client? Client { get; set; }
+
+        public Guid? LawyerId { get; set; }
+        public Lawyer? Lawyer { get; set; }
 
         public string Number { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;

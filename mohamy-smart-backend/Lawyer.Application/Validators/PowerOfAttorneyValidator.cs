@@ -7,8 +7,6 @@ namespace Lawyer.Application.Validators
     {
         public CreatePowerOfAttorneyValidator()
         {
-            RuleFor(x => x.ClientId)
-                .NotEmpty().WithMessage("معرف العميل مطلوب");
             RuleFor(x => x.Number)
                 .NotEmpty().WithMessage("رقم التوكيل مطلوب")
                 .MaximumLength(100).WithMessage("رقم التوكيل يجب ألا يتجاوز 100 حرف");

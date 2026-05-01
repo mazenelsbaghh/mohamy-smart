@@ -1,0 +1,120 @@
+.power-attorneys-page {
+    --pa-card: var(--white-color);
+    --pa-muted: #F9F9F9;
+    --pa-text: var(--title-color);
+    --pa-subtle: var(--text-color);
+    --pa-outline: var(--opacity-color);
+}
+
+.dark .power-attorneys-page {
+    --pa-card: rgba(255, 255, 255, 0.05);
+    --pa-muted: rgba(255, 255, 255, 0.04);
+}
+
+.pa-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.pa-subtitle {
+    color: var(--pa-subtle);
+    font-size: 0.85rem;
+    margin-top: -0.35rem;
+}
+
+.pa-form,
+.pa-card {
+    background: var(--pa-card);
+    border: 1px solid var(--pa-outline);
+    border-radius: var(--sm-radius);
+}
+
+.pa-form {
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.pa-form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.pa-form-actions,
+.pa-table-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.pa-form-actions {
+    margin-top: 1rem;
+}
+
+.pa-card {
+    overflow: hidden;
+}
+
+.pa-title {
+    font-weight: 700;
+    color: var(--pa-text);
+}
+
+.pa-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3rem;
+    border-radius: 9999px;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.pa-badge-active {
+    color: #1a7a30;
+    background: rgba(52, 191, 73, 0.1);
+}
+
+.pa-badge-canceled {
+    color: #BA1A1A;
+    background: rgba(186, 26, 26, 0.08);
+}
+
+.pa-empty {
+    min-height: 18rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: var(--pa-subtle);
+    text-align: center;
+}
+
+.pa-empty svg {
+    font-size: 3rem;
+    color: var(--main-color);
+    opacity: 0.45;
+}
+
+.pa-empty button {
+    color: var(--main-color);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+@media (min-width: 768px) {
+    .pa-form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .pa-header {
+        flex-direction: column;
+    }
+}

@@ -14,23 +14,39 @@ export type TClientTransaction = {
  createdAt: string;
 };
 
+type ApiResult<T> = {
+ data?: T;
+};
+
+const unwrapData = <T,>(payload: T | ApiResult<T>): T => {
+ if (payload && typeof payload ==='object' && 'data' in payload) {
+ return (payload as ApiResult<T>).data as T;
+ }
+ return payload as T;
+};
+
+const unwrapList = <T,>(payload: T[] | ApiResult<T[]>): T[] => {
+ const data = unwrapData<T[]>(payload);
+ return Array.isArray(data) ? data : [];
+};
+
 // Thunks
-export const thunkGetClientTransactions = createAsyncThunk('clientTransactions/getByClient',
+export const thunkGetClientTransactions = createAsyncThunk<TClientTransaction[], { clientId: string }, { rejectValue: string }>('clientTransactions/getByClient',
  async ({ clientId }: { clientId: string }, thunkAPI) => {
  try {
- const response = await api.get(`/ClientTransactions/client/${clientId}`);
- return response.data;
+ const response = await api.get<TClientTransaction[] | ApiResult<TClientTransaction[]>>(`/ClientTransactions/client/${clientId}`);
+ return unwrapList(response.data);
  } catch (error) {
  return thunkAPI.rejectWithValue(axiosErrorHandler(error));
  }
  }
 );
 
-export const thunkCreateClientTransaction = createAsyncThunk('clientTransactions/create',
+export const thunkCreateClientTransaction = createAsyncThunk<TClientTransaction, Omit<TClientTransaction,'id' |'createdAt'>, { rejectValue: string }>('clientTransactions/create',
  async (dto: Omit<TClientTransaction,'id' |'createdAt'>, thunkAPI) => {
  try {
- const response = await api.post('/ClientTransactions', dto);
- return response.data;
+ const response = await api.post<TClientTransaction | ApiResult<TClientTransaction>>('/ClientTransactions', dto);
+ return unwrapData(response.data);
  } catch (error) {
  return thunkAPI.rejectWithValue(axiosErrorHandler(error));
  }
@@ -61,7 +77,7 @@ const clientTransactionSlice = createSlice({
  })
  .addCase(thunkGetClientTransactions.fulfilled, (state, action) => {
  state.loading ='succeeded';
- state.transactions = action.payload;
+ state.transactions = Array.isArray(action.payload) ? action.payload : [];
  })
  .addCase(thunkGetClientTransactions.rejected, (state, action) => {
  state.loading ='failed';
@@ -72,6 +88,7 @@ const clientTransactionSlice = createSlice({
  })
  .addCase(thunkCreateClientTransaction.fulfilled, (state, action) => {
  state.loading ='succeeded';
+ if (!action.payload?.id) return;
  state.transactions.unshift(action.payload);
  })
  .addCase(thunkCreateClientTransaction.rejected, (state, action) => {

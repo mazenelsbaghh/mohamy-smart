@@ -5,7 +5,9 @@ namespace Lawyer.Application.DTOs.POA
     public class PowerOfAttorneyDto
     {
         public Guid Id { get; set; }
-        public Guid ClientId { get; set; }
+        public Guid? ClientId { get; set; }
+        public string? ClientName { get; set; }
+        public Guid? LawyerId { get; set; }
         public string Number { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string IssuingAuthority { get; set; } = string.Empty;

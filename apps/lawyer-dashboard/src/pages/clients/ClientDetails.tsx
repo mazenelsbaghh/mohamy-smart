@@ -389,7 +389,6 @@ const ClientDetails = () => {
  <div className="cd-empty">
   <MdOutlineReceipt className="cd-empty-icon" />
   <p>لا توجد توكيلات مُسجلة لهذا الموكل</p>
-  <button type="button" className="mt-3 text-xs font-bold text-[var(--main-color)] hover:underline" onClick={() => sileo.info({ title: 'قريباً' })}>+ إضافة توكيل</button>
   </div>
  ) : (
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

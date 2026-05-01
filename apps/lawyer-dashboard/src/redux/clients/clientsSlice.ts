@@ -104,6 +104,12 @@ const normalizeClientDetails = (payload: TClientDetails): TClientDetails => ({
  files: Array.isArray(payload?.files) ? payload.files : [],
 });
 
+const normalizeClientPOAs = (payload: unknown): TClientPOA[] => {
+ if (Array.isArray(payload)) return payload as TClientPOA[];
+ if (isPlainObject(payload) && Array.isArray(payload.data)) return payload.data as TClientPOA[];
+ return [];
+};
+
 
 const initialState: TInitialState = {
  clients: [],
@@ -200,7 +206,7 @@ const clientsSlice = createSlice({
  })
  .addCase(thunkGetClientPOAs.fulfilled, (state, action) => {
  state.poaLoading ='succeeded';
- state.clientPOAs = action.payload;
+ state.clientPOAs = normalizeClientPOAs(action.payload);
  })
  .addCase(thunkGetClientPOAs.rejected, (state, action) => {
  state.poaLoading ='failed';
@@ -215,6 +221,7 @@ const clientsSlice = createSlice({
  })
  .addCase(thunkCancelPOA.fulfilled, (state, action) => {
  state.poaLoading ='succeeded';
+ if (!action.payload?.id) return;
  // Update the POA in the list to be canceled
  const idx = state.clientPOAs.findIndex((p) => p.id === action.payload.id);
  if (idx !== -1) {

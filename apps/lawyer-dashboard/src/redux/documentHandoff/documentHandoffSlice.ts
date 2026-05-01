@@ -13,25 +13,41 @@ export type TDocumentHandoff = {
  createdAt: string;
 };
 
+type ApiResult<T> = {
+ data?: T;
+};
+
+const unwrapData = <T,>(payload: T | ApiResult<T>): T => {
+ if (payload && typeof payload ==='object' && 'data' in payload) {
+ return (payload as ApiResult<T>).data as T;
+ }
+ return payload as T;
+};
+
+const unwrapList = <T,>(payload: T[] | ApiResult<T[]>): T[] => {
+ const data = unwrapData<T[]>(payload);
+ return Array.isArray(data) ? data : [];
+};
+
 // Thunks
-export const thunkGetDocumentHandoffs = createAsyncThunk('documentHandoffs/getByClient',
+export const thunkGetDocumentHandoffs = createAsyncThunk<TDocumentHandoff[], { clientId: string }, { rejectValue: string }>('documentHandoffs/getByClient',
  async ({ clientId }: { clientId: string }, thunkAPI) => {
  try {
- const response = await api.get(`/ClientDocuments/client/${clientId}`);
- return response.data;
+ const response = await api.get<TDocumentHandoff[] | ApiResult<TDocumentHandoff[]>>(`/ClientDocuments/client/${clientId}`);
+ return unwrapList(response.data);
  } catch (error) {
  return thunkAPI.rejectWithValue(axiosErrorHandler(error));
  }
  }
 );
 
-export const thunkCreateDocumentHandoff = createAsyncThunk('documentHandoffs/create',
+export const thunkCreateDocumentHandoff = createAsyncThunk<TDocumentHandoff, FormData, { rejectValue: string }>('documentHandoffs/create',
  async (formData: FormData, thunkAPI) => {
  try {
- const response = await api.post('/ClientDocuments', formData, {
+ const response = await api.post<TDocumentHandoff | ApiResult<TDocumentHandoff>>('/ClientDocuments', formData, {
  headers: {'Content-Type':'multipart/form-data' }
  });
- return response.data;
+ return unwrapData(response.data);
  } catch (error) {
  return thunkAPI.rejectWithValue(axiosErrorHandler(error));
  }
@@ -62,7 +78,7 @@ const documentHandoffSlice = createSlice({
  })
  .addCase(thunkGetDocumentHandoffs.fulfilled, (state, action) => {
  state.loading ='succeeded';
- state.items = action.payload;
+ state.items = Array.isArray(action.payload) ? action.payload : [];
  })
  .addCase(thunkGetDocumentHandoffs.rejected, (state, action) => {
  state.loading ='failed';
@@ -74,6 +90,7 @@ const documentHandoffSlice = createSlice({
  })
  .addCase(thunkCreateDocumentHandoff.fulfilled, (state, action) => {
  state.loading ='succeeded';
+ if (!action.payload?.id) return;
  state.items.unshift(action.payload);
  })
  .addCase(thunkCreateDocumentHandoff.rejected, (state, action) => {

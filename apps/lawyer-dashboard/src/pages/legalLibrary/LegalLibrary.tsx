@@ -3,7 +3,7 @@ import { Container } from'@mohamy/shared-ui';
 import'./LegalLibrary.css';
 import { useNavigate } from'react-router-dom';
 import { FaScaleBalanced, FaMoneyBillWave } from'react-icons/fa6';
-import { MdOutlineDescription } from'react-icons/md';
+import { MdOutlineAssignmentInd, MdOutlineDescription } from'react-icons/md';
 
 import HeadTitle from'../../components/headTitle/HeadTitle';
 
@@ -29,6 +29,13 @@ const TOOLS: LibraryTool[] = [
  description:'حساب الرسوم القضائية حسب نوع الدعوى وقيمة الحق المدعى به وفقاً لقانون الرسوم القضائية المصري',
  icon: <FaMoneyBillWave />,
  route:'/legal-library/court-fees',
+ },
+ {
+ id:'power-of-attorneys',
+ title:'التوكيلات',
+ description:'إضافة توكيلاتك الخاصة ومتابعة حالتها بعيداً عن ملفات الموكلين',
+ icon: <MdOutlineAssignmentInd />,
+ route:'/legal-library/power-of-attorneys',
  },
  {
  id:'process-server-papers',
