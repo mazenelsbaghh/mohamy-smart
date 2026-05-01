@@ -119,4 +119,77 @@ public class CaseServiceTests
         result.Succeeded.Should().BeFalse();
         result.StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
     }
+
+    [Fact]
+    public async Task SetArchiveStatusAsync_WithOwnedCase_ArchivesCase()
+    {
+        var caseId = Guid.NewGuid();
+        var lawyerId = Guid.NewGuid();
+        var caseEntity = new Case
+        {
+            Id = caseId,
+            LawyerId = lawyerId,
+            IsActive = true,
+            Title = "Test",
+            Number = "C-001",
+            CaseTypeId = 1
+        };
+
+        var caseRepoMock = new Mock<IGenericRepository<Case>>();
+        caseRepoMock.Setup(r => r.FirstOrDefaultAsync(
+            It.IsAny<System.Linq.Expressions.Expression<Func<Case, bool>>>(),
+            It.IsAny<CancellationToken>(),
+            It.IsAny<System.Linq.Expressions.Expression<Func<Case, object>>[]>()))
+            .ReturnsAsync(caseEntity);
+        caseRepoMock.Setup(r => r.Update(It.IsAny<Case>()))
+            .Returns(Task.CompletedTask);
+
+        var caseTypeRepoMock = new Mock<IGenericRepository<Core.Models.CaseType>>();
+        caseTypeRepoMock.Setup(r => r.FirstOrDefaultAsync(
+            It.IsAny<System.Linq.Expressions.Expression<Func<Core.Models.CaseType, bool>>>(),
+            It.IsAny<CancellationToken>(),
+            It.IsAny<System.Linq.Expressions.Expression<Func<Core.Models.CaseType, object>>[]>()))
+            .ReturnsAsync(new Core.Models.CaseType { Id = 1, Title = "مدني" });
+
+        SetupRepository(caseRepoMock);
+        SetupRepository(caseTypeRepoMock);
+
+        var result = await _service.SetArchiveStatusAsync(caseId, true, lawyerId, true, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data.Should().NotBeNull();
+        result.Data!.IsActive.Should().BeFalse();
+        caseRepoMock.Verify(r => r.Update(It.Is<Case>(c => c.Id == caseId && !c.IsActive)), Times.Once);
+        _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SetArchiveStatusAsync_WithOwnershipMismatch_ThrowsForbiddenException()
+    {
+        var caseId = Guid.NewGuid();
+        var ownerLawyerId = Guid.NewGuid();
+        var otherLawyerId = Guid.NewGuid();
+
+        var caseEntity = new Case
+        {
+            Id = caseId,
+            LawyerId = ownerLawyerId,
+            Title = "Test",
+            Number = "C-001",
+            CaseTypeId = 1
+        };
+
+        var caseRepoMock = new Mock<IGenericRepository<Case>>();
+        caseRepoMock.Setup(r => r.FirstOrDefaultAsync(
+            It.IsAny<System.Linq.Expressions.Expression<Func<Case, bool>>>(),
+            It.IsAny<CancellationToken>(),
+            It.IsAny<System.Linq.Expressions.Expression<Func<Case, object>>[]>()))
+            .ReturnsAsync(caseEntity);
+
+        SetupRepository(caseRepoMock);
+
+        var act = () => _service.SetArchiveStatusAsync(caseId, true, otherLawyerId, true, CancellationToken.None);
+
+        await act.Should().ThrowAsync<ForbiddenException>();
+    }
 }

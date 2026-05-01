@@ -60,6 +60,7 @@ namespace Lawyer.Application.Dtos.Case
 		public CaseStatus Status { get; set; }
 		public Guid? ClientId { get; set; }
 		public Guid? PowerOfAttorneyId { get; set; }
+		public bool IsActive { get; set; }
 		public DateTime CreationDate { get; set; }
 	}
 

@@ -281,7 +281,7 @@ const DefenseMemoPage = () => {
       onStart={handleStartFactAnalysis}
       isStarting={isFactJobActive}
     />,
-    <LegalAnalysis key="analysis" finalFacts={finalFacts} caseFacts={facts} nextStep={nextStep} caseId={caseId} />,
+    <LegalAnalysis key="analysis" finalFacts={finalFacts} caseFacts={facts} goToDefenses={() => setActive(2)} caseId={caseId} />,
     <DefensesList
       key="defenses"
       caseId={caseId}

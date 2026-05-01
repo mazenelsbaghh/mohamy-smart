@@ -176,7 +176,8 @@ namespace Lawyer.Application.Services
 					DefendingParty = x.DefendingParty ?? "client",
 				    CreationDate = x.Created,
 					Status = x.Status,
-					ClientId = x.ClientId
+					ClientId = x.ClientId,
+					IsActive = x.IsActive
 				})
 				.ToPagedResponseAsync(pageNumber, pageSize, cancellationToken);
 
@@ -225,6 +226,32 @@ namespace Lawyer.Application.Services
 			return ApiExceptionResponse.Success(MapToDto(entity, caseType?.Title), "Case updated successfully");
 		}
 
+		public async Task<Result<CaseDto>> SetArchiveStatusAsync(Guid id, bool isArchived, Guid lawyerId, bool isLawyer, CancellationToken cancellationToken)
+		{
+			var entity = await _unitOfWork.Repository<Case>().FirstOrDefaultAsync(x => x.Id == id);
+			if (entity == null)
+				return ApiExceptionResponse.NotFound<CaseDto>("Case not found");
+
+			if (isLawyer && entity.LawyerId != lawyerId)
+				throw new ForbiddenException("لا تملك صلاحية تعديل هذه القضية.");
+
+			entity.IsActive = !isArchived;
+			await _unitOfWork.Repository<Case>().Update(entity);
+			await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+			_logger.LogInformation(
+				"Case archive status changed: {CaseNumber}, IsArchived={IsArchived}",
+				entity.Number,
+				isArchived);
+
+			var caseType = await _unitOfWork.Repository<Core.Models.CaseType>()
+				.FirstOrDefaultAsync(x => x.Id == entity.CaseTypeId, cancellationToken);
+
+			return ApiExceptionResponse.Success(
+				MapToDto(entity, caseType?.Title),
+				isArchived ? "Case archived successfully" : "Case restored successfully");
+		}
+
 		public async Task<Result<bool>> DeleteCaseAsync(Guid id, Guid lawyerId, bool isLawyer, CancellationToken cancellationToken)
 		{
 			var entity = await _unitOfWork.Repository<Case>().FirstOrDefaultAsync(x => x.Id == id);
@@ -235,6 +262,7 @@ namespace Lawyer.Application.Services
 				throw new ForbiddenException("لا تملك صلاحية حذف هذه القضية.");
 
 			entity.IsActive = false;
+			await _unitOfWork.Repository<Case>().Update(entity);
 			await _unitOfWork.SaveChangesAsync(cancellationToken);
 			_logger.LogInformation("Case deleted: {CaseNumber}", entity.Number);
 			return ApiExceptionResponse.Success(true, "Case deleted successfully");
@@ -299,6 +327,7 @@ namespace Lawyer.Application.Services
 				LegalClaims = entity.LegalClaims,
 				Status = entity.Status,
 				ClientId = entity.ClientId,
+				IsActive = entity.IsActive,
 				CreationDate = entity.Created
 			};
 		}

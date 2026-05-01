@@ -19,6 +19,7 @@ namespace Lawyer.Application.IServices
 			bool? isActive,
 			CancellationToken cancellationToken);
 		Task<Result<CaseDto>> UpdateCaseAsync(Guid id, UpdateCaseDto dto, Guid lawyerId, bool isLawyer, CancellationToken cancellationToken);
+		Task<Result<CaseDto>> SetArchiveStatusAsync(Guid id, bool isArchived, Guid lawyerId, bool isLawyer, CancellationToken cancellationToken);
 		Task<Result<bool>> DeleteCaseAsync(Guid id, Guid lawyerId, bool isLawyer, CancellationToken cancellationToken);
 		Task<Result<LawyerDashboardReportDto>> GetLawyerDashboardReportAsync(Guid lawyerId, CancellationToken cancellationToken);
     }

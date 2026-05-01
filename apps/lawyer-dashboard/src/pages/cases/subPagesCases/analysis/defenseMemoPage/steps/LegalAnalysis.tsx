@@ -20,11 +20,11 @@ import {
 type TLegalAnalysis = {
  finalFacts: string;
  caseFacts: string;
- nextStep: () => void;
+ goToDefenses: () => void;
  caseId: string;
 };
 
-const LegalAnalysis = ({ finalFacts, caseFacts, nextStep, caseId }: TLegalAnalysis) => {
+const LegalAnalysis = ({ finalFacts, caseFacts, goToDefenses, caseId }: TLegalAnalysis) => {
  const dispatch = useAppDispatch();
  const outputs = useAppSelector((state) => state.smartAnalysis.outputs);
  const singleCase = useAppSelector((state) => state.cases.singleCase);
@@ -84,7 +84,7 @@ const LegalAnalysis = ({ finalFacts, caseFacts, nextStep, caseId }: TLegalAnalys
 
  const handleNext = () => {
  if (defenses?.defensesFormal) {
- nextStep();
+ goToDefenses();
  return;
  }
  sendData();
@@ -131,7 +131,7 @@ const LegalAnalysis = ({ finalFacts, caseFacts, nextStep, caseId }: TLegalAnalys
  })).unwrap()
  .then(() => {
  sileo.success({ title:'مساعدك الذكي شغال الآن...' });
- nextStep();
+ goToDefenses();
  }).catch((error) => {
  sileo.error({ title: `حدث خطأ: ${typeof error ==='string' ? error :'مشكلة بالاتصال'}` });
  }).finally(() => {

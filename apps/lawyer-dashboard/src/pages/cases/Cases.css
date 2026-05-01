@@ -44,6 +44,11 @@ section.cases .case-status-badge.closed {
     color: var(--danger-color);
 }
 
+section.cases .case-status-badge.archived {
+    background-color: rgba(107, 114, 128, 0.12);
+    color: #6b7280;
+}
+
 section.cases .case-status-dot {
     width: 7px;
     height: 7px;
@@ -57,6 +62,17 @@ section.cases .case-status-badge.active .case-status-dot {
 
 section.cases .case-status-badge.closed .case-status-dot {
     background-color: var(--danger-color);
+}
+
+section.cases .case-status-badge.archived .case-status-dot {
+    background-color: #6b7280;
+}
+
+section.cases .case-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 /* ── Data Rows ─────────────────────────── */

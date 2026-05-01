@@ -106,6 +106,44 @@ namespace Lawyer.Controllers
 			return CreateResponse(result);
 		}
 
+		[HttpPatch("{id:guid}/archive")]
+		public async Task<IActionResult> Archive(Guid id, CancellationToken cancellationToken)
+		{
+			_logger.LogInformation("Archiving case {Id}", id);
+			var isLawyer = User.IsInRole("Lawyer");
+			var lawyerId = Guid.Empty;
+			if (isLawyer)
+			{
+				var userContext = _userContextProvider.GetCurrentContext();
+				var lawyerIdResult = await _lawyerIdResolver.ResolveAsync(userContext, null, cancellationToken);
+				if (!lawyerIdResult.Succeeded)
+					return CreateResponse(lawyerIdResult);
+				lawyerId = lawyerIdResult.Data;
+			}
+
+			var result = await _service.SetArchiveStatusAsync(id, true, lawyerId, isLawyer, cancellationToken);
+			return CreateResponse(result);
+		}
+
+		[HttpPatch("{id:guid}/restore")]
+		public async Task<IActionResult> Restore(Guid id, CancellationToken cancellationToken)
+		{
+			_logger.LogInformation("Restoring case {Id}", id);
+			var isLawyer = User.IsInRole("Lawyer");
+			var lawyerId = Guid.Empty;
+			if (isLawyer)
+			{
+				var userContext = _userContextProvider.GetCurrentContext();
+				var lawyerIdResult = await _lawyerIdResolver.ResolveAsync(userContext, null, cancellationToken);
+				if (!lawyerIdResult.Succeeded)
+					return CreateResponse(lawyerIdResult);
+				lawyerId = lawyerIdResult.Data;
+			}
+
+			var result = await _service.SetArchiveStatusAsync(id, false, lawyerId, isLawyer, cancellationToken);
+			return CreateResponse(result);
+		}
+
 		[HttpDelete("{id:guid}")]
 		public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
 		{
