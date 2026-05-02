@@ -25,8 +25,9 @@ import { MdOutlineGavel, MdOutlineFilePresent, MdOutlineReceipt } from 'react-ic
 import { HiOutlineDocumentText } from 'react-icons/hi';
 import DocumentHandoffTab from './tabs/DocumentHandoffTab';
 import FinancialsTab from './tabs/FinancialsTab';
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Tooltip, Textarea } from '@heroui/react';
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Tooltip, Textarea, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Radio, RadioGroup } from '@heroui/react';
 import { tableClassNames } from '@mohamy/shared-ui';
+import { IoAlertCircleOutline } from 'react-icons/io5';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 
 
@@ -50,7 +51,8 @@ const ClientDetails = () => {
  const { clientDetails, loading, updateLoading, clientPOAs, poaLoading } = useAppSelector((state) => state.clients);
  const { user } = useAppSelector((state) => state.auth);
  const [isEditing, setIsEditing] = useState(false);
- const [cancelPoaTarget, setCancelPoaTarget] = useState<{ id: string; number: string } | null>(null);
+  const [cancelPoaTarget, setCancelPoaTarget] = useState<{ id: string; serialNumber: number; number: string } | null>(null);
+  const [cancelPoaReason, setCancelPoaReason] = useState('');
  const [deleteFileTarget, setDeleteFileTarget] = useState<{ id: string | number; fileName: string } | null>(null);
 
  const { control, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
@@ -88,13 +90,14 @@ const ClientDetails = () => {
  }
  };
 
- const confirmCancelPOA = () => {
- if (!cancelPoaTarget) return;
- dispatch(thunkCancelPOA({ poaId: cancelPoaTarget.id })).unwrap()
- .then(() => sileo.success({ title: 'تم إلغاء التوكيل بنجاح' }))
- .catch(() => sileo.error({ title: 'تعذّر إلغاء التوكيل. أعد المحاولة.' }));
- setCancelPoaTarget(null);
- };
+  const confirmCancelPOA = () => {
+  if (!cancelPoaTarget || !cancelPoaReason) return;
+  dispatch(thunkCancelPOA({ poaId: cancelPoaTarget.id, reason: cancelPoaReason })).unwrap()
+  .then(() => sileo.success({ title: 'تم إلغاء التوكيل بنجاح' }))
+  .catch(() => sileo.error({ title: 'تعذّر إلغاء التوكيل. أعد المحاولة.' }));
+  setCancelPoaTarget(null);
+  setCancelPoaReason('');
+  };
 
  const confirmDeleteFile = async () => {
  if (!deleteFileTarget || !clientDetails) return;
@@ -394,12 +397,15 @@ const ClientDetails = () => {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  {clientPOAs.map((poa) => (
  <div key={poa.id} className={`cd-poa-card ${!poa.isCanceled ? 'cd-poa-card-active' : 'cd-poa-canceled'}`}>
- <div className="flex items-center justify-between gap-2 mb-3">
- <h4 className="text-[13px] font-bold truncate flex-1" style={{ color: 'var(--cd-text)' }} title={poa.title}>{poa.title}</h4>
- <span className={`cd-badge ${poa.isCanceled ? 'cd-badge-canceled' : 'cd-badge-active'}`}>
- {poa.isCanceled ? 'ملغى' : 'ساري'}
- </span>
- </div>
+  <div className="flex items-center justify-between gap-2 mb-3">
+  <div className="flex items-center gap-2 flex-1 min-w-0">
+  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--main-color)] border border-[var(--accent-soft-strong)] shrink-0">#{poa.serialNumber}</span>
+  <h4 className="text-[13px] font-bold truncate" style={{ color: 'var(--cd-text)' }} title={poa.title}>{poa.title}</h4>
+  </div>
+  <span className={`cd-badge ${poa.isCanceled ? 'cd-badge-canceled' : 'cd-badge-active'}`}>
+  {poa.isCanceled ? 'ملغى' : 'ساري'}
+  </span>
+  </div>
  <div className="flex flex-col gap-1.5 p-2.5 rounded-lg mb-3" style={{ background: 'var(--cd-card)' }}>
  <div className="flex justify-between items-center gap-2">
  <span className="text-[11px] font-medium" style={{ color: 'var(--cd-text-muted)' }}>رقم التوكيل</span>
@@ -411,11 +417,11 @@ const ClientDetails = () => {
  </div>
  </div>
  <div className="flex items-center justify-between">
- <span className="text-[11px]" style={{ color: 'var(--cd-text-muted)' }}>
- {poa.isCanceled
- ? `أُلغي ${format(parseISO(poa.cancellationDate || ''), 'yyyy/MM/dd')}`
- : `أُصدر ${format(parseISO(poa.issueDate || ''), 'yyyy/MM/dd')}`}
- </span>
+  <span className="text-[11px]" style={{ color: 'var(--cd-text-muted)' }}>
+  {poa.isCanceled
+  ? `أُلغي ${format(parseISO(poa.cancellationDate || ''), 'yyyy/MM/dd')}${poa.cancellationReason ? ` — ${poa.cancellationReason}` : ''}`
+  : `أُصدر ${format(parseISO(poa.issueDate || ''), 'yyyy/MM/dd')}`}
+  </span>
  {!poa.isCanceled && (
  <CustomButton
  type="button"
@@ -425,7 +431,7 @@ const ClientDetails = () => {
  color="danger"
  radius="sm"
  isLoading={poaLoading === 'pending'}
- onClick={() => setCancelPoaTarget({ id: poa.id, number: poa.number })}
+  onClick={() => { setCancelPoaTarget({ id: poa.id, serialNumber: poa.serialNumber, number: poa.number }); setCancelPoaReason(''); }}
  />
  )}
  </div>
@@ -557,17 +563,63 @@ const ClientDetails = () => {
  </div>
  </div>
 
- {/* Branded ConfirmDialogs */}
- <ConfirmDialog
+  {/* Cancel POA Dialog */}
+  <Modal
   isOpen={cancelPoaTarget !== null}
-  onClose={() => setCancelPoaTarget(null)}
-  onConfirm={confirmCancelPOA}
-  title="إلغاء التوكيل"
-  description={cancelPoaTarget ? `هل أنت متأكد من إلغاء التوكيل رقم ${cancelPoaTarget.number}؟` : ''}
-  confirmText="إلغاء التوكيل"
-  cancelText="تراجع"
-  danger
- />
+  onClose={() => { setCancelPoaTarget(null); setCancelPoaReason(''); }}
+  placement="center"
+  backdrop="blur"
+  size="md"
+  classNames={{
+   base: 'bg-white dark:app-surface-soft border app-border dark:app-border-strong shadow-lg',
+   backdrop: 'bg-black/40',
+  }}
+  >
+  <ModalContent>
+  <ModalHeader className="flex flex-col gap-1 pb-0" dir="rtl">
+  <div className="flex items-center gap-3">
+  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-[var(--danger-soft)]">
+  <IoAlertCircleOutline className="text-xl text-[var(--danger-color)]" />
+  </div>
+  <span className="text-base font-bold text-[var(--title-color)]">إلغاء التوكيل رقم {cancelPoaTarget?.serialNumber}</span>
+  </div>
+  </ModalHeader>
+  <ModalBody dir="rtl" className="pb-2">
+  <p className="text-sm app-text-muted">
+  التوكيل: {cancelPoaTarget?.number}
+  </p>
+  <RadioGroup
+  label="سبب الإلغاء"
+  value={cancelPoaReason}
+  onValueChange={setCancelPoaReason}
+  classNames={{ label: 'text-sm font-bold text-[var(--title-color)]' }}
+  >
+  <Radio value="death" classNames={{ label: 'text-sm' }}>وفاة الموكل</Radio>
+  <Radio value="revoked" classNames={{ label: 'text-sm' }}>إلغاء من الموكل</Radio>
+  <Radio value="expired" classNames={{ label: 'text-sm' }}>انتهاء المدة</Radio>
+  <Radio value="other" classNames={{ label: 'text-sm' }}>سبب آخر</Radio>
+  </RadioGroup>
+  </ModalBody>
+  <ModalFooter dir="rtl" className="flex gap-2 justify-end pt-2">
+  <Button
+  variant="flat"
+  onPress={() => { setCancelPoaTarget(null); setCancelPoaReason(''); }}
+  isDisabled={poaLoading === 'pending'}
+  className="font-bold text-sm bg-gray-100 hover:bg-gray-200 text-[var(--title-color)]"
+  >
+  تراجع
+  </Button>
+  <Button
+  onPress={confirmCancelPOA}
+  isLoading={poaLoading === 'pending'}
+  isDisabled={!cancelPoaReason}
+  className="font-bold text-sm text-white bg-[var(--danger-color)] hover:opacity-90"
+  >
+  إلغاء التوكيل
+  </Button>
+  </ModalFooter>
+  </ModalContent>
+  </Modal>
  <ConfirmDialog
   isOpen={deleteFileTarget !== null}
   onClose={() => setDeleteFileTarget(null)}

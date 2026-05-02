@@ -14,13 +14,13 @@ const unwrapData = <T,>(payload: T | ApiResult<T>): T => {
  return payload as T;
 };
 
-export const thunkCancelPOA = createAsyncThunk<TClientPOA, { poaId: string }>('clients/thunkCancelPOA',
- async ({ poaId }, thunkAPI) => {
+export const thunkCancelPOA = createAsyncThunk<TClientPOA, { poaId: string; reason: string }>('clients/thunkCancelPOA',
+ async ({ poaId, reason }, thunkAPI) => {
  try {
- const response = await api.put<TClientPOA | ApiResult<TClientPOA>>(`/PowerOfAttorney/${poaId}/cancel`);
- return unwrapData(response.data);
+  const response = await api.put<TClientPOA | ApiResult<TClientPOA>>(`/PowerOfAttorney/${poaId}/cancel`, { reason });
+  return unwrapData(response.data);
  } catch (error) {
- return thunkAPI.rejectWithValue(axiosErrorHandler(error));
+  return thunkAPI.rejectWithValue(axiosErrorHandler(error));
  }
  }
 );

@@ -48,13 +48,15 @@ const splitParagraphs = (value: string): string[] =>
 const isLegacyFinalDraft = (value: string): boolean =>
  Boolean(value) &&
  !value.includes('وأعلنته بالآتي') &&
+ !value.includes('السند القانوني') &&
  (
  value.includes('بسم الله الرحمن الرحيم') ||
  value.includes('أولاً: نوع الدعوى والاختصاص') ||
  value.includes('ثانياً: أطراف الدعوى') ||
  value.includes('ثالثاً: موضوع الدعوى') ||
  value.includes('رابعاً: الوقائع') ||
- value.includes('ثالثاً: موضوع الدعوى ووقائعها')
+ value.includes('ثالثاً: موضوع الدعوى ووقائعها') ||
+ value.includes('ملاحظات التطبيق')
  );
 
 const normalizeCourtName = (courtType: string): string =>
@@ -189,55 +191,66 @@ const FinalStatementOfClaims = ({ caseId }: TFinalStatementOfClaims) => {
  return'';
  }
 
- const claimant = lawsuitParties.parties.find((party) => party.role.includes('مدع')) ?? lawsuitParties.parties[0];
- const defendant = lawsuitParties.parties.find((party) => party.role.includes('مدعى عليه')) ?? lawsuitParties.parties[1];
- const allRequests = [
- ...normalizedLawsuitRequests.principalRequests.map((item) => ({ ...item, type:'أصلية' })),
- ...normalizedLawsuitRequests.subsidiaryRequests.map((item) => ({ ...item, type:'احتياطية' })),
- ...normalizedLawsuitRequests.proceduralRequests.map((item) => ({ ...item, type:'إجرائية' })),
- ];
- const claimantName = escapeHtml(claimant?.name || '........................................................');
- const claimantAddress = escapeHtml(claimant?.address || '........................................................');
- const claimantNationalId = claimant?.nationalId ? `، ويحمل بطاقة رقم قومي / ${escapeHtml(claimant.nationalId)}` : '';
- const defendantName = escapeHtml(defendant?.name || '........................................................');
- const defendantAddress = escapeHtml(defendant?.address || '........................................................');
- const courtName = escapeHtml(normalizeCourtName(lawsuitCaseType.courtType));
- const claimSubject = escapeHtml(lawsuitCaseType.caseSubType || lawsuitCaseType.caseMainType || lawsuitSubjects.subjectTitle || 'دعوى');
- const factsParagraphs = splitParagraphs(lawsuitFact.factsNarrative);
- const legalParagraphs = lawsuitLegalBasis.legalTexts.flatMap((text, index) => [
- `${index + 1}- ${text.lawName ? `${text.lawName} - ` : ''}${text.articleNumber ? `المادة ${text.articleNumber}: ` : ''}${text.articleText}`,
- text.applicationNotes ? `ملاحظات التطبيق: ${text.applicationNotes}` : '',
- ]).filter(Boolean);
- const cassationParagraphs = lawsuitLegalBasis.cassationRulings.map((ruling, index) =>
- `${index + 1}- ${ruling.court || 'محكمة النقض'}${ruling.appealNumber ? ` - الطعن رقم ${ruling.appealNumber}` : ''}${ruling.judicialYear ? ` لسنة ${ruling.judicialYear}` : ''}${ruling.sessionDate ? ` - جلسة ${ruling.sessionDate}` : ''}. ${ruling.rulingText}${ruling.applicationNotes ? ` ملاحظات التطبيق: ${ruling.applicationNotes}` : ''}`
- );
- const requestParagraphs = allRequests.map((request, index) =>
- `${index + 1}- (${request.type}) ${request.requestText}${request.legalReference ? ` السند: ${request.legalReference}` : ''}`
- );
- const finalRequestText = requestParagraphs.length > 0
- ? requestParagraphs.join(' ')
- : `الحكم للطالب بطلباته في ${claimSubject}.`;
+  const claimant = lawsuitParties.parties.find((party) => party.role.includes('مدع')) ?? lawsuitParties.parties[0];
+  const defendant = lawsuitParties.parties.find((party) => party.role.includes('مدعى عليه')) ?? lawsuitParties.parties[1];
+  const allRequests = [
+  ...normalizedLawsuitRequests.principalRequests.map((item) => ({ ...item, type:'أصلية' })),
+  ...normalizedLawsuitRequests.subsidiaryRequests.map((item) => ({ ...item, type:'احتياطية' })),
+  ...normalizedLawsuitRequests.proceduralRequests.map((item) => ({ ...item, type:'إجرائية' })),
+  ];
+  const claimantName = escapeHtml(claimant?.name || '........................................................');
+  const claimantAddress = escapeHtml(claimant?.address || '........................................................');
+  const claimantNationalId = claimant?.nationalId ? `، ويحمل بطاقة رقم قومي / ${escapeHtml(claimant.nationalId)}` : '';
+  const defendantName = escapeHtml(defendant?.name || '........................................................');
+  const defendantAddress = escapeHtml(defendant?.address || '........................................................');
+  const courtName = escapeHtml(normalizeCourtName(lawsuitCaseType.courtType));
+  const claimSubject = escapeHtml(lawsuitCaseType.caseSubType || lawsuitCaseType.caseMainType || lawsuitSubjects.subjectTitle || 'دعوى');
+  const factsParagraphs = splitParagraphs(lawsuitFact.factsNarrative);
+  const legalParagraphs = lawsuitLegalBasis.legalTexts.map((text) => {
+   const parts = [];
+   parts.push(`المادة رقم ${text.articleNumber} من ${text.lawName} والتي نصت على أنه: ${text.articleText}`);
+   if (text.applicationNotes) {
+    parts.push(`وبانزال نص المادة سالف البيان على موضوع الدعوى يتضح بأن المدعي ${text.applicationNotes}`);
+   }
+   return parts;
+  }).flat();
+  const cassationParagraphs = lawsuitLegalBasis.cassationRulings.map((ruling) => {
+   const parts = [];
+   parts.push(`وفي ذلك قضت ${ruling.court || 'محكمة النقض'}${ruling.appealNumber ? ` في الطعن رقم ${ruling.appealNumber}` : ''}${ruling.judicialYear ? ` لسنة ${ruling.judicialYear}` : ''}${ruling.sessionDate ? ` جلسة ${ruling.sessionDate}` : ''} بأنه: ${ruling.rulingText}`);
+   if (ruling.applicationNotes) {
+    parts.push(`وبانزال ما تقدم على موضوع الدعوى يتضح بأن المدعي ${ruling.applicationNotes}`);
+   }
+   return parts;
+  }).flat();
+  const requestParagraphs = allRequests.map((request, index) =>
+  `${index + 1}- (${request.type}) ${request.requestText}${request.legalReference ? ` السند: ${request.legalReference}` : ''}`
+  );
+  const finalRequestText = requestParagraphs.length > 0
+  ? requestParagraphs.join(' ')
+  : `الحكم للطالب بطلباته في ${claimSubject}.`;
 
- return `
- <div style="font-family:Arial, sans-serif;color:#111;font-size:18px;font-weight:700;line-height:1.9;text-align:justify;direction:rtl;">
- <p style="text-align:center;font-size:21px;margin:0 0 8px;">صحيفة ${claimSubject}</p>
- <p style="margin:0 0 8px;">إنه في يوم ........................ الموافق .... / .... / ........ الساعة ........</p>
- <p style="margin:0 0 8px;">بناءً على طلب السيد / ${claimantName}</p>
- <p style="margin:0 0 8px;">المقيم / ${claimantAddress}${claimantNationalId}</p>
- <p style="margin:0 0 8px;">ومحله المختار مكتب الأستاذ / ........................................................ المحامي.</p>
- <p style="margin:0 0 8px;">أنا ................................ محضر ${courtName} قد انتقلت في تاريخه إلى حيث إقامة:</p>
- <p style="margin:0 0 8px;">السيد / ${defendantName}</p>
- <p style="margin:0 0 8px;">ويعلن في / ${defendantAddress}</p>
- <p style="margin:0 0 12px;">مخاطباً مع / ........................................................</p>
- <p style="text-align:center;font-size:20px;margin:0 0 12px;">وأعلنته بالآتي</p>
- ${factsParagraphs.map((paragraph, index) => `<p style="margin:0 0 8px;">${index + 1}- ${escapeHtml(paragraph)}</p>`).join('')}
- ${legalParagraphs.length > 0 ? legalParagraphs.map((paragraph) => `<p style="margin:0 0 8px;">${escapeHtml(paragraph)}</p>`).join('') : ''}
- ${cassationParagraphs.length > 0 ? cassationParagraphs.map((paragraph) => `<p style="margin:0 0 8px;">${escapeHtml(paragraph)}</p>`).join('') : ''}
- <p style="text-align:center;font-size:20px;margin:12px 0 8px;">بنـــاء عليــــه</p>
- <p style="margin:0 0 8px;">أنا المحضر سالف الذكر قد انتقلت إلى حيث إقامة المعلن إليه وسلمته صورة من هذه الصحيفة للعلم بما جاء بها ونفاذ مفعولها قانوناً، وكلفته بالحضور أمام ${courtName}، وذلك بجلستها التي ستنعقد علناً في تمام الساعة التاسعة وما بعدها من صباح يوم ................ الموافق .... / .... / ........ لسماع الحكم بـ: ${escapeHtml(finalRequestText)}، مع إلزام المعلن إليه بالمصروفات ومقابل أتعاب المحاماة، وشمول الحكم بالنفاذ المعجل وبلا كفالة.</p>
- <p style="text-align:left;margin:0;">ولأجل العلم /</p>
- </div>
- `;
+  return `
+  <div style="font-family:Arial, sans-serif;color:#111;font-size:18px;font-weight:700;line-height:1.9;text-align:justify;direction:rtl;">
+  <p style="text-align:center;font-size:21px;margin:0 0 8px;">صحيفة ${claimSubject}</p>
+  <p style="margin:0 0 8px;">إنه في يوم ........................ الموافق .... / .... / ........ الساعة ........</p>
+  <p style="margin:0 0 8px;">بناءً على طلب السيد / ${claimantName}</p>
+  <p style="margin:0 0 8px;">المقيم / ${claimantAddress}${claimantNationalId}</p>
+  <p style="margin:0 0 8px;">ومحله المختار مكتب الأستاذ / ........................................................ المحامي.</p>
+  <p style="margin:0 0 8px;">أنا ................................ محضر ${courtName} قد انتقلت في تاريخه إلى حيث إقامة:</p>
+  <p style="margin:0 0 8px;">السيد / ${defendantName}</p>
+  <p style="margin:0 0 8px;">ويعلن في / ${defendantAddress}</p>
+  <p style="margin:0 0 12px;">مخاطباً مع / ........................................................</p>
+  <p style="text-align:center;font-size:20px;margin:0 0 12px;">وأعلنته بالآتي</p>
+  ${factsParagraphs.map((paragraph, index) => `<p style="margin:0 0 8px;">${index + 1}- ${escapeHtml(paragraph)}</p>`).join('')}
+  <p style="text-align:center;font-size:19px;margin:12px 0 8px;">السند القانوني</p>
+  ${legalParagraphs.map((paragraph) => `<p style="margin:0 0 8px;">${escapeHtml(paragraph)}</p>`).join('')}
+  ${cassationParagraphs.length > 0 ? '<p style="text-align:center;font-size:19px;margin:12px 0 8px;">أحكام محكمة النقض</p>' : ''}
+  ${cassationParagraphs.map((paragraph) => `<p style="margin:0 0 8px;">${escapeHtml(paragraph)}</p>`).join('')}
+  <p style="text-align:center;font-size:20px;margin:12px 0 8px;">بنـــاء عليــــه</p>
+  <p style="margin:0 0 8px;">أنا المحضر سالف الذكر قد انتقلت إلى حيث إقامة المعلن إليه وسلمته صورة من هذه الصحيفة للعلم بما جاء بها ونفاذ مفعولها قانوناً، وكلفته بالحضور أمام ${courtName}، وذلك بجلستها التي ستنعقد علناً في تمام الساعة التاسعة وما بعدها من صباح يوم ................ الموافق .... / .... / ........ لسماع الحكم بـ: ${escapeHtml(finalRequestText)}، مع إلزام المعلن إليه بالمصروفات ومقابل أتعاب المحاماة، وشمول الحكم بالنفاذ المعجل وبلا كفالة.</p>
+  <p style="text-align:left;margin:0;">ولأجل العلم /</p>
+  </div>
+  `;
  }, [
  hasAllSections,
  lawsuitCaseType,

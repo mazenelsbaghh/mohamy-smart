@@ -12,6 +12,6 @@ namespace Lawyer.Application.IServices
         Task<Result<PowerOfAttorneyDto>> CreateLawyerPowerOfAttorneyAsync(PowerOfAttorneyDto dto, Guid lawyerId);
         Task<Result<IEnumerable<PowerOfAttorneyDto>>> GetPowerOfAttorneysByClientAsync(Guid clientId);
         Task<Result<IEnumerable<PowerOfAttorneyDto>>> GetPowerOfAttorneysByLawyerAsync(Guid lawyerId);
-        Task<Result<PowerOfAttorneyDto>> CancelPowerOfAttorneyAsync(Guid poaId);
+        Task<Result<PowerOfAttorneyDto>> CancelPowerOfAttorneyAsync(Guid poaId, string? reason = null);
     }
 }

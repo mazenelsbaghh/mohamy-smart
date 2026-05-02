@@ -126,7 +126,7 @@ namespace Lawyer.Controllers
         }
 
         [HttpPut("{id}/cancel")]
-        public async Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken)
+        public async Task<IActionResult> Cancel(Guid id, [FromBody] CancelPoaRequest? body, CancellationToken cancellationToken)
         {
             var isAdmin = User.IsInRole("Admin");
             if (!isAdmin)
@@ -147,11 +147,16 @@ namespace Lawyer.Controllers
                     return Forbid();
             }
 
-            var result = await _poaService.CancelPowerOfAttorneyAsync(id);
+            var result = await _poaService.CancelPowerOfAttorneyAsync(id, body?.Reason);
             if (!result.Succeeded)
                 return CreateResponse(result);
 
             return CreateResponse(result);
         }
+    }
+
+    public class CancelPoaRequest
+    {
+        public string? Reason { get; set; }
     }
 }

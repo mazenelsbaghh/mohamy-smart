@@ -14,8 +14,11 @@ namespace Lawyer.Core.Models
         public string Title { get; set; } = string.Empty;
         public string IssuingAuthority { get; set; } = string.Empty;
         public DateTime IssueDate { get; set; }
+        public int SerialNumber { get; set; }
+        public string PoAType { get; set; } = "general";
 
         public bool IsCanceled { get; set; }
         public DateTime? CancellationDate { get; set; }
+        public string? CancellationReason { get; set; }
     }
 }

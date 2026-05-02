@@ -44,11 +44,14 @@ type TClientDetails = {
 
 export type TClientPOA = {
  id: string;
+ serialNumber: number;
  number: string;
  title: string;
  issuingAuthority: string;
  issueDate: string;
+ poaType: string;
  cancellationDate?: string;
+ cancellationReason?: string;
  isCanceled: boolean;
 };
 

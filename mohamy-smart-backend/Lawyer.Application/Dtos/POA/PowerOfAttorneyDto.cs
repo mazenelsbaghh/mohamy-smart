@@ -8,12 +8,15 @@ namespace Lawyer.Application.DTOs.POA
         public Guid? ClientId { get; set; }
         public string? ClientName { get; set; }
         public Guid? LawyerId { get; set; }
+        public int SerialNumber { get; set; }
         public string Number { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string IssuingAuthority { get; set; } = string.Empty;
         public DateTime IssueDate { get; set; }
+        public string PoAType { get; set; } = "general";
         public bool IsCanceled { get; set; }
         public DateTime? CancellationDate { get; set; }
+        public string? CancellationReason { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }
