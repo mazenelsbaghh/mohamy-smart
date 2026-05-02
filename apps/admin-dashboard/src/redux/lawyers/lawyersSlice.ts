@@ -3,11 +3,11 @@ import fetchLawyers from"./thunk/fetchLawyers";
 import fetchLawyerById from"./thunk/fetchLawyerById";
 import updateLawyerStatus from"./thunk/updateLawyerStatus";
 import { showErrorToast, showSuccessToast } from"../../utils/toastHelpers";
-import type { TUser } from"./thunk/fetchLawyers";
+import type { TLawyerDetail, TUser } from"./thunk/fetchLawyers";
 
 type TLawyersState = {
  list: TUser[];
- selectedLawyer: TUser | null;
+ selectedLawyer: TLawyerDetail | null;
  isLoading: boolean;
  isLoadingDetail: boolean;
  totalPages: number;

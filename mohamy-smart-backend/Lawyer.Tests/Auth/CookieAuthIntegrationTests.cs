@@ -243,15 +243,18 @@ public class CookieAuthIntegrationTests : IClassFixture<WebApplicationFactory<Pr
             PhoneNumberConfirmed = true,
             FullName = "Integration Test Lawyer",
             PasswordHash = userManager.PasswordHasher.HashPassword(null, "TestPass@1"),
-            IsActive = true
+            IsActive = true,
+            UserType = Lawyer.Core.Enum.UserType.Lawyer
         };
         db.Set<Lawyer.Core.Models.ApplicationUser>().Add(user);
 
         var lawyerEntity = new Lawyer.Core.Models.Lawyer
         {
             Id = Guid.NewGuid(),
-            ApplicationUserId = user.Id
+            ApplicationUserId = user.Id,
+            ApplicationUser = user
         };
+        user.Lawyer = lawyerEntity;
         db.Set<Lawyer.Core.Models.Lawyer>().Add(lawyerEntity);
         
         await db.SaveChangesAsync();

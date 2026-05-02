@@ -18,6 +18,84 @@ export type TUser = {
  numberOfCases: number;
 };
 
+export type TLawyerSubscriptionSummary = {
+ id: string;
+ planName: string | null;
+ isActive: boolean;
+ startDate: string;
+ endDate: string;
+ durationDays: number;
+ aiRequestsLimit: number | null;
+ usedAiRequests: number;
+ price: number;
+ yearlyPrice: number | null;
+};
+
+export type TLawyerActivitySummary = {
+ casesCount: number;
+ activeCasesCount: number;
+ clientsCount: number;
+ powersOfAttorneyCount: number;
+ activePowersOfAttorneyCount: number;
+ reviewsCount: number;
+ approvedReviewsCount: number;
+ pendingReviewsCount: number;
+ averageReviewRating: number | null;
+ aiUsageCount: number;
+ aiTotalTokens: number;
+ aiEstimatedCostUsd: number;
+ lastActivityAt: string | null;
+};
+
+export type TRecentLawyerCase = {
+ id: string;
+ title: string;
+ number: string;
+ court: string;
+ clientName: string;
+ status: number;
+ created: string;
+ isActive: boolean;
+};
+
+export type TRecentLawyerReview = {
+ id: string;
+ reviewerName: string;
+ reviewerRole: string | null;
+ rating: number;
+ status: string;
+ comment: string;
+ created: string;
+};
+
+export type TRecentLawyerAiUsage = {
+ id: string;
+ caseId: string | null;
+ aiStepType: number;
+ provider: string;
+ modelIdentifier: string;
+ totalTokens: number;
+ estimatedCostUsd: number;
+ createdAt: string;
+};
+
+export type TLawyerDetail = TUser & {
+ phoneNumberConfirmed: boolean;
+ emailConfirmed: boolean;
+ userType: number;
+ createdAt: string;
+ governorate: string | null;
+ agreedToTerms: boolean;
+ birthDate: string | null;
+ lawyerProfileCreatedAt: string | null;
+ subscription: TLawyerSubscriptionSummary | null;
+ activity: TLawyerActivitySummary;
+ recentCases: TRecentLawyerCase[];
+ recentSubscriptions: TLawyerSubscriptionSummary[];
+ recentReviews: TRecentLawyerReview[];
+ recentAiUsage: TRecentLawyerAiUsage[];
+};
+
 type TUsersResponse = {
  items: TUser[];
  totalPages: number;

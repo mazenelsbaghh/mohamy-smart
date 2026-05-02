@@ -1,8 +1,10 @@
 using Lawyer.Application.Common.Interface;
+using Lawyer.Application.Dtos.Lawyers;
 using Lawyer.Application.IServices;
 using Lawyer.Core.Exceptions;
 using Lawyer.Core.IRepositories;
 using Lawyer.Core.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Lawyer.Application.Services
@@ -18,6 +20,171 @@ namespace Lawyer.Application.Services
 			_unitOfWork = unitOfWork;
 			_logger = logger;
 			_audit = audit;
+		}
+
+		public async Task<Result<AdminLawyerDetailDto>> GetLawyerDetailAsync(Guid userId, CancellationToken cancellationToken)
+		{
+			var user = await _unitOfWork.Repository<ApplicationUser>()
+				.AsQueryable()
+				.IgnoreQueryFilters()
+				.AsNoTracking()
+				.Include(u => u.Lawyer)
+					.ThenInclude(l => l!.LawyerSubscriptions)
+						.ThenInclude(ls => ls.Subscription)
+				.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+			if (user == null)
+				return ApiExceptionResponse.NotFound<AdminLawyerDetailDto>("Lawyer user not found.");
+
+			if (user.Lawyer == null)
+				return ApiExceptionResponse.NotFound<AdminLawyerDetailDto>("Lawyer profile not found.");
+
+			var lawyer = user.Lawyer;
+			var lawyerId = lawyer.Id;
+			var lawyerIdText = lawyerId.ToString();
+
+			var subscriptions = lawyer.LawyerSubscriptions
+				.OrderByDescending(ls => ls.IsActive)
+				.ThenByDescending(ls => ls.EndDate)
+				.ToList();
+			var currentSubscription = subscriptions.FirstOrDefault();
+
+			var casesQuery = _unitOfWork.Repository<Case>().AsQueryable()
+				.AsNoTracking()
+				.Where(c => c.LawyerId == lawyerId);
+			var clientsQuery = _unitOfWork.Repository<Client>().AsQueryable()
+				.AsNoTracking()
+				.Where(c => c.LawyerId == lawyerId);
+			var powersQuery = _unitOfWork.Repository<PowerOfAttorney>().AsQueryable()
+				.AsNoTracking()
+				.Where(p => p.LawyerId == lawyerId);
+			var reviewsQuery = _unitOfWork.Repository<Review>().AsQueryable()
+				.AsNoTracking()
+				.Where(r => r.LawyerId == lawyerIdText);
+			var aiUsageQuery = _unitOfWork.Repository<AiUsageRecord>().AsQueryable()
+				.AsNoTracking()
+				.Where(a => a.LawyerId == lawyerId);
+
+			var casesCount = await casesQuery.CountAsync(cancellationToken);
+			var activeCasesCount = await casesQuery.CountAsync(c => c.IsActive, cancellationToken);
+			var clientsCount = await clientsQuery.CountAsync(cancellationToken);
+			var powersCount = await powersQuery.CountAsync(cancellationToken);
+			var activePowersCount = await powersQuery.CountAsync(p => p.IsActive && !p.IsCanceled, cancellationToken);
+			var reviewsCount = await reviewsQuery.CountAsync(cancellationToken);
+			var approvedReviewsCount = await reviewsQuery.CountAsync(r => r.Status.ToLower() == "approved", cancellationToken);
+			var pendingReviewsCount = await reviewsQuery.CountAsync(r => r.Status.ToLower() == "pending", cancellationToken);
+			var averageReviewRating = reviewsCount > 0
+				? Math.Round((decimal)await reviewsQuery.AverageAsync(r => r.Rating, cancellationToken), 2)
+				: (decimal?)null;
+			var aiUsageCount = await aiUsageQuery.CountAsync(cancellationToken);
+			var aiTotalTokens = await aiUsageQuery.SumAsync(a => (long?)a.TotalTokens, cancellationToken) ?? 0;
+			var aiEstimatedCost = await aiUsageQuery.SumAsync(a => (decimal?)a.EstimatedCostUsd, cancellationToken) ?? 0;
+
+			var recentCases = await casesQuery
+				.OrderByDescending(c => c.Created)
+				.Take(5)
+				.Select(c => new AdminLawyerRecentCaseDto
+				{
+					Id = c.Id,
+					Title = c.Title,
+					Number = c.Number,
+					Court = c.Court,
+					ClientName = c.ClientName,
+					Status = c.Status,
+					Created = c.Created,
+					IsActive = c.IsActive
+				})
+				.ToListAsync(cancellationToken);
+
+			var recentReviews = await reviewsQuery
+				.OrderByDescending(r => r.Created)
+				.Take(3)
+				.Select(r => new AdminLawyerRecentReviewDto
+				{
+					Id = r.Id,
+					ReviewerName = r.ReviewerName,
+					ReviewerRole = r.ReviewerRole,
+					Rating = r.Rating,
+					Status = r.Status,
+					Comment = r.Comment,
+					Created = r.Created
+				})
+				.ToListAsync(cancellationToken);
+
+			var recentAiUsage = await aiUsageQuery
+				.OrderByDescending(a => a.CreatedAt)
+				.Take(5)
+				.Select(a => new AdminLawyerRecentAiUsageDto
+				{
+					Id = a.Id,
+					CaseId = a.CaseId,
+					AiStepType = a.AiStepType,
+					Provider = a.Provider,
+					ModelIdentifier = a.ModelIdentifier,
+					TotalTokens = a.TotalTokens,
+					EstimatedCostUsd = a.EstimatedCostUsd,
+					CreatedAt = a.CreatedAt
+				})
+				.ToListAsync(cancellationToken);
+
+			var lastActivityAt = await GetLastActivityAtAsync(
+				casesQuery,
+				clientsQuery,
+				powersQuery,
+				reviewsQuery,
+				aiUsageQuery,
+				user.CreatedAt,
+				lawyer.Created,
+				cancellationToken);
+
+			var detail = new AdminLawyerDetailDto
+			{
+				Id = user.Id,
+				LawyerId = lawyer.Id,
+				FullName = user.FullName,
+				Email = user.Email,
+				PhoneNumber = user.PhoneNumber,
+				IsActive = user.IsActive,
+				PhoneNumberConfirmed = user.PhoneNumberConfirmed,
+				EmailConfirmed = user.EmailConfirmed,
+				UserType = user.UserType,
+				CreatedAt = user.CreatedAt,
+				Governorate = user.Governorate,
+				AgreedToTerms = user.AgreedToTerms,
+				BarNumber = lawyer.BarNumber,
+				Specialization = lawyer.Specialization,
+				ExperienceNumber = lawyer.ExperienceNumber,
+				LawFirmName = lawyer.LawFirmName,
+				BirthDate = lawyer.BirthDate,
+				LawyerCreatedAt = lawyer.Created,
+				LawyerProfileCreatedAt = lawyer.Created,
+				SubscriptionPlanName = currentSubscription?.Subscription?.Name,
+				SubscriptionIsActive = currentSubscription?.IsActive,
+				NumberOfCases = casesCount,
+				Subscription = currentSubscription != null ? MapSubscription(currentSubscription) : null,
+				RecentSubscriptions = subscriptions.Take(3).Select(MapSubscription).ToList(),
+				RecentCases = recentCases,
+				RecentReviews = recentReviews,
+				RecentAiUsage = recentAiUsage,
+				Activity = new AdminLawyerActivitySummaryDto
+				{
+					CasesCount = casesCount,
+					ActiveCasesCount = activeCasesCount,
+					ClientsCount = clientsCount,
+					PowersOfAttorneyCount = powersCount,
+					ActivePowersOfAttorneyCount = activePowersCount,
+					ReviewsCount = reviewsCount,
+					ApprovedReviewsCount = approvedReviewsCount,
+					PendingReviewsCount = pendingReviewsCount,
+					AverageReviewRating = averageReviewRating,
+					AiUsageCount = aiUsageCount,
+					AiTotalTokens = aiTotalTokens,
+					AiEstimatedCostUsd = aiEstimatedCost,
+					LastActivityAt = lastActivityAt
+				}
+			};
+
+			return ApiExceptionResponse.Success(detail, "Lawyer detail retrieved successfully.");
 		}
 
 		public async Task<Result<string>> UpdateLawyerStatusAsync(Guid lawyerId, bool isActive, CancellationToken cancellationToken)
@@ -45,6 +212,44 @@ namespace Lawyer.Application.Services
 			_logger.LogInformation("Lawyer {LawyerId} status updated to {IsActive}", lawyerId, isActive);
 
 			return ApiExceptionResponse.Success("Lawyer status updated successfully", "Lawyer status updated successfully");
+		}
+
+		private static AdminLawyerSubscriptionSummaryDto MapSubscription(LawyerSubscription subscription)
+		{
+			return new AdminLawyerSubscriptionSummaryDto
+			{
+				Id = subscription.Id,
+				PlanName = subscription.Subscription?.Name,
+				IsActive = subscription.IsActive,
+				StartDate = subscription.StartDate,
+				EndDate = subscription.EndDate,
+				DurationDays = subscription.Subscription?.DurationDays ?? 0,
+				AiRequestsLimit = subscription.Subscription?.AiRequestsLimit,
+				UsedAiRequests = subscription.UsedAiRequests,
+				Price = subscription.Subscription?.Price ?? 0,
+				YearlyPrice = subscription.Subscription?.YearlyPrice
+			};
+		}
+
+		private static async Task<DateTime?> GetLastActivityAtAsync(
+			IQueryable<Case> casesQuery,
+			IQueryable<Client> clientsQuery,
+			IQueryable<PowerOfAttorney> powersQuery,
+			IQueryable<Review> reviewsQuery,
+			IQueryable<AiUsageRecord> aiUsageQuery,
+			DateTime userCreatedAt,
+			DateTime lawyerCreatedAt,
+			CancellationToken cancellationToken)
+		{
+			var dates = new List<DateTime?> { userCreatedAt, lawyerCreatedAt };
+
+			dates.Add(await casesQuery.Select(c => (DateTime?)c.Created).MaxAsync(cancellationToken));
+			dates.Add(await clientsQuery.Select(c => (DateTime?)c.Created).MaxAsync(cancellationToken));
+			dates.Add(await powersQuery.Select(p => (DateTime?)p.Created).MaxAsync(cancellationToken));
+			dates.Add(await reviewsQuery.Select(r => (DateTime?)r.Created).MaxAsync(cancellationToken));
+			dates.Add(await aiUsageQuery.Select(a => (DateTime?)a.CreatedAt).MaxAsync(cancellationToken));
+
+			return dates.Where(d => d.HasValue).Max();
 		}
 	}
 }

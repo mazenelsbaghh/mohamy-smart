@@ -1,4 +1,3 @@
-using Lawyer.Application.Dtos.Account;
 using Lawyer.Application.Dtos.Lawyers;
 using Lawyer.Application.IServices;
 using Lawyer.Controllers.Base;
@@ -13,18 +12,16 @@ namespace Lawyer.Controllers
     public class AdminLawyersController : AppControllerBase
     {
         private readonly IAdminLawyerService _adminLawyerService;
-        private readonly IAccountService _accountService;
 
-        public AdminLawyersController(IAdminLawyerService adminLawyerService, IAccountService accountService)
+        public AdminLawyersController(IAdminLawyerService adminLawyerService)
         {
             _adminLawyerService = adminLawyerService;
-            _accountService = accountService;
         }
 
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetLawyerById(Guid id, CancellationToken cancellationToken)
         {
-            var result = await _accountService.GetUserByIdAsync(id, cancellationToken);
+            var result = await _adminLawyerService.GetLawyerDetailAsync(id, cancellationToken);
             return CreateResponse(result);
         }
 
