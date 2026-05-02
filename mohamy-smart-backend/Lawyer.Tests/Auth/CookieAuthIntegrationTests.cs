@@ -291,14 +291,7 @@ public class CookieAuthIntegrationTests : IClassFixture<WebApplicationFactory<Pr
         cookieHeader.Should().Contain(c => c.Contains("refresh") || c.Contains("__Host-refresh"));
         cookieHeader.Should().Contain(c => c.Contains("XSRF-TOKEN"));
 
-        var sessionCookie = cookieHeader.First(c => c.StartsWith("session=") || c.StartsWith("__Host-session="));
-        var cookieName = sessionCookie.Split('=')[0];
-        var cookieValue = sessionCookie.Split(';')[0].Substring(cookieName.Length + 1);
-
-        _client.DefaultRequestHeaders.Remove("Cookie");
-        _client.DefaultRequestHeaders.Add("Cookie", $"{cookieName}={cookieValue}");
-
-        // 2. Access protected GET endpoint (me)
+        // 2. Access protected GET endpoint (me) — CookieContainer sends cookies automatically (HandleCookies=true)
         var meResponse = await _client.GetAsync("/api/v1/auth/me");
         meResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -316,6 +309,7 @@ public class CookieAuthIntegrationTests : IClassFixture<WebApplicationFactory<Pr
         var xsrfTokenStr = cookieHeader.First(c => c.StartsWith("XSRF-TOKEN="));
         var rawXsrf = xsrfTokenStr.Split(';')[0].Substring("XSRF-TOKEN=".Length);
 
+        _client.DefaultRequestHeaders.Remove("X-XSRF-TOKEN");
         _client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", Uri.UnescapeDataString(rawXsrf));
 
         var logoutResponse = await _client.PostAsync("/api/v1/auth/logout", null);

@@ -104,54 +104,49 @@ namespace Lawyer.Application.Services
             {
                 var query = BuildQuery(from, to);
 
-                var lawyerStats = await query
-                    .GroupBy(r => new { r.LawyerId, r.Provider })
-                    .Select(g => new
-                    {
-                        LawyerId = g.Key.LawyerId,
-                        Provider = g.Key.Provider,
-                        Cost = g.Sum(r => r.EstimatedCostUsd),
-                        Count = g.Count()
-                    })
+                var rawRecords = await query
+                    .Select(r => new { r.LawyerId, r.Provider, r.EstimatedCostUsd })
                     .ToListAsync(ct);
 
-                var lawyerIds = lawyerStats.Select(s => s.LawyerId).Distinct().ToList();
-                
+                var distinctIds = rawRecords.Select(r => r.LawyerId).Distinct().ToList();
+
                 var lawyerLookup = await _unitOfWork.Repository<Core.Models.Lawyer>()
                     .AsQueryable()
                     .AsNoTracking()
-                    .Where(l => lawyerIds.Contains(l.Id) || lawyerIds.Contains(l.ApplicationUserId))
+                    .Where(l => distinctIds.Contains(l.Id) || distinctIds.Contains(l.ApplicationUserId))
                     .Include(l => l.ApplicationUser)
                     .ToListAsync(ct);
 
-                var lawyerNamesByLawyerId = lawyerLookup
-                    .GroupBy(l => l.Id)
-                    .ToDictionary(g => g.Key, g => g.Select(l => l.ApplicationUser?.FullName).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)) ?? "Unknown");
+                var toCanonicalId = new Dictionary<Guid, Guid>();
+                var canonicalNames = new Dictionary<Guid, string>();
+                foreach (var lawyer in lawyerLookup)
+                {
+                    var name = lawyer.ApplicationUser?.FullName ?? "غير معروف";
+                    if (!canonicalNames.ContainsKey(lawyer.Id))
+                        canonicalNames[lawyer.Id] = name;
+                    toCanonicalId[lawyer.Id] = lawyer.Id;
+                    toCanonicalId[lawyer.ApplicationUserId] = lawyer.Id;
+                }
 
-                var lawyerNamesByUserId = lawyerLookup
-                    .GroupBy(l => l.ApplicationUserId)
-                    .ToDictionary(g => g.Key, g => g.Select(l => l.ApplicationUser?.FullName).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)) ?? "Unknown");
-
-                var lawyerGroups = lawyerStats
-                    .GroupBy(s => s.LawyerId)
+                var lawyerGroups = rawRecords
+                    .Select(r => new { r.Provider, r.EstimatedCostUsd, CanonicalId = toCanonicalId.GetValueOrDefault(r.LawyerId, r.LawyerId) })
+                    .GroupBy(r => r.CanonicalId)
                     .Select(g =>
                     {
                         var aiRecs = g.Where(s => s.Provider == "Gemini").ToList();
                         var ocrRecs = g.Where(s => s.Provider == "GoogleVision").ToList();
-                        var lawyerName = lawyerNamesByLawyerId.GetValueOrDefault(g.Key)
-                            ?? lawyerNamesByUserId.GetValueOrDefault(g.Key)
-                            ?? "غير معروف";
+                        var lawyerName = canonicalNames.GetValueOrDefault(g.Key, "غير معروف");
 
                         return new LawyerUsageDto
                         {
                             LawyerId = g.Key,
                             LawyerName = lawyerName,
-                            TotalCostUsd = g.Sum(s => s.Cost),
-                            AiCostUsd = aiRecs.Sum(s => s.Cost),
-                            OcrCostUsd = ocrRecs.Sum(s => s.Cost),
-                            TotalRequests = g.Sum(s => s.Count),
-                            AiRequests = aiRecs.Sum(s => s.Count),
-                            OcrRequests = ocrRecs.Sum(s => s.Count)
+                            TotalCostUsd = g.Sum(s => s.EstimatedCostUsd),
+                            AiCostUsd = aiRecs.Sum(s => s.EstimatedCostUsd),
+                            OcrCostUsd = ocrRecs.Sum(s => s.EstimatedCostUsd),
+                            TotalRequests = g.Count(),
+                            AiRequests = aiRecs.Count,
+                            OcrRequests = ocrRecs.Count
                         };
                     })
                     .OrderByDescending(l => l.TotalCostUsd)
