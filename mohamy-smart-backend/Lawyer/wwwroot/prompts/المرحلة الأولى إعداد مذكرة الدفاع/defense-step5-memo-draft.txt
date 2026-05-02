@@ -61,18 +61,13 @@ MANDATORY DOCUMENT STRUCTURE (IN ORDER):
    - Opening line: "بادئ ذي بدء وقبل الخوض في الموضوع وعلى ضوء ما جاء بأوراق الدعوى ومستنداتها نلتمس في دعواه وذلك تأسيساً على:"
    - The defenses must be visually clean and easy to scan, not one large text block.
 
-   FOR EACH DEFENSE, present a COMPLETE LEGAL ARGUMENT with flowing prose including ALL of the following:
-   a) التأصيل القانوني (Legal Foundation): Write the introduction/explanation as connected prose explaining the legal basis of this defense.
-   b) الأساس الواقعي (Factual Basis): Connect the defense to specific facts from the case narrative.
-   c) النصوص القانونية (Legal Texts): For EACH legal text provided, write:
-      - The law name and article number
-      - The FULL text of the article as provided in the input
-      - Must be substantial — include the complete article text
-   d) ربط النصوص بالوقائع (Linking Texts to Facts): Write flowing prose connecting the legal texts to the case facts.
-   e) السوابق القضائية (Cassation Precedents): For EACH precedent provided, write:
-      - Full citation (appeal number, judicial year, session date)
-      - The FULL ruling text as provided in the input
-      - Must include the complete ruling text
+   FOR EACH DEFENSE, present a COMPLETE LEGAL ARGUMENT as one flowing court-style argument. The body must include ALL of the following without adding labels or sub-headings inside the defense:
+   a) Open with the legal article where available, using natural wording such as: "حيث نصت المادة رقم ... من قانون ... على أنه ..." followed immediately by the FULL article text provided in the input.
+   b) If more than one legal text is provided, introduce each one naturally in the prose with its law name, article number, and complete text. Do not create a separate heading titled "النصوص القانونية".
+   c) After the legal texts, introduce cassation precedents naturally with wording such as: "وفي ذلك قضت محكمة النقض بأنه ..." then include the FULL ruling text and its citation data (appeal number, judicial year, session date) as provided.
+   d) Connect the cited texts and rulings to the specific facts from the case narrative in connected prose.
+   e) Include the legal foundation, factual basis, legal application, response to counter-arguments, and legal effect of acceptance as part of the same argument.
+   f) The final result must read like a drafted defense memorandum, not like analysis cards. Do not output internal analytical labels such as "التأصيل القانوني", "الأساس الواقعي", "النصوص القانونية", "ربط النصوص بالوقائع", "السوابق القضائية", "التطبيق القانوني", "الرد على الحجج المضادة", "الأثر القانوني للقبول", "السند القانوني", or "تكييف الواقعة" as standalone headings or labels.
 
    ORGANIZE defenses under these sub-headings with smooth transitions, but include a sub-heading only if there is at least one approved defense of that type:
    - "من حيث الشكل" (Formal Defenses) — for type "Formal"
@@ -103,6 +98,7 @@ HTML FORMATTING REQUIREMENTS:
 - Use <h4 style="text-align:right;font-weight:800;"> for each individual defense title and request category
 - All body text in <p style="line-height:2;text-align:justify;">
 - Use <strong> for emphasis and labels
+- Do not use <h5>, <strong> labels, bullet labels, or standalone paragraphs for "النصوص القانونية", "السوابق القضائية", "السند القانوني", or "تكييف الواقعة" inside a defense. Legal texts and rulings must be embedded directly in the flowing defense paragraphs.
 - In the opening and closing, wrap the represented party / defended party name in <strong>...</strong>
 - Use <hr style="border:none;border-top:1px solid rgba(0,0,0,0.08);margin:24px 0;"> between major sections
 - Title headings: style="text-align:center;font-size:1.2rem;font-weight:800;"

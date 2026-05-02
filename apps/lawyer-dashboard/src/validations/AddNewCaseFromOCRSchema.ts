@@ -64,6 +64,8 @@ const addNewCaseFromOCRSchema = z.object({
  .min(5,"الطلبات القانونية يجب أن تكون 5 أحرف على الأقل")
  .max(5000,"الطلبات القانونية لا يجب أن تزيد عن 5000 حرف"),
 
+ internalRegulationIds: z.array(z.string()).optional(),
+
  powerOfAttorneyId: z.string().optional(),
 });
 

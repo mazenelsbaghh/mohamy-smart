@@ -32,6 +32,14 @@ export const API_ROUTES = {
  CREATE_LEGAL_CONTRACT:'/LegalContracts',
  GET_LEGAL_CONTRACT_DETAILS: (id: string) => `/LegalContracts/${id}`,
 
+ // Internal Regulations
+ GET_INTERNAL_REGULATIONS:'/InternalRegulations',
+ CREATE_INTERNAL_REGULATION:'/InternalRegulations',
+ UPDATE_INTERNAL_REGULATION: (id: string) => `/InternalRegulations/${id}`,
+ ARCHIVE_INTERNAL_REGULATION: (id: string) => `/InternalRegulations/${id}/archive`,
+ RESTORE_INTERNAL_REGULATION: (id: string) => `/InternalRegulations/${id}/restore`,
+ UPDATE_CASE_INTERNAL_REGULATIONS: (caseId: string) => `/Case/${caseId}/internal-regulations`,
+
  // AI Chat
  SEND_CHAT_MESSAGE:'/smartanalysis/chat'
 };

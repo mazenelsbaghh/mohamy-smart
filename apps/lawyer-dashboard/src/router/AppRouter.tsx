@@ -38,6 +38,7 @@ const LegalLibrary = React.lazy(() => import("../pages/legalLibrary/LegalLibrary
 const InheritanceCalculator = React.lazy(() => import("../pages/legalLibrary/InheritanceCalculator"));
 const CourtFeesCalculator = React.lazy(() => import("../pages/legalLibrary/CourtFeesCalculator"));
 const PowerOfAttorneysPage = React.lazy(() => import("../pages/legalLibrary/PowerOfAttorneysPage"));
+const InternalRegulationsPage = React.lazy(() => import("../pages/legalLibrary/InternalRegulationsPage"));
 const ProcessServerPapersPage = React.lazy(() => import("../pages/processServerPapers/ProcessServerPapersPage"));
 const NotFoundPage = React.lazy(() => import("../components/notFound/NotFoundPage"));
 
@@ -98,6 +99,7 @@ const AppRouter = () => {
  <Route path="/legal-library/inheritance" element={<Suspense fallback={<PageLoader />}><InheritanceCalculator /></Suspense>} />
  <Route path="/legal-library/court-fees" element={<Suspense fallback={<PageLoader />}><CourtFeesCalculator /></Suspense>} />
  <Route path="/legal-library/power-of-attorneys" element={<Suspense fallback={<PageLoader />}><PowerOfAttorneysPage /></Suspense>} />
+ <Route path="/legal-library/internal-regulations" element={<Suspense fallback={<PageLoader />}><InternalRegulationsPage /></Suspense>} />
  <Route path="/process-server-papers" element={<Suspense fallback={<PageLoader />}><ProcessServerPapersPage /></Suspense>} />
 
  <Route path="/agenda" element={<Suspense fallback={<PageLoader />}><AgendaPage /></Suspense>} />

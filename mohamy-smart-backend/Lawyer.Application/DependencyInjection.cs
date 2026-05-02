@@ -32,6 +32,7 @@ namespace Lawyer.Application
 			services.AddScoped<IAdminLawyerService, AdminLawyerService>();
 			services.AddScoped<IDocumentWorkspaceService, DocumentWorkspaceService>();
 			services.AddScoped<ILegalContractService, LegalContractService>();
+			services.AddScoped<IInternalRegulationService, InternalRegulationService>();
 
 			// Register AI Providers (Strategy Pattern)
 			services.AddScoped<GeminiProvider>();

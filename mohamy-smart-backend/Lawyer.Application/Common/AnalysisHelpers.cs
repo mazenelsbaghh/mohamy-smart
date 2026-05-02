@@ -183,6 +183,8 @@ namespace Lawyer.Application.Common
                 sb.AppendLine($"وقائع القضية: {c.Facts}");
             if (!string.IsNullOrWhiteSpace(c.LegalClaims))
                 sb.AppendLine($"الطلبات أو الغاية القانونية: {c.LegalClaims}");
+            if (!string.IsNullOrWhiteSpace(c.InternalRegulationsContext))
+                sb.AppendLine(c.InternalRegulationsContext);
             return sb.ToString().Trim();
         }
         public static string BuildPreviousStepsContext<TWorkflow>(TWorkflow workflow, int currentStep) where TWorkflow : WorkflowBase

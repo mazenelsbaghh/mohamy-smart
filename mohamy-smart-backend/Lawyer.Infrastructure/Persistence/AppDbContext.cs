@@ -22,6 +22,8 @@ namespace Lawyer.Infrastructure.Persistence
 		public DbSet<Subscription> Subscriptions { get; set; } = null!;
 		public DbSet<CaseType> CaseTypes { get; set; } = null!;
 		public DbSet<Case> Cases { get; set; } = null!;
+		public DbSet<InternalRegulation> InternalRegulations { get; set; } = null!;
+		public DbSet<CaseInternalRegulation> CaseInternalRegulations { get; set; } = null!;
 		public DbSet<FactAnalysis> FactAnalyses { get; set; } = null!;
 		public DbSet<Defense> Defenses { get; set; } = null!;
 		public DbSet<FinalPrayer> FinalPrayers { get; set; } = null!;

@@ -1,10 +1,12 @@
 # mohamy smart Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-29
+Auto-generated from all feature plans. Last updated: 2026-05-02
 
 ## Active Technologies
 - TypeScript 5.x / React 19 for lawyer dashboard; C# / .NET 9 for backend services + Redux Toolkit, React Router 7, HeroUI, SignalR client, Axios, Hangfire, EF Core 9, SQL Server, System.Text.Json (068-workflow-start-resume)
 - SQL Server workflow tables, `AiJobs`, workflow snapshots, workflow step outputs, local browser state for selected facts only (068-workflow-start-resume)
+- TypeScript 5.x / React 19 for lawyer dashboard; C# / .NET 9 for backend services + Redux Toolkit, React Router 7, HeroUI, Axios, EF Core 9, SQL Server, FluentValidation, System.Text.Json (069-internal-regulations)
+- SQL Server tables for internal regulations, case-regulation links, and a denormalized case reference context used by existing workflow context building (069-internal-regulations)
 
 - TypeScript 5.x / React 19 + Redux Toolkit, React Router 7, HeroUI, Tailwind CSS 4 (065-unify-workflow-arch)
 
@@ -24,6 +26,7 @@ npm test && npm run lint
 TypeScript 5.x / React 19: Follow standard conventions
 
 ## Recent Changes
+- 069-internal-regulations: Added TypeScript 5.x / React 19 for lawyer dashboard; C# / .NET 9 for backend services + Redux Toolkit, React Router 7, HeroUI, Axios, EF Core 9, SQL Server, FluentValidation, System.Text.Json
 - 068-workflow-start-resume: Added TypeScript 5.x / React 19 for lawyer dashboard; C# / .NET 9 for backend services + Redux Toolkit, React Router 7, HeroUI, SignalR client, Axios, Hangfire, EF Core 9, SQL Server, System.Text.Json
 
 - 065-unify-workflow-arch: Added TypeScript 5.x / React 19 + Redux Toolkit, React Router 7, HeroUI, Tailwind CSS 4

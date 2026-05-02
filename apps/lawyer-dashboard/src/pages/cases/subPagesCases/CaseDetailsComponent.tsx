@@ -1,23 +1,17 @@
+import { Button, Select, SelectItem } from'@heroui/react';
 import { CustomCard } from'@mohamy/shared-ui';
-
+import { useEffect, useMemo, useState } from'react';
+import { Save } from 'lucide-react';
+import { sileo } from'sileo';
+import { useAppDispatch, useAppSelector } from'../../../hooks/reduxHooks';
+import { setSingleCase, type TCase } from'../../../redux/cases/casesSlice';
+import {
+ fetchInternalRegulations,
+ updateCaseInternalRegulations,
+} from'../../../redux/internalRegulations/internalRegulationsSlice';
 
 type TCaseDetailsComponent = {
- singleCase: {
- id: number;
- title: string;
- number: string;
- caseTypeId: number,
- caseTypeName: string;
- court: string;
- clientName: string;
- apponentName: string;
- description: string;
- facts: string;
- legalClaims: string;
- status: number | string;
- clientId: string,
- creationDate: string;
- }
+ singleCase: TCase;
 }
 
 const creationDateFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -27,6 +21,47 @@ const creationDateFormatter = new Intl.DateTimeFormat('en-CA', {
 });
 
 const CaseDetailsComponent = ({ singleCase }: TCaseDetailsComponent) => {
+ const dispatch = useAppDispatch();
+ const { regulations: internalRegulations } = useAppSelector((state) => state.internalRegulations);
+ const linkedRegulations = singleCase.internalRegulations ?? [];
+ const [selectedRegulationIds, setSelectedRegulationIds] = useState<string[]>([]);
+ const [savingReferences, setSavingReferences] = useState(false);
+
+ useEffect(() => {
+ if (internalRegulations.length === 0) {
+ dispatch(fetchInternalRegulations({ page: 1, pageSize: 200 }));
+ }
+ }, [dispatch, internalRegulations.length]);
+
+ useEffect(() => {
+ setSelectedRegulationIds(
+ linkedRegulations
+ .filter((regulation) => regulation.isActive)
+ .map((regulation) => regulation.id)
+ );
+ }, [linkedRegulations]);
+
+ const activeRegulations = useMemo(
+ () => internalRegulations.filter((regulation) => regulation.isActive),
+ [internalRegulations]
+ );
+
+ const handleSaveReferences = async () => {
+ setSavingReferences(true);
+ try {
+ const updatedCase = await dispatch(updateCaseInternalRegulations({
+ caseId: String(singleCase.id),
+ internalRegulationIds: selectedRegulationIds,
+ })).unwrap();
+ dispatch(setSingleCase(updatedCase));
+ sileo.success({ title:'تم تحديث اللوائح الداخلية للقضية' });
+ } catch (error) {
+ sileo.error({ title: typeof error ==='string' ? error :'تعذّر تحديث اللوائح الداخلية للقضية' });
+ } finally {
+ setSavingReferences(false);
+ }
+ };
+
  return (
  <div className='flex flex-col gap-6'>
  {/* Main Info Grid */}
@@ -63,6 +98,69 @@ const CaseDetailsComponent = ({ singleCase }: TCaseDetailsComponent) => {
  </p>
  </CustomCard>
  </div>
+
+ <CustomCard className="border app-border shadow-sm">
+ <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
+ <div className="flex-1 min-w-0">
+ <div className="mb-4">
+ <span className="text-xs font-semibold text-[var(--main-color)] bg-[var(--accent-soft)] px-2 py-1 rounded-md mb-2 inline-block border border-[var(--accent-soft-strong)]">المراجع</span>
+ <h4 className="text-lg font-bold text-[var(--title-color)]">المراجع القانونية للقضية</h4>
+ <p className="text-xs app-text-subtle mt-1">نوع القضية واللوائح الداخلية التي ستدخل في سياق التحليل</p>
+ </div>
+ <div className="flex flex-wrap gap-2">
+ <span className="text-xs font-bold px-3 py-2 rounded-lg bg-[var(--accent-soft)] text-[var(--main-color)] border border-[var(--accent-soft-strong)]">
+ {singleCase.caseTypeName ||'نوع القضية غير محدد'}
+ </span>
+ {linkedRegulations.map((regulation) => (
+ <span
+ key={regulation.id}
+ className={`text-xs font-bold px-3 py-2 rounded-lg border ${
+ regulation.isActive
+ ?'bg-[var(--success-soft)] text-[var(--success-color)] border-transparent'
+ :'bg-[var(--danger-soft)] text-[var(--danger-color)] border-transparent'
+ }`}
+ >
+ {regulation.title}{regulation.isActive ?'' :' — مؤرشفة'}
+ </span>
+ ))}
+ {linkedRegulations.length === 0 && (
+ <span className="text-xs app-text-muted px-3 py-2 rounded-lg border app-border">لا توجد لوائح داخلية مرتبطة</span>
+ )}
+ </div>
+ </div>
+
+ <div className="w-full lg:w-[360px] flex flex-col gap-3">
+ <Select
+ label="تحديث اللوائح الداخلية"
+ variant="bordered"
+ selectionMode="multiple"
+ selectedKeys={new Set(selectedRegulationIds)}
+ onSelectionChange={(keys) => {
+ const next = keys ==='all'
+ ? activeRegulations.map((regulation) => regulation.id)
+ : Array.from(keys).map(String);
+ setSelectedRegulationIds(next);
+ }}
+ placeholder="اختر اللوائح النشطة"
+ >
+ {activeRegulations.map((regulation) => (
+ <SelectItem key={regulation.id} className="text-[var(--title-color)]">
+ {regulation.title}
+ </SelectItem>
+ ))}
+ </Select>
+ <Button
+ color="primary"
+ className="text-white font-bold"
+ startContent={<Save size={16} />}
+ isLoading={savingReferences}
+ onPress={() => void handleSaveReferences()}
+ >
+ حفظ المراجع
+ </Button>
+ </div>
+ </div>
+ </CustomCard>
 
  {/* Narratives Section */}
  <div className="grid grid-cols-1 gap-6 mt-2">

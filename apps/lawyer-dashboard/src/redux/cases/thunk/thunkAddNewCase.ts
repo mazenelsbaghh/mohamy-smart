@@ -17,6 +17,7 @@ type TCaseData = {
  IsExistedClient: boolean,
  clientId: string,
  PowerOfAttorneyId?: string,
+ internalRegulationIds?: string[],
 };
 
 const thunkAddNewCase = createAsyncThunk('cases/thunkAddNewCase', async (data: TCaseData, thunkAPI) => {
@@ -36,6 +37,7 @@ const thunkAddNewCase = createAsyncThunk('cases/thunkAddNewCase', async (data: T
  IsExistedClient: data.IsExistedClient,
  ClientId: data.clientId || undefined,
  PowerOfAttorneyId: data.PowerOfAttorneyId,
+ InternalRegulationIds: data.internalRegulationIds ?? [],
  });
  return res.data.data;
  } catch (error) {

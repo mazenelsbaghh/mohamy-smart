@@ -22,6 +22,7 @@ import legalWarningReducer from'./legalWarning/legalWarningSlice';
 import execRequestReducer from'./execRequest/execRequestSlice';
 import processServerPapersReducer from'./processServerPapers/processServerPapersSlice';
 import legalContractsReducer from'./legalContracts/legalContractsSlice';
+import internalRegulationsReducer from'./internalRegulations/internalRegulationsSlice';
 
 export const store = configureStore({
  reducer: {
@@ -48,6 +49,7 @@ export const store = configureStore({
  rulingAnalysis: rulingAnalysisReducer,
  processServerPapers: processServerPapersReducer,
  legalContracts: legalContractsReducer,
+ internalRegulations: internalRegulationsReducer,
  },
 });
 

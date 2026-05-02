@@ -3,7 +3,7 @@ import { Container } from'@mohamy/shared-ui';
 import'./LegalLibrary.css';
 import { useNavigate } from'react-router-dom';
 import { FaScaleBalanced, FaMoneyBillWave } from'react-icons/fa6';
-import { MdOutlineAssignmentInd, MdOutlineDescription } from'react-icons/md';
+import { MdOutlineAssignmentInd, MdOutlineDescription, MdOutlineArticle } from'react-icons/md';
 
 import HeadTitle from'../../components/headTitle/HeadTitle';
 
@@ -36,6 +36,13 @@ const TOOLS: LibraryTool[] = [
  description:'إضافة توكيلاتك الخاصة ومتابعة حالتها بعيداً عن ملفات الموكلين',
  icon: <MdOutlineAssignmentInd />,
  route:'/legal-library/power-of-attorneys',
+ },
+ {
+ id:'internal-regulations',
+ title:'اللوائح الداخلية',
+ description:'إضافة اللوائح الداخلية وربطها بالقضايا لتعمل مع القوانين المختارة داخل التحليل القانوني',
+ icon: <MdOutlineArticle />,
+ route:'/legal-library/internal-regulations',
  },
  {
  id:'process-server-papers',

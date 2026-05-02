@@ -26,6 +26,7 @@ namespace Lawyer.Core.Models
 		public string Description { get; set; } = string.Empty;
 		public string Facts {  get; set; } = string.Empty;     //وقائع القضيه
 		public string LegalClaims { get; set; } = string.Empty;   // الطلبات القانونيه
+		public string? InternalRegulationsContext { get; set; }
 
 		public CaseStatus Status { get; set; }
 
@@ -46,5 +47,6 @@ namespace Lawyer.Core.Models
 		public ICollection<LawSuitParty> LawSuitParties { get; set; } = new List<LawSuitParty>();
 		public ICollection<LawSuitSubject> LawSuitSubjects { get; set; } = new List<LawSuitSubject>();
 		public ICollection<LawSuitFacts> LawSuitFacts { get; set; } = new List<LawSuitFacts>();
+		public ICollection<CaseInternalRegulation> CaseInternalRegulations { get; set; } = new List<CaseInternalRegulation>();
 	}
 }

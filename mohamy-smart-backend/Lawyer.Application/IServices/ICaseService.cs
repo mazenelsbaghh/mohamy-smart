@@ -1,4 +1,5 @@
 ﻿using Lawyer.Application.Dtos.Case;
+using Lawyer.Application.Dtos.InternalRegulations;
 using Lawyer.Application.Dtos.LawyerReport;
 using Lawyer.Core.Common;
 using Lawyer.Core.Exceptions;
@@ -19,6 +20,7 @@ namespace Lawyer.Application.IServices
 			bool? isActive,
 			CancellationToken cancellationToken);
 		Task<Result<CaseDto>> UpdateCaseAsync(Guid id, UpdateCaseDto dto, Guid lawyerId, bool isLawyer, CancellationToken cancellationToken);
+		Task<Result<CaseDto>> UpdateCaseInternalRegulationsAsync(Guid id, UpdateCaseInternalRegulationsDto dto, Guid lawyerId, bool isLawyer, CancellationToken cancellationToken);
 		Task<Result<CaseDto>> SetArchiveStatusAsync(Guid id, bool isArchived, Guid lawyerId, bool isLawyer, CancellationToken cancellationToken);
 		Task<Result<bool>> DeleteCaseAsync(Guid id, Guid lawyerId, bool isLawyer, CancellationToken cancellationToken);
 		Task<Result<LawyerDashboardReportDto>> GetLawyerDashboardReportAsync(Guid lawyerId, CancellationToken cancellationToken);

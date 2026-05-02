@@ -88,10 +88,11 @@ export function useAiJobSignalR(caseId: string | null, skipInitialFetch = false,
  };
  }, [caseId, dispatch, skipInitialFetch, workflowCreatedAt]);
 
- // Fallback polling: only when SignalR is down AND there are active jobs
+ // Reconciliation polling: SignalR can miss the final completion event if the
+ // connection reconnects or joins the case group slightly late. While any job is
+ // active, poll lightly so loaders cannot remain stuck until a manual refresh.
  useEffect(() => {
  if (!caseId || !hasActiveJobs || !workflowCreatedAt) {
- // No active jobs or workflow not loaded → stop any existing polling
  if (intervalRef.current) {
  clearInterval(intervalRef.current);
  intervalRef.current = null;
@@ -99,16 +100,14 @@ export function useAiJobSignalR(caseId: string | null, skipInitialFetch = false,
  return;
  }
 
- // Don't start a second interval if one is already running
  if (intervalRef.current) return;
 
- // Check if SignalR is connected — if so, no need to poll
- const conn = connectionRef.current;
- if (conn && conn.state === signalR.HubConnectionState.Connected) return;
-
- // SignalR is not connected and we have active jobs → poll every 5 seconds
  intervalRef.current = setInterval(() => {
- dispatch(thunkGetAllAiJobs({ caseId, since: workflowCreatedAt }));
+ dispatch(thunkGetAllAiJobs({
+ caseId,
+ since: workflowCreatedAt,
+ runId: runIdRef.current ?? undefined,
+ }));
  }, 5000);
 
  return () => {

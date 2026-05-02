@@ -1,4 +1,5 @@
 using Lawyer.Core.Enum;
+using Lawyer.Application.Dtos.InternalRegulations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,7 @@ namespace Lawyer.Application.Dtos.Case
 		public bool IsExistedClient { get; set; }
 		public Guid? ClientId { get; set; }
 		public Guid? PowerOfAttorneyId { get; set; }
+		public List<Guid> InternalRegulationIds { get; set; } = new();
 	}
 
 
@@ -39,6 +41,7 @@ namespace Lawyer.Application.Dtos.Case
 		public string Facts { get; set; } = string.Empty;           // وقائع القضية
 		public string LegalClaims { get; set; } = string.Empty;     // الطلبات القانونية
 		public Guid? PowerOfAttorneyId { get; set; }
+		public List<Guid>? InternalRegulationIds { get; set; }
 	}
 
 	public class CaseDto
@@ -60,6 +63,7 @@ namespace Lawyer.Application.Dtos.Case
 		public CaseStatus Status { get; set; }
 		public Guid? ClientId { get; set; }
 		public Guid? PowerOfAttorneyId { get; set; }
+		public List<InternalRegulationSummaryDto> InternalRegulations { get; set; } = new();
 		public bool IsActive { get; set; }
 		public DateTime CreationDate { get; set; }
 	}

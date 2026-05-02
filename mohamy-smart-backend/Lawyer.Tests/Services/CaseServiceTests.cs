@@ -19,6 +19,11 @@ public class CaseServiceTests
     {
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _loggerMock = new Mock<ILogger<CaseService>>();
+        var caseInternalRegulationRepoMock = new Mock<IGenericRepository<CaseInternalRegulation>>();
+        caseInternalRegulationRepoMock
+            .Setup(r => r.AsQueryable())
+            .Returns(new List<CaseInternalRegulation>().AsQueryable());
+        SetupRepository(caseInternalRegulationRepoMock);
         _service = new CaseService(_unitOfWorkMock.Object, _loggerMock.Object);
     }
 

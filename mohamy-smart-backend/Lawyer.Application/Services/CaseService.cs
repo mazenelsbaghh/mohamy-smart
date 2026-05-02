@@ -1,4 +1,5 @@
 using Lawyer.Application.Dtos.Case;
+using Lawyer.Application.Dtos.InternalRegulations;
 using Lawyer.Application.Dtos.LawyerReport;
 using Lawyer.Application.IServices;
 using Lawyer.Application.Common;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -21,6 +23,7 @@ namespace Lawyer.Application.Services
 {
 	public class CaseService : ICaseService
 	{
+		private const int MaxContextCharactersPerRegulation = 8000;
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly ILogger<CaseService> _logger;
 
@@ -111,13 +114,32 @@ namespace Lawyer.Application.Services
                     await _unitOfWork.SaveChangesAsync(cancellationToken);
                 }
 
+                if (dto.InternalRegulationIds?.Count > 0)
+                {
+                    var linkResult = await ReplaceCaseInternalRegulationsAsync(
+                        entity.Id,
+                        dto.InternalRegulationIds,
+                        lawyerId,
+                        lawyerId,
+                        cancellationToken);
+
+                    if (!linkResult.Succeeded)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        return ApiExceptionResponse.BadRequest<CaseDto>(linkResult.Message);
+                    }
+                }
+
                 _logger.LogInformation("Case created successfully: {CaseNumber}", entity.Number);
 
                 var caseType = await _unitOfWork.Repository<Core.Models.CaseType>()
                     .FirstOrDefaultAsync(x => x.Id == entity.CaseTypeId, cancellationToken);
+                var internalRegulations = dto.InternalRegulationIds?.Count > 0
+                    ? await GetInternalRegulationSummariesAsync(entity.Id, cancellationToken)
+                    : new List<InternalRegulationSummaryDto>();
 
                 await transaction.CommitAsync(cancellationToken);
-                return ApiExceptionResponse.Success(MapToDto(entity, caseType?.Title), "Case created successfully");
+                return ApiExceptionResponse.Success(MapToDto(entity, caseType?.Title, internalRegulations: internalRegulations), "Case created successfully");
             }
             catch
             {
@@ -137,8 +159,9 @@ namespace Lawyer.Application.Services
 
 			var caseType = await _unitOfWork.Repository<Core.Models.CaseType>()
 				.FirstOrDefaultAsync(x => x.Id == entity.CaseTypeId, cancellationToken);
+			var internalRegulations = await GetInternalRegulationSummariesAsync(entity.Id, cancellationToken);
 
-			return ApiExceptionResponse.Success(MapToDto(entity, caseType?.Title));
+			return ApiExceptionResponse.Success(MapToDto(entity, caseType?.Title, internalRegulations: internalRegulations));
 		}
 
 		public async Task<Result<PagedResponse<CaseDto>>> GetAllAsync(
@@ -218,12 +241,53 @@ namespace Lawyer.Application.Services
 			await _unitOfWork.Repository<Case>().Update(entity);
 			await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+			if (dto.InternalRegulationIds != null)
+			{
+				var linkResult = await ReplaceCaseInternalRegulationsAsync(
+					entity.Id,
+					dto.InternalRegulationIds,
+					entity.LawyerId,
+					lawyerId,
+					cancellationToken);
+
+				if (!linkResult.Succeeded)
+					return ApiExceptionResponse.BadRequest<CaseDto>(linkResult.Message);
+			}
+
 			_logger.LogInformation("Case updated: {CaseNumber}", entity.Number);
 
 			var caseType = await _unitOfWork.Repository<Core.Models.CaseType>()
 				.FirstOrDefaultAsync(x => x.Id == entity.CaseTypeId, cancellationToken);
+			var internalRegulations = await GetInternalRegulationSummariesAsync(entity.Id, cancellationToken);
 
-			return ApiExceptionResponse.Success(MapToDto(entity, caseType?.Title), "Case updated successfully");
+			return ApiExceptionResponse.Success(MapToDto(entity, caseType?.Title, internalRegulations: internalRegulations), "Case updated successfully");
+		}
+
+		public async Task<Result<CaseDto>> UpdateCaseInternalRegulationsAsync(Guid id, UpdateCaseInternalRegulationsDto dto, Guid lawyerId, bool isLawyer, CancellationToken cancellationToken)
+		{
+			var entity = await _unitOfWork.Repository<Case>().FirstOrDefaultAsync(x => x.Id == id);
+			if (entity == null)
+				return ApiExceptionResponse.NotFound<CaseDto>("Case not found");
+
+			if (isLawyer && entity.LawyerId != lawyerId)
+				throw new ForbiddenException("لا تملك صلاحية تعديل هذه القضية.");
+
+			var linkResult = await ReplaceCaseInternalRegulationsAsync(
+				id,
+				dto.InternalRegulationIds,
+				entity.LawyerId,
+				lawyerId,
+				cancellationToken);
+
+			if (!linkResult.Succeeded)
+				return ApiExceptionResponse.BadRequest<CaseDto>(linkResult.Message);
+
+			var caseType = await _unitOfWork.Repository<Core.Models.CaseType>()
+				.FirstOrDefaultAsync(x => x.Id == entity.CaseTypeId, cancellationToken);
+			var internalRegulations = await GetInternalRegulationSummariesAsync(entity.Id, cancellationToken);
+			entity.InternalRegulationsContext = await BuildCaseInternalRegulationsContextAsync(entity.Id, cancellationToken);
+
+			return ApiExceptionResponse.Success(MapToDto(entity, caseType?.Title, internalRegulations: internalRegulations), "تم تحديث اللوائح الداخلية المرتبطة بالقضية");
 		}
 
 		public async Task<Result<CaseDto>> SetArchiveStatusAsync(Guid id, bool isArchived, Guid lawyerId, bool isLawyer, CancellationToken cancellationToken)
@@ -299,7 +363,141 @@ namespace Lawyer.Application.Services
 			return ApiExceptionResponse.Success(dto, "Lawyer dashboard report generated successfully");
 		}
 
-        private static CaseDto MapToDto(Case entity, string? caseTypeName = null, List<Core.Models.CaseType>? allTypes = null)
+		private async Task<Result<bool>> ReplaceCaseInternalRegulationsAsync(
+			Guid caseId,
+			IEnumerable<Guid>? requestedIds,
+			Guid caseLawyerId,
+			Guid userId,
+			CancellationToken cancellationToken)
+		{
+			var caseEntity = await _unitOfWork.Repository<Case>()
+				.FirstOrDefaultTrackedAsync(x => x.Id == caseId, cancellationToken);
+
+			if (caseEntity == null)
+				return ApiExceptionResponse.NotFound(false, "Case not found");
+
+			var selectedIds = NormalizeRegulationIds(requestedIds);
+			var regulations = await LoadOwnedActiveRegulationsAsync(selectedIds, caseLawyerId, cancellationToken);
+			if (!regulations.Succeeded)
+				return ApiExceptionResponse.BadRequest(false, regulations.Message);
+
+			var currentLinks = await _unitOfWork.Repository<CaseInternalRegulation>()
+				.WhereTrackedAsync(x => x.CaseId == caseId, cancellationToken);
+
+			var selectedSet = selectedIds.ToHashSet();
+			foreach (var link in currentLinks.Where(x => !selectedSet.Contains(x.InternalRegulationId)))
+				_unitOfWork.Repository<CaseInternalRegulation>().Delete(link);
+
+			var currentSet = currentLinks.Select(x => x.InternalRegulationId).ToHashSet();
+			foreach (var regulationId in selectedIds.Where(x => !currentSet.Contains(x)))
+			{
+				await _unitOfWork.Repository<CaseInternalRegulation>().AddAsync(new CaseInternalRegulation
+				{
+					Id = Guid.NewGuid(),
+					CaseId = caseId,
+					InternalRegulationId = regulationId,
+					CreatedAtUtc = DateTime.UtcNow,
+					CreatedByUserId = userId
+				});
+			}
+
+			caseEntity.InternalRegulationsContext = BuildInternalRegulationsContext(regulations.Data ?? new List<InternalRegulation>());
+			await _unitOfWork.Repository<Case>().Update(caseEntity);
+			await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+			return ApiExceptionResponse.Success(true, "تم تحديث اللوائح الداخلية المرتبطة بالقضية");
+		}
+
+		private async Task<Result<List<InternalRegulation>>> LoadOwnedActiveRegulationsAsync(List<Guid> regulationIds, Guid lawyerId, CancellationToken cancellationToken)
+		{
+			if (regulationIds.Count == 0)
+				return ApiExceptionResponse.Success(new List<InternalRegulation>());
+
+			var regulations = await _unitOfWork.Repository<InternalRegulation>()
+				.AsQueryable()
+				.AsNoTracking()
+				.Where(x => regulationIds.Contains(x.Id) && x.LawyerId == lawyerId && x.IsActive)
+				.ToListAsync(cancellationToken);
+
+			if (regulations.Count != regulationIds.Count)
+				return ApiExceptionResponse.BadRequest<List<InternalRegulation>>("لا يمكن ربط لائحة غير موجودة أو مؤرشفة أو لا تخص هذه القضية");
+
+			return ApiExceptionResponse.Success(regulations);
+		}
+
+		private async Task<List<InternalRegulationSummaryDto>> GetInternalRegulationSummariesAsync(Guid caseId, CancellationToken cancellationToken)
+		{
+			return await _unitOfWork.Repository<CaseInternalRegulation>()
+				.AsQueryable()
+				.AsNoTracking()
+				.Where(x => x.CaseId == caseId)
+				.OrderBy(x => x.InternalRegulation.Title)
+				.Select(x => new InternalRegulationSummaryDto
+				{
+					Id = x.InternalRegulation.Id,
+					Title = x.InternalRegulation.Title,
+					RegulationNumber = x.InternalRegulation.RegulationNumber,
+					IssuingAuthority = x.InternalRegulation.IssuingAuthority,
+					IsActive = x.InternalRegulation.IsActive
+				})
+				.ToListAsync(cancellationToken);
+		}
+
+		private async Task<string?> BuildCaseInternalRegulationsContextAsync(Guid caseId, CancellationToken cancellationToken)
+		{
+			var regulations = await _unitOfWork.Repository<CaseInternalRegulation>()
+				.AsQueryable()
+				.AsNoTracking()
+				.Where(x => x.CaseId == caseId && x.InternalRegulation.IsActive)
+				.Select(x => x.InternalRegulation)
+				.OrderBy(x => x.Title)
+				.ToListAsync(cancellationToken);
+
+			return BuildInternalRegulationsContext(regulations);
+		}
+
+		private static string? BuildInternalRegulationsContext(IReadOnlyCollection<InternalRegulation> regulations)
+		{
+			if (regulations.Count == 0)
+				return null;
+
+			var sb = new StringBuilder();
+			sb.AppendLine("اللوائح الداخلية المرتبطة بالقضية:");
+
+			foreach (var regulation in regulations.OrderBy(x => x.Title))
+			{
+				sb.AppendLine($"- العنوان: {regulation.Title}");
+				if (!string.IsNullOrWhiteSpace(regulation.RegulationNumber))
+					sb.AppendLine($"  رقم اللائحة: {regulation.RegulationNumber}");
+				if (!string.IsNullOrWhiteSpace(regulation.IssuingAuthority))
+					sb.AppendLine($"  جهة الإصدار: {regulation.IssuingAuthority}");
+				if (!string.IsNullOrWhiteSpace(regulation.Summary))
+					sb.AppendLine($"  الملخص: {regulation.Summary}");
+
+				var content = regulation.Content.Trim();
+				if (content.Length > MaxContextCharactersPerRegulation)
+					content = content[..MaxContextCharactersPerRegulation] + "\n[تم اختصار نص اللائحة الداخلية لطولها، راجع النص الكامل في المكتبة القانونية.]";
+
+				sb.AppendLine("  النص:");
+				sb.AppendLine(content);
+			}
+
+			return sb.ToString().Trim();
+		}
+
+		private static List<Guid> NormalizeRegulationIds(IEnumerable<Guid>? regulationIds)
+		{
+			return regulationIds?
+				.Where(x => x != Guid.Empty)
+				.Distinct()
+				.ToList() ?? new List<Guid>();
+		}
+
+        private static CaseDto MapToDto(
+			Case entity,
+			string? caseTypeName = null,
+			List<Core.Models.CaseType>? allTypes = null,
+			List<InternalRegulationSummaryDto>? internalRegulations = null)
 		{
 			var ids = string.IsNullOrEmpty(entity.CaseTypeIds)
 				? new List<int> { entity.CaseTypeId }
@@ -327,6 +525,8 @@ namespace Lawyer.Application.Services
 				LegalClaims = entity.LegalClaims,
 				Status = entity.Status,
 				ClientId = entity.ClientId,
+				PowerOfAttorneyId = entity.PowerOfAttorneyId,
+				InternalRegulations = internalRegulations ?? new List<InternalRegulationSummaryDto>(),
 				IsActive = entity.IsActive,
 				CreationDate = entity.Created
 			};

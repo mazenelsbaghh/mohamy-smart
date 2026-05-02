@@ -1,5 +1,6 @@
 using Lawyer.Application.Common;
 using Lawyer.Application.Dtos.Case;
+using Lawyer.Application.Dtos.InternalRegulations;
 using Lawyer.Application.IServices;
 using Lawyer.Controllers.Base;
 using Lawyer.Core.Exceptions;
@@ -103,6 +104,20 @@ namespace Lawyer.Controllers
 			}
 
 			var result = await _service.UpdateCaseAsync(id, model, lawyerId, isLawyer, cancellationToken);
+			return CreateResponse(result);
+		}
+
+		[HttpPut("{id:guid}/internal-regulations")]
+		[Authorize(Roles = "Lawyer")]
+		public async Task<IActionResult> UpdateInternalRegulations(Guid id, [FromBody] UpdateCaseInternalRegulationsDto model, CancellationToken cancellationToken)
+		{
+			_logger.LogInformation("Updating internal regulations for case {Id}", id);
+			var userContext = _userContextProvider.GetCurrentContext();
+			var lawyerIdResult = await _lawyerIdResolver.ResolveAsync(userContext, null, cancellationToken);
+			if (!lawyerIdResult.Succeeded)
+				return CreateResponse(lawyerIdResult);
+
+			var result = await _service.UpdateCaseInternalRegulationsAsync(id, model, lawyerIdResult.Data, true, cancellationToken);
 			return CreateResponse(result);
 		}
 

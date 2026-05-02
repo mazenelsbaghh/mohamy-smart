@@ -17,6 +17,9 @@ namespace Lawyer.Infrastructure.Persistence.Configuration
             // Composite index for lawyer + status filtering (dashboard queries)
             builder.HasIndex(c => new { c.LawyerId, c.Status })
                 .HasDatabaseName("IX_Cases_LawyerId_Status");
+
+            builder.Property(c => c.InternalRegulationsContext)
+                .HasMaxLength(50000);
         }
     }
 }

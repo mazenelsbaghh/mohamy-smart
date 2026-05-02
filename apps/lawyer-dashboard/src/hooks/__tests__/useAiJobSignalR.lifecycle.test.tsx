@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import type { ReactNode } from 'react';
@@ -55,15 +55,16 @@ vi.mock('../../redux/aiJobs/thunk/thunkSubmitAiJob', () => ({
 }));
 
 import reducer, { type AiJob } from '../../redux/aiJobs/aiJobsSlice';
+import thunkGetAllAiJobs from '../../redux/aiJobs/thunk/thunkGetAllAiJobs';
 
-function createTestStore(activeRunId: string | number | null = null) {
+function createTestStore(activeRunId: string | number | null = null, jobs: Record<string, AiJob> = {}) {
   return configureStore({
     reducer: {
       aiJobs: reducer,
     },
     preloadedState: {
       aiJobs: {
-        jobs: {},
+        jobs,
         loading: 'idle' as const,
         error: null,
         activeRunId,
@@ -107,7 +108,9 @@ describe('useAiJobSignalR lifecycle', () => {
       stepNumber: 1,
     };
 
-    eventHandlers['JobCompleted']!(job);
+    await act(async () => {
+      eventHandlers['JobCompleted']!(job);
+    });
 
     const state = store.getState();
     expect(state.aiJobs.jobs['FactAnalysis']).toBeDefined();
@@ -145,9 +148,51 @@ describe('useAiJobSignalR lifecycle', () => {
       stepNumber: 1,
     };
 
-    eventHandlers['JobCompleted']!(job);
+    await act(async () => {
+      eventHandlers['JobCompleted']!(job);
+    });
 
     const state = store.getState();
     expect(state.aiJobs.jobs['FactAnalysis']).toBeUndefined();
+  });
+
+  it('polls active jobs even when SignalR is connected', async () => {
+    vi.useFakeTimers();
+    const caseId = 'case-456';
+    const workflowCreatedAt = new Date().toISOString();
+    const activeJob: AiJob = {
+      id: 'job-active',
+      caseId,
+      stepType: 'GenerateDefenses',
+      status: 'Processing',
+      resultJson: null,
+      errorMessage: null,
+      createdAt: workflowCreatedAt,
+      completedAt: null,
+      runId: 'run-123',
+      stepNumber: 2,
+    };
+    const store = createTestStore('run-123', { GenerateDefenses: activeJob });
+
+    const { useAiJobSignalR } = await import('../useAiJobSignalR');
+
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <Provider store={store}>{children}</Provider>
+    );
+
+    const { unmount } = renderHook(() => useAiJobSignalR(caseId, true, workflowCreatedAt, 'run-123'), { wrapper });
+
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(thunkGetAllAiJobs).toHaveBeenCalledWith({
+      caseId,
+      since: workflowCreatedAt,
+      runId: 'run-123',
+    });
+
+    unmount();
+    vi.useRealTimers();
   });
 });

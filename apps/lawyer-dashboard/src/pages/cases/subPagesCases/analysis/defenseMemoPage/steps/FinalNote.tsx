@@ -141,14 +141,6 @@ const buildMarkdown = (summary: TSummary, memoHtml: string): string => {
  ...(summary.defenses.defensesEvidentiary || []),
  ] : [];
  const requests = summary?.finalRequirements?.finalPrayers || [];
- const legalTexts = defenses.flatMap((defense) => {
- const explanation = summary?.explanationsCache?.[defense.id];
- return (explanation?.legalTextsFull || []).map((text) => ({
- defenseTitle: defense.defenseTitle,
- ...text,
- }));
- });
-
  return [
  `# مذكرة دفاع${summary?.caseNumber ? ` - ${summary.caseNumber}` : ''}`,
  '',
@@ -158,15 +150,16 @@ const buildMarkdown = (summary: TSummary, memoHtml: string): string => {
  '## الدفوع',
  defenses.length ? defenses.map((defense, index) => {
  const explanation = summary?.explanationsCache?.[defense.id];
+ const legalTexts = explanation?.legalTextsFull || [];
+ const precedents = explanation?.cassationPrecedentsFull || [];
  return [
  `${index + 1}. ${markdownEscape(defense.defenseTitle)}`,
  `   - الأساس: ${markdownEscape(defense.basisFromCase)}`,
- explanation?.legalApplication ? `   - التطبيق: ${markdownEscape(explanation.legalApplication)}` : '',
+ ...legalTexts.map((text) => `   حيث نصت المادة ${markdownEscape(text.articleNumber)} من ${markdownEscape(text.lawName)} على أنه: ${markdownEscape(text.fullText)}`),
+ ...precedents.map((precedent) => `   وفي ذلك قضت محكمة النقض بأنه: ${markdownEscape(precedent.fullText)} (طعن ${markdownEscape(precedent.appealNumber)} لسنة ${markdownEscape(precedent.judicialYear)} - جلسة ${markdownEscape(precedent.sessionDate)}).`),
+ explanation?.legalApplication ? `   ${markdownEscape(explanation.legalApplication)}` : '',
  ].filter(Boolean).join('\n');
  }).join('\n\n') : '- لا توجد دفوع محددة.',
- '',
- '## النصوص القانونية',
- legalTexts.length ? legalTexts.map((text) => `- ${markdownEscape(text.defenseTitle)}: ${markdownEscape(text.lawName)} - المادة ${markdownEscape(text.articleNumber)}\n  ${markdownEscape(text.fullText)}`).join('\n\n') : '- لا توجد نصوص قانونية مضافة.',
  '',
  '## الطلبات',
  requests.length ? requests.map((request) => `- ${markdownEscape(request.requestLevel)}: ${markdownEscape(request.requestText)}`).join('\n') : '- لا توجد طلبات ختامية.',

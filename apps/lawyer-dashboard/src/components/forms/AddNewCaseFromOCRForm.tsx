@@ -13,6 +13,7 @@ import thunkGetAllCaseType from"../../redux/caseType/thunk/thunkGetAllCaseType";
 import thunkGetAllCases from"../../redux/cases/thunk/thunkGetAllCases";
 import thunkGetSingleCase from"../../redux/cases/thunk/thunkGetSingleCase";
 import thunkUpdateCaseFacts from"../../redux/cases/thunk/thunkUpdateCaseFacts";
+import { fetchInternalRegulations } from"../../redux/internalRegulations/internalRegulationsSlice";
 import { clearOcrSession } from"../../redux/ocr/ocrSlice";
 import { useNavigate } from"react-router-dom";
 import FormSection from"../ui/form/FormSection";
@@ -35,12 +36,19 @@ const AddNewCaseFromOCRForm = ({ onClose }: Props) => {
  const { clients } = useAppSelector((state) => state.clients);
  const { caseType } = useAppSelector((state) => state.caseType);
  const { cases, loading: casesLoading } = useAppSelector((state) => state.cases);
+ const { regulations: internalRegulations } = useAppSelector((state) => state.internalRegulations);
 
  useEffect(() => {
  if (caseType.length === 0) {
  dispatch(thunkGetAllCaseType());
  }
  }, [dispatch, caseType.length]);
+
+ useEffect(() => {
+ if (internalRegulations.length === 0) {
+ dispatch(fetchInternalRegulations({ page: 1, pageSize: 200 }));
+ }
+ }, [dispatch, internalRegulations.length]);
 
  type FormStep ='case-type' |'case-select' |'defending' |'client-match' |'form' |'review';
  const [step, setStep] = useState<FormStep>('case-type');
@@ -73,6 +81,7 @@ const AddNewCaseFromOCRForm = ({ onClose }: Props) => {
  caseDescription:"",
  caseFacts:"",
  legalRequests:"",
+ internalRegulationIds: [],
  powerOfAttorneyId:"",
  }
  });
@@ -216,6 +225,7 @@ const AddNewCaseFromOCRForm = ({ onClose }: Props) => {
  IsExistedClient: isExisted,
  clientId: finalClientId,
  PowerOfAttorneyId: data.powerOfAttorneyId ? data.powerOfAttorneyId : undefined,
+ internalRegulationIds: data.internalRegulationIds ?? [],
  };
  const newCase = await dispatch(thunkAddNewCase(finalData)).unwrap();
  sileo.success({ title:'تم إنشاء القضية بنجاح. يمكنك بدء التحليل الآن.' });
@@ -620,6 +630,37 @@ const AddNewCaseFromOCRForm = ({ onClose }: Props) => {
  </Select>
  )}
  />
+ <Controller
+ name="internalRegulationIds"
+ control={control}
+ render={({ field }) => (
+ <Select
+ label="اللوائح الداخلية"
+ variant="bordered"
+ selectionMode="multiple"
+ placeholder="اختياري — اختر اللوائح المرتبطة بالقضية"
+ classNames={selectClass}
+ selectedKeys={new Set(field.value ?? [])}
+ onSelectionChange={(keys) => {
+ field.onChange(Array.from(keys).map(String));
+ }}
+ >
+ {internalRegulations
+ .filter((regulation) => regulation.isActive)
+ .map((regulation) => (
+ <SelectItem
+ key={regulation.id}
+ className="text-[var(--title-color)] data-[hover=true]:bg-[var(--accent-soft)] data-[selected=true]:text-[var(--main-color)]"
+ >
+ {regulation.title}
+ </SelectItem>
+ ))}
+ </Select>
+ )}
+ />
+ <p className="text-xs app-text-muted">
+ سيتم استخدام اللوائح المختارة مع نوع القضية في التحليل القانوني.
+ </p>
   <div className="flex flex-col gap-1">
   <CustomInput
   type="text"
@@ -852,6 +893,10 @@ const AddNewCaseFromOCRForm = ({ onClose }: Props) => {
  { label:'وصف القضية', value: watched.caseDescription, fullWidth: true },
  { label:'وقائع القضية (مفصلة)', value: watched.caseFacts, fullWidth: true },
  { label:'الطلبات القانونية', value: watched.legalRequests, fullWidth: true },
+ { label:'اللوائح الداخلية', value: (watched.internalRegulationIds ?? [])
+ .map(id => internalRegulations.find(regulation => regulation.id === id)?.title)
+ .filter(Boolean)
+ .join('، ') ||'لا توجد لوائح مرتبطة', fullWidth: true },
  ],
  },
  ]}

@@ -6,6 +6,7 @@ import { isString } from"@mohamy/shared-utils";
 import thunkGetAllCases from"./thunk/thunkGetAllCases";
 import thunkGetSingleCase from"./thunk/thunkGetSingleCase";
 import thunkSetCaseArchived from"./thunk/thunkSetCaseArchived";
+import type { TInternalRegulationSummary } from"../../types/types";
 
 
 export type TCase = {
@@ -23,6 +24,7 @@ export type TCase = {
  legalClaims: string;
  status: number | string;
  clientId: string,
+ internalRegulations?: TInternalRegulationSummary[];
  isActive?: boolean;
  creationDate: string;
 };

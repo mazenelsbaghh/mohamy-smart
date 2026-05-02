@@ -4,4 +4,9 @@
 **/obj
 **/*.Tests
 **/Tests
+Dockerfile*
+.dockerignore
+*.log*
+.env*
+coverage/
 *.md
