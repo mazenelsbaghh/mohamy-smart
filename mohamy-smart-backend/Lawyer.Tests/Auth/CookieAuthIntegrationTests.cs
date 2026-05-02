@@ -288,11 +288,12 @@ public class CookieAuthIntegrationTests : IClassFixture<WebApplicationFactory<Pr
         cookieHeader.Should().Contain(c => c.Contains("refresh") || c.Contains("__Host-refresh"));
         cookieHeader.Should().Contain(c => c.Contains("XSRF-TOKEN"));
 
-        // Extract session cookie to send it manually (CookieContainer can be flaky on localhost)
         var sessionCookie = cookieHeader.First(c => c.StartsWith("session=") || c.StartsWith("__Host-session="));
-        var tokenValue = sessionCookie.Split(';')[0].Split('=')[1];
-        
-        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokenValue);
+        var cookieName = sessionCookie.Split('=')[0];
+        var cookieValue = sessionCookie.Split(';')[0].Substring(cookieName.Length + 1);
+
+        _client.DefaultRequestHeaders.Remove("Cookie");
+        _client.DefaultRequestHeaders.Add("Cookie", $"{cookieName}={cookieValue}");
 
         // 2. Access protected GET endpoint (me)
         var meResponse = await _client.GetAsync("/api/v1/auth/me");

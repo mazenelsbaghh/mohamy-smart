@@ -402,9 +402,17 @@ nuke: ## Remove everything including DB data volumes (requires confirmation)
 MSG ?= Latest update
 
 push: ## Push all changes to GitHub (uses MSG="Latest update" by default)
-	git add .
-	git commit -m "$(MSG)" || true
-	git pull --rebase origin main
-	git push origin main
+	@BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
+	git add .; \
+	git commit -m "$(MSG)" || true; \
+	if [ "$$BRANCH" != "main" ]; then \
+		echo "Merging $$BRANCH into main..."; \
+		git checkout main && \
+		git merge $$BRANCH && \
+		git push origin main; \
+		git checkout $$BRANCH; \
+	else \
+		git push origin main; \
+	fi
 	
 # docker system prune -a
