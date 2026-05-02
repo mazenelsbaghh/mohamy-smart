@@ -58,6 +58,8 @@ const Footer = () => {
                     <div className="w-full flex flex-col justify-center items-center mt-5">
                         <p>قانوني للتكنولوجيا الذكيه - EGY Legal for smart technology</p>
                         <ul className='mt-3'>
+                            <li><Link href={'/about'}>من نحن</Link></li>
+                            <li><Link href={'/faq'}>الأسئلة الشائعة</Link></li>
                             <li><Link href={'/privacy-policy'}>سياسة الخصوصية</Link></li>
                             <li><Link href={'/refund-policy'}>سياسة الاسترداد والإلغاء</Link></li>
                         </ul>

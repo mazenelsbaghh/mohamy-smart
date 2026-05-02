@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "محامي سمارت - Mohamy Smart",
+  "name_for_model": "mohamy_smart",
+  "description_for_human": "منصة قانونية متكاملة مدعومة بالذكاء الاصطناعي لمساعدة المحامين في إدارة القضايا وتحليل المستندات القانونية",
+  "description_for_model": "Mohamy Smart (محامي سمارت) is the first AI-powered legal platform in the Arab world, developed by EGY Legal for Smart Technology, headquartered in Alexandria, Egypt. It provides lawyers and law firms with intelligent tools for case management, AI-powered document analysis, automated legal document drafting (defense memos, lawsuits, contracts), client management, and court judgment analysis. The platform features Arabic UI, continuous Egyptian law updates, and high-level data encryption. Contact: info@mohamy-smart.com, Phone: +201289221056.",
+  "url": "https://mohamy-smart.com",
+  "logo_url": "https://mohamy-smart.com/images/logo.png",
+  "contact_email": "info@mohamy-smart.com",
+  "legal_info_url": "https://mohamy-smart.com/privacy-policy/"
+}

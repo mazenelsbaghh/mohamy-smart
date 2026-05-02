@@ -28,13 +28,13 @@ import fetchLawyerById from"../../redux/lawyers/thunk/fetchLawyerById";
 
 type Tone ="success" |"warning" |"danger" |"neutral";
 
-const numberFormatter = new Intl.NumberFormat("ar-EG");
-const currencyFormatter = new Intl.NumberFormat("ar-EG", {
+const numberFormatter = new Intl.NumberFormat("ar-EG-u-nu-latn");
+const currencyFormatter = new Intl.NumberFormat("ar-EG-u-nu-latn", {
  style:"currency",
  currency:"USD",
  maximumFractionDigits:2,
 });
-const dateFormatter = new Intl.DateTimeFormat("ar-EG", {
+const dateFormatter = new Intl.DateTimeFormat("ar-EG-u-nu-latn", {
  dateStyle:"medium",
 });
 

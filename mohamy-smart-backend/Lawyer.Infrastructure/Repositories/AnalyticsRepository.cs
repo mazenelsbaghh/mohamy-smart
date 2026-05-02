@@ -82,12 +82,27 @@ namespace Lawyer.Infrastructure.Repositories
                 .Where(p => p.Status == PaymentStatus.Refunded)
                 .CountAsync();
 
+            var activeSubscriptionIds = await subscriptionsQuery
+                .Where(s => s.EndDate >= DateTime.UtcNow)
+                .Select(s => s.SubscriptionId)
+                .Distinct()
+                .ToListAsync();
+
+            var allSubscriptionIds = await subscriptionsQuery
+                .Select(s => s.SubscriptionId)
+                .Distinct()
+                .ToListAsync();
+
+            var upgrades = allSubscriptionIds.Count > 0 && activeSubscriptionIds.Count > 0
+                ? Math.Max(0, allSubscriptionIds.Count - refundsCount - oneMonthChurners)
+                : 0;
+
             return new SubscriptionLifecycleDto
             {
                 TotalNewSubscribers = newSubscribers,
                 Renewals = renewals,
                 OneMonthChurners = oneMonthChurners,
-                Upgrades = 0,
+                Upgrades = upgrades,
                 Refunds = refundsCount
             };
         }
@@ -136,32 +151,63 @@ namespace Lawyer.Infrastructure.Repositories
                 .Select(u => new { u.Id, u.CreatedAt })
                 .ToListAsync();
 
+            var activity = await _context.AiUsageRecords
+                .Select(a => new { a.LawyerId, a.CreatedAt })
+                .ToListAsync();
+
+            var lawyerIdToUserIds = await _context.Set<Core.Models.Lawyer>()
+                .Select(l => new { l.Id, l.ApplicationUserId })
+                .ToListAsync();
+
+            var activityByUser = activity
+                .Join(lawyerIdToUserIds,
+                    a => a.LawyerId,
+                    l => (Guid?)l.Id,
+                    (a, l) => new { UserId = l.ApplicationUserId, a.CreatedAt })
+                .Concat(activity
+                    .Join(lawyerIdToUserIds,
+                    a => a.LawyerId,
+                    l => l.ApplicationUserId,
+                    (a, l) => new { UserId = l.ApplicationUserId, a.CreatedAt }))
+                .GroupBy(x => x.UserId)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.CreatedAt).ToList());
+
             var cohorts = users
                 .GroupBy(u => new DateTime(u.CreatedAt.Year, u.CreatedAt.Month, 1, 0, 0, 0, DateTimeKind.Utc))
+                .Where(g => g.Key <= DateTime.UtcNow)
                 .OrderByDescending(g => g.Key)
-                .Take(4)
-                .Select(g => new CohortDataDto
+                .Take(6)
+                .Select(g =>
                 {
-                    CohortMonth = g.Key.ToString("MMM yyyy"),
-                    TotalUsers = g.Count(),
-                    RetentionRates = new Dictionary<string, double> 
-                    { 
-                        { "الشهر 1", 85.0 },
-                        { "الشهر 2", 70.0 },
-                        { "الشهر 3", 60.0 }
-                    }
-                }).ToList();
+                    var cohortMonth = g.Key;
+                    var cohortUserIds = g.Select(u => u.Id).ToHashSet();
+                    var totalUsers = cohortUserIds.Count;
 
-            if (cohorts.Count == 0)
-            {
-                // Fallback dummy data if no users exist
-                cohorts.Add(new CohortDataDto
-                {
-                    CohortMonth = DateTime.UtcNow.ToString("MMM yyyy"),
-                    TotalUsers = 1,
-                    RetentionRates = new Dictionary<string, double> { { "الشهر 1", 100.0 } }
-                });
-            }
+                    var retention = new Dictionary<string, double>();
+                    for (var month = 1; month <= 3; month++)
+                    {
+                        var periodStart = cohortMonth.AddMonths(month);
+                        var periodEnd = periodStart.AddMonths(1);
+
+                        if (periodStart > DateTime.UtcNow) continue;
+
+                        var retained = cohortUserIds.Count(userId =>
+                        {
+                            if (!activityByUser.TryGetValue(userId, out var dates)) return false;
+                            return dates.Any(d => d >= periodStart && d < periodEnd);
+                        });
+
+                        retention[$"الشهر {month}"] = totalUsers > 0 ? Math.Round((double)retained / totalUsers * 100, 1) : 0;
+                    }
+
+                    return new CohortDataDto
+                    {
+                        CohortMonth = cohortMonth.ToString("MMM yyyy"),
+                        TotalUsers = totalUsers,
+                        RetentionRates = retention
+                    };
+                })
+                .ToList();
 
             return cohorts;
         }
