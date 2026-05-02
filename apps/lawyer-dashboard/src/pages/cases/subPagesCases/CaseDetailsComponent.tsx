@@ -134,7 +134,7 @@ const CaseDetailsComponent = ({ singleCase }: TCaseDetailsComponent) => {
  label="تحديث اللوائح الداخلية"
  variant="bordered"
  selectionMode="multiple"
- selectedKeys={new Set(selectedRegulationIds)}
+  selectedKeys={new Set(selectedRegulationIds.filter((id) => activeRegulations.some((r) => r.id === id)))}
  onSelectionChange={(keys) => {
  const next = keys ==='all'
  ? activeRegulations.map((regulation) => regulation.id)
