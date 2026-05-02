@@ -22,11 +22,16 @@ namespace Lawyer.Application.Services
     {
         private const int MaxContextCharactersPerRegulation = 8000;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ICaseOcrService _ocrService;
         private readonly ILogger<InternalRegulationService> _logger;
 
-        public InternalRegulationService(IUnitOfWork unitOfWork, ILogger<InternalRegulationService> logger)
+        public InternalRegulationService(
+            IUnitOfWork unitOfWork,
+            ICaseOcrService ocrService,
+            ILogger<InternalRegulationService> logger)
         {
             _unitOfWork = unitOfWork;
+            _ocrService = ocrService;
             _logger = logger;
         }
 
@@ -99,6 +104,45 @@ namespace Lawyer.Application.Services
 
             _logger.LogInformation("Internal regulation {RegulationId} created for lawyer {LawyerId}", entity.Id, lawyerId);
             return ApiExceptionResponse.Success(MapToDto(entity), "تم حفظ اللائحة الداخلية بنجاح");
+        }
+
+        public async Task<Result<InternalRegulationDto>> CreateFromOcrAsync(CreateInternalRegulationFromOcrDto dto, Guid lawyerId, CancellationToken cancellationToken)
+        {
+            if (dto.Files == null || dto.Files.Count == 0)
+                return ApiExceptionResponse.BadRequest<InternalRegulationDto>("ارفع ملف PDF أو صورة للائحة الداخلية أولًا");
+
+            var ocrResult = await _ocrService.ExtractTextFromImagesAsync(
+                dto.Files,
+                lawyerId.ToString(),
+                cancellationToken,
+                requireGoogleVision: true);
+
+            if (!ocrResult.Succeeded)
+            {
+                return Result<InternalRegulationDto>.Error(
+                    ocrResult.StatusCode,
+                    ocrResult.Message,
+                    ocrResult.Errors);
+            }
+
+            var pages = (ocrResult.Data ?? new List<string>())
+                .Select((text, index) => new { PageNumber = index + 1, Text = text.Trim() })
+                .Where(page => !string.IsNullOrWhiteSpace(page.Text))
+                .ToList();
+
+            if (pages.Count == 0)
+                return ApiExceptionResponse.BadRequest<InternalRegulationDto>("لم يتم استخراج نص واضح من ملف اللائحة الداخلية");
+
+            var content = BuildOcrContent(dto.Title.Trim(), pages.Select(page => (page.PageNumber, page.Text)));
+
+            return await CreateAsync(new CreateInternalRegulationDto
+            {
+                Title = dto.Title,
+                RegulationNumber = dto.RegulationNumber,
+                IssuingAuthority = dto.IssuingAuthority,
+                Summary = NormalizeOptional(dto.Summary) ?? $"تم استخراج نص اللائحة من {pages.Count} صفحة عبر Google Vision.",
+                Content = content
+            }, lawyerId, cancellationToken);
         }
 
         public async Task<Result<InternalRegulationDto>> UpdateAsync(Guid id, UpdateInternalRegulationDto dto, Guid lawyerId, CancellationToken cancellationToken)
@@ -211,6 +255,22 @@ namespace Lawyer.Application.Services
         {
             var trimmed = value?.Trim();
             return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
+        }
+
+        private static string BuildOcrContent(string title, IEnumerable<(int PageNumber, string Text)> pages)
+        {
+            var sb = new StringBuilder();
+            foreach (var page in pages)
+            {
+                if (sb.Length > 0)
+                    sb.AppendLine().AppendLine();
+
+                sb.AppendLine($"{title} - صفحة {page.PageNumber}");
+                sb.AppendLine(new string('=', Math.Min(title.Length + 12, 80)));
+                sb.AppendLine(page.Text.Trim());
+            }
+
+            return sb.ToString().Trim();
         }
 
         private static InternalRegulationDto MapToDto(InternalRegulation entity)

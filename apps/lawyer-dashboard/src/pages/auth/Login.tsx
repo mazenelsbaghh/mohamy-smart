@@ -14,6 +14,11 @@ import { HiOutlinePhone, HiOutlineLockClosed } from"react-icons/hi2";
 import { IoIosArrowForward } from"react-icons/io";
 import { FaRegEye, FaEyeSlash } from"react-icons/fa";
 
+const extractCooldownSeconds = (message: string) => {
+ const match = message.match(/(?:خلال|الانتظار)\s+(\d+)\s+ثانية/);
+ return match?.[1] ? parseInt(match[1], 10) : null;
+};
+
 const Login = () => {
  const dispatch = useAppDispatch();
  const navigate = useNavigate();
@@ -41,20 +46,32 @@ const Login = () => {
  sileo.error({ title: errorMessage });
  setFormError(errorMessage);
  setFocus("phone");
- if (errorMessage.includes('تأكيد رقم الهاتف')) {
+ if (errorMessage.includes('يجب تأكيد رقم الهاتف')) {
  let secondsToWait = 60;
  try {
  const resultMsg = await dispatch(thunkRequestPhoneVerification({ phoneNumber: data.phone })).unwrap();
  sileo.success({ title: typeof resultMsg === 'string' ? resultMsg : 'تم إرسال رمز التحقق إلى رقمك' });
  if (typeof resultMsg === 'string') {
- const match = resultMsg.match(/خلال (\d+) ثانية/);
- if (match && match[1]) secondsToWait = parseInt(match[1], 10);
+ const cooldown = extractCooldownSeconds(resultMsg);
+ if (cooldown !== null) secondsToWait = cooldown;
  }
  } catch (err: unknown) {
  if (typeof err === 'string') {
- const match = err.match(/خلال (\d+) ثانية/);
- if (match && match[1]) secondsToWait = parseInt(match[1], 10);
+ const cooldown = extractCooldownSeconds(err);
+ if (cooldown !== null) {
+ secondsToWait = cooldown;
+ sileo.error({ title: err });
+ navigate(`/auth/verify-phone?phone=${encodeURIComponent(data.phone)}`, { state: { cooldown: secondsToWait } });
+ return;
  }
+ sileo.error({ title: err });
+ setFormError(err);
+ return;
+ }
+ const fallbackMessage = 'تعذر إرسال رمز التحقق. حاول مرة أخرى بعد قليل.';
+ sileo.error({ title: fallbackMessage });
+ setFormError(fallbackMessage);
+ return;
  }
  navigate(`/auth/verify-phone?phone=${encodeURIComponent(data.phone)}`, { state: { cooldown: secondsToWait } });
  }

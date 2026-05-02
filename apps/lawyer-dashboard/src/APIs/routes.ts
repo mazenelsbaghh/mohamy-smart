@@ -35,6 +35,7 @@ export const API_ROUTES = {
  // Internal Regulations
  GET_INTERNAL_REGULATIONS:'/InternalRegulations',
  CREATE_INTERNAL_REGULATION:'/InternalRegulations',
+ CREATE_INTERNAL_REGULATION_FROM_OCR:'/InternalRegulations/ocr',
  UPDATE_INTERNAL_REGULATION: (id: string) => `/InternalRegulations/${id}`,
  ARCHIVE_INTERNAL_REGULATION: (id: string) => `/InternalRegulations/${id}/archive`,
  RESTORE_INTERNAL_REGULATION: (id: string) => `/InternalRegulations/${id}/restore`,

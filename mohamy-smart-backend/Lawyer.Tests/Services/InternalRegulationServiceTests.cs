@@ -1,8 +1,11 @@
 using Lawyer.Application.Dtos.InternalRegulations;
+using Lawyer.Application.IServices;
 using Lawyer.Application.Services;
+using Lawyer.Core.Exceptions;
 using Lawyer.Core.Models;
 using Lawyer.Infrastructure.Persistence;
 using Lawyer.Infrastructure.Persistence.Repositories;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -94,10 +97,45 @@ public class InternalRegulationServiceTests : IDisposable
             .Should().Contain("اللائحة الداخلية");
     }
 
-    private InternalRegulationService CreateInternalRegulationService()
+    [Fact]
+    public async Task CreateFromOcrAsync_GoogleVisionPages_SavesPagesUnderRegulationTitle()
+    {
+        var lawyerId = Guid.NewGuid();
+        var ocrService = new Mock<ICaseOcrService>();
+        ocrService
+            .Setup(x => x.ExtractTextFromImagesAsync(
+                It.IsAny<List<IFormFile>>(),
+                lawyerId.ToString(),
+                It.IsAny<CancellationToken>(),
+                true))
+            .ReturnsAsync(Result<List<string>>.Success(new List<string>
+            {
+                "مادة 1\nالنص الأول",
+                "مادة 2\nالنص الثاني"
+            }));
+
+        var sut = CreateInternalRegulationService(ocrService.Object);
+
+        var result = await sut.CreateFromOcrAsync(new CreateInternalRegulationFromOcrDto
+        {
+            Title = "لائحة الشركة",
+            Files = new List<IFormFile> { Mock.Of<IFormFile>() }
+        }, lawyerId, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.Title.Should().Be("لائحة الشركة");
+        result.Data.Content.Should().Contain("لائحة الشركة - صفحة 1");
+        result.Data.Content.Should().Contain("مادة 1");
+        result.Data.Content.Should().Contain("لائحة الشركة - صفحة 2");
+        result.Data.Content.Should().Contain("مادة 2");
+        _dbContext.InternalRegulations.Single().Content.Should().Be(result.Data.Content);
+    }
+
+    private InternalRegulationService CreateInternalRegulationService(ICaseOcrService? ocrService = null)
     {
         return new InternalRegulationService(
             CreateUnitOfWork(),
+            ocrService ?? new Mock<ICaseOcrService>().Object,
             new Mock<ILogger<InternalRegulationService>>().Object);
     }
 

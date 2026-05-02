@@ -21,8 +21,29 @@ namespace Lawyer.Application.Validators
                 .MaximumLength(1000).WithMessage("ملخص اللائحة يجب ألا يتجاوز 1000 حرف");
 
             RuleFor(x => x.Content)
-                .NotEmpty().WithMessage("نص اللائحة الداخلية مطلوب")
-                .MaximumLength(50000).WithMessage("نص اللائحة الداخلية يجب ألا يتجاوز 50000 حرف");
+                .NotEmpty().WithMessage("نص اللائحة الداخلية مطلوب");
+        }
+    }
+
+    public class CreateInternalRegulationFromOcrValidator : AbstractValidator<CreateInternalRegulationFromOcrDto>
+    {
+        public CreateInternalRegulationFromOcrValidator()
+        {
+            RuleFor(x => x.Title)
+                .NotEmpty().WithMessage("عنوان اللائحة الداخلية مطلوب")
+                .MaximumLength(240).WithMessage("عنوان اللائحة الداخلية يجب ألا يتجاوز 240 حرف");
+
+            RuleFor(x => x.RegulationNumber)
+                .MaximumLength(120).WithMessage("رقم اللائحة يجب ألا يتجاوز 120 حرف");
+
+            RuleFor(x => x.IssuingAuthority)
+                .MaximumLength(240).WithMessage("جهة الإصدار يجب ألا تتجاوز 240 حرف");
+
+            RuleFor(x => x.Summary)
+                .MaximumLength(1000).WithMessage("ملخص اللائحة يجب ألا يتجاوز 1000 حرف");
+
+            RuleFor(x => x.Files)
+                .NotEmpty().WithMessage("ارفع ملف PDF أو صورة للائحة الداخلية أولًا");
         }
     }
 
@@ -44,8 +65,7 @@ namespace Lawyer.Application.Validators
                 .MaximumLength(1000).WithMessage("ملخص اللائحة يجب ألا يتجاوز 1000 حرف");
 
             RuleFor(x => x.Content)
-                .NotEmpty().WithMessage("نص اللائحة الداخلية مطلوب")
-                .MaximumLength(50000).WithMessage("نص اللائحة الداخلية يجب ألا يتجاوز 50000 حرف");
+                .NotEmpty().WithMessage("نص اللائحة الداخلية مطلوب");
         }
     }
 

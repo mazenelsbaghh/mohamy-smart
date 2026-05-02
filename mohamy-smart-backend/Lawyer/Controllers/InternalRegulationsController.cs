@@ -4,6 +4,7 @@ using Lawyer.Application.IServices;
 using Lawyer.Controllers.Base;
 using Lawyer.Core.Exceptions;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading;
@@ -65,6 +66,20 @@ namespace Lawyer.Controllers
                 return CreateResponse(lawyerIdResult);
 
             var result = await _service.CreateAsync(model, lawyerIdResult.Data, cancellationToken);
+            return CreateResponse(result);
+        }
+
+        [HttpPost("ocr")]
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateFromOcr([FromForm] CreateInternalRegulationFromOcrDto model, CancellationToken cancellationToken)
+        {
+            var lawyerIdResult = await ResolveLawyerIdAsync(cancellationToken);
+            if (!lawyerIdResult.Succeeded)
+                return CreateResponse(lawyerIdResult);
+
+            var result = await _service.CreateFromOcrAsync(model, lawyerIdResult.Data, cancellationToken);
             return CreateResponse(result);
         }
 

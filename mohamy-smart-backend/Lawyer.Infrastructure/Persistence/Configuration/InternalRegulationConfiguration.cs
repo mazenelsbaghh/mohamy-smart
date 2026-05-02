@@ -29,8 +29,7 @@ namespace Lawyer.Infrastructure.Persistence.Configuration
                 .HasMaxLength(1000);
 
             builder.Property(e => e.Content)
-                .IsRequired()
-                .HasMaxLength(50000);
+                .IsRequired();
 
             builder.Property(e => e.CreatedAtUtc)
                 .IsRequired();

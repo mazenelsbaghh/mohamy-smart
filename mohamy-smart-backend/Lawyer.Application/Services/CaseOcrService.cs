@@ -74,13 +74,20 @@ namespace Lawyer.Application.Services
 			_promptCache = promptCache;
         }
 
-		public async Task<Result<List<string>>> ExtractTextFromImagesAsync(List<IFormFile> images, string? userId, CancellationToken cancellationToken)
+		public async Task<Result<List<string>>> ExtractTextFromImagesAsync(
+			List<IFormFile> images,
+			string? userId,
+			CancellationToken cancellationToken,
+			bool requireGoogleVision = false)
 		{
 			if (images == null || images.Count == 0)
 				return ApiExceptionResponse.BadRequest<List<string>>("يجب رفع صورة واحدة على الأقل.");
 
 			if (images.Count > MaxFileCount)
 				return ApiExceptionResponse.BadRequest<List<string>>($"الحد الأقصى لعدد الملفات هو {MaxFileCount}.");
+
+			if (requireGoogleVision && string.IsNullOrWhiteSpace(_googleVisionApiKey))
+				return ApiExceptionResponse.ServerError<List<string>>("خدمة Google Vision غير مفعلة على الخادم.");
 
 			var extractedTexts = new List<string>();
 
@@ -122,7 +129,7 @@ namespace Lawyer.Application.Services
 
 						foreach (var pageBytes in pageImages)
 						{
-				var text = await ExtractBestTextAsync(pageBytes, userId, cancellationToken);
+				var text = await ExtractBestTextAsync(pageBytes, userId, cancellationToken, requireGoogleVision);
 						extractedTexts.Add(text?.Trim() ?? "");
 						}
 					}
@@ -130,7 +137,7 @@ namespace Lawyer.Application.Services
 					{
 						await using var stream = file.OpenReadStream();
 						var imageBytes = await ToByteArrayAsync(stream, cancellationToken);
-						var text = await ExtractBestTextAsync(imageBytes, userId, cancellationToken);
+						var text = await ExtractBestTextAsync(imageBytes, userId, cancellationToken, requireGoogleVision);
 						extractedTexts.Add(text?.Trim() ?? "");
 					}
 				}
@@ -144,6 +151,11 @@ namespace Lawyer.Application.Services
 					_logger.LogWarning(ex, "OCR upload rejected because it exceeds PDF page limits");
 					return ApiExceptionResponse.BadRequest<List<string>>($"عدد صفحات ملف PDF كبير جداً. الحد الأقصى {MaxPdfPageImages} صفحة.");
 				}
+				catch (InvalidOperationException ex) when (ex.Message.Contains("Google Vision OCR", StringComparison.OrdinalIgnoreCase))
+				{
+					_logger.LogWarning(ex, "Google Vision OCR failed for file {FileName}", RedactForLog(file.FileName));
+					return ApiExceptionResponse.ServerError<List<string>>("تعذر استخراج النص بدقة عبر Google Vision.");
+				}
 				catch (Exception ex)
 				{
 					_logger.LogError(ex, "OCR extraction failed for file {FileName}", RedactForLog(file.FileName));
@@ -156,7 +168,7 @@ namespace Lawyer.Application.Services
 			return ApiExceptionResponse.Success(extractedTexts, "Text extracted successfully");
 		}
 
-		private async Task<string> ExtractBestTextAsync(byte[] imageBytes, string? userId, CancellationToken cancellationToken)
+		private async Task<string> ExtractBestTextAsync(byte[] imageBytes, string? userId, CancellationToken cancellationToken, bool requireGoogleVision)
 		{
 			var optimizedBytes = OptimizeImageForOcr(imageBytes);
 			var googleVisionText = await ExtractTextWithGoogleVisionAsync(optimizedBytes, userId, cancellationToken);
@@ -165,6 +177,9 @@ namespace Lawyer.Application.Services
 				_logger.LogInformation("✔ Successfully extracted text using Google Vision API.");
 				return googleVisionText;
 			}
+
+			if (requireGoogleVision)
+				throw new InvalidOperationException("Google Vision OCR failed to extract text.");
 
 			if (!_enableTesseractFallback)
 			{

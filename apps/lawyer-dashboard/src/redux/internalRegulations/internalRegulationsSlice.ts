@@ -3,6 +3,7 @@ import api from'../../APIs/api';
 import { API_ROUTES } from'../../APIs/routes';
 import { axiosErrorHandler } from"@mohamy/shared-api";
 import type {
+ TCreateInternalRegulationFromOcrRequest,
  TCreateInternalRegulationRequest,
  TInternalRegulation,
  TUpdateInternalRegulationRequest,
@@ -37,6 +38,7 @@ type InternalRegulationsState = {
  totalPages: number;
  loading: 'idle' | 'pending' | 'succeeded' | 'failed';
  saving: boolean;
+ ocrSaving: boolean;
  error: string | null;
 };
 
@@ -47,6 +49,7 @@ const initialState: InternalRegulationsState = {
  totalPages: 1,
  loading:'idle',
  saving: false,
+ ocrSaving: false,
  error: null,
 };
 
@@ -77,6 +80,28 @@ export const createInternalRegulation = createAsyncThunk(
  const response = await api.post<ApiResponse<TInternalRegulation>>(API_ROUTES.CREATE_INTERNAL_REGULATION, request);
  if (response.data.succeeded) return response.data.data;
  return rejectWithValue(response.data.message ||'تعذّر حفظ اللائحة الداخلية');
+ } catch (error) {
+ return rejectWithValue(axiosErrorHandler(error));
+ }
+ }
+);
+
+export const createInternalRegulationFromOcr = createAsyncThunk(
+ 'internalRegulations/createFromOcr',
+ async (request: TCreateInternalRegulationFromOcrRequest, { rejectWithValue }) => {
+ try {
+ const formData = new FormData();
+ formData.append('Title', request.title);
+ if (request.regulationNumber) formData.append('RegulationNumber', request.regulationNumber);
+ if (request.issuingAuthority) formData.append('IssuingAuthority', request.issuingAuthority);
+ if (request.summary) formData.append('Summary', request.summary);
+ request.files.forEach((file) => formData.append('Files', file, file.name));
+
+ const response = await api.post<ApiResponse<TInternalRegulation>>(API_ROUTES.CREATE_INTERNAL_REGULATION_FROM_OCR, formData, {
+ headers: { 'Content-Type':'multipart/form-data' },
+ });
+ if (response.data.succeeded) return response.data.data;
+ return rejectWithValue(response.data.message ||'تعذّر استخراج وحفظ اللائحة الداخلية');
  } catch (error) {
  return rejectWithValue(axiosErrorHandler(error));
  }
@@ -181,6 +206,19 @@ const internalRegulationsSlice = createSlice({
  })
  .addCase(createInternalRegulation.rejected, (state, action) => {
  state.saving = false;
+ state.error = action.payload as string;
+ })
+ .addCase(createInternalRegulationFromOcr.pending, (state) => {
+ state.ocrSaving = true;
+ state.error = null;
+ })
+ .addCase(createInternalRegulationFromOcr.fulfilled, (state, action) => {
+ state.ocrSaving = false;
+ state.regulations = upsertRegulation(state.regulations, action.payload);
+ state.totalRecords += 1;
+ })
+ .addCase(createInternalRegulationFromOcr.rejected, (state, action) => {
+ state.ocrSaving = false;
  state.error = action.payload as string;
  })
  .addCase(updateInternalRegulation.pending, (state) => {

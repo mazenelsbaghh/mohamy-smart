@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Http;
 
 namespace Lawyer.Application.Dtos.InternalRegulations
 {
@@ -32,6 +33,15 @@ namespace Lawyer.Application.Dtos.InternalRegulations
         public string? IssuingAuthority { get; set; }
         public string? Summary { get; set; }
         public string Content { get; set; } = string.Empty;
+    }
+
+    public class CreateInternalRegulationFromOcrDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? RegulationNumber { get; set; }
+        public string? IssuingAuthority { get; set; }
+        public string? Summary { get; set; }
+        public List<IFormFile> Files { get; set; } = new();
     }
 
     public class UpdateInternalRegulationDto

@@ -3,6 +3,7 @@ using Lawyer.Application.Common.Interface;
 using Lawyer.Application.Dto.Auth;
 using Lawyer.Application.IServices;
 using Lawyer.Application.Services;
+using Lawyer.Core.Enum;
 using Lawyer.Core.IRepositories;
 using Lawyer.Core.Models;
 using Lawyer.Infrastructure.Persistence;
@@ -86,6 +87,7 @@ public class AuthServiceTests : IDisposable
 
         result.Succeeded.Should().BeFalse();
         result.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        result.Message.Should().Be("رقم الهاتف غير مسجّل. يرجى إنشاء حساب أولًا.");
     }
 
     [Fact]
@@ -97,7 +99,8 @@ public class AuthServiceTests : IDisposable
             PhoneNumber = "01000000000",
             UserName = "01000000000",
             PhoneNumberConfirmed = true,
-            IsActive = false
+            IsActive = false,
+            UserType = UserType.Lawyer
         };
 
         _dbContext.Users.Add(user);
@@ -117,6 +120,90 @@ public class AuthServiceTests : IDisposable
 
         result.Succeeded.Should().BeFalse();
         result.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        result.Message.Should().Be("هذا الحساب موقوف حاليًا. تواصل مع الدعم الفني.");
+    }
+
+    [Fact]
+    public async Task Login_WithUnconfirmedLawyerAccount_ReturnsPhoneConfirmationError()
+    {
+        var user = new ApplicationUser
+        {
+            Id = Guid.NewGuid(),
+            PhoneNumber = "01000000001",
+            UserName = "01000000001",
+            PhoneNumberConfirmed = false,
+            IsActive = false,
+            UserType = UserType.Lawyer
+        };
+
+        _dbContext.Users.Add(user);
+        _dbContext.Set<Core.Models.Lawyer>().Add(new Core.Models.Lawyer
+        {
+            ApplicationUserId = user.Id,
+            IsActive = false
+        });
+        await _dbContext.SaveChangesAsync();
+
+        var sut = CreateSut();
+        var loginDto = new LoginDto { PhoneNumber = "01000000001", Password = "Password123!" };
+
+        var result = await sut.Login(loginDto, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        result.Message.Should().Be("يجب تأكيد رقم الهاتف أولًا قبل تسجيل الدخول.");
+    }
+
+    [Fact]
+    public async Task Login_WithUserWithoutLawyerProfile_ReturnsPhoneNotRegistered()
+    {
+        var user = new ApplicationUser
+        {
+            Id = Guid.NewGuid(),
+            PhoneNumber = "01000000002",
+            UserName = "01000000002",
+            PhoneNumberConfirmed = false,
+            IsActive = false,
+            UserType = UserType.Lawyer
+        };
+
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync();
+
+        var sut = CreateSut();
+        var loginDto = new LoginDto { PhoneNumber = "01000000002", Password = "Password123!" };
+
+        var result = await sut.Login(loginDto, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        result.Message.Should().Be("رقم الهاتف غير مسجّل. يرجى إنشاء حساب أولًا.");
+    }
+
+    [Fact]
+    public async Task RequestPhoneVerification_WithUserWithoutLawyerProfile_ReturnsPhoneNotRegistered()
+    {
+        var user = new ApplicationUser
+        {
+            Id = Guid.NewGuid(),
+            PhoneNumber = "01000000003",
+            UserName = "01000000003",
+            PhoneNumberConfirmed = false,
+            IsActive = false,
+            UserType = UserType.Lawyer
+        };
+
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync();
+
+        var sut = CreateSut();
+        var request = new RequestPhoneVerificationDto { PhoneNumber = "01000000003" };
+
+        var result = await sut.RequestPhoneVerificationAsync(request, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        result.Message.Should().Be("رقم الهاتف غير مسجّل. يرجى إنشاء حساب أولًا.");
     }
 
     public void Dispose()

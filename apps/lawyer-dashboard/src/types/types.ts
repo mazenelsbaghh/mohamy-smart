@@ -28,6 +28,10 @@ export type TCreateInternalRegulationRequest = {
  content: string;
 };
 
+export type TCreateInternalRegulationFromOcrRequest = Omit<TCreateInternalRegulationRequest, 'content'> & {
+ files: File[];
+};
+
 export type TUpdateInternalRegulationRequest = TCreateInternalRegulationRequest & {
  isActive: boolean;
 };

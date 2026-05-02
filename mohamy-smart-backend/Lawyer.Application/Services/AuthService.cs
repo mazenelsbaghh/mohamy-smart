@@ -31,6 +31,8 @@ namespace Lawyer.Application.Services
         private readonly IEmailService _emailService;
         private readonly ISmsSender _smsSender;
 
+        private const string PhoneNotRegisteredMessage = "رقم الهاتف غير مسجّل. يرجى إنشاء حساب أولًا.";
+
 
         public AuthService(UserManager<ApplicationUser> userManager, ITokenService tokenService,
             IUnitOfWork unitOfWork, ILogger<AuthService> logger, IAuditService audit, IDateTimeProvider dateTimeProvider, IUserContextProvider userContextProvider, IEmailService emailService, ISmsSender smsSender)
@@ -203,10 +205,10 @@ namespace Lawyer.Application.Services
 				.Include(x => x.Lawyer!)
 				.FirstOrDefaultAsync(x => x.PhoneNumber == phone, cancellationToken);
 
-            if (existingUser is null)
+            if (existingUser is null || existingUser.UserType != UserType.Lawyer || existingUser.Lawyer is null)
             {
-                _logger.LogWarning("Login failed: User with phone {Phone} not found. IP: {ClientIp}", phone, clientIp);
-                return ApiExceptionResponse.BadRequest<AuthResponseDto>("رقم الهاتف غير مسجّل. يرجى إنشاء حساب أولًا.");
+                _logger.LogWarning("Login failed: Lawyer account with phone {Phone} not found. IP: {ClientIp}", phone, clientIp);
+                return ApiExceptionResponse.BadRequest<AuthResponseDto>(PhoneNotRegisteredMessage);
             }
 
             if (!existingUser.PhoneNumberConfirmed)
@@ -479,10 +481,11 @@ namespace Lawyer.Application.Services
             var user = await _unitOfWork.Repository<ApplicationUser>()
                 .AsQueryable()
                 .IgnoreQueryFilters()
+                .Include(x => x.Lawyer!)
                 .FirstOrDefaultAsync(x => x.PhoneNumber == phone, cancellationToken);
 
-            if (user == null)
-                return ApiExceptionResponse.BadRequest<string>("رقم الهاتف غير مسجل. يرجى التسجيل أولًا.");
+            if (user == null || user.UserType != UserType.Lawyer || user.Lawyer is null)
+                return ApiExceptionResponse.BadRequest<string>(PhoneNotRegisteredMessage);
 
             if (user.PhoneNumberConfirmed)
                 return ApiExceptionResponse.Success("رقم الهاتف مؤكد بالفعل. يمكنك تسجيل الدخول.");

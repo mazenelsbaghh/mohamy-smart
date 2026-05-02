@@ -11,7 +11,11 @@ namespace Lawyer.Application.IServices
 {
 	public interface ICaseOcrService
 	{
-		Task<Result<List<string>>> ExtractTextFromImagesAsync(List<IFormFile> images, string? userId, CancellationToken cancellationToken);
+		Task<Result<List<string>>> ExtractTextFromImagesAsync(
+			List<IFormFile> images,
+			string? userId,
+			CancellationToken cancellationToken,
+			bool requireGoogleVision = false);
 	
 			Task<Result<CaseExtractionResultDto>> GenerateCaseFromTextAsync(string revisedText, List<AvailableCaseTypeDto> availableCaseTypes, string? userId, CancellationToken cancellationToken);
 	}

@@ -19,6 +19,7 @@ namespace Lawyer.Application.IServices
 
         Task<Result<InternalRegulationDto>> GetByIdAsync(Guid id, Guid lawyerId, CancellationToken cancellationToken);
         Task<Result<InternalRegulationDto>> CreateAsync(CreateInternalRegulationDto dto, Guid lawyerId, CancellationToken cancellationToken);
+        Task<Result<InternalRegulationDto>> CreateFromOcrAsync(CreateInternalRegulationFromOcrDto dto, Guid lawyerId, CancellationToken cancellationToken);
         Task<Result<InternalRegulationDto>> UpdateAsync(Guid id, UpdateInternalRegulationDto dto, Guid lawyerId, CancellationToken cancellationToken);
         Task<Result<InternalRegulationDto>> SetArchiveStatusAsync(Guid id, bool isArchived, Guid lawyerId, CancellationToken cancellationToken);
     }
