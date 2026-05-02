@@ -8,7 +8,7 @@ const CallToAction = () => {
         <section className='call-to-action py-40' aria-label="دعوة للعمل">
             <Container>
                 <div className="call-to-action-frame">
-                    <h3>لا حدود لتحليلك وفهمك القانوني ابدأ رحلتك الذكية مع سمارت محامي.</h3>
+                    <h3>لا حدود لتحليلك وفهمك القانوني ابدأ رحلتك الذكية مع محامي سمارت.</h3>
                     <a
                         href={`${process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://localhost:5078'}/auth/sign-up`}
                         target="_blank"

@@ -1,50 +1,117 @@
-export const CaseType = {
- MONETARY_CLAIM:'MONETARY_CLAIM',
- REAL_ESTATE_DISPUTE:'REAL_ESTATE_DISPUTE',
- PERSONAL_STATUS:'PERSONAL_STATUS',
- LABOR:'LABOR',
- COMMERCIAL:'COMMERCIAL',
- ADMINISTRATIVE:'ADMINISTRATIVE',
- CRIMINAL_PRIVATE:'CRIMINAL_PRIVATE',
- EXECUTION:'EXECUTION',
- INJUNCTION:'INJUNCTION',
-} as const;
+export type FeeSectionId =
+ | 'lawsuit'
+ | 'execution'
+ | 'treasury'
+ | 'maintenance'
+ | 'deposit'
+ | 'process-server';
 
-export type CaseType = (typeof CaseType)[keyof typeof CaseType];
+export type FeeToolId =
+ | 'civil-known'
+ | 'civil-unknown'
+ | 'family-known'
+ | 'execution-basic'
+ | 'execution-interest'
+ | 'treasury-supply'
+ | 'maintenance-arrears'
+ | 'deposit'
+ | 'simple-warning'
+ | 'judgment-announcement'
+ | 'certificate'
+ | 'official-copy';
+
+export type CivilUnknownKind =
+ | 'fixed-partial'
+ | 'urgent-partial'
+ | 'fixed-total'
+ | 'appeal-urgent-partial'
+ | 'appeal-fixed-partial'
+ | 'bankruptcy'
+ | 'high-appeal';
+
+export type ExecutionScope = 'total' | 'partial' | 'sharia';
+export type ExecutionRound = 'first' | 'repeat';
+export type InterestNature = 'civil' | 'sharia';
+export type TreasurySupplyKind = 'family-same' | 'partial' | 'relative-services' | 'accounting-money';
+export type MaintenanceMode = 'first' | 'repeat';
+export type DepositMode = 'requester' | 'deducted';
+export type JudgmentAnnouncementKind = 'partial' | 'civil-appeal' | 'cassation-state';
+
+export interface CourtFeesFormValues {
+ lawsuitAmount: number;
+ civilUnknownKind: CivilUnknownKind;
+ executionAmount: number;
+ executionScope: ExecutionScope;
+ executionRound: ExecutionRound;
+ includeExecutionFixed: boolean;
+ includeExecutionPowerOfAttorney: boolean;
+ includeExecutionMartyrStamp: boolean;
+ interestAmount: number;
+ interestYears: number;
+ interestNature: InterestNature;
+ treasuryCollectedAmount: number;
+ treasuryPrincipalAmount: number;
+ treasuryExecutionCount: number;
+ treasuryKind: TreasurySupplyKind;
+ maintenanceMonthlyAmount: number;
+ maintenanceFrom: string;
+ maintenanceTo: string;
+ maintenanceMode: MaintenanceMode;
+ depositAmount: number;
+ depositMode: DepositMode;
+ warningDefendants: number;
+ warningRolls: number;
+ warningLinkedDefendants: boolean;
+ judgmentRolls: number;
+ judgmentRecipients: number;
+ judgmentKind: JudgmentAnnouncementKind;
+ certificateCount: number;
+ certificateYears: number;
+ certificatePersons: number;
+ certificateStakeholder: boolean;
+ includeCertifiedPaper: boolean;
+ officialCopyPapers: number;
+ officialCopyCount: number;
+ officialCopyStakeholder: boolean;
+ includeOfficialCertifiedPaper: boolean;
+}
 
 export interface CourtFeesInput {
- caseType: CaseType |'';
- claimValue: number;
- isAppeal: boolean;
- isCassation: boolean;
+ toolId: FeeToolId;
+ values: CourtFeesFormValues;
 }
 
 export interface FeeDetail {
- feeType: string;
+ label: string;
  amount: number;
- legalBasis: string;
+ tone?: 'default' | 'strong' | 'success' | 'muted';
+ note?: string;
+}
+
+export interface FeeSummaryItem {
+ label: string;
+ value: string;
+ tone?: 'default' | 'success' | 'warning';
 }
 
 export interface CourtFeesResult {
+ title: string;
  fees: FeeDetail[];
  totalFees: number;
- isExempt: boolean;
- exemptionReason: string | null;
- warnings: string[];
+ totalPaid: number | null;
+ summaries: FeeSummaryItem[];
+ notes: string[];
+ jurisdiction?: string;
 }
 
-export interface FeeBracket {
- min: number;
- max: number | null;
- rate: number;
- fixedFee: number;
+export interface FeeToolInfo {
+ id: FeeToolId;
+ title: string;
+ subtitle?: string;
 }
 
-export interface CaseTypeInfo {
- type: CaseType;
- arabicLabel: string;
- isExempt: boolean;
- exemptionReason: string | null;
- feeCategory:'progressive' |'fixed' |'exempt';
- fixedFilingFee: number | null;
+export interface FeeSectionInfo {
+ id: FeeSectionId;
+ title: string;
+ tools: FeeToolInfo[];
 }

@@ -1,7 +1,7 @@
 import usePageTitle from '../../hooks/usePageTitle';
 import { CustomButton, Container } from'@mohamy/shared-ui';
 import'./Chat.css';
-import { useState, useRef, useEffect } from'react';
+import { useState, useRef, useEffect, useMemo } from'react';
 
 import HeadTitle from'../../components/headTitle/HeadTitle';
 
@@ -20,6 +20,10 @@ import { motion, AnimatePresence } from'framer-motion';
 import api from'../../APIs/api';
 import { API_ROUTES } from'../../APIs/routes';
 import { sileo } from"sileo";
+import { axiosErrorHandler } from'@mohamy/shared-api';
+import { fetchInternalRegulations } from'../../redux/internalRegulations/internalRegulationsSlice';
+import { useAppDispatch, useAppSelector } from'../../hooks/reduxHooks';
+import type { TInternalRegulation } from'../../types/types';
 
 interface ChatMessage {
  role:'user' |'assistant';
@@ -88,7 +92,6 @@ const ChatMessageBubble = ({
  index: number;
 }) => {
  const [isReasoningOpen, setIsReasoningOpen] = useState(false);
-  usePageTitle('المحادثة الذكية');
  const { reasoning, response } = parseAssistantContent(message.content);
  const isAssistant = message.role ==='assistant';
 
@@ -146,31 +149,93 @@ const ChatMessageBubble = ({
 };
 
 const Chat = () => {
+ usePageTitle('المحادثة الذكية');
+ const dispatch = useAppDispatch();
+ const { regulations, loading: regulationsLoading } = useAppSelector((state) => state.internalRegulations);
  const [messages, setMessages] = useState<ChatMessage[]>([])
  const [isLoading, setIsLoading] = useState(false)
  const [conversationId, setConversationId] = useState<string | null>(null)
+ const [selectedRegulation, setSelectedRegulation] = useState<TInternalRegulation | null>(null)
  const messagesEndRef = useRef<HTMLDivElement>(null)
 
- const { register, handleSubmit, formState: { errors }, reset, watch } = useForm<chatFormType>({
+ const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<chatFormType>({
  mode:'onChange',
  resolver: zodResolver(chatFormSchema),
  })
  const messageValue = watch('message') ??'';
+ const activeRegulations = useMemo(
+ () => regulations.filter((regulation) => regulation.isActive),
+ [regulations]
+ );
+ const mentionMatch = useMemo(() => {
+ if (selectedRegulation) return null;
+ const atIndex = messageValue.lastIndexOf('@');
+ if (atIndex === -1) return null;
+
+ const afterMention = messageValue.slice(atIndex + 1);
+ if (afterMention.includes('\n')) return null;
+ const token = afterMention.match(/^([^\s]*)/)?.[1] ??'';
+ if (token.length > 80) return null;
+ return { atIndex, query: token.toLowerCase(), rawLength: token.length };
+ }, [messageValue, selectedRegulation]);
+ const mentionQuery = mentionMatch?.query ?? null;
+ const showRegulationMentions = mentionMatch !== null;
+ const mentionRegulations = useMemo(() => {
+ if (!showRegulationMentions) return [];
+ if (!mentionQuery) return activeRegulations.slice(0, 8);
+
+ return activeRegulations
+ .filter((regulation) => {
+ const haystack = [
+ regulation.title,
+ regulation.regulationNumber,
+ regulation.issuingAuthority,
+ regulation.summary,
+ ].filter(Boolean).join(' ').toLowerCase();
+ return haystack.includes(mentionQuery);
+ })
+ .slice(0, 8);
+ }, [activeRegulations, mentionQuery, showRegulationMentions]);
+
+ useEffect(() => {
+ if (regulationsLoading ==='idle' && regulations.length === 0) {
+ dispatch(fetchInternalRegulations({ page: 1, pageSize: 200 }));
+ }
+ }, [dispatch, regulations.length, regulationsLoading]);
 
  useEffect(() => {
  messagesEndRef.current?.scrollIntoView({ behavior:'smooth' })
  }, [messages])
 
+ const selectRegulationMention = (regulation: TInternalRegulation) => {
+ const atIndex = mentionMatch?.atIndex ?? messageValue.lastIndexOf('@');
+ const rawLength = mentionMatch?.rawLength ?? 0;
+ const nextMessage = atIndex === -1
+ ? messageValue
+ : `${messageValue.slice(0, atIndex)}${messageValue.slice(atIndex + 1 + rawLength)}`.trimStart();
+
+ setSelectedRegulation(regulation);
+ setValue('message', nextMessage, { shouldDirty: true, shouldValidate: true });
+ };
+
+ const removeSelectedRegulation = () => {
+ setSelectedRegulation(null);
+ };
+
  const onSubmit: SubmitHandler<chatFormType> = async (data) => {
  const userMessage = data.message;
- setMessages(prev => [...prev, { role:'user', content: userMessage }]);
+ const displayedUserMessage = selectedRegulation ? `@${selectedRegulation.title}\n${userMessage}` : userMessage;
+ const internalRegulationIds = selectedRegulation ? [selectedRegulation.id] : [];
+ setMessages(prev => [...prev, { role:'user', content: displayedUserMessage }]);
  reset();
+ setSelectedRegulation(null);
  setIsLoading(true);
 
  try {
  const response = await api.post(API_ROUTES.SEND_CHAT_MESSAGE, {
  message: userMessage,
  conversationId: conversationId,
+ internalRegulationIds,
  });
 
  const result = response.data?.data;
@@ -186,9 +251,10 @@ const Chat = () => {
  setMessages(prev => [...prev, { role:'assistant', content:'عذراً، لم أتمكن من معالجة رسالتك. حاول مرة أخرى أو أعد الاتصال.' }]);
  }
  }
- } catch {
- setMessages(prev => [...prev, { role:'assistant', content:'عذراً، لم أتمكن من معالجة رسالتك. حاول مرة أخرى.' }]);
- sileo.error({ title:'تعذّر إرسال الرسالة. تحقق من اتصالك.' });
+ } catch (error) {
+ const errorMessage = axiosErrorHandler(error) ||'تعذّر إرسال الرسالة. تحقق من اتصالك.';
+ setMessages(prev => [...prev, { role:'assistant', content: errorMessage }]);
+ sileo.error({ title: errorMessage });
  } finally {
  setIsLoading(false);
  }
@@ -218,7 +284,7 @@ const Chat = () => {
  </div>
  <div className="chat-suggestion-card">
  <LuWandSparkles />
- <span>تحليل مستند أو واقعة</span>
+ <span>اكتب @ لاختيار لائحة</span>
  </div>
  </div>
  </div>
@@ -259,11 +325,19 @@ const Chat = () => {
  onSubmit={handleSubmit(onSubmit)}
  >
  <div className="chat-footer-header">
- <span className="chat-footer-hint">اكتب التفاصيل المهمة وسأبني الرد على أساسها</span>
+ <span className="chat-footer-hint">اكتب @ لاختيار لائحة داخلية ثم اطرح سؤالك عليها</span>
  </div>
+ {selectedRegulation && (
+ <div className="chat-selected-regulation">
+ <span>اللائحة المختارة</span>
+ <strong>{selectedRegulation.title}</strong>
+ <button type="button" onClick={removeSelectedRegulation} aria-label="إزالة اللائحة المختارة">إزالة</button>
+ </div>
+ )}
+ <div className="chat-composer-main">
  <Textarea
  className="textarea-box"
- label="اكتب سؤالك القانوني..." placeholder="اكتب سؤالك القانوني..."
+ label="اكتب سؤالك القانوني..." placeholder="اكتب @ لاختيار لائحة أو اكتب سؤالك مباشرة"
  isInvalid={!!errors.message}
  errorMessage={errors.message?.message}
  isDisabled={isLoading}
@@ -271,6 +345,31 @@ const Chat = () => {
  maxRows={8}
  {...register('message')}
  />
+ {showRegulationMentions && (
+ <div className="chat-regulation-mentions" role="listbox" aria-label="اختر لائحة داخلية">
+ {regulationsLoading ==='pending' ? (
+ <div className="chat-regulation-empty">جاري تحميل اللوائح...</div>
+ ) : mentionRegulations.length > 0 ? (
+ mentionRegulations.map((regulation) => (
+ <button
+ key={regulation.id}
+ type="button"
+ className="chat-regulation-option"
+ onClick={() => selectRegulationMention(regulation)}
+ role="option"
+ >
+ <strong>{regulation.title}</strong>
+ <span>
+ {[regulation.regulationNumber, regulation.issuingAuthority].filter(Boolean).join(' - ') || 'لائحة داخلية'}
+ </span>
+ </button>
+ ))
+ ) : (
+ <div className="chat-regulation-empty">لا توجد لائحة مطابقة</div>
+ )}
+ </div>
+ )}
+ </div>
  <div className='chat-footer-actions'>
  <CustomButton
  type='submit'

@@ -49,7 +49,7 @@ const HeroSection = () => {
                 >
                     <motion.div variants={itemVariants}>
                         <Chip className='py-4 px-8 bg-[#1B1B1B]' color="warning" variant="bordered">
-                            سمارت محامي
+                            محامي سمارت
                         </Chip>
                     </motion.div>
                     <motion.h1 variants={itemVariants}>

@@ -140,7 +140,7 @@ namespace Lawyer.Application.Services
                 Title = dto.Title,
                 RegulationNumber = dto.RegulationNumber,
                 IssuingAuthority = dto.IssuingAuthority,
-                Summary = NormalizeOptional(dto.Summary) ?? $"تم استخراج نص اللائحة من {pages.Count} صفحة عبر Google Vision.",
+                Summary = NormalizeOptional(dto.Summary) ?? $"تم استخراج نص اللائحة من {pages.Count} صفحة بواسطة محامي سمارت.",
                 Content = content
             }, lawyerId, cancellationToken);
         }

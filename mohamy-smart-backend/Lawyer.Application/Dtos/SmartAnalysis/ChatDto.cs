@@ -8,6 +8,7 @@ namespace Lawyer.Application.Dtos.SmartAnalysis
         public string Message { get; set; } = string.Empty;
         public Guid? ConversationId { get; set; }
         public Guid? ContextCaseId { get; set; }
+        public List<Guid> InternalRegulationIds { get; set; } = new();
     }
 
     public class ChatResponseDto

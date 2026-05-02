@@ -1,43 +1,175 @@
-import type { CaseTypeInfo, FeeBracket } from'./courtFeesTypes';
-import { CaseType } from'./courtFeesTypes';
+import type {
+ CivilUnknownKind,
+ FeeSectionInfo,
+ JudgmentAnnouncementKind,
+ TreasurySupplyKind,
+} from './courtFeesTypes';
 
-export const CASE_TYPES: CaseTypeInfo[] = [
- { type: CaseType.MONETARY_CLAIM, arabicLabel:'مطالبة مالية', isExempt: false, exemptionReason: null, feeCategory:'progressive', fixedFilingFee: null },
- { type: CaseType.REAL_ESTATE_DISPUTE, arabicLabel:'منازعة عقارية', isExempt: false, exemptionReason: null, feeCategory:'progressive', fixedFilingFee: null },
- { type: CaseType.PERSONAL_STATUS, arabicLabel:'أحوال شخصية', isExempt: false, exemptionReason: null, feeCategory:'fixed', fixedFilingFee: 50 },
- { type: CaseType.LABOR, arabicLabel:'دعوى عمالية', isExempt: true, exemptionReason:'معفاة من الرسوم بموجب قانون العمل المصري', feeCategory:'exempt', fixedFilingFee: null },
- { type: CaseType.COMMERCIAL, arabicLabel:'دعوى تجارية', isExempt: false, exemptionReason: null, feeCategory:'progressive', fixedFilingFee: null },
- { type: CaseType.ADMINISTRATIVE, arabicLabel:'دعوى إدارية', isExempt: false, exemptionReason: null, feeCategory:'fixed', fixedFilingFee: 100 },
- { type: CaseType.CRIMINAL_PRIVATE, arabicLabel:'دعوى جنائية (حق خاص)', isExempt: false, exemptionReason: null, feeCategory:'fixed', fixedFilingFee: 50 },
- { type: CaseType.EXECUTION, arabicLabel:'تنفيذ حكم', isExempt: false, exemptionReason: null, feeCategory:'progressive', fixedFilingFee: null },
- { type: CaseType.INJUNCTION, arabicLabel:'دعوى مستعجلة', isExempt: false, exemptionReason: null, feeCategory:'fixed', fixedFilingFee: 75 },
+export const COURT_FEE_SECTIONS: FeeSectionInfo[] = [
+ {
+ id: 'lawsuit',
+ title: 'رسم الدعوى والقوائم',
+ tools: [
+ { id: 'civil-known', title: 'دعوى مدني معلومة القيمة' },
+ { id: 'civil-unknown', title: 'دعوى مدني مجهولة / معلومة القيمة' },
+ { id: 'family-known', title: 'دعوى شرعي معلومة القيمة' },
+ ],
+ },
+ {
+ id: 'execution',
+ title: 'رسم التنفيذ',
+ tools: [
+ { id: 'execution-basic', title: 'رسم تنفيذ' },
+ { id: 'execution-interest', title: 'رسم تنفيذ بالفائدة القانونية' },
+ ],
+ },
+ {
+ id: 'treasury',
+ title: 'توريد المبالغ المحصلة للخزينة',
+ tools: [{ id: 'treasury-supply', title: 'توريد المبالغ المحصلة للخزينة' }],
+ },
+ {
+ id: 'maintenance',
+ title: 'حساب رسم متجمد نفقة',
+ tools: [{ id: 'maintenance-arrears', title: 'حساب رسم متجمد نفقة' }],
+ },
+ {
+ id: 'deposit',
+ title: 'رسم الإيداع',
+ tools: [{ id: 'deposit', title: 'رسم الإيداع' }],
+ },
+ {
+ id: 'process-server',
+ title: 'رسوم قلم المحضرين',
+ tools: [
+ { id: 'simple-warning', title: 'إنذار بسيط' },
+ { id: 'judgment-announcement', title: 'رسم إعلان صورة حكم' },
+ { id: 'certificate', title: 'رسم شهادة' },
+ { id: 'official-copy', title: 'رسم صورة رسمية' },
+ ],
+ },
 ];
 
-export const FILING_FEE_BRACKETS: FeeBracket[] = [
- { min: 0, max: 5000, rate: 0, fixedFee: 40 },
- { min: 5001, max: 10000, rate: 0.01, fixedFee: 40 },
- { min: 10001, max: 50000, rate: 0.008, fixedFee: 90 },
- { min: 50001, max: 200000, rate: 0.006, fixedFee: 410 },
- { min: 200001, max: 500000, rate: 0.004, fixedFee: 810 },
- { min: 500001, max: 1000000, rate: 0.003, fixedFee: 2010 },
- { min: 1000001, max: 5000000, rate: 0.002, fixedFee: 3510 },
- { min: 5000001, max: null, rate: 0.001, fixedFee: 11510 },
+export const CIVIL_UNKNOWN_OPTIONS: Array<{ id: CivilUnknownKind; label: string }> = [
+ { id: 'fixed-partial', label: 'ثابت جزئي' },
+ { id: 'urgent-partial', label: 'جزئي مستعجل' },
+ { id: 'fixed-total', label: 'ثابت كلي' },
+ { id: 'appeal-urgent-partial', label: 'استئناف جزئي مستعجل' },
+ { id: 'appeal-fixed-partial', label: 'ثابت مستأنف جزئي' },
+ { id: 'bankruptcy', label: 'إفلاس' },
+ { id: 'high-appeal', label: 'استئناف عالي' },
 ];
 
-export const EXPERT_FEE_RATE = 0.01;
-export const EXPERT_FEE_MIN = 100;
-export const EXPERT_FEE_MAX = 5000;
+export const CIVIL_UNKNOWN_FEE_PRESETS: Record<
+ CivilUnknownKind,
+ {
+ label: string;
+ relativeFee: number;
+ servicesFee: number;
+ courtBuildingFee: number;
+ attorneyFee: number;
+ martyrStamp: number;
+ professionTax: number;
+ vat: number;
+ }
+> = {
+ 'fixed-partial': {
+ label: 'ثابت جزئي',
+ relativeFee: 5,
+ servicesFee: 2.5,
+ courtBuildingFee: 1.5,
+ attorneyFee: 50,
+ martyrStamp: 0,
+ professionTax: 15,
+ vat: 20,
+ },
+ 'urgent-partial': {
+ label: 'جزئي مستعجل',
+ relativeFee: 10,
+ servicesFee: 5,
+ courtBuildingFee: 1.5,
+ attorneyFee: 50,
+ martyrStamp: 5,
+ professionTax: 15,
+ vat: 20,
+ },
+ 'fixed-total': {
+ label: 'ثابت كلي',
+ relativeFee: 15,
+ servicesFee: 7.5,
+ courtBuildingFee: 1.5,
+ attorneyFee: 75,
+ martyrStamp: 5,
+ professionTax: 15,
+ vat: 40,
+ },
+ 'appeal-urgent-partial': {
+ label: 'استئناف جزئي مستعجل',
+ relativeFee: 15,
+ servicesFee: 7.5,
+ courtBuildingFee: 1.5,
+ attorneyFee: 75,
+ martyrStamp: 5,
+ professionTax: 25,
+ vat: 40,
+ },
+ 'appeal-fixed-partial': {
+ label: 'ثابت مستأنف جزئي',
+ relativeFee: 10,
+ servicesFee: 5,
+ courtBuildingFee: 1.5,
+ attorneyFee: 75,
+ martyrStamp: 5,
+ professionTax: 25,
+ vat: 40,
+ },
+ bankruptcy: {
+ label: 'إفلاس',
+ relativeFee: 50,
+ servicesFee: 25,
+ courtBuildingFee: 1.5,
+ attorneyFee: 75,
+ martyrStamp: 5,
+ professionTax: 15,
+ vat: 40,
+ },
+ 'high-appeal': {
+ label: 'استئناف عالي',
+ relativeFee: 30,
+ servicesFee: 15,
+ courtBuildingFee: 3,
+ attorneyFee: 100,
+ martyrStamp: 5,
+ professionTax: 25,
+ vat: 60,
+ },
+};
 
-export const EXECUTION_FEE_RATE = 0.01;
-export const EXECUTION_FEE_MIN = 50;
+export const TREASURY_SUPPLY_OPTIONS: Array<{ id: TreasurySupplyKind; label: string }> = [
+ { id: 'family-same', label: 'كلي وأسرة نفس' },
+ { id: 'partial', label: 'جزئي' },
+ { id: 'relative-services', label: 'نسبي وخدمات' },
+ { id: 'accounting-money', label: 'حسابي مال' },
+];
 
-export const APPEAL_FEE_MULTIPLIER = 1.5;
-export const CASSATION_FEE_MULTIPLIER = 2.0;
+export const TREASURY_SUPPLY_PRESETS: Record<TreasurySupplyKind, { fixedFee: number; powerOfAttorneyFee: number }> = {
+ 'family-same': { fixedFee: 2.5, powerOfAttorneyFee: 2.9 },
+ partial: { fixedFee: 1, powerOfAttorneyFee: 2.9 },
+ 'relative-services': { fixedFee: 0, powerOfAttorneyFee: 2.9 },
+ 'accounting-money': { fixedFee: 2.5, powerOfAttorneyFee: 0 },
+};
 
-export function getCaseTypeInfo(type: CaseType): CaseTypeInfo | undefined {
- return CASE_TYPES.find(c => c.type === type);
-}
+export const JUDGMENT_ANNOUNCEMENT_OPTIONS: Array<{ id: JudgmentAnnouncementKind; label: string }> = [
+ { id: 'partial', label: 'حكم جزئي' },
+ { id: 'civil-appeal', label: 'حكم كلي أو مدني مستأنف' },
+ { id: 'cassation-state', label: 'حكم استئناف أو نقض أو مجلس الدولة' },
+];
 
-export function getCaseTypeLabel(type: CaseType): string {
- return getCaseTypeInfo(type)?.arabicLabel ?? type;
-}
+export const JUDGMENT_ANNOUNCEMENT_RATES: Record<JudgmentAnnouncementKind, number> = {
+ partial: 0.375,
+ 'civil-appeal': 1.125,
+ 'cassation-state': 2.25,
+};
+
+export const POWER_OF_ATTORNEY_FEE = 2.9;
+export const MARTYR_STAMP = 5;

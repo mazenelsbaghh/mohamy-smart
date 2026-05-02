@@ -1,173 +1,266 @@
-section.court-fees-calculator .case-info-card {
-    margin-bottom: 1.5rem;
+section.court-fees-calculator {
+    --fee-accent: var(--main-color);
+    --fee-panel-bg: var(--white-color);
+    --fee-soft-bg: color-mix(in srgb, var(--main-color) 8%, transparent);
+    --fee-border: var(--opacity-color);
 }
 
-section.court-fees-calculator .case-inputs {
+section.court-fees-calculator .fee-shell {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 280px minmax(0, 1fr);
     gap: 1rem;
+    align-items: start;
+    margin-top: 1.25rem;
 }
 
-@media (min-width: 768px) {
-    section.court-fees-calculator .case-inputs {
-        grid-template-columns: repeat(2, 1fr);
-    }
+section.court-fees-calculator .fee-sections {
+    display: grid;
+    gap: 0.6rem;
+    position: sticky;
+    top: 1rem;
 }
 
-section.court-fees-calculator .toggle-row {
-    display: flex;
-    gap: 1.5rem;
-    margin-top: 1rem;
-    flex-wrap: wrap;
-}
-
-section.court-fees-calculator .toggle-item {
+section.court-fees-calculator .fee-section-button {
+    min-height: 58px;
+    border: 1px solid var(--fee-border);
+    border-radius: var(--sm-radius);
+    background: var(--fee-panel-bg);
+    color: var(--title-color);
+    padding: 0.85rem 1rem;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-}
-
-section.court-fees-calculator .toggle-item label {
-    font-size: 0.85rem;
-    color: var(--title-color);
-    cursor: pointer;
-}
-
-section.court-fees-calculator .toggle-item input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--main-color);
-    cursor: pointer;
-}
-
-section.court-fees-calculator .results-card {
-    margin-top: 1.5rem;
-}
-
-section.court-fees-calculator .exempt-notice {
-    padding: 1.5rem;
-    text-align: center;
-    border-radius: var(--sm-radius);
-    background: #e8f5e9;
-    margin-top: 1rem;
-}
-
-.dark section.court-fees-calculator .exempt-notice {
-    background: #1b3a1b;
-}
-
-section.court-fees-calculator .exempt-notice h4 {
-    color: #2e7d32;
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
-}
-
-.dark section.court-fees-calculator .exempt-notice h4 {
-    color: #81c784;
-}
-
-section.court-fees-calculator .exempt-notice p {
-    color: #4caf50;
-    font-size: 0.85rem;
-}
-
-.dark section.court-fees-calculator .exempt-notice p {
-    color: #a5d6a7;
-}
-
-section.court-fees-calculator .fees-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1rem;
-}
-
-section.court-fees-calculator .fees-table th {
+    justify-content: space-between;
+    gap: 0.75rem;
     text-align: right;
-    padding: 0.75rem;
-    font-weight: 600;
-    font-size: 0.8rem;
-    color: var(--text-color);
-    border-bottom: 2px solid var(--opacity-color);
+    font-size: 0.92rem;
+    font-weight: 700;
+    transition: border-color 180ms ease, background 180ms ease, color 180ms ease;
 }
 
-section.court-fees-calculator .fees-table td {
-    padding: 0.75rem;
-    font-size: 0.85rem;
+section.court-fees-calculator .fee-section-button small {
+    min-width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fee-accent);
+    background: var(--fee-soft-bg);
+    font-size: 0.78rem;
+}
+
+section.court-fees-calculator .fee-section-button:hover,
+section.court-fees-calculator .fee-section-button.is-active {
+    border-color: var(--fee-accent);
+    background: var(--fee-soft-bg);
+}
+
+section.court-fees-calculator .fee-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+section.court-fees-calculator .fee-panel {
+    min-width: 0;
+}
+
+section.court-fees-calculator .fee-panel-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+section.court-fees-calculator .fee-panel-head h3 {
     color: var(--title-color);
-    border-bottom: 1px solid var(--opacity-color);
-}
-
-section.court-fees-calculator .fees-table tr:last-child td {
-    border-bottom: none;
-}
-
-section.court-fees-calculator .fees-table .total-row {
-    border-top: 2px solid var(--opacity-color);
-    font-weight: 700;
-}
-
-section.court-fees-calculator .fees-table .total-row td {
     font-size: 1rem;
-    color: var(--main-color);
-}
-
-section.court-fees-calculator .fees-summary {
-    display: flex;
-    gap: 1.5rem;
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 2px solid var(--opacity-color);
-    flex-wrap: wrap;
-}
-
-section.court-fees-calculator .fees-summary .summary-item {
-    display: flex;
-    flex-direction: column;
-}
-
-section.court-fees-calculator .fees-summary .summary-label {
-    font-size: 0.75rem;
-    color: var(--text-color);
-}
-
-section.court-fees-calculator .fees-summary .summary-value {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--main-color);
-}
-
-section.court-fees-calculator .warnings-list {
-    margin-top: 0.75rem;
-    padding: 0.75rem;
-    border-radius: var(--sm-radius);
-    background: #fff3e0;
-    border: 1px solid #ffe0b2;
-}
-
-.dark section.court-fees-calculator .warnings-list {
-    background: #2a1a00;
-    border-color: #3d2800;
-}
-
-section.court-fees-calculator .warnings-list p {
-    font-size: 0.8rem;
-    color: #e65100;
+    font-weight: 800;
     margin: 0;
 }
 
-.dark section.court-fees-calculator .warnings-list p {
-    color: #ffb74d;
-}
-
-section.court-fees-calculator .error-message {
-    color: var(--danger-color);
-    font-size: 0.85rem;
-    margin-top: 0.5rem;
-}
-
-section.court-fees-calculator .empty-results {
-    text-align: center;
-    padding: 2rem;
+section.court-fees-calculator .fee-panel-head p {
     color: var(--text-color);
+    font-size: 0.82rem;
+    margin: 0.25rem 0 0;
+}
+
+section.court-fees-calculator .fee-tool-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+section.court-fees-calculator .fee-tool-tab,
+section.court-fees-calculator .fee-choice {
+    border: 1px solid var(--fee-border);
+    border-radius: var(--sm-radius);
+    background: var(--fee-panel-bg);
+    color: var(--title-color);
+    min-height: 44px;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.83rem;
+    font-weight: 700;
+    transition: border-color 180ms ease, background 180ms ease, color 180ms ease;
+}
+
+section.court-fees-calculator .fee-tool-tab:hover,
+section.court-fees-calculator .fee-tool-tab.is-active,
+section.court-fees-calculator .fee-choice:hover,
+section.court-fees-calculator .fee-choice.is-active {
+    border-color: var(--fee-accent);
+    color: var(--fee-accent);
+    background: var(--fee-soft-bg);
+}
+
+section.court-fees-calculator .fee-form {
+    display: grid;
+    gap: 1rem;
+}
+
+section.court-fees-calculator .fee-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+section.court-fees-calculator .fee-choice-block {
+    display: grid;
+    gap: 0.6rem;
+}
+
+section.court-fees-calculator .fee-choice-label {
+    color: var(--title-color);
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+section.court-fees-calculator .fee-choice-grid {
+    display: grid;
+    gap: 0.5rem;
+}
+
+section.court-fees-calculator .fee-choice-grid.is-two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+section.court-fees-calculator .fee-choice-grid.is-three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+section.court-fees-calculator .fee-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+    align-items: center;
+}
+
+section.court-fees-calculator .fee-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin-bottom: 1rem;
+}
+
+section.court-fees-calculator .fee-summary-item {
+    border: 1px solid var(--fee-border);
+    border-radius: var(--sm-radius);
+    padding: 0.75rem 0.85rem;
+    background: color-mix(in srgb, var(--title-color) 4%, transparent);
+    display: grid;
+    gap: 0.25rem;
+}
+
+section.court-fees-calculator .fee-summary-item span {
+    color: var(--text-color);
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+section.court-fees-calculator .fee-summary-item strong {
+    color: var(--title-color);
     font-size: 0.9rem;
+    font-weight: 800;
+}
+
+section.court-fees-calculator .fee-summary-item.is-success {
+    border-color: color-mix(in srgb, var(--success-color) 40%, var(--fee-border));
+    background: color-mix(in srgb, var(--success-color) 12%, transparent);
+}
+
+section.court-fees-calculator .fee-row-success td {
+    color: var(--success-color);
+    font-weight: 800;
+}
+
+section.court-fees-calculator .fee-row-muted td {
+    color: var(--text-color);
+}
+
+section.court-fees-calculator .total-row td,
+section.court-fees-calculator .total-paid-row td {
+    border-top: 1px solid var(--fee-border);
+}
+
+section.court-fees-calculator .fee-jurisdiction {
+    margin-top: 0.85rem;
+    border-radius: var(--sm-radius);
+    background: var(--fee-soft-bg);
+    color: var(--title-color);
+    padding: 0.75rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 800;
+}
+
+section.court-fees-calculator .fee-notes {
+    margin-top: 0.85rem;
+    display: grid;
+    gap: 0.4rem;
+}
+
+section.court-fees-calculator .fee-notes p {
+    margin: 0;
+    border-radius: var(--sm-radius);
+    background: color-mix(in srgb, var(--warning-color, #f59e0b) 12%, transparent);
+    color: var(--title-color);
+    padding: 0.7rem 0.85rem;
+    font-size: 0.8rem;
+    line-height: 1.7;
+}
+
+.dark section.court-fees-calculator {
+    --fee-panel-bg: rgba(255, 255, 255, 0.04);
+    --fee-soft-bg: color-mix(in srgb, var(--main-color) 16%, transparent);
+}
+
+@media (max-width: 1180px) {
+    section.court-fees-calculator .fee-shell,
+    section.court-fees-calculator .fee-workspace {
+        grid-template-columns: 1fr;
+    }
+
+    section.court-fees-calculator .fee-sections {
+        position: static;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    section.court-fees-calculator .fee-sections,
+    section.court-fees-calculator .fee-form-grid,
+    section.court-fees-calculator .fee-choice-grid.is-two,
+    section.court-fees-calculator .fee-choice-grid.is-three,
+    section.court-fees-calculator .fee-checkbox-grid,
+    section.court-fees-calculator .fee-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    section.court-fees-calculator .fee-section-button,
+    section.court-fees-calculator .fee-tool-tab,
+    section.court-fees-calculator .fee-choice {
+        width: 100%;
+    }
 }
