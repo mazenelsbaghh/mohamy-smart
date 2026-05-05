@@ -642,7 +642,11 @@ const AddNewCaseFromOCRForm = ({ onClose }: Props) => {
  classNames={selectClass}
  selectedKeys={new Set(field.value ?? [])}
  onSelectionChange={(keys) => {
- field.onChange(Array.from(keys).map(String));
+ field.onChange(
+ keys ==='all'
+ ? internalRegulations.filter((regulation) => regulation.isActive).map((regulation) => regulation.id)
+ : Array.from(keys).map(String)
+ );
  }}
  >
  {internalRegulations

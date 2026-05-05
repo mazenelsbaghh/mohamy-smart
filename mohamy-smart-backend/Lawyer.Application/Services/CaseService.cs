@@ -169,23 +169,45 @@ namespace Lawyer.Application.Services
 			int pageSize,
 			Guid? lawyerId,
 			bool? isActive,
+			string? searchQuery,
 			CancellationToken cancellationToken)
 		{
 			if (pageNumber <= 0) pageNumber = 1;
 			pageSize = PaginationDefaults.ClampPageSize(pageSize);
 
-			var query = _unitOfWork.Repository<Case>()
+			IQueryable<Case> query = _unitOfWork.Repository<Case>()
 				.AsQueryable()
-				.AsNoTracking()
-				.OrderByDescending(x => x.Created);
+				.AsNoTracking();
 
 			if (lawyerId.HasValue)
-				query = (IOrderedQueryable<Case>)query.Where(x => x.LawyerId == lawyerId.Value);
+				query = query.Where(x => x.LawyerId == lawyerId.Value);
 
 			if (isActive.HasValue)
-				query = (IOrderedQueryable<Case>)query.Where(x => x.IsActive == isActive.Value);
+				query = query.Where(x => x.IsActive == isActive.Value);
+
+			if (!string.IsNullOrWhiteSpace(searchQuery))
+			{
+				var normalizedSearch = searchQuery.Trim();
+				var searchTerms = normalizedSearch.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+				foreach (var term in searchTerms)
+				{
+					var currentTerm = term;
+					query = query.Where(x =>
+						x.Number.Contains(currentTerm) ||
+						x.Title.Contains(currentTerm) ||
+						x.Court.Contains(currentTerm) ||
+						x.ClientName.Contains(currentTerm) ||
+						x.ApponentName.Contains(currentTerm) ||
+						x.DefendingParty.Contains(currentTerm) ||
+						x.Description.Contains(currentTerm) ||
+						x.Facts.Contains(currentTerm) ||
+						x.LegalClaims.Contains(currentTerm) ||
+						x.CaseType.Title.Contains(currentTerm));
+				}
+			}
 
 			var pagedResult = await query
+				.OrderByDescending(x => x.Created)
 				.Select(x => new CaseDto
 				{
 					Id = x.Id,
@@ -237,6 +259,8 @@ namespace Lawyer.Application.Services
 			entity.Facts = dto.Facts;
 			entity.LegalClaims = dto.LegalClaims;
 			entity.Status = dto.Status;
+			if (dto.CreationDate.HasValue)
+				entity.Created = dto.CreationDate.Value;
 
 			await _unitOfWork.Repository<Case>().Update(entity);
 			await _unitOfWork.SaveChangesAsync(cancellationToken);

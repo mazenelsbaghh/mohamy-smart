@@ -53,10 +53,7 @@ const initialState: InternalRegulationsState = {
  error: null,
 };
 
-export const fetchInternalRegulations = createAsyncThunk(
- 'internalRegulations/fetchAll',
- async ({ search, includeArchived = false, page = 1, pageSize = 10 }: FetchArgs = {}, { rejectWithValue }) => {
- try {
+const buildInternalRegulationsUrl = ({ search, includeArchived, page, pageSize }: Required<Pick<FetchArgs, 'includeArchived' | 'page' | 'pageSize'>> & Pick<FetchArgs, 'search'>) => {
  const params = new URLSearchParams({
  pageNumber: String(page),
  pageSize: String(pageSize),
@@ -64,8 +61,44 @@ export const fetchInternalRegulations = createAsyncThunk(
  });
  if (search?.trim()) params.set('search', search.trim());
 
- const response = await api.get<ApiResponse<PagedResponse<TInternalRegulation>>>(`${API_ROUTES.GET_INTERNAL_REGULATIONS}?${params.toString()}`);
- if (response.data.succeeded) return response.data.data;
+ return `${API_ROUTES.GET_INTERNAL_REGULATIONS}?${params.toString()}`;
+};
+
+export const fetchInternalRegulations = createAsyncThunk(
+ 'internalRegulations/fetchAll',
+ async ({ search, includeArchived = false, page = 1, pageSize = 10 }: FetchArgs = {}, { rejectWithValue }) => {
+ try {
+ const response = await api.get<ApiResponse<PagedResponse<TInternalRegulation>>>(buildInternalRegulationsUrl({ search, includeArchived, page, pageSize }));
+ if (response.data.succeeded) {
+ const firstPage = response.data.data;
+ const requestedEnd = page + Math.max(1, Math.ceil(pageSize / Math.max(firstPage.pageSize, 1))) - 1;
+ const lastPageToFetch = Math.min(firstPage.totalPages, requestedEnd);
+
+ if (lastPageToFetch <= firstPage.pageNumber) return firstPage;
+
+ const remainingResponses = await Promise.all(
+ Array.from({ length: lastPageToFetch - firstPage.pageNumber }, (_, index) => firstPage.pageNumber + index + 1)
+ .map((nextPage) => api.get<ApiResponse<PagedResponse<TInternalRegulation>>>(buildInternalRegulationsUrl({
+ search,
+ includeArchived,
+ page: nextPage,
+ pageSize,
+ })))
+ );
+
+ const remainingPages: TInternalRegulation[] = [];
+ for (const pageResponse of remainingResponses) {
+ if (!pageResponse.data.succeeded) {
+ return rejectWithValue(pageResponse.data.message ||'تعذّر جلب اللوائح الداخلية');
+ }
+ remainingPages.push(...pageResponse.data.data.data);
+ }
+
+ return {
+ ...firstPage,
+ data: [...firstPage.data, ...remainingPages].slice(0, pageSize),
+ };
+ }
  return rejectWithValue(response.data.message ||'تعذّر جلب اللوائح الداخلية');
  } catch (error) {
  return rejectWithValue(axiosErrorHandler(error));

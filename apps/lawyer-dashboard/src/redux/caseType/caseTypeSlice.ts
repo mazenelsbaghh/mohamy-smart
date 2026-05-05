@@ -12,7 +12,6 @@ type TInitialState = {
  error: string | null;
 }
 
-
 const initialState: TInitialState = {
  caseType: [],
  loading:'idle',

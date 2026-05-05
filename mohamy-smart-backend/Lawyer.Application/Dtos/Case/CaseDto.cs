@@ -42,6 +42,7 @@ namespace Lawyer.Application.Dtos.Case
 		public string LegalClaims { get; set; } = string.Empty;     // الطلبات القانونية
 		public Guid? PowerOfAttorneyId { get; set; }
 		public List<Guid>? InternalRegulationIds { get; set; }
+		public DateTime? CreationDate { get; set; }
 	}
 
 	public class CaseDto

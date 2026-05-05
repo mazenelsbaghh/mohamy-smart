@@ -3,6 +3,7 @@ import { Outlet, useLocation } from"react-router-dom"
 import Sidebar from"../components/sidebar/Sidebar"
 import Header from"../components/header/Header";
 import { SidebarContext } from"../components/sidebar/sidebarContext";
+import PageGuidanceRoute from"../components/guidance/PageGuidanceRoute";
 
 
 const Layout = () => {
@@ -74,6 +75,7 @@ const Layout = () => {
  <div role="main" className="outlet-box min-h-screen flex flex-col relative z-10">
  <Header theme={theme} setTheme={setTheme} />
  <div id="main-content" className="flex-grow pb-10 px-4 sm:px-10 mt-6 relative z-0">
+ <PageGuidanceRoute />
  <Outlet />
  </div>
  <footer className="w-full text-center py-4 mt-auto border-t app-border app-text-muted text-xs sm:text-sm select-none">

@@ -6,6 +6,7 @@ import { isString } from"@mohamy/shared-utils";
 import thunkGetAllCases from"./thunk/thunkGetAllCases";
 import thunkGetSingleCase from"./thunk/thunkGetSingleCase";
 import thunkSetCaseArchived from"./thunk/thunkSetCaseArchived";
+import thunkUpdateCase from"./thunk/thunkUpdateCase";
 import type { TInternalRegulationSummary } from"../../types/types";
 
 
@@ -14,7 +15,9 @@ export type TCase = {
  title: string;
  number: string;
  caseTypeId: number,
+ caseTypeIds?: number[];
  caseTypeName: string;
+ caseTypeNames?: string[];
  court: string;
  clientName: string;
  apponentName: string;
@@ -24,6 +27,7 @@ export type TCase = {
  legalClaims: string;
  status: number | string;
  clientId: string,
+ powerOfAttorneyId?: string | null,
  internalRegulations?: TInternalRegulationSummary[];
  isActive?: boolean;
  creationDate: string;
@@ -161,6 +165,23 @@ const casesSlice = createSlice({
  }
  })
  .addCase(thunkSetCaseArchived.rejected, (state, action) => {
+ if (isString(action.payload)) {
+ state.error = action.payload;
+ }
+ })
+ .addCase(thunkUpdateCase.pending, (state) => {
+ state.loading ='pending';
+ state.error = null;
+ })
+ .addCase(thunkUpdateCase.fulfilled, (state, action) => {
+ const updatedCase = action.payload;
+ const updatedCaseId = updatedCase.id.toString();
+ state.loading ='succeeded';
+ state.singleCase = updatedCase;
+ state.cases = state.cases.map((caseItem) => caseItem.id.toString() === updatedCaseId ? updatedCase : caseItem);
+ })
+ .addCase(thunkUpdateCase.rejected, (state, action) => {
+ state.loading ='failed';
  if (isString(action.payload)) {
  state.error = action.payload;
  }

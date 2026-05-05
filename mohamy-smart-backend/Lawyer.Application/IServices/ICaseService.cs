@@ -18,6 +18,7 @@ namespace Lawyer.Application.IServices
 			int pageSize,
 			Guid? lawyerId,
 			bool? isActive,
+			string? searchQuery,
 			CancellationToken cancellationToken);
 		Task<Result<CaseDto>> UpdateCaseAsync(Guid id, UpdateCaseDto dto, Guid lawyerId, bool isLawyer, CancellationToken cancellationToken);
 		Task<Result<CaseDto>> UpdateCaseInternalRegulationsAsync(Guid id, UpdateCaseInternalRegulationsDto dto, Guid lawyerId, bool isLawyer, CancellationToken cancellationToken);

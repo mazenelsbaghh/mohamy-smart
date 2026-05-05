@@ -1,10 +1,12 @@
-import { Button, Select, SelectItem } from'@heroui/react';
+import { Button, Input, Select, SelectItem } from'@heroui/react';
 import { CustomCard } from'@mohamy/shared-ui';
-import { useEffect, useMemo, useState } from'react';
-import { Save } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from'react';
+import { Pencil, Save, X } from'lucide-react';
 import { sileo } from'sileo';
 import { useAppDispatch, useAppSelector } from'../../../hooks/reduxHooks';
 import { setSingleCase, type TCase } from'../../../redux/cases/casesSlice';
+import thunkUpdateCase from'../../../redux/cases/thunk/thunkUpdateCase';
+import thunkGetAllCaseType from'../../../redux/caseType/thunk/thunkGetAllCaseType';
 import {
  fetchInternalRegulations,
  updateCaseInternalRegulations,
@@ -20,18 +22,63 @@ const creationDateFormatter = new Intl.DateTimeFormat('en-CA', {
  day:'2-digit',
 });
 
+const toDateInputValue = (date: string) => {
+ const parsedDate = new Date(date);
+ if (Number.isNaN(parsedDate.getTime())) return'';
+ return creationDateFormatter.format(parsedDate);
+};
+
 const CaseDetailsComponent = ({ singleCase }: TCaseDetailsComponent) => {
  const dispatch = useAppDispatch();
- const { regulations: internalRegulations } = useAppSelector((state) => state.internalRegulations);
- const linkedRegulations = singleCase.internalRegulations ?? [];
+ const { caseType } = useAppSelector((state) => state.caseType);
+ const {
+ regulations: internalRegulations,
+ totalRecords: internalRegulationsTotal,
+ loading: internalRegulationsLoading,
+ } = useAppSelector((state) => state.internalRegulations);
+ const linkedRegulations = useMemo(
+ () => singleCase.internalRegulations ?? [],
+ [singleCase.internalRegulations]
+ );
  const [selectedRegulationIds, setSelectedRegulationIds] = useState<string[]>([]);
  const [savingReferences, setSavingReferences] = useState(false);
+ const [isEditingDetails, setIsEditingDetails] = useState(false);
+ const [savingDetails, setSavingDetails] = useState(false);
+ const [detailsForm, setDetailsForm] = useState({
+ number: singleCase.number ??'',
+ court: singleCase.court ??'',
+ caseTypeIds: singleCase.caseTypeIds?.length ? singleCase.caseTypeIds.map(String) : [String(singleCase.caseTypeId)],
+ clientName: singleCase.clientName ??'',
+ apponentName: singleCase.apponentName ??'',
+ creationDate: toDateInputValue(singleCase.creationDate),
+ });
+
+ const resetDetailsForm = useCallback(() => {
+ setDetailsForm({
+ number: singleCase.number ??'',
+ court: singleCase.court ??'',
+ caseTypeIds: singleCase.caseTypeIds?.length ? singleCase.caseTypeIds.map(String) : [String(singleCase.caseTypeId)],
+ clientName: singleCase.clientName ??'',
+ apponentName: singleCase.apponentName ??'',
+ creationDate: toDateInputValue(singleCase.creationDate),
+ });
+ }, [singleCase]);
 
  useEffect(() => {
  if (internalRegulations.length === 0) {
  dispatch(fetchInternalRegulations({ page: 1, pageSize: 200 }));
  }
  }, [dispatch, internalRegulations.length]);
+
+ useEffect(() => {
+ if (caseType.length === 0) {
+ dispatch(thunkGetAllCaseType());
+ }
+ }, [caseType.length, dispatch]);
+
+ useEffect(() => {
+ if (!isEditingDetails) resetDetailsForm();
+ }, [isEditingDetails, resetDetailsForm]);
 
  useEffect(() => {
  setSelectedRegulationIds(
@@ -45,6 +92,41 @@ const CaseDetailsComponent = ({ singleCase }: TCaseDetailsComponent) => {
  () => internalRegulations.filter((regulation) => regulation.isActive),
  [internalRegulations]
  );
+
+ const handleSaveDetails = async () => {
+ const caseTypeIds = detailsForm.caseTypeIds.map(Number).filter((id) => Number.isFinite(id) && id > 0);
+ if (!detailsForm.court.trim() || !detailsForm.clientName.trim() || !detailsForm.apponentName.trim() || caseTypeIds.length === 0) {
+ sileo.error({ title:'أكمل بيانات القضية الأساسية قبل الحفظ' });
+ return;
+ }
+
+ setSavingDetails(true);
+ try {
+ const updatedCase = await dispatch(thunkUpdateCase({
+ id: String(singleCase.id),
+ title: singleCase.title,
+ number: detailsForm.number.trim(),
+ caseTypeIds,
+ status: singleCase.status,
+ court: detailsForm.court.trim(),
+ clientName: detailsForm.clientName.trim(),
+ apponentName: detailsForm.apponentName.trim(),
+ description: singleCase.description ??'',
+ facts: singleCase.facts ??'',
+ legalClaims: singleCase.legalClaims ??'',
+ powerOfAttorneyId: singleCase.powerOfAttorneyId,
+ internalRegulationIds: selectedRegulationIds,
+ creationDate: detailsForm.creationDate ? new Date(`${detailsForm.creationDate}T00:00:00`).toISOString() : undefined,
+ })).unwrap();
+ dispatch(setSingleCase(updatedCase));
+ setIsEditingDetails(false);
+ sileo.success({ title:'تم تحديث بيانات القضية' });
+ } catch (error) {
+ sileo.error({ title: typeof error ==='string' ? error :'تعذّر تحديث بيانات القضية' });
+ } finally {
+ setSavingDetails(false);
+ }
+ };
 
  const handleSaveReferences = async () => {
  setSavingReferences(true);
@@ -63,39 +145,112 @@ const CaseDetailsComponent = ({ singleCase }: TCaseDetailsComponent) => {
  };
 
  return (
- <div className='flex flex-col gap-6'>
- {/* Main Info Grid */}
+ <div className="flex flex-col gap-6">
+ <div className="flex items-center justify-end gap-2">
+ {isEditingDetails ? (
+ <>
+ <Button
+ variant="light"
+ startContent={<X size={16} />}
+ onPress={() => {
+ resetDetailsForm();
+ setIsEditingDetails(false);
+ }}
+ >
+ إلغاء
+ </Button>
+ <Button
+ color="primary"
+ className="text-white font-bold"
+ startContent={<Save size={16} />}
+ isLoading={savingDetails}
+ onPress={() => void handleSaveDetails()}
+ >
+ حفظ بيانات القضية
+ </Button>
+ </>
+ ) : (
+ <Button
+ variant="flat"
+ color="primary"
+ startContent={<Pencil size={16} />}
+ onPress={() => setIsEditingDetails(true)}
+ >
+ تعديل بيانات القضية
+ </Button>
+ )}
+ </div>
+
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
  <CustomCard className="border app-border shadow-sm transition-shadow">
  <h5 className="text-sm app-text-subtle mb-2">رقم القضية</h5>
+ {isEditingDetails ? (
+ <Input variant="bordered" aria-label="رقم القضية" value={detailsForm.number} onValueChange={(value) => setDetailsForm((current) => ({ ...current, number: value }))} />
+ ) : (
  <p className="text-lg font-bold text-[var(--title-color)]">{singleCase.number}</p>
+ )}
  </CustomCard>
- 
+
  <CustomCard className="border app-border shadow-sm transition-shadow">
  <h5 className="text-sm app-text-subtle mb-2">المحكمة</h5>
+ {isEditingDetails ? (
+ <Input variant="bordered" aria-label="المحكمة" value={detailsForm.court} onValueChange={(value) => setDetailsForm((current) => ({ ...current, court: value }))} />
+ ) : (
  <p className="text-lg font-bold text-[var(--title-color)]">{singleCase.court}</p>
+ )}
  </CustomCard>
 
  <CustomCard className="border app-border shadow-sm transition-shadow">
  <h5 className="text-sm app-text-subtle mb-2">نوع القضية</h5>
+ {isEditingDetails ? (
+ <Select
+ variant="bordered"
+ aria-label="نوع القضية"
+ selectionMode="multiple"
+ selectedKeys={new Set(detailsForm.caseTypeIds)}
+ onSelectionChange={(keys) => {
+ const next = keys ==='all' ? caseType.map((type) => String(type.id)) : Array.from(keys).map(String);
+ setDetailsForm((current) => ({ ...current, caseTypeIds: next }));
+ }}
+ >
+ {caseType.map((type) => (
+ <SelectItem key={String(type.id)} className="text-[var(--title-color)]">
+ {type.title}
+ </SelectItem>
+ ))}
+ </Select>
+ ) : (
  <p className="text-lg font-bold text-[var(--title-color)]">{singleCase.caseTypeName}</p>
+ )}
  </CustomCard>
 
  <CustomCard className="border app-border shadow-sm transition-shadow">
  <h5 className="text-sm app-text-subtle mb-2">اسم الموكل</h5>
+ {isEditingDetails ? (
+ <Input variant="bordered" aria-label="اسم الموكل" value={detailsForm.clientName} onValueChange={(value) => setDetailsForm((current) => ({ ...current, clientName: value }))} />
+ ) : (
  <p className="text-lg font-bold text-[var(--title-color)]">{singleCase.clientName}</p>
+ )}
  </CustomCard>
 
  <CustomCard className="border app-border shadow-sm transition-shadow">
  <h5 className="text-sm app-text-subtle mb-2">الخصم</h5>
+ {isEditingDetails ? (
+ <Input variant="bordered" aria-label="الخصم" value={detailsForm.apponentName} onValueChange={(value) => setDetailsForm((current) => ({ ...current, apponentName: value }))} />
+ ) : (
  <p className="text-lg font-bold text-[var(--title-color)]">{singleCase.apponentName}</p>
+ )}
  </CustomCard>
 
  <CustomCard className="border app-border shadow-sm transition-shadow">
  <h5 className="text-sm app-text-subtle mb-2">تاريخ الإنشاء</h5>
+ {isEditingDetails ? (
+ <Input type="date" variant="bordered" aria-label="تاريخ الإنشاء" value={detailsForm.creationDate} onValueChange={(value) => setDetailsForm((current) => ({ ...current, creationDate: value }))} />
+ ) : (
  <p className="text-lg text-[var(--text-color)] font-medium" dir="ltr" style={{ textAlign:'right' }}>
  {creationDateFormatter.format(new Date(singleCase.creationDate)).replace(/-/g,'/')}
  </p>
+ )}
  </CustomCard>
  </div>
 
@@ -134,11 +289,11 @@ const CaseDetailsComponent = ({ singleCase }: TCaseDetailsComponent) => {
  label="تحديث اللوائح الداخلية"
  variant="bordered"
  selectionMode="multiple"
-  selectedKeys={new Set(selectedRegulationIds.filter((id) => activeRegulations.some((r) => r.id === id)))}
+ isLoading={internalRegulationsLoading ==='pending'}
+ isDisabled={internalRegulationsLoading ==='pending'}
+ selectedKeys={new Set(selectedRegulationIds.filter((id) => activeRegulations.some((r) => r.id === id)))}
  onSelectionChange={(keys) => {
- const next = keys ==='all'
- ? activeRegulations.map((regulation) => regulation.id)
- : Array.from(keys).map(String);
+ const next = keys ==='all' ? activeRegulations.map((regulation) => regulation.id) : Array.from(keys).map(String);
  setSelectedRegulationIds(next);
  }}
  placeholder="اختر اللوائح النشطة"
@@ -149,11 +304,15 @@ const CaseDetailsComponent = ({ singleCase }: TCaseDetailsComponent) => {
  </SelectItem>
  ))}
  </Select>
+ <p className="text-xs app-text-muted">
+ متاح {activeRegulations.length} من {internalRegulationsTotal || activeRegulations.length} لائحة داخلية.
+ </p>
  <Button
  color="primary"
  className="text-white font-bold"
  startContent={<Save size={16} />}
  isLoading={savingReferences}
+ isDisabled={internalRegulationsLoading ==='pending'}
  onPress={() => void handleSaveReferences()}
  >
  حفظ المراجع
@@ -162,7 +321,6 @@ const CaseDetailsComponent = ({ singleCase }: TCaseDetailsComponent) => {
  </div>
  </CustomCard>
 
- {/* Narratives Section */}
  <div className="grid grid-cols-1 gap-6 mt-2">
  <CustomCard className="border app-border shadow-sm">
  <div className="mb-4">
@@ -198,7 +356,7 @@ const CaseDetailsComponent = ({ singleCase }: TCaseDetailsComponent) => {
  </CustomCard>
  </div>
  </div>
- )
-}
+ );
+};
 
-export default CaseDetailsComponent
+export default CaseDetailsComponent;

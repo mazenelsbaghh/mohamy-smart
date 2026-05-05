@@ -51,6 +51,7 @@ namespace Lawyer.Controllers
 			[FromQuery] int pageSize = 10,
 			[FromQuery] Guid? lawyerId = null,
 			[FromQuery] bool? isActive = null,
+			[FromQuery] string? searchQuery = null,
 			CancellationToken cancellationToken = default)
 		{
 			var isLawyer = User.IsInRole("Lawyer");
@@ -64,7 +65,7 @@ namespace Lawyer.Controllers
 				effectiveLawyerId = lawyerIdResult.Data;
 			}
 
-			var result = await _service.GetAllAsync(pageNumber, pageSize, effectiveLawyerId, isActive, cancellationToken);
+			var result = await _service.GetAllAsync(pageNumber, pageSize, effectiveLawyerId, isActive, searchQuery, cancellationToken);
 			return CreateResponse(result);
 		}
 

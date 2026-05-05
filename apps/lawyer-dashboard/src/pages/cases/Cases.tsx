@@ -24,6 +24,7 @@ import thunkSetCaseArchived from'../../redux/cases/thunk/thunkSetCaseArchived';
 import { setPageNumber } from'../../redux/cases/casesSlice';
 import { format, parseISO } from'date-fns';
 import { sileo } from'sileo';
+import { caseMatchesSearch } from'./caseSearch';
 
 const safeFormatDate = (dateStr: string | null | undefined): string => {
   try { return dateStr ? format(parseISO(dateStr), 'yyyy/MM/dd') : '--'; }
@@ -42,9 +43,18 @@ const Cases = () => {
  const safeCases = useMemo(() => Array.isArray(cases) ? cases : [], [cases]);
  
  const [searchQuery, setSearchQuery] = useState('');
+ const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
  const [statusFilter, setStatusFilter] = useState('الكل');
  const [showArchived, setShowArchived] = useState(false);
  const [mutatingCaseId, setMutatingCaseId] = useState<string | number | null>(null);
+
+ useEffect(() => {
+ const timer = window.setTimeout(() => {
+ setDebouncedSearchQuery(searchQuery);
+ }, 320);
+
+ return () => window.clearTimeout(timer);
+ }, [searchQuery]);
 
  useEffect(() => {
  if (user) {
@@ -53,31 +63,33 @@ const Cases = () => {
  pageSize: 10,
  lawyerId: user.userId,
  isActive: !showArchived,
+ searchQuery: debouncedSearchQuery,
  forceRefresh: true,
  }));
  }
+ }, [dispatch, user, pageNumber, showArchived, debouncedSearchQuery]);
+
+ useEffect(() => {
  dispatch(thunkGetReports());
- }, [dispatch, user, pageNumber, showArchived]);
+ }, [dispatch]);
 
  const filteredCases = useMemo(() => {
- const search = searchQuery.trim().toLowerCase();
  return safeCases.filter((caseItem) => {
  const statusMatches =
  statusFilter ==='الكل' ||
  (statusFilter ==='متداولة' && isOpenCase(caseItem.status)) ||
  (statusFilter ==='المنتهية' && !isOpenCase(caseItem.status));
 
- const searchable = [
- caseItem.number,
- caseItem.title,
- caseItem.court,
- caseItem.clientName,
- caseItem.caseTypeName,
- ].filter(Boolean).join(' ').toLowerCase();
-
- return statusMatches && (!search || searchable.includes(search));
+ return statusMatches && caseMatchesSearch(caseItem, searchQuery);
  });
  }, [safeCases, searchQuery, statusFilter]);
+
+ const handleSearchChange = (value: string) => {
+ setSearchQuery(value);
+ if (pageNumber !== 1) {
+ dispatch(setPageNumber(1));
+ }
+ };
 
  const toggleArchiveView = () => {
  setShowArchived((current) => !current);
@@ -98,6 +110,7 @@ const Cases = () => {
  pageSize: 10,
  lawyerId: user.userId,
  isActive: !showArchived,
+ searchQuery: debouncedSearchQuery,
  forceRefresh: true,
  }));
  dispatch(thunkGetReports());
@@ -151,9 +164,9 @@ const Cases = () => {
  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-8">
  <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
  <SearchInput
- placeholder="ابحث برقم القضية أو المحكمة..."
+ placeholder="ابحث برقم القضية أو المحكمة أو اسم الموكل أو الخصم..."
  value={searchQuery}
- onValueChange={setSearchQuery}
+ onValueChange={handleSearchChange}
  />
  <FilterSelect
  label="الحالة"
