@@ -18,6 +18,9 @@ namespace Lawyer.Application.Dtos.ProcessServerPaper
         [Required]
         public string TargetName { get; set; } = string.Empty;
         
+        public string? ProcessServerName { get; set; }
+        public string? DeliveryNumber { get; set; }
+        
         [Required]
         public ProcessServerPaperStatus Status { get; set; }
         

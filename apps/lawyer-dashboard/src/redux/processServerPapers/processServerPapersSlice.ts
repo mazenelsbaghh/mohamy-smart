@@ -22,27 +22,26 @@ export const PSP_STATUS_LABELS: Record<ProcessServerPaperStatus, string> = {
 };
 
 export type TProcessServerPaper = {
- id: string;
- lawyerId: string;
- clientId?: string | null;
- clientName?: string | null;
- caseId?: string | null;
- caseTitle?: string | null;
- paperNumber: string;
- paperType: ProcessServerPaperType;
- subject: string;
- issueDate: string;
- servedDate?: string | null;
- processServerName: string;
- recipientName: string;
- recipientAddress: string;
- status: ProcessServerPaperStatus;
- notes: string;
- filePath?: string | null;
- fileName?: string | null;
- contentType?: string | null;
- fileSize?: number | null;
- creationDate: string;
+  id: string;
+  lawyerId: string;
+  clientId?: string | null;
+  clientName?: string | null;
+  caseId?: string | null;
+  caseTitle?: string | null;
+  paperType: ProcessServerPaperType;
+  otherPaperType?: string | null;
+  customPaperTypeTitle?: string | null;
+  targetName: string;
+  processServerName?: string | null;
+  deliveryNumber?: string | null;
+  status: ProcessServerPaperStatus;
+  notes?: string | null;
+  attachmentUrl?: string | null;
+  servedDate?: string | null;
+  createdAt: string;
+  updatedAt?: string | null;
+  client?: { id: string; name: string } | null;
+  case?: { id: string; title: string; number?: string } | null;
 };
 
 export type TPSPFilters = {
@@ -54,18 +53,17 @@ export type TPSPFilters = {
 };
 
 export type TCreatePSPPayload = {
- clientId?: string | null;
- caseId?: string | null;
- paperNumber: string;
- paperType: ProcessServerPaperType;
- subject: string;
- issueDate: string;
- servedDate?: string | null;
- processServerName: string;
- recipientName: string;
- recipientAddress: string;
- status?: ProcessServerPaperStatus;
- notes?: string;
+  clientId?: string | null;
+  caseId?: string | null;
+  paperType: ProcessServerPaperType;
+  otherPaperType?: string | null;
+  customPaperTypeTitle?: string | null;
+  targetName: string;
+  processServerName?: string | null;
+  deliveryNumber?: string | null;
+  status?: ProcessServerPaperStatus;
+  notes?: string;
+  servedDate?: string | null;
 };
 
 export const thunkGetPapers = createAsyncThunk('processServerPapers/getAll',

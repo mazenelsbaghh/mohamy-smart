@@ -23,6 +23,8 @@ namespace Lawyer.Core.Models
         public string? CustomPaperTypeTitle { get; set; }
         
         public string TargetName { get; set; } = string.Empty;
+        public string? ProcessServerName { get; set; }
+        public string? DeliveryNumber { get; set; }
         public ProcessServerPaperStatus Status { get; set; }
         
         public string? Notes { get; set; }

@@ -107,6 +107,8 @@ namespace Lawyer.Application.Services
             if (dto.OtherPaperType != null) paper.OtherPaperType = dto.OtherPaperType;
             if (dto.CustomPaperTypeTitle != null) paper.CustomPaperTypeTitle = dto.CustomPaperTypeTitle;
             if (dto.TargetName != null) paper.TargetName = dto.TargetName;
+            if (dto.ProcessServerName != null) paper.ProcessServerName = dto.ProcessServerName;
+            if (dto.DeliveryNumber != null) paper.DeliveryNumber = dto.DeliveryNumber;
             if (dto.Status.HasValue) paper.Status = dto.Status.Value;
             if (dto.Notes != null) paper.Notes = dto.Notes;
 

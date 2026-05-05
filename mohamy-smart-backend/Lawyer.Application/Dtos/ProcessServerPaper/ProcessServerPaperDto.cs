@@ -13,6 +13,8 @@ namespace Lawyer.Application.Dtos.ProcessServerPaper
         public string? OtherPaperType { get; set; }
         public string? CustomPaperTypeTitle { get; set; }
         public string TargetName { get; set; } = string.Empty;
+        public string? ProcessServerName { get; set; }
+        public string? DeliveryNumber { get; set; }
         public ProcessServerPaperStatus Status { get; set; }
         public string? Notes { get; set; }
         public string? AttachmentUrl { get; set; }

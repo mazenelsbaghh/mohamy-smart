@@ -14,56 +14,6 @@
   background: var(--overlay-color);
 }
 
-.page-guidance-overlay--target-upper {
-  align-items: flex-end;
-  padding-bottom: clamp(1rem, 4vh, 2.5rem);
-}
-
-.page-guidance-overlay--target-lower {
-  align-items: flex-start;
-  padding-top: clamp(1rem, 4vh, 2.5rem);
-}
-
-.page-guidance-spotlight {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 2147483001;
-  width: var(--guide-w);
-  height: var(--guide-h);
-  border: 2px solid var(--main-color);
-  border-radius: 0.8rem;
-  transform: translate3d(var(--guide-x), var(--guide-y), 0);
-  pointer-events: none;
-  box-shadow:
-    0 0 0 9999px rgba(27, 27, 27, 0.34),
-    0 0 0 5px var(--accent-soft),
-    0 14px 38px rgba(27, 27, 27, 0.2);
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease;
-}
-
-.page-guidance-focus-target {
-  scroll-margin: 7rem;
-  outline: 3px solid var(--main-color) !important;
-  outline-offset: 5px !important;
-  box-shadow: 0 0 0 7px var(--accent-soft), 0 14px 36px rgba(27, 27, 27, 0.18) !important;
-  transition: outline-color 0.18s ease, outline-offset 0.18s ease, box-shadow 0.18s ease;
-  animation: page-guidance-target-pulse 1.15s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-}
-
-@keyframes page-guidance-target-pulse {
-  0%,
-  100% {
-    outline-offset: 5px;
-    box-shadow: 0 0 0 7px var(--accent-soft), 0 14px 36px rgba(27, 27, 27, 0.18);
-  }
-
-  50% {
-    outline-offset: 8px;
-    box-shadow: 0 0 0 10px var(--accent-soft), 0 18px 44px rgba(27, 27, 27, 0.22);
-  }
-}
-
 .page-guidance-dialog {
   width: min(34rem, calc(100vw - 2rem));
   max-height: min(76vh, 40rem);
@@ -77,9 +27,6 @@
   box-shadow: 0 20px 58px rgba(27, 27, 27, 0.22);
   position: relative;
   z-index: 2147483002;
-}
-
-.page-guidance-dialog--with-target {
   margin-inline: auto;
 }
 
@@ -275,26 +222,7 @@
   font-weight: 900;
 }
 
-.page-guidance-dialog__target-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: 0;
-  max-width: 58%;
-  padding: 0.18rem 0.48rem;
-  border: 1px solid var(--accent-soft-strong);
-  border-radius: 999px;
-  background: var(--surface-color);
-  color: var(--main-color);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
-.page-guidance-dialog__target-label--muted {
-  color: var(--muted-color);
-  border-color: var(--border-color);
-}
 
 .page-guidance-dialog__active-title {
   margin: 0 0 0.28rem;
@@ -467,8 +395,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-guidance-spotlight,
-  .page-guidance-focus-target,
   .page-guidance-dialog__icon-button,
   .page-guidance-dialog__button {
     animation: none;
