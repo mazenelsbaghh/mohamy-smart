@@ -173,8 +173,22 @@ namespace Lawyer.Application.Services
         {
             try
             {
+                var lawyerEntity = await _unitOfWork.Repository<Core.Models.Lawyer>()
+                    .AsQueryable()
+                    .AsNoTracking()
+                    .Where(l => l.Id == lawyerId || l.ApplicationUserId == lawyerId)
+                    .Include(l => l.ApplicationUser)
+                    .FirstOrDefaultAsync(ct);
+
+                var lawyerUsageIds = new HashSet<Guid> { lawyerId };
+                if (lawyerEntity is not null)
+                {
+                    lawyerUsageIds.Add(lawyerEntity.Id);
+                    lawyerUsageIds.Add(lawyerEntity.ApplicationUserId);
+                }
+
                 var records = await BuildQuery(from, to)
-                    .Where(r => r.LawyerId == lawyerId)
+                    .Where(r => lawyerUsageIds.Contains(r.LawyerId))
                     .ToListAsync(ct);
 
                 if (records.Count == 0)
@@ -183,12 +197,6 @@ namespace Lawyer.Application.Services
                 var aiRecords = records.Where(r => r.Provider == "Gemini").ToList();
                 var ocrRecords = records.Where(r => r.Provider == "GoogleVision").ToList();
 
-                var lawyerEntity = await _unitOfWork.Repository<Core.Models.Lawyer>()
-                    .AsQueryable()
-                    .AsNoTracking()
-                    .Where(l => l.Id == lawyerId || l.ApplicationUserId == lawyerId)
-                    .Include(l => l.ApplicationUser)
-                    .FirstOrDefaultAsync(ct);
                 var lawyerName = !string.IsNullOrWhiteSpace(lawyerEntity?.ApplicationUser?.FullName)
                     ? lawyerEntity.ApplicationUser.FullName
                     : "غير معروف";
@@ -227,7 +235,12 @@ namespace Lawyer.Application.Services
                         var workflows = caseGroup
                             .Select(r => new { Record = r, Workflow = MapWorkflow(r.AiStepType) })
                             .Where(x => x.Workflow is not null)
-                            .GroupBy(x => x.Workflow!.Value.Key)
+                            .GroupBy(x => new
+                            {
+                                x.Workflow!.Value.Key,
+                                x.Record.WorkflowRunId,
+                                x.Record.WorkflowId
+                            })
                             .Select(workflowGroup =>
                             {
                                 var workflow = workflowGroup.First().Workflow!.Value;
@@ -235,6 +248,9 @@ namespace Lawyer.Application.Services
                                 {
                                     WorkflowKey = workflow.Key,
                                     WorkflowName = workflow.Name,
+                                    WorkflowId = workflowGroup.Key.WorkflowId,
+                                    WorkflowRunId = workflowGroup.Key.WorkflowRunId,
+                                    IsLegacyAggregate = string.IsNullOrWhiteSpace(workflowGroup.Key.WorkflowRunId),
                                     RequestCount = workflowGroup.Count(),
                                     TotalCostUsd = workflowGroup.Sum(x => x.Record.EstimatedCostUsd),
                                     Steps = workflowGroup
@@ -265,7 +281,7 @@ namespace Lawyer.Application.Services
                             CaseId = caseGroup.Key,
                             CaseTitle = string.IsNullOrWhiteSpace(caseInfo?.Title) ? "قضية بدون عنوان" : caseInfo.Title,
                             CaseNumber = caseInfo?.Number ?? "",
-                            UsedWorkflowCount = workflows.Count,
+                            UsedWorkflowCount = workflows.Select(w => w.WorkflowKey).Distinct().Count(),
                             TotalWorkflowCount = TotalWorkflowCount,
                             TotalCostUsd = caseGroup.Sum(r => r.EstimatedCostUsd),
                             Workflows = workflows
@@ -305,7 +321,12 @@ namespace Lawyer.Application.Services
                     .Where(r => !r.CaseId.HasValue)
                     .Select(r => new { Record = r, Workflow = MapWorkflow(r.AiStepType) })
                     .Where(x => x.Workflow is not null)
-                    .GroupBy(x => x.Workflow!.Value.Key)
+                    .GroupBy(x => new
+                    {
+                        x.Workflow!.Value.Key,
+                        x.Record.WorkflowRunId,
+                        x.Record.WorkflowId
+                    })
                     .Select(workflowGroup =>
                     {
                         var workflow = workflowGroup.First().Workflow!.Value;
@@ -313,6 +334,9 @@ namespace Lawyer.Application.Services
                         {
                             WorkflowKey = workflow.Key,
                             WorkflowName = workflow.Name,
+                            WorkflowId = workflowGroup.Key.WorkflowId,
+                            WorkflowRunId = workflowGroup.Key.WorkflowRunId,
+                            IsLegacyAggregate = string.IsNullOrWhiteSpace(workflowGroup.Key.WorkflowRunId),
                             RequestCount = workflowGroup.Count(),
                             TotalCostUsd = workflowGroup.Sum(x => x.Record.EstimatedCostUsd),
                             Steps = workflowGroup
@@ -338,7 +362,7 @@ namespace Lawyer.Application.Services
 
                 var dto = new LawyerUsageDetailDto
                 {
-                    LawyerId = lawyerId,
+                    LawyerId = lawyerEntity?.Id ?? lawyerId,
                     LawyerName = lawyerName,
                     TotalCostUsd = records.Sum(r => r.EstimatedCostUsd),
                     AiCostUsd = aiRecords.Sum(r => r.EstimatedCostUsd),

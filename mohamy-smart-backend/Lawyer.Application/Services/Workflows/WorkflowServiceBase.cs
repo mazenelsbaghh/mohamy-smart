@@ -560,7 +560,16 @@ namespace Lawyer.Application.Services.Workflows
 
                 var cleanedJson = CleanJsonResponse(aiResult.Data.Content);
 
-                await _trackingService.RecordGeminiUsageAsync(Guid.Parse(lawyerId), workflow.CaseId, stepType, model ?? "", aiResult.Data.Usage, CancellationToken.None);
+                await _trackingService.RecordGeminiUsageAsync(
+                    Guid.Parse(lawyerId),
+                    workflow.CaseId,
+                    stepType,
+                    model ?? "",
+                    aiResult.Data.Usage,
+                    CancellationToken.None,
+                    workflow.Id,
+                    workflow.RunId,
+                    GetWorkflowTypeName());
 
                 object validatedOutput;
                 try

@@ -18,6 +18,10 @@ import"./AiUsage.css";
 
 const fmtCost = (v: number) => `$${v.toFixed(4)}`;
 const fmtDate = (d: string) => d?.split("T")[0] ??"-";
+const getWorkflowCopyLabel = (workflow: { workflowId?: number | null; workflowRunId?: string | null; isLegacyAggregate?: boolean }) => {
+ if (workflow.isLegacyAggregate || !workflow.workflowRunId) return "إجمالي قديم";
+ return workflow.workflowId ? `نسخة #${workflow.workflowId}` : `نسخة ${workflow.workflowRunId.slice(0, 8)}`;
+};
 
 const dailyColumns = [
  { key:"date", label:"التاريخ" },
@@ -201,8 +205,11 @@ const LawyerUsageDetail = () => {
  onClick={() => setExpandedWorkflowKey(isWorkflowExpanded ? null : workflowId)}
  >
  <div className="flex flex-col items-start">
- <span className="font-semibold text-[var(--title-color)]">{workflow.workflowName}</span>
- <span className="text-xs app-text-subtle">{workflow.requestCount} طلب</span>
+	 <div className="flex items-center gap-2">
+	 <span className="font-semibold text-[var(--title-color)]">{workflow.workflowName}</span>
+	 <span className={`ai-usage-copy-badge ${workflow.isLegacyAggregate ?"legacy" :""}`}>{getWorkflowCopyLabel(workflow)}</span>
+	 </div>
+	 <span className="text-xs app-text-subtle">{workflow.requestCount} طلب</span>
  </div>
  <div className="flex items-center gap-4">
  <span className="font-semibold">{fmtCost(workflow.totalCostUsd)}</span>
@@ -259,8 +266,11 @@ const LawyerUsageDetail = () => {
  onClick={() => setExpandedWorkflowKey(isExpanded ? null : workflowId)}
  >
  <div className="flex flex-col items-start">
- <span className="font-bold text-[var(--title-color)]">{workflow.workflowName}</span>
- <span className="text-xs app-text-subtle">{workflow.requestCount} طلب</span>
+	 <div className="flex items-center gap-2">
+	 <span className="font-bold text-[var(--title-color)]">{workflow.workflowName}</span>
+	 <span className={`ai-usage-copy-badge ${workflow.isLegacyAggregate ?"legacy" :""}`}>{getWorkflowCopyLabel(workflow)}</span>
+	 </div>
+	 <span className="text-xs app-text-subtle">{workflow.requestCount} طلب</span>
  </div>
  <div className="flex items-center gap-4">
  <span className="font-semibold">{fmtCost(workflow.totalCostUsd)}</span>

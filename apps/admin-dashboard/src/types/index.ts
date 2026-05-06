@@ -153,11 +153,14 @@ export interface StepUsage {
 }
 
 export interface WorkflowUsage {
- workflowKey: string;
- workflowName: string;
- requestCount: number;
- totalCostUsd: number;
- steps: StepUsage[];
+	 workflowKey: string;
+	 workflowName: string;
+	 workflowId?: number | null;
+	 workflowRunId?: string | null;
+	 isLegacyAggregate?: boolean;
+	 requestCount: number;
+	 totalCostUsd: number;
+	 steps: StepUsage[];
 }
 
 export interface CaseWorkflowUsage {

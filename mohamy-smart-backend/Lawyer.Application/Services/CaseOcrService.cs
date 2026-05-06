@@ -410,7 +410,7 @@ namespace Lawyer.Application.Services
 			var lawyerId = !string.IsNullOrEmpty(lawyerIdStr) ? Guid.Parse(lawyerIdStr) : Guid.Empty;
 			try
 			{
-				BackgroundJob.Enqueue<IAiUsageTrackingService>(s => s.RecordGeminiUsageAsync(lawyerId, null, AiStepType.Ocr, ocrModel, aiResult.Data.Usage, CancellationToken.None));
+					BackgroundJob.Enqueue<IAiUsageTrackingService>(s => s.RecordGeminiUsageAsync(lawyerId, null, AiStepType.Ocr, ocrModel, aiResult.Data.Usage, CancellationToken.None, null, null, null));
 			}
 			catch
 			{

@@ -9,9 +9,9 @@ import CustomList from '../../components/ui/lists/CustomList';
 
 import { IoArrowBack } from "react-icons/io5";
 import { GoLaw } from 'react-icons/go';
-import { FiCheckCircle } from 'react-icons/fi';
+import { FiCheckCircle, FiUpload, FiArrowLeft } from 'react-icons/fi';
 import { FaUsers } from 'react-icons/fa';
-import { LuCircleCheck, LuCircleX } from 'react-icons/lu';
+import { LuCircleCheck, LuCircleX, LuSparkles, LuBriefcase } from 'react-icons/lu';
 
 import { Calendar } from '@heroui/react';
 import { today, getLocalTimeZone } from "@internationalized/date";
@@ -134,6 +134,78 @@ const Home = () => {
                             />
                         )}
                     </Skeleton>
+
+                    {/* ── Quick Start Section ── */}
+                    <div className="quick-start-section">
+                        <div className="quick-start-header">
+                            <div className="quick-start-header-text">
+                                <h3>ابدأ قضيتك الآن</h3>
+                                <p>ارفع المستندات — وسنجهزها لك تلقائيًا بالذكاء الاصطناعي</p>
+                            </div>
+                            <CustomButton
+                                type="button"
+                                text="ارفع مستند وابدأ"
+                                color="primary"
+                                radius="full"
+                                size="lg"
+                                startContent={<FiUpload size={18} />}
+                                onClick={() => navigate('/documents')}
+                            />
+                        </div>
+
+                        <div className="quick-start-steps">
+                            {/* Connecting line */}
+                            <div className="quick-start-connector" />
+
+                            {/* Step 1 */}
+                            <div
+                                className="quick-start-step"
+                                onClick={() => navigate('/documents')}
+                            >
+                                <div className="step-number">١</div>
+                                <div className="step-icon-wrapper step-icon--upload">
+                                    <FiUpload size={24} />
+                                </div>
+                                <div className="step-content">
+                                    <h4>ارفع المستندات</h4>
+                                    <p>صور أو PDF لأي مستند قانوني</p>
+                                </div>
+                                <FiArrowLeft className="step-arrow" />
+                            </div>
+
+                            {/* Step 2 */}
+                            <div
+                                className="quick-start-step"
+                                onClick={() => navigate('/documents')}
+                            >
+                                <div className="step-number">٢</div>
+                                <div className="step-icon-wrapper step-icon--case">
+                                    <LuBriefcase size={24} />
+                                </div>
+                                <div className="step-content">
+                                    <h4>أنشئ القضية</h4>
+                                    <p>نستخرج البيانات تلقائيًا من المستند</p>
+                                </div>
+                                <FiArrowLeft className="step-arrow" />
+                            </div>
+
+                            {/* Step 3 */}
+                            <div
+                                className="quick-start-step"
+                                onClick={() => navigate('/cases')}
+                            >
+                                <div className="step-number">٣</div>
+                                <div className="step-icon-wrapper step-icon--ai">
+                                    <LuSparkles size={24} />
+                                </div>
+                                <div className="step-content">
+                                    <h4>ابدأ العمل بالذكاء الاصطناعي</h4>
+                                    <p>مذكرة دفاع، صحيفة دعوى، طعن بالنقض...</p>
+                                </div>
+                                <FiArrowLeft className="step-arrow" />
+                            </div>
+                        </div>
+                    </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
                         <div className="lg:col-span-2 flex flex-col gap-6">

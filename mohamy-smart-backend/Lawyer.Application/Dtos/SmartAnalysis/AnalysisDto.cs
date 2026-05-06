@@ -11,6 +11,7 @@ namespace Lawyer.Application.Dtos.SmartAnalysis
     {
         public Guid CaseId { get; set; }
         public string CaseFacts { get; set; } = string.Empty;
+        public string? RunId { get; set; }
     }
 
     public class CaseAnalysisResultDto
@@ -100,6 +101,7 @@ namespace Lawyer.Application.Dtos.SmartAnalysis
         public Guid CaseId { get; set; }
         public string CaseFacts { get; set; } = string.Empty;
         public CaseAnalysisResultDto LegalAnalysis { get; set; } = new();
+        public string? RunId { get; set; }
     }
 
 
@@ -111,6 +113,7 @@ namespace Lawyer.Application.Dtos.SmartAnalysis
         public string DefenseTitle { get; set; } = string.Empty;
         public string BasisFromCase { get; set; } = string.Empty;
         public string Scope { get; set; } = string.Empty;
+        public string? RunId { get; set; }
     }
 
     public class CreateDefenseRequestDto
@@ -195,6 +198,7 @@ namespace Lawyer.Application.Dtos.SmartAnalysis
     public class FinalRequirementsRequestDto
     {
         public Guid CaseId { get; set; }
+        public string? RunId { get; set; }
     }
 
     public class FinalPrayerItemDto

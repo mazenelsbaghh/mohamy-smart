@@ -7,7 +7,7 @@ import { MdCheckCircle, MdDelete, MdDownload, MdEdit, MdOutlineDescription, MdUp
 
 
 import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner, Chip, Input, Select, SelectItem, Textarea } from '@heroui/react';
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner, Chip, Input, Textarea } from '@heroui/react';
 import { SearchInput } from '@mohamy/shared-ui';
 import { FilterSelect } from '@mohamy/shared-ui';
 import { tableClassNames } from '@mohamy/shared-ui';

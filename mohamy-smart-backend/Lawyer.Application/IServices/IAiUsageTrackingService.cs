@@ -5,7 +5,16 @@ namespace Lawyer.Application.IServices
 {
     public interface IAiUsageTrackingService
     {
-        Task RecordGeminiUsageAsync(Guid lawyerId, Guid? caseId, AiStepType stepType, string modelIdentifier, AIUsageMetadata? usage, CancellationToken ct);
+        Task RecordGeminiUsageAsync(
+            Guid lawyerId,
+            Guid? caseId,
+            AiStepType stepType,
+            string modelIdentifier,
+            AIUsageMetadata? usage,
+            CancellationToken ct,
+            int? workflowId = null,
+            string? workflowRunId = null,
+            string? workflowType = null);
         Task RecordOcrUsageAsync(Guid lawyerId, Guid? caseId, CancellationToken ct);
     }
 }

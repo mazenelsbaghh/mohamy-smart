@@ -45,16 +45,16 @@ namespace Lawyer.Application.Services.SmartAnalysis
             _backgroundJobs = backgroundJobs;
         }
 
-        private async Task TrackUsageAsync(Guid lawyerId, Guid? caseId, AiStepType step, string model, AIUsageMetadata? usage)
+        private async Task TrackUsageAsync(Guid lawyerId, Guid? caseId, AiStepType step, string model, AIUsageMetadata? usage, string? runId)
         {
             if (_backgroundJobs != null)
             {
                 _backgroundJobs.Enqueue<IAiUsageTrackingService>(s =>
-                    s.RecordGeminiUsageAsync(lawyerId, caseId, step, model, usage, CancellationToken.None));
+                    s.RecordGeminiUsageAsync(lawyerId, caseId, step, model, usage, CancellationToken.None, null, runId, "defense-memo"));
             }
             else
             {
-                await _trackingService.RecordGeminiUsageAsync(lawyerId, caseId, step, model, usage, CancellationToken.None);
+                await _trackingService.RecordGeminiUsageAsync(lawyerId, caseId, step, model, usage, CancellationToken.None, null, runId, "defense-memo");
             }
         }
 
@@ -180,7 +180,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
         var rawDefensesText = aiResult.Data.Content;
         var lawyerIdStr = userId;
         var lawyerId = !string.IsNullOrEmpty(lawyerIdStr) ? Guid.Parse(lawyerIdStr) : caseEntity.LawyerId;
-        await TrackUsageAsync(lawyerId, request.CaseId, AiStepType.GenerateDefenses, defensesModel, aiResult.Data.Usage);
+        await TrackUsageAsync(lawyerId, request.CaseId, AiStepType.GenerateDefenses, defensesModel, aiResult.Data.Usage, request.RunId);
 
         var parsedDefenses = ParseDefensesJson(rawDefensesText);
         if (parsedDefenses == null)
@@ -360,7 +360,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 var rawResponse = aiResult.Data.Content;
                 var lawyerIdStr = userId;
                 var lawyerId = !string.IsNullOrEmpty(lawyerIdStr) ? Guid.Parse(lawyerIdStr) : caseEntity.LawyerId;
-                await TrackUsageAsync(lawyerId, defense.CaseId, AiStepType.AnalysisDefense, defenseAnalysisModel, aiResult.Data.Usage);
+                await TrackUsageAsync(lawyerId, defense.CaseId, AiStepType.AnalysisDefense, defenseAnalysisModel, aiResult.Data.Usage, request.RunId);
 
                 var parsedResponse = ParseDefenseAnalysisJson(rawResponse);
                 if (parsedResponse == null)
@@ -623,7 +623,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 var rawText = aiResult.Data.Content;
                 var lawyerIdStr = userId;
                 var lawyerId = !string.IsNullOrEmpty(lawyerIdStr) ? Guid.Parse(lawyerIdStr) : caseEntity.LawyerId;
-                await TrackUsageAsync(lawyerId, request.CaseId, AiStepType.FinalRequirements, finalReqModel, aiResult.Data.Usage);
+                await TrackUsageAsync(lawyerId, request.CaseId, AiStepType.FinalRequirements, finalReqModel, aiResult.Data.Usage, request.RunId);
 
                 var parsedRequirements = ParseFinalRequirementsJson(rawText);
                 if (parsedRequirements == null)
@@ -715,7 +715,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 var memoHtml = SanitizeMemoHtml(aiResult.Data.Content);
 
                 var lawyerId = !string.IsNullOrEmpty(userId) ? Guid.Parse(userId) : caseEntity.LawyerId;
-                await TrackUsageAsync(lawyerId, request.CaseId, AiStepType.DefenseMemoDraft, memoModel, aiResult.Data.Usage);
+                await TrackUsageAsync(lawyerId, request.CaseId, AiStepType.DefenseMemoDraft, memoModel, aiResult.Data.Usage, request.RunId);
 
                 return Result<DefenseMemoDraftResponseDto>.Success(
                     new DefenseMemoDraftResponseDto { MemoHtml = memoHtml },

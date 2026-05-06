@@ -20,7 +20,16 @@ namespace Lawyer.Application.Services
             _logger = logger;
         }
 
-        public Task RecordGeminiUsageAsync(Guid lawyerId, Guid? caseId, AiStepType stepType, string modelIdentifier, AIUsageMetadata? usage, CancellationToken ct)
+        public Task RecordGeminiUsageAsync(
+            Guid lawyerId,
+            Guid? caseId,
+            AiStepType stepType,
+            string modelIdentifier,
+            AIUsageMetadata? usage,
+            CancellationToken ct,
+            int? workflowId = null,
+            string? workflowRunId = null,
+            string? workflowType = null)
         {
             var inputTokens = usage?.InputTokens ?? 0;
             var outputTokens = usage?.OutputTokens ?? 0;
@@ -33,6 +42,9 @@ namespace Lawyer.Application.Services
             {
                 LawyerId = lawyerId,
                 CaseId = caseId,
+                WorkflowId = workflowId,
+                WorkflowRunId = workflowRunId,
+                WorkflowType = workflowType,
                 AiStepType = stepType,
                 ModelIdentifier = modelIdentifier,
                 Provider = "Gemini",

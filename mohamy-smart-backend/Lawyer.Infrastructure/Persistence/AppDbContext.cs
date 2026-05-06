@@ -108,12 +108,15 @@ namespace Lawyer.Infrastructure.Persistence
 			builder.Entity<AiUsageRecord>(entity =>
 			{
 				entity.HasKey(e => e.Id);
+				entity.Property(e => e.WorkflowRunId).HasMaxLength(450);
+				entity.Property(e => e.WorkflowType).HasMaxLength(200);
 				entity.HasIndex(e => e.LawyerId);
 				entity.HasIndex(e => e.CreatedAt);
 				entity.HasIndex(e => e.AiStepType);
 				entity.HasIndex(e => e.Provider);
 				entity.HasIndex(e => new { e.LawyerId, e.CreatedAt });
 				entity.HasIndex(e => new { e.Provider, e.CreatedAt });
+				entity.HasIndex(e => new { e.CaseId, e.WorkflowType, e.WorkflowRunId });
 			});
 
 			builder.Entity<AccountEmailEvent>(entity =>

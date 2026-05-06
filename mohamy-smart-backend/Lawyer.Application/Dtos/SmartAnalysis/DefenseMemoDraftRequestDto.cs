@@ -6,6 +6,7 @@ namespace Lawyer.Application.Dtos.SmartAnalysis
     public class DefenseMemoDraftRequestDto
     {
         public Guid CaseId { get; set; }
+        public string? RunId { get; set; }
         public string CaseNumber { get; set; } = string.Empty;
         public string CaseType { get; set; } = string.Empty;
         public string CourtName { get; set; } = string.Empty;

@@ -43,7 +43,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
             if (_backgroundJobs != null)
             {
                 _backgroundJobs.Enqueue<IAiUsageTrackingService>(s =>
-                    s.RecordGeminiUsageAsync(lawyerId, caseId, step, model, usage, CancellationToken.None));
+                    s.RecordGeminiUsageAsync(lawyerId, caseId, step, model, usage, CancellationToken.None, null, null, null));
             }
             else
             {

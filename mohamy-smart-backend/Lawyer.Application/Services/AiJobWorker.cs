@@ -170,40 +170,45 @@ namespace Lawyer.Application.Services
             {
                 case AiStepType.FactAnalysis:
                 {
-                    var input = JsonSerializer.Deserialize<CaseAnalysisRequestDto>(inputJson!, _jsonOptions)!;
-                    input.CaseId = caseId;
-                    var result = await _factAnalysisService.AnalyzeCaseFactsAsync(input, systemUserId, ct);
+	                    var input = JsonSerializer.Deserialize<CaseAnalysisRequestDto>(inputJson!, _jsonOptions)!;
+	                    input.CaseId = caseId;
+	                    input.RunId ??= job.RunId;
+	                    var result = await _factAnalysisService.AnalyzeCaseFactsAsync(input, systemUserId, ct);
                     if (!result.Succeeded) throw new Exception(result.Message ?? "FactAnalysis failed");
                     return JsonSerializer.Serialize(result.Data, _jsonOptions);
                 }
                 case AiStepType.GenerateDefenses:
                 {
-                    var input = JsonSerializer.Deserialize<CaseDefensesRequestDto>(inputJson!, _jsonOptions)!;
-                    input.CaseId = caseId;
-                    var result = await _defenseService.GenerateCaseDefensesAsync(input, systemUserId, ct);
+	                    var input = JsonSerializer.Deserialize<CaseDefensesRequestDto>(inputJson!, _jsonOptions)!;
+	                    input.CaseId = caseId;
+	                    input.RunId ??= job.RunId;
+	                    var result = await _defenseService.GenerateCaseDefensesAsync(input, systemUserId, ct);
                     if (!result.Succeeded) throw new Exception(result.Message ?? "GenerateDefenses failed");
                     return JsonSerializer.Serialize(result.Data, _jsonOptions);
                 }
                 case AiStepType.AnalysisDefense:
                 {
-                    var input = JsonSerializer.Deserialize<AnalyzeDefenseRequestDto>(inputJson!, _jsonOptions)!;
-                    var result = await _defenseService.AnalyzeDefenseAsync(input, systemUserId, ct);
+	                    var input = JsonSerializer.Deserialize<AnalyzeDefenseRequestDto>(inputJson!, _jsonOptions)!;
+	                    input.RunId ??= job.RunId;
+	                    var result = await _defenseService.AnalyzeDefenseAsync(input, systemUserId, ct);
                     if (!result.Succeeded) throw new Exception(result.Message ?? "AnalysisDefense failed");
                     return JsonSerializer.Serialize(result.Data, _jsonOptions);
                 }
                 case AiStepType.FinalRequirements:
                 {
-                    var input = JsonSerializer.Deserialize<FinalRequirementsRequestDto>(inputJson!, _jsonOptions)!;
-                    input.CaseId = caseId;
-                    var result = await _defenseService.GenerateFinalRequirementsAsync(input, systemUserId, ct);
+	                    var input = JsonSerializer.Deserialize<FinalRequirementsRequestDto>(inputJson!, _jsonOptions)!;
+	                    input.CaseId = caseId;
+	                    input.RunId ??= job.RunId;
+	                    var result = await _defenseService.GenerateFinalRequirementsAsync(input, systemUserId, ct);
                     if (!result.Succeeded) throw new Exception(result.Message ?? "FinalRequirements failed");
                     return JsonSerializer.Serialize(result.Data, _jsonOptions);
                 }
                 case AiStepType.DefenseMemoDraft:
                 {
                     _logger.LogInformation("AiJobWorker: Starting DefenseMemoDraft for Case {CaseId}", caseId);
-                    var input = JsonSerializer.Deserialize<DefenseMemoDraftRequestDto>(inputJson!, _jsonOptions)!;
-                    input.CaseId = caseId;
+	                    var input = JsonSerializer.Deserialize<DefenseMemoDraftRequestDto>(inputJson!, _jsonOptions)!;
+	                    input.CaseId = caseId;
+	                    input.RunId ??= job.RunId;
                     _logger.LogInformation("AiJobWorker: DefenseMemoDraft deserialized. Case={CaseId}, Defenses={Count}", caseId, input.ApprovedDefenses?.Count ?? 0);
                     var result = await _defenseService.GenerateDefenseMemoDraftAsync(input, systemUserId, ct);
                     if (!result.Succeeded) throw new Exception(result.Message ?? "DefenseMemoDraft failed");
