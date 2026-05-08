@@ -64,3 +64,10 @@ coverage/
 .opencode/
 .specify/
 .turbo/
+
+# Security audit / penetration test scripts — NEVER commit
+**/test/test_*.py
+**/test/api.md
+**/test/js_files/
+security-audit/
+pentest/

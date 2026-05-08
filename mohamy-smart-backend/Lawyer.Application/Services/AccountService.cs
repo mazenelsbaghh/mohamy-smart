@@ -187,18 +187,21 @@ namespace Lawyer.Application.Services
 			if (user == null)
 				return ApiExceptionResponse.NotFound<UserToReturnDto>("User not found.");
 
-			if (dto.FullName != null) user.FullName = dto.FullName;
+			if (ContainsUnsafePlainText(dto.FullName, dto.BarNumber, dto.Specialization, dto.ExperienceNumber, dto.LawFirmName, dto.BirthDate))
+				return ApiExceptionResponse.BadRequest<UserToReturnDto>("One or more text fields contain invalid characters.");
+
+			if (dto.FullName != null) user.FullName = PlainTextInputGuard.NormalizePlainText(dto.FullName);
 			if (dto.PhoneNumber != null) user.PhoneNumber = dto.PhoneNumber;
 			if (dto.Email != null) user.Email = dto.Email;
 			if (dto.IsActive.HasValue) user.IsActive = dto.IsActive.Value;
 
 			if (user.Lawyer != null)
 			{
-				if (dto.BarNumber != null) user.Lawyer.BarNumber = dto.BarNumber;
-				if (dto.Specialization != null) user.Lawyer.Specialization = dto.Specialization;
-				if (dto.ExperienceNumber != null) user.Lawyer.ExperienceNumber = dto.ExperienceNumber;
-				if (dto.LawFirmName != null) user.Lawyer.LawFirmName = dto.LawFirmName;
-				if (dto.BirthDate != null) user.Lawyer.BirthDate = dto.BirthDate;
+					if (dto.BarNumber != null) user.Lawyer.BarNumber = PlainTextInputGuard.NormalizePlainText(dto.BarNumber);
+					if (dto.Specialization != null) user.Lawyer.Specialization = PlainTextInputGuard.NormalizePlainText(dto.Specialization);
+					if (dto.ExperienceNumber != null) user.Lawyer.ExperienceNumber = PlainTextInputGuard.NormalizePlainText(dto.ExperienceNumber);
+					if (dto.LawFirmName != null) user.Lawyer.LawFirmName = PlainTextInputGuard.NormalizePlainText(dto.LawFirmName);
+					if (dto.BirthDate != null) user.Lawyer.BirthDate = PlainTextInputGuard.NormalizePlainText(dto.BirthDate);
 			}
 
 			await _userManager.UpdateAsync(user);
@@ -479,11 +482,14 @@ namespace Lawyer.Application.Services
 			if (user == null)
 				return ApiExceptionResponse.NotFound<ProfileDto>("User profile not found.");
 
-			if (dto.FullName != null) user.FullName = dto.FullName;
+			if (ContainsUnsafePlainText(dto.FullName, dto.OfficeName, dto.Address))
+				return ApiExceptionResponse.BadRequest<ProfileDto>("One or more text fields contain invalid characters.");
+
+			if (dto.FullName != null) user.FullName = PlainTextInputGuard.NormalizePlainText(dto.FullName);
 			if (dto.PhoneNumber != null) user.PhoneNumber = dto.PhoneNumber;
 			if (dto.Email != null) user.Email = dto.Email;
 			
-			if (dto.OfficeName != null && user.Lawyer != null) user.Lawyer.LawFirmName = dto.OfficeName;
+			if (dto.OfficeName != null && user.Lawyer != null) user.Lawyer.LawFirmName = PlainTextInputGuard.NormalizePlainText(dto.OfficeName);
 
 			await _userManager.UpdateAsync(user);
 			await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -500,6 +506,11 @@ namespace Lawyer.Application.Services
 			};
 
 			return ApiExceptionResponse.Success(updatedDto, "تم تحديث الملف الشخصي بنجاح");
+		}
+
+		private static bool ContainsUnsafePlainText(params string?[] values)
+		{
+			return values.Any(value => !PlainTextInputGuard.IsSafePlainText(value));
 		}
 	}
 }

@@ -62,6 +62,7 @@ vi.mock('@mohamy/shared-utils', async (importOriginal) => {
 });
 
 let _adminComplaintOverrides: Record<string, unknown> | null = null;
+let _aiJobsOverrides: Record<string, unknown> | null = null;
 
 function mockRootState() {
   const adminComplaint = {
@@ -87,7 +88,7 @@ function mockRootState() {
   };
   return {
     cases: { singleCase: null },
-    aiJobs: { jobs: {}, loading: 'idle' as const, error: null, activeRunId: null },
+    aiJobs: { jobs: {}, loading: 'idle' as const, error: null, activeRunId: null, ...(_aiJobsOverrides ?? {}) },
     adminComplaint,
   };
 }
@@ -193,6 +194,7 @@ describe('useWorkflowOrchestrator lifecycle', () => {
     vi.clearAllMocks();
     mockDispatch.mockReturnValue({ unwrap: () => Promise.resolve({ id: 42 }), type: 'mock/dispatch' });
     _adminComplaintOverrides = null;
+    _aiJobsOverrides = null;
   });
 
   it('fresh=1 query param should start at step 1 after refresh', async () => {
@@ -281,6 +283,90 @@ describe('useWorkflowOrchestrator lifecycle', () => {
     expect(result.current.isFreshRun).toBe(true);
     expect(result.current.workflowState.outputs).toEqual({});
     expect(result.current.workflowState.snapshotLabel).toBeNull();
+  });
+
+  it('hydrates completed jobs after a fresh run URL is replaced', async () => {
+    _adminComplaintOverrides = {
+      workflowId: null,
+      currentAccessibleStep: 0,
+      runId: null,
+      outputs: {},
+      status: 'NotStarted',
+    };
+    mockDispatch.mockReturnValue({
+      unwrap: () => Promise.resolve({ id: 42, runId: 'run-fresh-1' }),
+      type: 'mock/dispatch',
+    });
+    const onJobCompleted = vi.fn();
+    const store = makeStore();
+    const { useWorkflowOrchestrator } = await import('../useWorkflowOrchestrator');
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/workflows/admin-complaint/case-123?fresh=1']}>
+          <Routes>
+            <Route path="/workflows/admin-complaint/:id" element={children} />
+          </Routes>
+        </MemoryRouter>
+      </Provider>
+    );
+
+    const { rerender } = renderHook(
+      () =>
+        useWorkflowOrchestrator({
+          sliceSelector,
+          thunks: mockThunks as unknown as import('../useWorkflowOrchestrator').IWorkflowThunks,
+          restoreSnapshot: vi.fn(),
+          resetWorkflow: () => ({ type: 'test/resetWorkflow' }),
+          workflowPrefix: 'adminComplaint',
+          maxSteps: 5,
+          steps: [
+            { id: 1, label: 'Step 1', icon: null },
+            { id: 2, label: 'Step 2', icon: null },
+          ],
+          onJobCompleted,
+        }),
+      { wrapper },
+    );
+
+    await vi.waitFor(() => {
+      expect(mockDispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'aiJobs/setActiveRunId' }));
+    });
+
+    _adminComplaintOverrides = {
+      workflowId: null,
+      currentAccessibleStep: 0,
+      runId: 'run-fresh-1',
+      outputs: {},
+      status: 'InProgress',
+    };
+    _aiJobsOverrides = {
+      jobs: {
+        GenerateDefenses: {
+          id: 'job-1',
+          caseId: 'case-123',
+          stepType: 'GenerateDefenses',
+          status: 'Completed',
+          resultJson: '{"defensesFormal":[],"defensesSubstantive":[],"defensesEvidentiary":[]}',
+          errorMessage: null,
+          createdAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          runId: 'run-fresh-1',
+        },
+      },
+      activeRunId: 'run-fresh-1',
+    };
+
+    rerender();
+
+    await vi.waitFor(() => {
+      expect(onJobCompleted).toHaveBeenCalledWith(
+        'GenerateDefenses',
+        expect.objectContaining({ status: 'Completed' }),
+        {},
+        expect.any(Function),
+      );
+    });
   });
 
   it('resume should hydrate saved stage instead of applying stale cached tabs', async () => {

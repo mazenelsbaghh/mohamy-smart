@@ -206,6 +206,66 @@ public class AuthServiceTests : IDisposable
         result.Message.Should().Be("رقم الهاتف غير مسجّل. يرجى إنشاء حساب أولًا.");
     }
 
+    [Fact]
+    public async Task RequestPhoneVerification_WithExistingActiveOtpAfterCooldown_SendsNewOtpAndInvalidatesOldOtp()
+    {
+        var now = new DateTime(2026, 5, 8, 10, 0, 0, DateTimeKind.Utc);
+        _dateTimeProviderMock.Setup(x => x.UtcNow).Returns(now);
+        _smsSenderMock
+            .Setup(x => x.SendOtpAsync("01158040808", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var user = new ApplicationUser
+        {
+            Id = Guid.NewGuid(),
+            PhoneNumber = "01158040808",
+            UserName = "01158040808",
+            PhoneNumberConfirmed = false,
+            IsActive = false,
+            UserType = UserType.Lawyer
+        };
+
+        _dbContext.Users.Add(user);
+        _dbContext.Set<Core.Models.Lawyer>().Add(new Core.Models.Lawyer
+        {
+            ApplicationUserId = user.Id,
+            IsActive = false
+        });
+        _dbContext.Set<Otp>().Add(new Otp
+        {
+            UserId = user.Id,
+            Type = OtpType.register,
+            Code = OtpHelper.HashOtpCode("111111", "old-salt"),
+            CodeSalt = "old-salt",
+            ExpirationDate = now.AddMinutes(4),
+            Created = now.AddSeconds(-31),
+            DeliveryChannel = "Sms",
+            MaskedDestination = "***0808",
+            MaxAttempts = 5
+        });
+        await _dbContext.SaveChangesAsync();
+        _dbContext.ChangeTracker.Clear();
+
+        var sut = CreateSut();
+        var result = await sut.RequestPhoneVerificationAsync(
+            new RequestPhoneVerificationDto { PhoneNumber = "01158040808" },
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        _smsSenderMock.Verify(
+            x => x.SendOtpAsync("01158040808", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        var otps = await _dbContext.Set<Otp>()
+            .Where(x => x.UserId == user.Id && x.Type == OtpType.register)
+            .OrderBy(x => x.Created)
+            .ToListAsync();
+        otps.Should().HaveCount(2);
+        otps[0].InvalidatedAtUtc.Should().Be(now);
+        otps[0].FailureReason.Should().Be("SupersededByNewOtp");
+        otps[1].InvalidatedAtUtc.Should().BeNull();
+    }
+
     public void Dispose()
     {
         _dbContext.Database.EnsureDeleted();

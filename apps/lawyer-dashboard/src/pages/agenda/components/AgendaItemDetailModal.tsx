@@ -16,6 +16,9 @@ type Props = {
  item: AgendaItem | null;
  isOpen: boolean;
  onClose: () => void;
+ onEdit?: (item: AgendaItem) => void;
+ onDelete?: (item: AgendaItem) => void;
+ isDeleting?: boolean;
 };
 
 const statusColor = (status: string) => {
@@ -54,7 +57,7 @@ const DetailRow = ({
  );
 };
 
-const AgendaItemDetailModal = ({ item, isOpen, onClose }: Props) => {
+const AgendaItemDetailModal = ({ item, isOpen, onClose, onEdit, onDelete, isDeleting = false }: Props) => {
  if (!item) return null;
 
  const isSession = item.type ==="Session";
@@ -118,6 +121,7 @@ const AgendaItemDetailModal = ({ item, isOpen, onClose }: Props) => {
  <>
  <DetailRow icon={<FaInfoCircle />} label="نوع الجلسة" value={item.sessionType} />
  <DetailRow icon={<FaBalanceScale />} label="المحكمة" value={item.courtName} />
+ <DetailRow icon={<FaClipboardCheck />} label="قرار الجلسة السابقة" value={item.previousDecision} />
  {item.postponementReason && (
  <DetailRow icon={<FaClock />} label="سبب التأجيل" value={item.postponementReason} />
  )}
@@ -145,7 +149,19 @@ const AgendaItemDetailModal = ({ item, isOpen, onClose }: Props) => {
  {item.createdAt ? formatDateTime(item.createdAt) : "—"}
  </p>
 
- <div className="flex justify-start mt-4">
+ <div className="flex flex-wrap justify-between gap-2 mt-4">
+ <div className="flex gap-2">
+ {onEdit && (
+ <Button color="primary" variant="flat" onPress={() => onEdit(item)}>
+ تعديل
+ </Button>
+ )}
+ {onDelete && (
+ <Button color="danger" variant="flat" isLoading={isDeleting} onPress={() => onDelete(item)}>
+ حذف
+ </Button>
+ )}
+ </div>
  <Button color="primary" variant="light" onPress={onClose}>
  إغلاق
  </Button>

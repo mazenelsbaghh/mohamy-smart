@@ -14,6 +14,10 @@ namespace Lawyer.Application.Validators
                 .MaximumLength(200).WithMessage("العنوان يجب ألا يتجاوز 200 حرف");
             RuleFor(x => x.Date)
                 .NotEmpty().WithMessage("التاريخ مطلوب");
+            RuleFor(x => x.EndDate)
+                .GreaterThan(x => x.Date)
+                .When(x => x.EndDate.HasValue)
+                .WithMessage("تاريخ النهاية يجب أن يكون بعد تاريخ البداية");
             RuleFor(x => x.Type)
                 .NotEmpty().WithMessage("النوع مطلوب")
                 .MaximumLength(50).WithMessage("النوع يجب ألا يتجاوز 50 حرف");

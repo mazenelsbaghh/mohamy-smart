@@ -13,6 +13,8 @@ export const sessionSchema = z.object({
  courtName: z.string().min(1,'اسم المحكمة مطلوب'),
  previousSessionId: z.string().nullable().optional(),
  postponementReason: z.string().nullable().optional(),
+ previousDecision: z.string().nullable().optional(),
+ assignedLawyerId: z.string().nullable().optional(),
 }).refine(
  (data) => {
  if (data.previousSessionId && data.previousSessionId.length > 0) {

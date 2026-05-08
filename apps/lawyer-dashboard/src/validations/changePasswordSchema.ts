@@ -1,10 +1,11 @@
 import { z } from'zod';
+import { passwordSchema } from'@mohamy/shared-validations';
 
 export const changePasswordSchema = z.object({
- currentPassword: z.string().min(6,"تتطلب كلمة المرور 6 أحرف على الأقل"),
+ currentPassword: z.string().min(1,"كلمة المرور الحالية مطلوبة"),
  otpCode: z.string().length(6,"رمز التحقق يجب أن يتكون من 6 أرقام"),
- newPassword: z.string().min(6,"تتطلب كلمة المرور 6 أحرف على الأقل"),
- confirmPassword: z.string().min(6,"تتطلب كلمة المرور 6 أحرف على الأقل"),
+ newPassword: passwordSchema,
+ confirmPassword: z.string().min(8,"تأكيد كلمة المرور مطلوب"),
 }).refine(data => data.newPassword === data.confirmPassword, {
  message:"كلمات المرور غير متطابقة",
  path: ["confirmPassword"],

@@ -16,6 +16,8 @@ namespace Lawyer.Application.Dtos.Agenda
         public string? CourtName { get; set; }
         public Guid? PreviousSessionId { get; set; }
         public string? PostponementReason { get; set; }
+        public string? PreviousDecision { get; set; }
+        public Guid? AssignedLawyerId { get; set; }
 
         public string? ActionType { get; set; }
         public string? ExecutionDetails { get; set; }

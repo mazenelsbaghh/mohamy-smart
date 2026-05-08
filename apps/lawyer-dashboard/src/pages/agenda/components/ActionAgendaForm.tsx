@@ -10,7 +10,8 @@ import {
 } from"../../../types/agenda";
 import { useAppDispatch } from"../../../hooks/reduxHooks";
 import thunkCreateAgendaItem from"../../../redux/agenda/thunk/thunkCreateAgendaItem";
-import thunkGetAgendaByCaseId from"../../../redux/agenda/thunk/thunkGetAgendaByCaseId";
+import thunkUpdateAgendaItem from"../../../redux/agenda/thunk/thunkUpdateAgendaItem";
+import type { AgendaItem } from"../../../types/agenda";
 import { sileo } from"sileo";
 import { useState } from"react";
 import FormSection from"../../../components/ui/form/FormSection";
@@ -21,11 +22,21 @@ type Props = {
  onClose: () => void;
  defaultDate?: string;
  defaultEndDate?: string;
+ initialItem?: AgendaItem | null;
 };
 
-const ActionAgendaForm = ({ caseId, onClose, defaultDate, defaultEndDate }: Props) => {
+const toDateTimeLocal = (value?: string | null) => {
+ if (!value) return "";
+ const date = new Date(value);
+ if (Number.isNaN(date.getTime())) return "";
+ const offsetMs = date.getTimezoneOffset() * 60_000;
+ return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+};
+
+const ActionAgendaForm = ({ caseId, onClose, defaultDate, defaultEndDate, initialItem }: Props) => {
  const dispatch = useAppDispatch();
- const [selectedActionType, setSelectedActionType] = useState<string>("");
+ const initialAction = initialItem?.type ==="Action" ? initialItem : null;
+ const [selectedActionType, setSelectedActionType] = useState<string>(initialAction?.actionType ??"");
 
  const {
  register,
@@ -37,10 +48,13 @@ const ActionAgendaForm = ({ caseId, onClose, defaultDate, defaultEndDate }: Prop
  resolver: zodResolver(actionSchema),
  defaultValues: {
  type:"Action",
- status:"Scheduled",
- date: defaultDate ||"",
- endDate: defaultEndDate ||"",
- location: null,
+ title: initialAction?.title ??"",
+ status: initialAction?.status ??"Scheduled",
+ date: initialAction ? toDateTimeLocal(initialAction.date) : defaultDate ||"",
+ endDate: initialAction ? toDateTimeLocal(initialAction.endDate) : defaultEndDate ||"",
+ actionType: initialAction?.actionType ??"Inspection",
+ executionDetails: initialAction?.executionDetails ??"",
+ location: initialAction?.location ?? null,
  },
  });
 
@@ -48,11 +62,14 @@ const ActionAgendaForm = ({ caseId, onClose, defaultDate, defaultEndDate }: Prop
  try {
  const isoDate = new Date(data.date).toISOString();
  const isoEndDate = data.endDate ? new Date(data.endDate).toISOString() : null;
- await dispatch(
- thunkCreateAgendaItem({ item: { ...data, date: isoDate, endDate: isoEndDate, caseId } })
- ).unwrap();
+ const item = { ...data, date: isoDate, endDate: isoEndDate, caseId };
+ if (initialAction) {
+ await dispatch(thunkUpdateAgendaItem({ id: initialAction.id, item })).unwrap();
+ sileo.success({ title:"تم تعديل الإجراء بنجاح" });
+ } else {
+ await dispatch(thunkCreateAgendaItem({ item })).unwrap();
  sileo.success({ title:"تم إضافة الإجراء بنجاح" });
- dispatch(thunkGetAgendaByCaseId({ caseId }));
+ }
  onClose();
  } catch (error) {
  sileo.error({ title: `حدث خطأ: ${error}` });
@@ -169,7 +186,7 @@ const ActionAgendaForm = ({ caseId, onClose, defaultDate, defaultEndDate }: Prop
 
  <FormFooter
  onCancel={onClose}
- submitLabel="إضافة الإجراء"
+ submitLabel={initialAction ?"حفظ التعديل" :"إضافة الإجراء"}
  isLoading={isSubmitting}
  />
  </form>

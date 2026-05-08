@@ -111,11 +111,14 @@ namespace Lawyer.Controllers
                     CaseId = dto.CaseId,
                     Title = dto.Title,
                     Date = dto.Date,
+                    EndDate = dto.EndDate,
                     Status = dto.Status,
                     SessionType = dto.SessionType ?? string.Empty,
                     CourtName = dto.CourtName ?? string.Empty,
                     PreviousSessionId = dto.PreviousSessionId,
-                    PostponementReason = dto.PostponementReason
+                    PostponementReason = dto.PostponementReason,
+                    PreviousDecision = dto.PreviousDecision,
+                    AssignedLawyerId = dto.AssignedLawyerId
                 };
             }
             else if (dto.Type == "Action")
@@ -125,6 +128,7 @@ namespace Lawyer.Controllers
                     CaseId = dto.CaseId,
                     Title = dto.Title,
                     Date = dto.Date,
+                    EndDate = dto.EndDate,
                     Status = dto.Status,
                     ActionType = Enum.Parse<ActionType>(dto.ActionType ?? "Inspection", true),
                     ExecutionDetails = dto.ExecutionDetails ?? string.Empty,
@@ -142,6 +146,75 @@ namespace Lawyer.Controllers
                 return CreateResponse(result);
                 
             return CreatedAtAction(nameof(GetAgendaItems), new { caseId = item.CaseId }, result.Data);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateAgendaItem(Guid id, [FromBody] AgendaItemDto dto, CancellationToken cancellationToken)
+        {
+            var validationResult = await _validator.ValidateAsync(dto, cancellationToken);
+            if (!validationResult.IsValid)
+                return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).FirstOrDefault());
+
+            var accessResult = await ValidateCaseAccessAsync(dto.CaseId, cancellationToken);
+            if (accessResult is not null)
+                return accessResult;
+
+            AgendaItem item;
+            if (dto.Type == "Session")
+            {
+                item = new SessionAgendaItem
+                {
+                    CaseId = dto.CaseId,
+                    Title = dto.Title,
+                    Date = dto.Date,
+                    EndDate = dto.EndDate,
+                    Status = dto.Status,
+                    SessionType = dto.SessionType ?? string.Empty,
+                    CourtName = dto.CourtName ?? string.Empty,
+                    PreviousSessionId = dto.PreviousSessionId,
+                    PostponementReason = dto.PostponementReason,
+                    PreviousDecision = dto.PreviousDecision,
+                    AssignedLawyerId = dto.AssignedLawyerId
+                };
+            }
+            else if (dto.Type == "Action")
+            {
+                item = new ActionAgendaItem
+                {
+                    CaseId = dto.CaseId,
+                    Title = dto.Title,
+                    Date = dto.Date,
+                    EndDate = dto.EndDate,
+                    Status = dto.Status,
+                    ActionType = Enum.Parse<ActionType>(dto.ActionType ?? "Inspection", true),
+                    ExecutionDetails = dto.ExecutionDetails ?? string.Empty,
+                    Location = dto.Location
+                };
+            }
+            else
+            {
+                return BadRequest("Invalid Agenda Type");
+            }
+
+            var result = await _agendaService.UpdateAgendaItemAsync(id, item);
+            if (!result.Succeeded)
+                return CreateResponse(result);
+
+            return CreateResponse(result);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteAgendaItem(Guid id, [FromQuery] Guid caseId, CancellationToken cancellationToken)
+        {
+            var accessResult = await ValidateCaseAccessAsync(caseId, cancellationToken);
+            if (accessResult is not null)
+                return accessResult;
+
+            var result = await _agendaService.DeleteAgendaItemAsync(id, caseId);
+            if (!result.Succeeded)
+                return CreateResponse(result);
+
+            return CreateResponse(result);
         }
 
         private async Task<IActionResult?> ValidateCaseAccessAsync(Guid caseId, CancellationToken cancellationToken)

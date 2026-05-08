@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -102,7 +103,21 @@ namespace Lawyer.Infrastructure.Services
             if (string.IsNullOrWhiteSpace(phone))
                 return phone;
 
-            phone = phone.TrimStart('+');
+            var digits = new StringBuilder(phone.Length);
+            foreach (var ch in phone)
+            {
+                if (ch >= '\u0660' && ch <= '\u0669')
+                    digits.Append((char)('0' + (ch - '\u0660')));
+                else if (ch >= '\u06F0' && ch <= '\u06F9')
+                    digits.Append((char)('0' + (ch - '\u06F0')));
+                else if (char.IsDigit(ch))
+                    digits.Append(ch);
+            }
+
+            phone = digits.ToString();
+
+            if (phone.StartsWith("00"))
+                phone = phone[2..];
 
             if (phone.StartsWith("01") && phone.Length == 11)
                 return "2" + phone;

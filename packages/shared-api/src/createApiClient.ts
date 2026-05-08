@@ -50,6 +50,9 @@ export function createApiClient(options: CreateApiClientOptions) {
   const api: AxiosInstance = axios.create({
     baseURL: baseUrl,
     withCredentials: true,
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+    },
     // T034: Disable Axios's built-in XSRF handling.
     // ASP.NET Core's antiforgery uses two DIFFERENT tokens:
     //   - Cookie token  (stored in XSRF-TOKEN cookie)
@@ -64,6 +67,9 @@ export function createApiClient(options: CreateApiClientOptions) {
   const internalApi: AxiosInstance = axios.create({
     baseURL: baseUrl,
     withCredentials: true,
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+    },
     xsrfCookieName: '',
     xsrfHeaderName: '',
   });

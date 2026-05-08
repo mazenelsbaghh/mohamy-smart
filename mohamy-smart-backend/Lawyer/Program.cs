@@ -42,13 +42,13 @@ var hasUsableSentryDsn = !string.IsNullOrWhiteSpace(sentryDsn) &&
 
 if (hasUsableSentryDsn)
 {
-	builder.WebHost.UseSentry(o =>
-	{
-		o.Dsn = sentryDsn;
-		o.Environment = builder.Configuration["Sentry:Environment"] ?? builder.Environment.EnvironmentName;
-		o.TracesSampleRate = double.TryParse(builder.Configuration["Sentry:TracesSampleRate"], out var rate) ? rate : 0.2;
-		o.SendDefaultPii = false;
-	});
+    builder.WebHost.UseSentry(o =>
+    {
+        o.Dsn = sentryDsn;
+        o.Environment = builder.Configuration["Sentry:Environment"] ?? builder.Environment.EnvironmentName;
+        o.TracesSampleRate = double.TryParse(builder.Configuration["Sentry:TracesSampleRate"], out var rate) ? rate : 0.2;
+        o.SendDefaultPii = false;
+    });
 }
 
 // ── Startup Config Validation (Development only) ──────────────────────
@@ -88,11 +88,11 @@ if (builder.Environment.IsDevelopment())
     CheckRequired("ConnectionStrings:SqlServer", cfg.GetConnectionString("SqlServer"));
 
     // JWT
-	var jwtKey = cfg["JWT:Key"];
-	if (IsPlaceholder(jwtKey))
-		errors.Add("Config 'JWT:Key' is missing or placeholder. Set it via environment variables or appsettings.Development.json.");
-	else if (jwtKey is { Length: < 32 })
-		errors.Add($"Config 'JWT:Key' must be at least 32 characters (current: {jwtKey.Length}).");
+    var jwtKey = cfg["JWT:Key"];
+    if (IsPlaceholder(jwtKey))
+        errors.Add("Config 'JWT:Key' is missing or placeholder. Set it via environment variables or appsettings.Development.json.");
+    else if (jwtKey is { Length: < 32 })
+        errors.Add($"Config 'JWT:Key' must be at least 32 characters (current: {jwtKey.Length}).");
 
     // External integrations are allowed to be placeholders in local Development.
     // The application can still boot so non-AI/payment flows remain testable.
@@ -186,7 +186,7 @@ builder.Services.AddHttpClient("OpenAI", client =>
 .AddTransientHttpErrorPolicy(p => p.CircuitBreakerAsync(5, TimeSpan.FromSeconds(30)));
 builder.Services.AddHttpClient("Paymob", client =>
 {
-	client.BaseAddress = new Uri("https://accept.paymob.com/");
+    client.BaseAddress = new Uri("https://accept.paymob.com/");
 });
 builder.Services.Configure<Lawyer.Core.Setting.PaymobSettings>(builder.Configuration.GetSection("Paymob"));
 
@@ -195,25 +195,25 @@ builder.Services.AddWebApplicationServices(builder.Configuration, builder.Enviro
 builder.Services.AddOutputCache();
 
 builder.Services
-	.AddApplication()
-	.AddInfrastructure(builder.Configuration);
+    .AddApplication()
+    .AddInfrastructure(builder.Configuration);
 
 if (!builder.Environment.IsEnvironment("Testing") && builder.Configuration.GetConnectionString("SqlServer") != null)
 {
-	builder.Services.AddHangfire(config => config
-		.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-		.UseSimpleAssemblyNameTypeSerializer()
-		.UseRecommendedSerializerSettings()
-		.UseSqlServerStorage(builder.Configuration.GetConnectionString("SqlServer") ?? "Server=(localdb)\\mssqllocaldb;Database=dummy;Trusted_Connection=True;",
-			new SqlServerStorageOptions
-			{
-				CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
-				SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
-				QueuePollInterval = TimeSpan.Zero,
-				UseRecommendedIsolationLevel = true,
-				DisableGlobalLocks = true,
-			}));
-	builder.Services.AddHangfireServer();
+    builder.Services.AddHangfire(config => config
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseSqlServerStorage(builder.Configuration.GetConnectionString("SqlServer") ?? "Server=(localdb)\\mssqllocaldb;Database=dummy;Trusted_Connection=True;",
+            new SqlServerStorageOptions
+            {
+                CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+                SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+                QueuePollInterval = TimeSpan.Zero,
+                UseRecommendedIsolationLevel = true,
+                DisableGlobalLocks = true,
+            }));
+    builder.Services.AddHangfireServer();
 }
 
 builder.Services.AddSignalR();
@@ -230,12 +230,12 @@ builder.Services.AddHostedService<Lawyer.API.Extensions.GeminiHealthCheck>();
 
 builder.Host.UseSerilog((context, services, configuration) =>
 {
-	var httpAccessor = services.GetRequiredService<IHttpContextAccessor>();
+    var httpAccessor = services.GetRequiredService<IHttpContextAccessor>();
 
-	configuration
-		.ReadFrom.Configuration(context.Configuration)
-		.ReadFrom.Services(services);
-	//.Enrich.With(new UserIdEnricher(httpAccessor)
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services);
+    //.Enrich.With(new UserIdEnricher(httpAccessor)
 
 
 });
@@ -244,86 +244,86 @@ builder.Host.UseSerilog((context, services, configuration) =>
 
 builder.Services.AddRateLimiter(options =>
 {
-	options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-	options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-		RateLimitPartition.GetFixedWindowLimiter(
-			partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-			factory: _ => new FixedWindowRateLimiterOptions
-			{
-				PermitLimit = 500,
-				Window = TimeSpan.FromMinutes(1),
-				QueueLimit = 0,
-				AutoReplenishment = true
-			}));
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 500,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
 
 	options.AddPolicy("auth", context =>
 		RateLimitPartition.GetFixedWindowLimiter(
 			partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
 			factory: _ => new FixedWindowRateLimiterOptions
 			{
-				PermitLimit = 200,
-				Window = TimeSpan.FromMinutes(1),
-				QueueLimit = 0,
-				AutoReplenishment = true
-			}));
-
-	options.AddPolicy("otp", context =>
-		RateLimitPartition.GetFixedWindowLimiter(
-			partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-			factory: _ => new FixedWindowRateLimiterOptions
-			{
 				PermitLimit = 20,
 				Window = TimeSpan.FromMinutes(1),
 				QueueLimit = 0,
 				AutoReplenishment = true
-			}));
+            }));
 
-	options.AddPolicy("AiEndpoints", context =>
-		RateLimitPartition.GetFixedWindowLimiter(
-			partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-			factory: _ => new FixedWindowRateLimiterOptions
-			{
-				PermitLimit = 150,
-				Window = TimeSpan.FromMinutes(1),
-				QueueLimit = 0,
-				AutoReplenishment = true
-			}));
+    options.AddPolicy("otp", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
 
-	options.AddPolicy("OcrEndpoints", context =>
-		RateLimitPartition.GetFixedWindowLimiter(
-			partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-			factory: _ => new FixedWindowRateLimiterOptions
-			{
-				// OCR calls are expensive AI operations; 150/min/user is generous for legitimate use
-				// and protects the Google Vision quota from runaway loops or abuse.
-				PermitLimit = 150,
-				Window = TimeSpan.FromMinutes(1),
-				QueueLimit = 0,
-				AutoReplenishment = true
-			}));
+    options.AddPolicy("AiEndpoints", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 150,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
 
-	options.AddPolicy("upload", context =>
-		RateLimitPartition.GetFixedWindowLimiter(
-			partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-			factory: _ => new FixedWindowRateLimiterOptions
-			{
-				PermitLimit = 100,
-				Window = TimeSpan.FromMinutes(1),
-				QueueLimit = 0,
-				AutoReplenishment = true
-			}));
+    options.AddPolicy("OcrEndpoints", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                // OCR calls are expensive AI operations; 150/min/user is generous for legitimate use
+                // and protects the Google Vision quota from runaway loops or abuse.
+                PermitLimit = 150,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
 
-	options.AddPolicy("contact", context =>
-		RateLimitPartition.GetFixedWindowLimiter(
-			partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-			factory: _ => new FixedWindowRateLimiterOptions
-			{
-				PermitLimit = 20,
-				Window = TimeSpan.FromMinutes(1),
-				QueueLimit = 0,
-				AutoReplenishment = true
-			}));
+    options.AddPolicy("upload", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+
+    options.AddPolicy("contact", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
 });
 
 
@@ -361,25 +361,25 @@ app.Lifetime.ApplicationStopping.Register(() =>
 #region Seeding
 using (var scope = app.Services.CreateScope())
 {
-	var services = scope.ServiceProvider;
+    var services = scope.ServiceProvider;
 
-	try
-	{
-		var roleManager = services.GetRequiredService<RoleManager<Role>>();
-		var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-		var configuration = services.GetRequiredService<IConfiguration>();
-		var seedLogger = services.GetRequiredService<ILogger<DataSeed>>();
-		
-		// Note: We do NOT invoke context.Database.Migrate() here.
-		// Schema changes must be applied explicitly via 'make migrate'.
-		await DataSeed.SeedBaselineAsync(roleManager, userManager, configuration, seedLogger);
-	}
-	catch (Exception ex)
-	{
-		var logger = services.GetRequiredService<ILogger<Program>>();
-		logger.LogCritical(ex, "FATAL: Pre-flight database seeding failed. The application will not start.");
-		throw;
-	}
+    try
+    {
+        var roleManager = services.GetRequiredService<RoleManager<Role>>();
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var configuration = services.GetRequiredService<IConfiguration>();
+        var seedLogger = services.GetRequiredService<ILogger<DataSeed>>();
+
+        // Note: We do NOT invoke context.Database.Migrate() here.
+        // Schema changes must be applied explicitly via 'make migrate'.
+        await DataSeed.SeedBaselineAsync(roleManager, userManager, configuration, seedLogger);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogCritical(ex, "FATAL: Pre-flight database seeding failed. The application will not start.");
+        throw;
+    }
 }
 #endregion
 
@@ -388,53 +388,65 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<RequestTimingMiddleware>();
 app.UseCustomExceptionHandling();
 
-// Security headers — applied to every response
+using Microsoft.AspNetCore.HttpOverrides;
+
+// Security headers — applied to every response, even on short-circuits
 app.Use(async (ctx, next) =>
 {
-	var headers = ctx.Response.Headers;
-	headers["X-Content-Type-Options"] = "nosniff";
-	headers["X-Frame-Options"] = "DENY";
-	headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-	headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()";
-	if (!ctx.Request.Path.StartsWithSegments("/hangfire"))
-	{
-		headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'; base-uri 'self'";
-	}
-	await next();
+    ctx.Response.OnStarting(() =>
+    {
+        var headers = ctx.Response.Headers;
+        headers["X-Content-Type-Options"] = "nosniff";
+        headers["X-Frame-Options"] = "DENY";
+        headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+        headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()";
+        if (!ctx.Request.Path.StartsWithSegments("/hangfire"))
+        {
+            headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'; base-uri 'self'";
+        }
+        return Task.CompletedTask;
+    });
+    await next();
+});
+
+// Important: Parse real IPs from Nginx so Rate Limiting works per-client instead of blocking everyone
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
 if (!app.Environment.IsDevelopment())
 {
-	// HSTS with preload + includeSubDomains — the stricter form required for browser preload lists.
-	app.UseHsts();
-	app.Use(async (ctx, next) =>
-	{
-		ctx.Response.Headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload";
-		await next();
-	});
+    // HSTS with preload + includeSubDomains — the stricter form required for browser preload lists.
+    app.UseHsts();
+    app.Use(async (ctx, next) =>
+    {
+        ctx.Response.Headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload";
+        await next();
+    });
 }
 
 if (app.Environment.IsDevelopment())
 {
-	// Serve the OpenAPI JSON
-	app.UseSwagger(); // exposes /swagger/v1/swagger.json by default
+    // Serve the OpenAPI JSON
+    app.UseSwagger(); // exposes /swagger/v1/swagger.json by default
 
-	app.MapScalarApiReference(options =>
-	{
-		options
-			.WithTitle("Lawyer API")
-			.WithTheme(ScalarTheme.Saturn)
+    app.MapScalarApiReference(options =>
+    {
+        options
+            .WithTitle("Lawyer API")
+            .WithTheme(ScalarTheme.Saturn)
 
-			// Link Scalar to the OpenAPI document
-			.AddDocument("v1", "Lawyer API", "/swagger/v1/swagger.json")
+            // Link Scalar to the OpenAPI document
+            .AddDocument("v1", "Lawyer API", "/swagger/v1/swagger.json")
 
-			// Add Bearer authentication
-			.AddPreferredSecuritySchemes("BearerAuth")
-			.AddHttpAuthentication("BearerAuth", auth =>
-			{
-				auth.Token = "your-jwt-token-here"; // optional for dev only
-			});
-	});
+            // Add Bearer authentication
+            .AddPreferredSecuritySchemes("BearerAuth")
+            .AddHttpAuthentication("BearerAuth", auth =>
+            {
+                auth.Token = "your-jwt-token-here"; // optional for dev only
+            });
+    });
 }
 
 
@@ -457,20 +469,20 @@ app.MapHub<AiJobHub>("/hubs/ai-jobs");
 
 if (!app.Environment.IsEnvironment("Testing"))
 {
-	app.UseHangfireDashboard("/hangfire", new DashboardOptions
-	{
-		Authorization = new[] { new Lawyer.Filters.HangfireAuthorizationFilter() }
-	});
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = new[] { new Lawyer.Filters.HangfireAuthorizationFilter() }
+    });
 
-	using (var scope = app.Services.CreateScope())
-	{
-		var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-		recurringJobManager.AddOrUpdate<IAiJobService>(
-			"CleanupStuckAiJobs",
-			service => service.CleanupStuckJobsAsync(CancellationToken.None),
-			"*/15 * * * *" // Run every 15 minutes
-		);
-	}
+    using (var scope = app.Services.CreateScope())
+    {
+        var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+        recurringJobManager.AddOrUpdate<IAiJobService>(
+            "CleanupStuckAiJobs",
+            service => service.CleanupStuckJobsAsync(CancellationToken.None),
+            "*/15 * * * *" // Run every 15 minutes
+        );
+    }
 }
 
 app.Run();

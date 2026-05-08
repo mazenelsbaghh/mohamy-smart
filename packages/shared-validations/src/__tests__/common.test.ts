@@ -10,7 +10,7 @@ describe('passwordSchema', () => {
         expect(passwordSchema.safeParse('').success).toBe(false);
     });
 
-    it('rejects password shorter than 6 chars', () => {
+    it('rejects password shorter than 8 chars', () => {
         expect(passwordSchema.safeParse('Ab@1').success).toBe(false);
     });
 

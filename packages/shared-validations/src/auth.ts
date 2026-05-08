@@ -8,7 +8,7 @@ export const lawyerLoginSchema = z.object({
 
 export const adminLoginSchema = z.object({
     email: emailSchema,
-    password: z.string().min(1, 'كلمة المرور مطلوبة').min(6, "كلمة المرور يجب أن تكون على الأقل 6 أحرف").max(30, "كلمة المرور لا يجب أن تزيد عن 30 حرف")
+    password: z.string().min(1, 'كلمة المرور مطلوبة').min(8, "كلمة المرور يجب أن تكون على الأقل 8 أحرف").max(30, "كلمة المرور لا يجب أن تزيد عن 30 حرف")
 });
 
 export const signupSchema = z.object({
@@ -38,7 +38,7 @@ export const verifyOtpSchema = z.object({
 
 export const resetPasswordSchema = z.object({
     newPassword: passwordSchema,
-    confirmPassword: z.string().min(6, "تأكيد كلمة المرور مطلوب"),
+    confirmPassword: z.string().min(8, "تأكيد كلمة المرور مطلوب"),
 }).refine((data) => data.newPassword === data.confirmPassword, {
     message: "كلمات المرور غير متطابقة",
     path: ["confirmPassword"],

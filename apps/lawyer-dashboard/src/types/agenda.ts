@@ -18,6 +18,8 @@ export interface SessionAgendaItem extends BaseAgendaItem {
  courtName: string;
  previousSessionId?: string | null;
  postponementReason?: string | null;
+ previousDecision?: string | null;
+ assignedLawyerId?: string | null;
 }
 
 export interface ActionAgendaItem extends BaseAgendaItem {
@@ -53,6 +55,8 @@ export interface CreateSessionDto {
  courtName: string;
  previousSessionId?: string | null;
  postponementReason?: string | null;
+ previousDecision?: string | null;
+ assignedLawyerId?: string | null;
 }
 
 export interface CreateActionDto {

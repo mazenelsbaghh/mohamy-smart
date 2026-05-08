@@ -17,12 +17,13 @@ namespace Lawyer.Application.Validators
                    .NotEmpty().WithMessage("FullName is required.")
                    .MinimumLength(2).WithMessage("Full name must be at least 2 characters.")
                    .MaximumLength(100).WithMessage("Full name must not exceed 100 characters.")
+                   .Must(PlainTextInputGuard.IsSafePlainText).WithMessage("Full name contains invalid characters.")
                    .Matches(@"^[\p{L}\s]{2,100}$")
                    .WithMessage("Full name must contain only letters and spaces.");
 
 			RuleFor(x => x.Password)
 				.NotEmpty().WithMessage("Password is required.")
-				.MinimumLength(6).WithMessage("Password must be at least 6 characters long.")
+				.MinimumLength(8).WithMessage("Password must be at least 8 characters long.")
 				.Matches(@"[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
 				.Matches(@"[a-z]").WithMessage("Password must contain at least one lowercase letter.")
 				.Matches(@"[0-9]").WithMessage("Password must contain at least one digit.")
@@ -40,9 +41,10 @@ namespace Lawyer.Application.Validators
 				.NotEmpty().WithMessage("Email is required.")
 				.EmailAddress().WithMessage("Invalid email format.");
 
-			RuleFor(x => x.Governorate)
-				.NotEmpty().WithMessage("Governorate is required.")
-				.MaximumLength(50).WithMessage("Governorate must not exceed 50 characters.");
+				RuleFor(x => x.Governorate)
+					.NotEmpty().WithMessage("Governorate is required.")
+					.MaximumLength(50).WithMessage("Governorate must not exceed 50 characters.")
+					.Must(PlainTextInputGuard.IsSafePlainText).WithMessage("Governorate contains invalid characters.");
 
 			RuleFor(x => x.AgreeToTerms)
 				.Equal(true).WithMessage("You must agree to the terms and conditions.");

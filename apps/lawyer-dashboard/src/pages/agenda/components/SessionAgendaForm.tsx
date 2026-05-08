@@ -11,7 +11,7 @@ import {
 } from"../../../types/agenda";
 import { useAppDispatch } from"../../../hooks/reduxHooks";
 import thunkCreateAgendaItem from"../../../redux/agenda/thunk/thunkCreateAgendaItem";
-import thunkGetAgendaByCaseId from"../../../redux/agenda/thunk/thunkGetAgendaByCaseId";
+import thunkUpdateAgendaItem from"../../../redux/agenda/thunk/thunkUpdateAgendaItem";
 import { sileo } from"sileo";
 import { useState } from"react";
 import FormSection from"../../../components/ui/form/FormSection";
@@ -23,11 +23,21 @@ type Props = {
  onClose: () => void;
  defaultDate?: string;
  defaultEndDate?: string;
+ initialItem?: AgendaItem | null;
 };
 
-const SessionAgendaForm = ({ caseId, previousSessions, onClose, defaultDate, defaultEndDate }: Props) => {
+const toDateTimeLocal = (value?: string | null) => {
+ if (!value) return "";
+ const date = new Date(value);
+ if (Number.isNaN(date.getTime())) return "";
+ const offsetMs = date.getTimezoneOffset() * 60_000;
+ return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+};
+
+const SessionAgendaForm = ({ caseId, previousSessions, onClose, defaultDate, defaultEndDate, initialItem }: Props) => {
  const dispatch = useAppDispatch();
- const [showPostponement, setShowPostponement] = useState(false);
+ const initialSession = initialItem?.type ==="Session" ? initialItem : null;
+ const [showPostponement, setShowPostponement] = useState(Boolean(initialSession?.previousSessionId));
 
  const {
  register,
@@ -39,11 +49,16 @@ const SessionAgendaForm = ({ caseId, previousSessions, onClose, defaultDate, def
  resolver: zodResolver(sessionSchema),
  defaultValues: {
  type:"Session",
- status:"Scheduled",
- date: defaultDate ||"",
- endDate: defaultEndDate ||"",
- previousSessionId: null,
- postponementReason: null,
+ title: initialSession?.title ??"",
+ status: initialSession?.status ??"Scheduled",
+ date: initialSession ? toDateTimeLocal(initialSession.date) : defaultDate ||"",
+ endDate: initialSession ? toDateTimeLocal(initialSession.endDate) : defaultEndDate ||"",
+ sessionType: initialSession?.sessionType ??"",
+ courtName: initialSession?.courtName ??"",
+ previousSessionId: initialSession?.previousSessionId ?? null,
+ postponementReason: initialSession?.postponementReason ?? null,
+ previousDecision: initialSession?.previousDecision ?? null,
+ assignedLawyerId: initialSession?.assignedLawyerId ?? null,
  },
  });
 
@@ -51,18 +66,21 @@ const SessionAgendaForm = ({ caseId, previousSessions, onClose, defaultDate, def
  try {
  const isoDate = new Date(data.date).toISOString();
  const isoEndDate = data.endDate ? new Date(data.endDate).toISOString() : null;
- await dispatch(
- thunkCreateAgendaItem({ item: { ...data, date: isoDate, endDate: isoEndDate, caseId } })
- ).unwrap();
+ const item = { ...data, date: isoDate, endDate: isoEndDate, caseId };
+ if (initialSession) {
+ await dispatch(thunkUpdateAgendaItem({ id: initialSession.id, item })).unwrap();
+ sileo.success({ title:"تم تعديل الجلسة بنجاح" });
+ } else {
+ await dispatch(thunkCreateAgendaItem({ item })).unwrap();
  sileo.success({ title:"تم إضافة الجلسة بنجاح" });
- dispatch(thunkGetAgendaByCaseId({ caseId }));
+ }
  onClose();
  } catch (error) {
  sileo.error({ title: `حدث خطأ: ${error}` });
  }
  };
 
- const sessionOptions = previousSessions.filter((s) => s.type ==="Session");
+ const sessionOptions = previousSessions.filter((s) => s.type ==="Session" && s.id !== initialSession?.id);
 
  return (
  <form
@@ -181,6 +199,19 @@ const SessionAgendaForm = ({ caseId, previousSessions, onClose, defaultDate, def
  </Select>
  )}
  />
+ <Controller
+ name="previousDecision"
+ control={control}
+ render={({ field }) => (
+ <Input
+ label="قرار الجلسة السابقة"
+ placeholder="مثال: تأجيل لتقديم مستندات"
+ value={field.value ??""}
+ onValueChange={(value) => field.onChange(value || null)}
+ classNames={{ inputWrapper:"rounded-xl" }}
+ />
+ )}
+ />
  {showPostponement && (
  <Controller
  name="postponementReason"
@@ -206,7 +237,7 @@ const SessionAgendaForm = ({ caseId, previousSessions, onClose, defaultDate, def
 
  <FormFooter
  onCancel={onClose}
- submitLabel="إضافة الجلسة"
+ submitLabel={initialSession ?"حفظ التعديل" :"إضافة الجلسة"}
  isLoading={isSubmitting}
  />
  </form>

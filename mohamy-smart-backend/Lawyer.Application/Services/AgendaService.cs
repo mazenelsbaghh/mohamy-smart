@@ -36,6 +36,70 @@ namespace Lawyer.Application.Services
             }
         }
 
+        public async Task<Result<AgendaItem>> UpdateAgendaItemAsync(Guid id, AgendaItem item)
+        {
+            try
+            {
+                var existing = await _context.AgendaItems.FirstOrDefaultAsync(a => a.Id == id);
+                if (existing == null)
+                    return Result<AgendaItem>.Error(System.Net.HttpStatusCode.NotFound, "عنصر الأجندة غير موجود.");
+                if (existing.CaseId != item.CaseId)
+                    return Result<AgendaItem>.Error(System.Net.HttpStatusCode.BadRequest, "عنصر الأجندة لا يتبع القضية المحددة.");
+
+                existing.Title = item.Title;
+                existing.Date = item.Date;
+                existing.EndDate = item.EndDate;
+                existing.Status = item.Status;
+
+                if (existing is SessionAgendaItem existingSession && item is SessionAgendaItem session)
+                {
+                    existingSession.SessionType = session.SessionType;
+                    existingSession.CourtName = session.CourtName;
+                    existingSession.PreviousSessionId = session.PreviousSessionId;
+                    existingSession.PostponementReason = session.PostponementReason;
+                    existingSession.PreviousDecision = session.PreviousDecision;
+                    existingSession.AssignedLawyerId = session.AssignedLawyerId;
+                }
+                else if (existing is ActionAgendaItem existingAction && item is ActionAgendaItem action)
+                {
+                    existingAction.ActionType = action.ActionType;
+                    existingAction.ExecutionDetails = action.ExecutionDetails;
+                    existingAction.Location = action.Location;
+                }
+                else
+                {
+                    return Result<AgendaItem>.Error(System.Net.HttpStatusCode.BadRequest, "لا يمكن تغيير نوع عنصر الأجندة بعد إنشائه.");
+                }
+
+                await _context.SaveChangesAsync();
+                return Result<AgendaItem>.Success(existing);
+            }
+            catch (Exception)
+            {
+                return Result<AgendaItem>.Error(System.Net.HttpStatusCode.InternalServerError, "An error occurred while updating the agenda item.");
+            }
+        }
+
+        public async Task<Result<bool>> DeleteAgendaItemAsync(Guid id, Guid caseId)
+        {
+            try
+            {
+                var existing = await _context.AgendaItems.FirstOrDefaultAsync(a => a.Id == id);
+                if (existing == null)
+                    return Result<bool>.Error(System.Net.HttpStatusCode.NotFound, "عنصر الأجندة غير موجود.");
+                if (existing.CaseId != caseId)
+                    return Result<bool>.Error(System.Net.HttpStatusCode.BadRequest, "عنصر الأجندة لا يتبع القضية المحددة.");
+
+                _context.AgendaItems.Remove(existing);
+                await _context.SaveChangesAsync();
+                return Result<bool>.Success(data: true);
+            }
+            catch (Exception)
+            {
+                return Result<bool>.Error(System.Net.HttpStatusCode.InternalServerError, "An error occurred while deleting the agenda item.");
+            }
+        }
+
         public async Task<Result<IEnumerable<AgendaItem>>> GetAgendaItemsByCaseIdAsync(Guid caseId)
         {
             try

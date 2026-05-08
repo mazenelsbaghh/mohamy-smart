@@ -10,6 +10,8 @@ namespace Lawyer.Application.IServices
     public interface IAgendaService
     {
         Task<Result<AgendaItem>> CreateAgendaItemAsync(AgendaItem item);
+        Task<Result<AgendaItem>> UpdateAgendaItemAsync(Guid id, AgendaItem item);
+        Task<Result<bool>> DeleteAgendaItemAsync(Guid id, Guid caseId);
         Task<Result<IEnumerable<AgendaItem>>> GetAgendaItemsByCaseIdAsync(Guid caseId);
         Task<Result<IEnumerable<AgendaItem>>> GetAgendaItemsByLawyerIdAsync(Guid lawyerId);
         Task<Result<IEnumerable<SessionRollDto>>> GetAgendaRollAsync(DateTime? date, Guid? lawyerId);

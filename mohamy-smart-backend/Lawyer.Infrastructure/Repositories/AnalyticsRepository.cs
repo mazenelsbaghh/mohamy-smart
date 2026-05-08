@@ -22,7 +22,12 @@ namespace Lawyer.Infrastructure.Repositories
 
         public async Task<FinancialMetricsDto> GetFinancialMetricsAsync()
         {
+            var now = DateTime.UtcNow;
             var paymentsQuery = _context.Payments.AsNoTracking();
+            var activeSubscriptionsQuery = _context.Set<LawyerSubscription>()
+                .AsNoTracking()
+                .Include(s => s.Subscription)
+                .Where(s => s.IsActive && s.EndDate >= now);
 
             var totalRevenue = await paymentsQuery
                 .Where(p => p.Status == PaymentStatus.Success)
@@ -32,11 +37,10 @@ namespace Lawyer.Infrastructure.Repositories
                 .Where(p => p.Status == PaymentStatus.Refunded)
                 .SumAsync(p => p.Amount);
 
-            // MRR: Sum of revenue from payments made in the last 30 days
-            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
-            var mrr = await paymentsQuery
-                .Where(p => p.Status == PaymentStatus.Success && p.Created >= thirtyDaysAgo)
-                .SumAsync(p => p.Amount);
+            var mrr = await activeSubscriptionsQuery
+                .SumAsync(s => s.Subscription.DurationDays >= 365 && s.Subscription.YearlyPrice.HasValue
+                    ? s.Subscription.YearlyPrice.Value / 12
+                    : s.Subscription.Price);
 
             // Unique paying users
             var uniquePayingUsers = await paymentsQuery
@@ -58,44 +62,58 @@ namespace Lawyer.Infrastructure.Repositories
 
         public async Task<SubscriptionLifecycleDto> GetSubscriptionMetricsAsync()
         {
-            var subscriptionsQuery = _context.Set<LawyerSubscription>().AsNoTracking();
-            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+            var now = DateTime.UtcNow;
+            var subscriptions = await _context.Set<LawyerSubscription>()
+                .AsNoTracking()
+                .Include(s => s.Subscription)
+                .Select(s => new
+                {
+                    s.LawyerId,
+                    s.SubscriptionId,
+                    s.StartDate,
+                    s.EndDate,
+                    s.IsActive,
+                    MonthlyEquivalentPrice = s.Subscription.DurationDays >= 365 && s.Subscription.YearlyPrice.HasValue
+                        ? s.Subscription.YearlyPrice.Value / 12
+                        : s.Subscription.Price,
+                    TotalPrice = s.Subscription.DurationDays >= 365 && s.Subscription.YearlyPrice.HasValue
+                        ? s.Subscription.YearlyPrice.Value
+                        : s.Subscription.Price
+                })
+                .ToListAsync();
+            var thirtyDaysAgo = now.AddDays(-30);
 
-            var newSubscribers = await subscriptionsQuery
-                .Where(s => s.StartDate >= thirtyDaysAgo)
-                .CountAsync();
-
-            var renewals = await subscriptionsQuery
+            var newSubscribers = subscriptions
                 .GroupBy(s => s.LawyerId)
-                .Where(g => g.Count() > 1)
-                .Select(g => g.Key)
-                .CountAsync();
+                .Count(g => g.Min(s => s.StartDate) >= thirtyDaysAgo);
 
-            var oneMonthChurners = await subscriptionsQuery
-                .Where(s => s.EndDate < DateTime.UtcNow)
+            var renewals = subscriptions
                 .GroupBy(s => s.LawyerId)
-                .Where(g => g.Count() == 1)
-                .Select(g => g.Key)
-                .CountAsync();
+                .Count(g => g.Count() > 1);
+
+            var oneMonthChurners = subscriptions
+                .GroupBy(s => s.LawyerId)
+                .Count(g =>
+                {
+                    var latest = g.OrderByDescending(s => s.EndDate).First();
+                    return latest.EndDate < now && latest.EndDate >= thirtyDaysAgo;
+                });
 
             var refundsCount = await _context.Payments
                 .Where(p => p.Status == PaymentStatus.Refunded)
                 .CountAsync();
 
-            var activeSubscriptionIds = await subscriptionsQuery
-                .Where(s => s.EndDate >= DateTime.UtcNow)
-                .Select(s => s.SubscriptionId)
-                .Distinct()
-                .ToListAsync();
-
-            var allSubscriptionIds = await subscriptionsQuery
-                .Select(s => s.SubscriptionId)
-                .Distinct()
-                .ToListAsync();
-
-            var upgrades = allSubscriptionIds.Count > 0 && activeSubscriptionIds.Count > 0
-                ? Math.Max(0, allSubscriptionIds.Count - refundsCount - oneMonthChurners)
-                : 0;
+            var upgrades = subscriptions
+                .GroupBy(s => s.LawyerId)
+                .Count(g =>
+                {
+                    var ordered = g.OrderBy(s => s.StartDate).ToList();
+                    for (var i = 1; i < ordered.Count; i++)
+                    {
+                        if (ordered[i].MonthlyEquivalentPrice > ordered[i - 1].MonthlyEquivalentPrice) return true;
+                    }
+                    return false;
+                });
 
             return new SubscriptionLifecycleDto
             {
@@ -111,30 +129,16 @@ namespace Lawyer.Infrastructure.Repositories
         {
             var today = DateTime.UtcNow.Date;
             var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+            var activityByUser = await LoadActivityByUserAsync();
 
-            // Using AiUsageRecords as a proxy for engagement activity
-            var dau = await _context.AiUsageRecords
-                .Where(a => a.CreatedAt >= today)
-                .Select(a => a.LawyerId)
-                .Distinct()
-                .CountAsync();
+            var dau = activityByUser.Count(kvp => kvp.Value.Any(d => d >= today));
+            var mau = activityByUser.Count(kvp => kvp.Value.Any(d => d >= thirtyDaysAgo));
 
-            var mau = await _context.AiUsageRecords
-                .Where(a => a.CreatedAt >= thirtyDaysAgo)
-                .Select(a => a.LawyerId)
-                .Distinct()
-                .CountAsync();
-
-            var totalUsers = await _context.Users.CountAsync();
+            var totalUsers = await _context.Set<Core.Models.Lawyer>().CountAsync();
             var dormantUsers = totalUsers - mau;
             if (dormantUsers < 0) dormantUsers = 0;
 
-            var powerUsers = await _context.AiUsageRecords
-                .Where(a => a.CreatedAt >= thirtyDaysAgo)
-                .GroupBy(a => a.LawyerId)
-                .Where(g => g.Count() >= 20) // >= 20 AI usages in 30 days
-                .Select(g => g.Key)
-                .CountAsync();
+            var powerUsers = activityByUser.Count(kvp => kvp.Value.Count(d => d >= thirtyDaysAgo) >= 20);
 
             return new UserEngagementDto
             {
@@ -147,33 +151,13 @@ namespace Lawyer.Infrastructure.Repositories
 
         public async Task<List<CohortDataDto>> GetCohortAnalysisAsync()
         {
-            var users = await _context.Users
-                .Select(u => new { u.Id, u.CreatedAt })
+            var users = await _context.Set<Core.Models.Lawyer>()
+                .Select(l => new { Id = l.ApplicationUserId, l.Created })
                 .ToListAsync();
-
-            var activity = await _context.AiUsageRecords
-                .Select(a => new { a.LawyerId, a.CreatedAt })
-                .ToListAsync();
-
-            var lawyerIdToUserIds = await _context.Set<Core.Models.Lawyer>()
-                .Select(l => new { l.Id, l.ApplicationUserId })
-                .ToListAsync();
-
-            var activityByUser = activity
-                .Join(lawyerIdToUserIds,
-                    a => a.LawyerId,
-                    l => (Guid?)l.Id,
-                    (a, l) => new { UserId = l.ApplicationUserId, a.CreatedAt })
-                .Concat(activity
-                    .Join(lawyerIdToUserIds,
-                    a => a.LawyerId,
-                    l => l.ApplicationUserId,
-                    (a, l) => new { UserId = l.ApplicationUserId, a.CreatedAt }))
-                .GroupBy(x => x.UserId)
-                .ToDictionary(g => g.Key, g => g.Select(x => x.CreatedAt).ToList());
+            var activityByUser = await LoadActivityByUserAsync();
 
             var cohorts = users
-                .GroupBy(u => new DateTime(u.CreatedAt.Year, u.CreatedAt.Month, 1, 0, 0, 0, DateTimeKind.Utc))
+                .GroupBy(u => new DateTime(u.Created.Year, u.Created.Month, 1, 0, 0, 0, DateTimeKind.Utc))
                 .Where(g => g.Key <= DateTime.UtcNow)
                 .OrderByDescending(g => g.Key)
                 .Take(6)
@@ -210,6 +194,60 @@ namespace Lawyer.Infrastructure.Repositories
                 .ToList();
 
             return cohorts;
+        }
+
+        private async Task<Dictionary<Guid, List<DateTime>>> LoadActivityByUserAsync()
+        {
+            var lawyerIds = await _context.Set<Core.Models.Lawyer>()
+                .AsNoTracking()
+                .Select(l => new { l.Id, l.ApplicationUserId })
+                .ToListAsync();
+
+            var lawyerToUser = lawyerIds
+                .SelectMany(l => new[]
+                {
+                    new { ActivityId = l.Id, UserId = l.ApplicationUserId },
+                    new { ActivityId = l.ApplicationUserId, UserId = l.ApplicationUserId }
+                })
+                .GroupBy(x => x.ActivityId)
+                .ToDictionary(g => g.Key, g => g.First().UserId);
+
+            var activities = new List<(Guid ActivityId, DateTime OccurredAt)>();
+
+            activities.AddRange(await _context.AiUsageRecords
+                .AsNoTracking()
+                .Select(a => new ValueTuple<Guid, DateTime>(a.LawyerId, a.CreatedAt))
+                .ToListAsync());
+
+            activities.AddRange(await _context.Cases
+                .AsNoTracking()
+                .Select(c => new ValueTuple<Guid, DateTime>(c.LawyerId, c.Created))
+                .ToListAsync());
+
+            activities.AddRange(await _context.Payments
+                .AsNoTracking()
+                .Where(p => p.Status == PaymentStatus.Success)
+                .Select(p => new ValueTuple<Guid, DateTime>(p.LawyerId, p.Created))
+                .ToListAsync());
+
+            activities.AddRange(await _context.Set<LawyerSubscription>()
+                .AsNoTracking()
+                .Select(s => new ValueTuple<Guid, DateTime>(s.LawyerId, s.StartDate))
+                .ToListAsync());
+
+            return activities
+                .Select(a => new
+                {
+                    Activity = a,
+                    IsKnownLawyer = lawyerToUser.TryGetValue(a.ActivityId, out var userId),
+                    UserId = userId,
+                    a.OccurredAt
+                })
+                .Where(a => a.IsKnownLawyer)
+                .GroupBy(a => a.UserId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(a => a.OccurredAt).ToList());
         }
     }
 }

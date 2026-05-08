@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button, useDisclosure, Tabs, Tab, Spinner, Select, SelectItem } from "@heroui/react";
 import { FilterSelect } from '@mohamy/shared-ui';
 import FormModal from "../../components/ui/form/FormModal";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 
 
 import HeadTitle from"../../components/headTitle/HeadTitle";
@@ -21,10 +22,12 @@ import ActionAgendaForm from"./components/ActionAgendaForm";
 import { AgendaRollTable } from"./components/AgendaRollTable";
 import { useAppDispatch, useAppSelector } from"../../hooks/reduxHooks";
 import thunkGetAgendaByLawyerId from"../../redux/agenda/thunk/thunkGetAgendaByLawyerId";
+import thunkDeleteAgendaItem from"../../redux/agenda/thunk/thunkDeleteAgendaItem";
 import thunkGetAllCases from"../../redux/cases/thunk/thunkGetAllCases";
 import { FaPlus } from "react-icons/fa";
 import { LuScale, LuClipboardList } from "react-icons/lu";
 import type { AgendaItem, SessionAgendaItem } from "../../types/agenda";
+import { sileo } from "sileo";
 
 const locales = {
   "ar-EG": arEG,
@@ -67,7 +70,7 @@ const STATUS_LABELS: Record<string, string> = {
 const AgendaPage = () => {
  const dispatch = useAppDispatch();
   usePageTitle('الأجندة');
- const { items, loading } = useAppSelector((state) => state.agenda);
+ const { items, loading, createLoading } = useAppSelector((state) => state.agenda);
  const { cases } = useAppSelector((state) => state.cases);
  const { user } = useAppSelector((state) => state.auth);
 
@@ -76,12 +79,15 @@ const AgendaPage = () => {
 
  const [formType, setFormType] = useState<"Session" |"Action">("Session");
  const [selectedItem, setSelectedItem] = useState<AgendaItem | null>(null);
+ const [editingItem, setEditingItem] = useState<AgendaItem | null>(null);
+ const [deleteTarget, setDeleteTarget] = useState<AgendaItem | null>(null);
  const [viewMode, setViewMode] = useState<"calendar" |"roll">("calendar");
 
  const [filterCaseId, setFilterCaseId] = useState<string>("");
  const [selectedDate, setSelectedDate] = useState<string>("");
  const [selectedEndDate, setSelectedEndDate] = useState<string>("");
  const [selectedCaseIdForForm, setSelectedCaseIdForForm] = useState<string>("");
+ const [rollRefreshKey, setRollRefreshKey] = useState(0);
 
  const calendarContainerRef = useRef<HTMLDivElement | null>(null);
  
@@ -115,7 +121,12 @@ const AgendaPage = () => {
 
 
 
- const handleAddClick = () => {
+ const handleAddClick = (options?: { preserveSelectedSlot?: boolean }) => {
+ setEditingItem(null);
+ if (!options?.preserveSelectedSlot) {
+ setSelectedDate("");
+ setSelectedEndDate("");
+ }
  if (cases.length > 0 && !selectedCaseIdForForm) {
  setSelectedCaseIdForForm(String(cases[0].id));
  }
@@ -124,11 +135,37 @@ const AgendaPage = () => {
 
  const refreshData = () => {
  if (user) dispatch(thunkGetAgendaByLawyerId({ lawyerId: user.profileId }));
+ setRollRefreshKey((value) => value + 1);
  };
 
  const handleFormClose = () => {
+ setEditingItem(null);
  onAddClose();
  refreshData();
+ };
+
+ const handleEditItem = (item: AgendaItem) => {
+ setEditingItem(item);
+ setFormType(item.type);
+ setSelectedCaseIdForForm(item.caseId);
+ setSelectedDate("");
+ setSelectedEndDate("");
+ onDetailClose();
+ onAddOpen();
+ };
+
+ const handleDeleteItem = async () => {
+ if (!deleteTarget) return;
+ try {
+ await dispatch(thunkDeleteAgendaItem({ id: deleteTarget.id, caseId: deleteTarget.caseId })).unwrap();
+ sileo.success({ title:"تم حذف عنصر الأجندة" });
+ setDeleteTarget(null);
+ setSelectedItem(null);
+ onDetailClose();
+ refreshData();
+ } catch (error) {
+ sileo.error({ title: typeof error ==="string" ? error :"تعذر حذف عنصر الأجندة" });
+ }
  };
 
  
@@ -239,7 +276,7 @@ const AgendaPage = () => {
  }
  setSelectedDate(isoStart);
  setSelectedEndDate(isoEnd);
- handleAddClick();
+ handleAddClick({ preserveSelectedSlot: true });
  }}
  onSelectEvent={(event: object) => {
  const rbcEvent = event as { resource?: AgendaItem };
@@ -304,7 +341,7 @@ const AgendaPage = () => {
  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
  className="w-full"
  >
- <AgendaRollTable />
+ <AgendaRollTable refreshKey={rollRefreshKey} />
  </motion.div>
  )}
  </AnimatePresence>
@@ -316,6 +353,9 @@ const AgendaPage = () => {
  item={selectedItem}
  isOpen={isDetailOpen}
  onClose={onDetailClose}
+ onEdit={handleEditItem}
+ onDelete={setDeleteTarget}
+ isDeleting={createLoading ==="pending"}
  />
 
  {/* Add Agenda Item Modal */}
@@ -323,7 +363,7 @@ const AgendaPage = () => {
  isOpen={isAddOpen}
  onClose={onAddClose}
  size="2xl"
- title="إضافة إلى الأجندة"
+ title={editingItem ?"تعديل عنصر الأجندة" :"إضافة إلى الأجندة"}
  subtitle="حدد القضية ونوع العنصر للمتابعة"
  icon={<span dir="ltr" style={{ display:'inline-flex' }}><LuScale size={18} /></span>}
  >
@@ -371,20 +411,22 @@ const AgendaPage = () => {
  {selectedCaseIdForForm ? (
  formType ==="Session" ? (
  <SessionAgendaForm
- key={`session-${selectedDate}`}
+ key={`session-${editingItem?.id ?? selectedDate}`}
  caseId={selectedCaseIdForForm}
  previousSessions={items.filter((i) => i.caseId === selectedCaseIdForForm)}
  onClose={handleFormClose}
  defaultDate={selectedDate}
  defaultEndDate={selectedEndDate}
+ initialItem={editingItem}
  />
  ) : (
  <ActionAgendaForm
- key={`action-${selectedDate}-${selectedEndDate}`}
+ key={`action-${editingItem?.id ?? selectedDate}-${selectedEndDate}`}
  caseId={selectedCaseIdForForm}
  onClose={handleFormClose}
  defaultDate={selectedDate}
  defaultEndDate={selectedEndDate}
+ initialItem={editingItem}
  />
  )
  ) : (
@@ -396,6 +438,17 @@ const AgendaPage = () => {
  </div>
  )}
  </FormModal>
+ <ConfirmDialog
+ isOpen={!!deleteTarget}
+ onClose={() => setDeleteTarget(null)}
+ onConfirm={handleDeleteItem}
+ title="حذف عنصر الأجندة"
+ description="سيتم حذف هذا العنصر من التقويم والرول. هل تريد المتابعة؟"
+ confirmText="حذف"
+ cancelText="إلغاء"
+ danger
+ isLoading={createLoading ==="pending"}
+ />
  </Container>
  </section>
  );

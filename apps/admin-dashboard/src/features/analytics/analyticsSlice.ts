@@ -95,6 +95,8 @@ const analyticsSlice = createSlice({
  builder
   .addCase(fetchFinancialMetrics.pending, (state) => {
   state.isLoadingFinancial = true;
+  state.isLoading = true;
+  state.isError = false;
   })
   .addCase(fetchFinancialMetrics.fulfilled, (state, action) => {
   state.isLoadingFinancial = false;
@@ -110,6 +112,8 @@ const analyticsSlice = createSlice({
   })
   .addCase(fetchSubscriptionMetrics.pending, (state) => {
   state.isLoadingSubscription = true;
+  state.isLoading = true;
+  state.isError = false;
   })
   .addCase(fetchSubscriptionMetrics.fulfilled, (state, action) => {
   state.isLoadingSubscription = false;
@@ -125,6 +129,8 @@ const analyticsSlice = createSlice({
   })
   .addCase(fetchEngagementMetrics.pending, (state) => {
   state.isLoadingEngagement = true;
+  state.isLoading = true;
+  state.isError = false;
   })
   .addCase(fetchEngagementMetrics.fulfilled, (state, action) => {
   state.isLoadingEngagement = false;
@@ -140,6 +146,8 @@ const analyticsSlice = createSlice({
   })
   .addCase(fetchCohortMetrics.pending, (state) => {
   state.isLoadingCohort = true;
+  state.isLoading = true;
+  state.isError = false;
   })
   .addCase(fetchCohortMetrics.fulfilled, (state, action) => {
   state.isLoadingCohort = false;

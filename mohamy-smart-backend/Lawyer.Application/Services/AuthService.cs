@@ -148,13 +148,6 @@ namespace Lawyer.Application.Services
             if (!rateLimitResult.Succeeded)
                 return ApiExceptionResponse.BadRequest<string>(rateLimitResult.Errors.FirstOrDefault() ?? "تم تجاوز الحد الأقصى.");
 
-            var activeOtp = await GetActiveOtpAsync(user.Id, OtpType.register, cancellationToken);
-            if (activeOtp != null && activeOtp.ExpirationDate > _dateTimeProvider.UtcNow)
-            {
-                var remainingSeconds = Math.Max(0, (int)(activeOtp.ExpirationDate - _dateTimeProvider.UtcNow).TotalSeconds);
-                return ApiExceptionResponse.Success($"تم إرسال رمز تأكيد الرقم إلى {activeOtp.MaskedDestination}. يمكنك طلب رمز جديد خلال {remainingSeconds} ثانية.");
-            }
-
             await InvalidateActiveOtpsAsync(user.Id, OtpType.register, "SupersededByNewOtp", cancellationToken);
 
             var otpCode = OtpHelper.GenerateOtpCode();
@@ -165,6 +158,7 @@ namespace Lawyer.Application.Services
                 Code = OtpHelper.HashOtpCode(otpCode, salt),
                 CodeSalt = salt,
                 ExpirationDate = _dateTimeProvider.UtcNow.AddMinutes(5),
+                Created = _dateTimeProvider.UtcNow,
                 UserId = user.Id,
                 Type = OtpType.register,
                 DeliveryChannel = "Sms",
@@ -342,6 +336,8 @@ namespace Lawyer.Application.Services
 		{
 			var phone = NormalizeDigits(request.PhoneNumber);
 			var email = (request.Email ?? string.Empty).Trim();
+			var fullName = PlainTextInputGuard.NormalizePlainText(request.FullName);
+			var governorate = PlainTextInputGuard.NormalizePlainText(request.Governorate);
 			_logger.LogInformation("Starting registration for {Phone}", phone);
 
 			var existingByPhone = await _unitOfWork.Repository<ApplicationUser>()
@@ -357,8 +353,8 @@ namespace Lawyer.Application.Services
 					return Result<AuthResponseDto>.Error(System.Net.HttpStatusCode.Conflict, "رقم الهاتف مسجّل بالفعل. يمكنك تسجيل الدخول أو استعادة كلمة المرور.");
 				}
 
-				existingByPhone.FullName = request.FullName;
-				existingByPhone.Governorate = request.Governorate;
+				existingByPhone.FullName = fullName;
+				existingByPhone.Governorate = governorate;
 				existingByPhone.AgreedToTerms = request.AgreeToTerms;
 				existingByPhone.Email = email;
 				existingByPhone.UserName = phone;
@@ -388,8 +384,8 @@ namespace Lawyer.Application.Services
 					return Result<AuthResponseDto>.Error(System.Net.HttpStatusCode.Conflict, "البريد الإلكتروني مستخدم بالفعل. جرّب بريدًا آخر أو قم بتسجيل الدخول.");
 				}
 
-				existingByEmail.FullName = request.FullName;
-				existingByEmail.Governorate = request.Governorate;
+				existingByEmail.FullName = fullName;
+				existingByEmail.Governorate = governorate;
 				existingByEmail.AgreedToTerms = request.AgreeToTerms;
 				existingByEmail.UserName = phone;
 				existingByEmail.PhoneNumber = phone;
@@ -411,8 +407,8 @@ namespace Lawyer.Application.Services
 				PhoneNumber = phone,
 				PhoneNumberConfirmed = false,
 				Email = email,
-				FullName = request.FullName,
-				Governorate = request.Governorate,
+				FullName = fullName,
+				Governorate = governorate,
 				AgreedToTerms = request.AgreeToTerms,
 				IsActive = false,
 				UserType = UserType.Lawyer
@@ -553,14 +549,17 @@ namespace Lawyer.Application.Services
                     lawyer.IsActive = true;
                     await _unitOfWork.Repository<Core.Models.Lawyer>().Update(lawyer);
 
+                    const string trialPlanName = "الباقة التجريبية";
+                    const string legacyTrialPlanName = "Free Trial";
+
                     var freeTrialPlan = await _unitOfWork.Repository<Subscription>()
-                        .FirstOrDefaultTrackedAsync(x => x.Name == "Free Trial", cancellationToken);
+                        .FirstOrDefaultTrackedAsync(x => x.Name == trialPlanName || x.Name == legacyTrialPlanName, cancellationToken);
 
                     if (freeTrialPlan == null)
                     {
                         freeTrialPlan = new Subscription
                         {
-                            Name = "Free Trial",
+                            Name = trialPlanName,
                             Price = 0,
                             Features = "Basic Features",
                             AiRequestsLimit = 1,
@@ -568,7 +567,12 @@ namespace Lawyer.Application.Services
                             IsActive = true
                         };
                         await _unitOfWork.Repository<Subscription>().AddAsync(freeTrialPlan);
-                        _logger.LogInformation("Free Trial plan created automatically (first-time setup).");
+                        _logger.LogInformation("Trial plan created automatically (first-time setup).");
+                    }
+                    else if (freeTrialPlan.Name == legacyTrialPlanName)
+                    {
+                        freeTrialPlan.Name = trialPlanName;
+                        await _unitOfWork.Repository<Subscription>().Update(freeTrialPlan);
                     }
 
                     var freeTrialSub = new LawyerSubscription
@@ -584,7 +588,7 @@ namespace Lawyer.Application.Services
                     };
 
                     await _unitOfWork.Repository<LawyerSubscription>().AddAsync(freeTrialSub);
-                    _logger.LogInformation("Lawyer {LawyerId} activated and subscribed to Free Trial after phone verification.", lawyer.Id);
+                    _logger.LogInformation("Lawyer {LawyerId} activated and subscribed to trial plan after phone verification.", lawyer.Id);
                 }
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -598,8 +602,9 @@ namespace Lawyer.Application.Services
 
             if (!string.IsNullOrWhiteSpace(user.Email))
             {
+                var encodedFullName = WebUtility.HtmlEncode(user.FullName ?? string.Empty);
                 var emailContent = $@"
-                    <h2>مرحباً {user.FullName}،</h2>
+                    <h2>مرحباً {encodedFullName}،</h2>
                     <p>يسعدنا انضمامك إلى منصة <strong>محامي سمارت</strong>.</p>
                     <p>تم <span style=""color: #34BF49; font-weight: bold;"">تأكيد رقم هاتفك وتفعيل حسابك بنجاح</span>.</p>
                     <p>يمكنك الآن تسجيل الدخول إلى المنصة والبدء في إدارة أعمالك القانونية بكل احترافية وسهولة.</p>";
@@ -641,21 +646,6 @@ namespace Lawyer.Application.Services
                 return ApiExceptionResponse.Success("إذا كان الحساب موجودًا، فسيتم إرسال رمز الاستعادة إلى وسيلة التواصل المسجلة.");
             }
 
-            var activeOtp = await _unitOfWork.Repository<Otp>()
-                .FirstOrDefaultAsync(
-                    o => o.UserId == user.Id &&
-                         o.Type == OtpType.forgetPassword &&
-                         o.ConsumedAtUtc == null &&
-                         o.InvalidatedAtUtc == null &&
-                         o.ExpirationDate > _dateTimeProvider.UtcNow,
-                    cancellationToken);
-
-            if (activeOtp != null)
-            {
-                var remainingSeconds = Math.Max(0, (int)(activeOtp.ExpirationDate - _dateTimeProvider.UtcNow).TotalSeconds);
-                return ApiExceptionResponse.Success($"إذا كان الحساب موجودًا، فسيتم إرسال رمز الاستعادة إلى وسيلة التواصل المسجلة. يمكنك طلب رمز جديد خلال {remainingSeconds} ثانية.");
-            }
-
 			var otpCode = OtpHelper.GenerateOtpCode();
 			var expiry = _dateTimeProvider.UtcNow.AddMinutes(5);
             var existingOtps = await _unitOfWork.Repository<Otp>()
@@ -670,10 +660,11 @@ namespace Lawyer.Application.Services
             var forgetSalt = OtpHelper.GenerateSalt();
 			var otp = new Otp
 			{
-				Code = OtpHelper.HashOtpCode(otpCode, forgetSalt),
-				CodeSalt = forgetSalt,
-				ExpirationDate = expiry,
-				UserId = user.Id,
+					Code = OtpHelper.HashOtpCode(otpCode, forgetSalt),
+					CodeSalt = forgetSalt,
+					ExpirationDate = expiry,
+                    Created = _dateTimeProvider.UtcNow,
+					UserId = user.Id,
                 Type = OtpType.forgetPassword,
                 DeliveryChannel = "Sms",
                 MaskedDestination = MaskPhone(user.PhoneNumber ?? string.Empty),

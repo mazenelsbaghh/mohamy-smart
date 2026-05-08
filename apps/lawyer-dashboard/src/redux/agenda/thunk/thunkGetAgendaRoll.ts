@@ -11,8 +11,9 @@ const thunkGetAgendaRoll = createAsyncThunk('agenda/getAgendaRoll',
  if (args?.date) params.append("date", args.date);
  if (args?.lawyerId) params.append("lawyerId", args.lawyerId);
 
- const res = await api.get(`/Agenda/agenda-roll?${params.toString()}`);
- return res.data as SessionRollDto[];
+ const query = params.toString();
+ const res = await api.get(`/Agenda/agenda-roll${query ? `?${query}` : ''}`);
+ return (Array.isArray(res.data) ? res.data : (res.data?.data || [])) as SessionRollDto[];
  } catch (error) {
  return rejectWithValue(axiosErrorHandler(error));
  }

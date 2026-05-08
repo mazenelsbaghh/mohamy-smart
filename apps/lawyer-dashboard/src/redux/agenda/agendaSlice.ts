@@ -5,6 +5,8 @@ import { isString } from"@mohamy/shared-utils";
 import thunkGetAgendaByCaseId from"./thunk/thunkGetAgendaByCaseId";
 import thunkGetAgendaByLawyerId from"./thunk/thunkGetAgendaByLawyerId";
 import thunkCreateAgendaItem from"./thunk/thunkCreateAgendaItem";
+import thunkUpdateAgendaItem from"./thunk/thunkUpdateAgendaItem";
+import thunkDeleteAgendaItem from"./thunk/thunkDeleteAgendaItem";
 
 import thunkGetAgendaRoll from"./thunk/thunkGetAgendaRoll";
 import type { SessionRollDto } from"../../types/agenda";
@@ -63,6 +65,38 @@ const agendaSlice = createSlice({
  state.createLoading ='succeeded';
  })
  .addCase(thunkCreateAgendaItem.rejected, (state, action) => {
+ state.createLoading ='failed';
+ if (isString(action.payload)) {
+ state.error = action.payload;
+ }
+ })
+ // Update Agenda Item
+ .addCase(thunkUpdateAgendaItem.pending, (state) => {
+ state.createLoading ='pending';
+ state.error = null;
+ })
+ .addCase(thunkUpdateAgendaItem.fulfilled, (state, action) => {
+ state.createLoading ='succeeded';
+ const index = state.items.findIndex((item) => item.id === action.payload.id);
+ if (index >= 0) state.items[index] = action.payload;
+ })
+ .addCase(thunkUpdateAgendaItem.rejected, (state, action) => {
+ state.createLoading ='failed';
+ if (isString(action.payload)) {
+ state.error = action.payload;
+ }
+ })
+ // Delete Agenda Item
+ .addCase(thunkDeleteAgendaItem.pending, (state) => {
+ state.createLoading ='pending';
+ state.error = null;
+ })
+ .addCase(thunkDeleteAgendaItem.fulfilled, (state, action) => {
+ state.createLoading ='succeeded';
+ state.items = state.items.filter((item) => item.id !== action.payload);
+ state.rollItems = state.rollItems.filter((item) => item.id !== action.payload);
+ })
+ .addCase(thunkDeleteAgendaItem.rejected, (state, action) => {
  state.createLoading ='failed';
  if (isString(action.payload)) {
  state.error = action.payload;

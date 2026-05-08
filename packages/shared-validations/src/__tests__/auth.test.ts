@@ -51,7 +51,7 @@ describe('adminLoginSchema', () => {
         expect(result.success).toBe(false);
     });
 
-    it('rejects password shorter than 6 chars', () => {
+    it('rejects password shorter than 8 chars', () => {
         const result = adminLoginSchema.safeParse({
             email: 'admin@test.com',
             password: 'Ab@1',

@@ -19,14 +19,27 @@ type RollItem = {
 };
 
 const addDays = (iso: string, days: number) => {
- const d = new Date(iso);
+ const d = new Date(`${iso}T12:00:00`);
  d.setDate(d.getDate() + days);
- return d.toISOString().split("T")[0];
+ const year = d.getFullYear();
+ const month = String(d.getMonth() + 1).padStart(2, "0");
+ const day = String(d.getDate()).padStart(2, "0");
+ return `${year}-${month}-${day}`;
 };
 
-const todayIso = () => new Date().toISOString().split("T")[0];
+const todayIso = () => {
+ const d = new Date();
+ const year = d.getFullYear();
+ const month = String(d.getMonth() + 1).padStart(2, "0");
+ const day = String(d.getDate()).padStart(2, "0");
+ return `${year}-${month}-${day}`;
+};
 
-export const AgendaRollTable = () => {
+type AgendaRollTableProps = {
+ refreshKey?: number;
+};
+
+export const AgendaRollTable = ({ refreshKey = 0 }: AgendaRollTableProps) => {
  const dispatch = useDispatch<AppDispatch>();
  const { rollItems, rollLoading } = useSelector((state: RootState) => state.agenda);
 
@@ -34,7 +47,7 @@ export const AgendaRollTable = () => {
 
  useEffect(() => {
  dispatch(thunkGetAgendaRoll({ date: selectedDate }));
- }, [dispatch, selectedDate]);
+ }, [dispatch, selectedDate, refreshKey]);
 
  const formattedDate = useMemo(
  () =>

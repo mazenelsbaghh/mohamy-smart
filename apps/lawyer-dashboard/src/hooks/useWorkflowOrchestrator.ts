@@ -514,7 +514,6 @@ export function useWorkflowOrchestrator<
   useEffect(() => {
     if (!onJobCompletedRef.current) return;
     if (freshRunInProgressRef.current) return;
-    if (freshSessionRef.current && !isFreshRun) return;
     const jobs = aiJobs.jobs as Record<string, { status?: string; resultJson?: string; id?: string; completedAt?: string; createdAt?: string } | undefined>;
     for (const [jobKey, job] of Object.entries(jobs)) {
       if (job?.status === 'Completed' && job.resultJson) {
