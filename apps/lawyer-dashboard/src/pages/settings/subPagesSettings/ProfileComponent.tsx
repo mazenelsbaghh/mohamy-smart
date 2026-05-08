@@ -1,11 +1,12 @@
 import { CustomButton, CustomInput } from'@mohamy/shared-ui';
-import { useEffect } from'react';
+import { useEffect, useState } from 'react';
 import'./Settings.css';
-import { Avatar } from'@heroui/react';
+import { Avatar, Button } from '@heroui/react';
 import { useForm, Controller } from'react-hook-form';
 import { zodResolver } from'@hookform/resolvers/zod';
 import { FaUserTie } from'react-icons/fa';
 import { sileo } from"sileo";
+import ChangePhoneModal from './ChangePhoneModal';
 
 
 
@@ -22,6 +23,7 @@ type TProfileComponent = {
 const ProfileComponent = ({ profile }: TProfileComponent) => {
  const dispatch = useAppDispatch();
  const { updateLoading } = useAppSelector((state) => state.settings);
+ const [isChangePhoneOpen, setIsChangePhoneOpen] = useState(false);
 
  const {
  control,
@@ -119,6 +121,12 @@ const ProfileComponent = ({ profile }: TProfileComponent) => {
                       label='رقم الهاتف'
                       isInvalid={!!errors.phoneNumber}
                       errorMessage={errors.phoneNumber?.message}
+                      isReadOnly
+                      endContent={
+                        <Button size="sm" variant="flat" color="primary" onPress={() => setIsChangePhoneOpen(true)}>
+                          تعديل
+                        </Button>
+                      }
                     />
                   )}
                 />
@@ -151,10 +159,11 @@ const ProfileComponent = ({ profile }: TProfileComponent) => {
  />
  </div>
  </div>
- </form>
- </div>
- </div>
- </div>
+      </form>
+      <ChangePhoneModal isOpen={isChangePhoneOpen} onOpenChange={setIsChangePhoneOpen} />
+    </div>
+  </div>
+</div>
  );
 };
 

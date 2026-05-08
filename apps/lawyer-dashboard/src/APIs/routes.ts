@@ -15,6 +15,8 @@ export const API_ROUTES = {
  CHANGE_PASSWORD:'/account/change-password',
  ACCOUNT_REQUEST_OTP:'/account/request-otp',
  ACCOUNT_VERIFY_OTP:'/account/verify-otp',
+ REQUEST_CHANGE_PHONE: '/Account/request-change-phone',
+ VERIFY_CHANGE_PHONE: '/Account/verify-change-phone',
  
  // Subscription & Payment
  GET_SUBSCRIPTION_PLANS:'/subscription',

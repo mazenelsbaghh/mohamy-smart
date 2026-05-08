@@ -407,6 +407,116 @@ namespace Lawyer.Application.Services
             return ApiExceptionResponse.Success(true, "OTP verified successfully.");
         }
 
+        public async Task<Result<string>> RequestChangePhoneAsync(Guid userId, ChangePhoneRequestDto dto, CancellationToken cancellationToken)
+        {
+            var user = await _unitOfWork.Repository<ApplicationUser>()
+                .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
+
+            if (user == null)
+                return ApiExceptionResponse.NotFound<string>("User not found.");
+
+            var passwordValid = await _userManager.CheckPasswordAsync(user, dto.CurrentPassword);
+            if (!passwordValid)
+                return ApiExceptionResponse.BadRequest<string>("كلمة المرور الحالية غير صحيحة.");
+
+            if (string.IsNullOrWhiteSpace(dto.NewPhoneNumber))
+                return ApiExceptionResponse.BadRequest<string>("رقم الهاتف الجديد مطلوب.");
+
+            var oneHourAgo = _dateTimeProvider.UtcNow.AddHours(-1);
+            var recentOtps = await _unitOfWork.Repository<Otp>()
+                .WhereAsync(o => o.UserId == userId && o.Type == OtpType.sensitiveAction && o.Created > oneHourAgo, cancellationToken);
+
+            if (recentOtps.Count >= 5)
+                return ApiExceptionResponse.BadRequest<string>("تم تجاوز الحد الأقصى لطلبات التحقق. حاول مرة أخرى بعد ساعة.");
+
+            var fifteenMinutesAgo = _dateTimeProvider.UtcNow.AddMinutes(-15);
+            var lockedOut = recentOtps.Count(o => o.FailureReason == "AttemptLimitExceeded" && o.Created > fifteenMinutesAgo);
+            if (lockedOut >= 3)
+                return ApiExceptionResponse.BadRequest<string>("تم تجاوز الحد الأقصى لمحاولات التحقق الخاطئة. حاول مرة أخرى بعد 15 دقيقة.");
+
+            var existing = await _unitOfWork.Repository<Otp>()
+                .WhereAsync(x => x.UserId == userId && x.Type == OtpType.sensitiveAction && x.ConsumedAtUtc == null && x.InvalidatedAtUtc == null, cancellationToken);
+            foreach (var otp in existing)
+            {
+                otp.InvalidatedAtUtc = _dateTimeProvider.UtcNow;
+                otp.FailureReason = "SupersededByNewOtp";
+                await _unitOfWork.Repository<Otp>().Update(otp);
+            }
+
+            var code = OtpHelper.GenerateOtpCode();
+            var accountSalt = OtpHelper.GenerateSalt();
+            var entity = new Otp
+            {
+                UserId = userId,
+                Code = OtpHelper.HashOtpCode(code, accountSalt),
+                CodeSalt = accountSalt,
+                Type = OtpType.sensitiveAction,
+                ExpirationDate = _dateTimeProvider.UtcNow.AddMinutes(5),
+                DeliveryChannel = "SmsPhoneChange:" + dto.NewPhoneNumber,
+                MaskedDestination = MaskPhone(dto.NewPhoneNumber),
+                MaxAttempts = 5,
+                AttemptCount = 0,
+                IsVerified = false
+            };
+
+            await _unitOfWork.Repository<Otp>().AddAsync(entity);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            var sent = await _smsSender.SendOtpAsync(dto.NewPhoneNumber, $"رمز التحقق لتغيير رقم الهاتف هو {code}", $"change-phone-otp:{userId}", cancellationToken);
+            if (!sent)
+            {
+                entity.FailureReason = "SmsDeliveryFailed";
+            }
+
+            await _unitOfWork.Repository<Otp>().Update(entity);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return ApiExceptionResponse.Success($"تم إرسال رمز التحقق إلى {entity.MaskedDestination}");
+        }
+
+        public async Task<Result<string>> VerifyChangePhoneAsync(Guid userId, ChangePhoneVerifyDto dto, CancellationToken cancellationToken)
+        {
+            var otpEntity = await _unitOfWork.Repository<Otp>()
+                .FirstOrDefaultAsync(
+                    x => x.UserId == userId &&
+                         x.Type == OtpType.sensitiveAction &&
+                         x.ConsumedAtUtc == null &&
+                         x.InvalidatedAtUtc == null,
+                    cancellationToken);
+
+            if (otpEntity == null || otpEntity.ExpirationDate < _dateTimeProvider.UtcNow || !otpEntity.DeliveryChannel.StartsWith("SmsPhoneChange:"))
+                return ApiExceptionResponse.BadRequest<string>("OTP is invalid or expired.");
+
+            if (!OtpHelper.MatchesOtp(dto.OtpCode, otpEntity.Code, otpEntity.CodeSalt))
+            {
+                otpEntity.AttemptCount++;
+                if (otpEntity.AttemptCount >= otpEntity.MaxAttempts)
+                {
+                    otpEntity.InvalidatedAtUtc = _dateTimeProvider.UtcNow;
+                    otpEntity.FailureReason = "AttemptLimitExceeded";
+                }
+                await _unitOfWork.Repository<Otp>().Update(otpEntity);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                return ApiExceptionResponse.BadRequest<string>("OTP is invalid or expired.");
+            }
+
+            var newPhone = otpEntity.DeliveryChannel.Substring("SmsPhoneChange:".Length);
+
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user != null)
+            {
+                user.PhoneNumber = newPhone;
+                await _userManager.UpdateAsync(user);
+            }
+
+            otpEntity.IsVerified = true;
+            otpEntity.ConsumedAtUtc = _dateTimeProvider.UtcNow;
+            await _unitOfWork.Repository<Otp>().Update(otpEntity);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return ApiExceptionResponse.Success("تم تغيير رقم الهاتف بنجاح.");
+        }
+
 		public async Task<bool> LogoutAsync(string userId)
 		{
 			if (string.IsNullOrEmpty(userId)) return false;
@@ -486,7 +596,6 @@ namespace Lawyer.Application.Services
 				return ApiExceptionResponse.BadRequest<ProfileDto>("One or more text fields contain invalid characters.");
 
 			if (dto.FullName != null) user.FullName = PlainTextInputGuard.NormalizePlainText(dto.FullName);
-			if (dto.PhoneNumber != null) user.PhoneNumber = dto.PhoneNumber;
 			if (dto.Email != null) user.Email = dto.Email;
 			
 			if (dto.OfficeName != null && user.Lawyer != null) user.Lawyer.LawFirmName = PlainTextInputGuard.NormalizePlainText(dto.OfficeName);

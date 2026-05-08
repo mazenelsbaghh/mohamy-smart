@@ -3,12 +3,15 @@ import type { TProfile, TLoading } from'../../types/types';
 import thunkGetProfile from'./thunk/thunkGetProfile';
 import thunkUpdateProfile from'./thunk/thunkUpdateProfile';
 import thunkChangePassword from'./thunk/thunkChangePassword';
+import thunkChangePhoneRequest from './thunk/thunkChangePhoneRequest';
+import thunkChangePhoneVerify from './thunk/thunkChangePhoneVerify';
 
 interface SettingsState {
  profile: TProfile | null;
  loading: TLoading;
  updateLoading: TLoading;
  passwordLoading: TLoading;
+ changePhoneLoading: TLoading;
  error: string | null;
  updateError: string | null;
  passwordError: string | null;
@@ -19,6 +22,7 @@ const initialState: SettingsState = {
  loading:'idle',
  updateLoading:'idle',
  passwordLoading:'idle',
+ changePhoneLoading:'idle',
  error: null,
  updateError: null,
  passwordError: null,
@@ -74,6 +78,27 @@ const settingsSlice = createSlice({
  builder.addCase(thunkChangePassword.rejected, (state, action) => {
  state.passwordLoading ='failed';
  state.passwordError = action.payload ??'Error changing password';
+ });
+
+ // Change Phone
+ builder.addCase(thunkChangePhoneRequest.pending, (state) => {
+ state.changePhoneLoading ='pending';
+ });
+ builder.addCase(thunkChangePhoneRequest.fulfilled, (state) => {
+ state.changePhoneLoading ='succeeded';
+ });
+ builder.addCase(thunkChangePhoneRequest.rejected, (state) => {
+ state.changePhoneLoading ='failed';
+ });
+
+ builder.addCase(thunkChangePhoneVerify.pending, (state) => {
+ state.changePhoneLoading ='pending';
+ });
+ builder.addCase(thunkChangePhoneVerify.fulfilled, (state) => {
+ state.changePhoneLoading ='succeeded';
+ });
+ builder.addCase(thunkChangePhoneVerify.rejected, (state) => {
+ state.changePhoneLoading ='failed';
  });
  }
 });

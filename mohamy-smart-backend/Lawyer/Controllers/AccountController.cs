@@ -100,5 +100,19 @@ namespace Lawyer.Controllers
             var result = await _accountService.VerifyAccountOtpAsync(GetUserId(), dto, cancellationToken);
             return CreateResponse(result);
         }
+
+        [HttpPost("request-change-phone")]
+        public async Task<IActionResult> RequestChangePhone([FromBody] ChangePhoneRequestDto dto, CancellationToken cancellationToken)
+        {
+            var result = await _accountService.RequestChangePhoneAsync(GetUserId(), dto, cancellationToken);
+            return CreateResponse(result);
+        }
+
+        [HttpPost("verify-change-phone")]
+        public async Task<IActionResult> VerifyChangePhone([FromBody] ChangePhoneVerifyDto dto, CancellationToken cancellationToken)
+        {
+            var result = await _accountService.VerifyChangePhoneAsync(GetUserId(), dto, cancellationToken);
+            return CreateResponse(result);
+        }
     }
 }

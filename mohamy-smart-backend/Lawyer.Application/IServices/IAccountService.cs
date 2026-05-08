@@ -29,6 +29,8 @@ namespace Lawyer.Application.IServices
 		Task<Result<string>> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, string confirmPassword, string otpCode, CancellationToken cancellationToken);
 		Task<Result<string>> RequestAccountOtpAsync(Guid userId, RequestAccountOtpDto dto, CancellationToken cancellationToken);
 		Task<Result<bool>> VerifyAccountOtpAsync(Guid userId, VerifyAccountOtpDto dto, CancellationToken cancellationToken);
+		Task<Result<string>> RequestChangePhoneAsync(Guid userId, ChangePhoneRequestDto dto, CancellationToken cancellationToken);
+		Task<Result<string>> VerifyChangePhoneAsync(Guid userId, ChangePhoneVerifyDto dto, CancellationToken cancellationToken);
 		Task<bool> LogoutAsync(string userId);
 		Task<bool> LogoutAllDevicesAsync(string userId);
 	}
