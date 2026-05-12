@@ -18,17 +18,29 @@ namespace Lawyer.Application.Services
         private readonly IBackgroundJobClient _hangfire;
         private readonly IAiJobNotificationService _notifications;
         private readonly ICaseAccessValidator _caseAccessValidator;
+        private readonly IAiPointAccountingService _points;
+
+        public AiJobService(
+            IApplicationDbContext db,
+            IBackgroundJobClient hangfire,
+            IAiJobNotificationService notifications,
+            ICaseAccessValidator caseAccessValidator,
+            IAiPointAccountingService points)
+        {
+            _db = db;
+            _hangfire = hangfire;
+            _notifications = notifications;
+            _caseAccessValidator = caseAccessValidator;
+            _points = points;
+        }
 
         public AiJobService(
             IApplicationDbContext db,
             IBackgroundJobClient hangfire,
             IAiJobNotificationService notifications,
             ICaseAccessValidator caseAccessValidator)
+            : this(db, hangfire, notifications, caseAccessValidator, new AiPointAccountingService(db))
         {
-            _db = db;
-            _hangfire = hangfire;
-            _notifications = notifications;
-            _caseAccessValidator = caseAccessValidator;
         }
 
         public async Task<Result<List<AiJobStatusDto>>> GetAllByCaseAsync(Guid caseId, string userId, CancellationToken ct)
@@ -96,20 +108,32 @@ namespace Lawyer.Application.Services
                     }
                 }
 
+                var lawyerId = await GetLawyerIdForCaseAsync(caseId, ct);
+                var repeatValidation = ValidateRepeatIntent(dto);
+                if (!repeatValidation.Succeeded)
+                    return Result<AiJobStatusDto>.Error(repeatValidation.StatusCode, repeatValidation.Message);
+
+                var availability = await _points.ValidateCanStartAsync(lawyerId, dto.StepType, ct);
+                if (!availability.Succeeded)
+                    return Result<AiJobStatusDto>.Error(availability.StatusCode, availability.Message);
+
                 var latestJob = !string.IsNullOrEmpty(dto.RunId) && dto.StepNumber.HasValue
                     ? await GetLatestJobByRunAsync(caseId, dto.RunId, dto.WorkflowType, dto.StepNumber.Value, ct)
                     : await GetLatestJobAsync(caseId, dto.StepType, ct);
-                var job = latestJob is null
+                var shouldCreateNewAttempt = latestJob is null || dto.RepeatIntent.HasValue;
+                var job = shouldCreateNewAttempt
                     ? CreateQueuedJob(caseId, dto.StepType, dto.RunId, dto.WorkflowType, dto.StepNumber)
-                    : ResetForResubmission(latestJob, dto.RunId, dto.WorkflowType, dto.StepNumber);
+                    : ResetForResubmission(latestJob!, dto.RunId, dto.WorkflowType, dto.StepNumber);
 
-                if (latestJob is null)
+                ApplyPointMetadata(job, dto);
+
+                if (shouldCreateNewAttempt)
                     _db.AiJobs.Add(job);
 
                 await _db.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
 
-                await EnqueueJobAsync(job, dto.InputJson, ct);
+                await EnqueueJobAsync(job, dto.InputJson ?? "{}", ct);
                 return Result<AiJobStatusDto>.Success(ToDto(job));
             }
             catch (DbUpdateException ex) when (IsDuplicateActiveJobViolation(ex))
@@ -166,6 +190,8 @@ namespace Lawyer.Application.Services
             job.ErrorMessage = UserCancelledMessage;
             job.CompletedAt = DateTime.UtcNow;
             job.HangfireJobId = null;
+            var lawyerId = await GetLawyerIdForCaseAsync(caseId, ct);
+            await _points.MarkNoChargeAsync(job, lawyerId, AiPointReasonCode.Cancelled, "لم يتم خصم أي نقاط لأن الطلب تم إلغاؤه.", ct);
             await _db.SaveChangesAsync(ct);
             await _notifications.NotifyJobFailedAsync(job);
 
@@ -204,9 +230,13 @@ namespace Lawyer.Application.Services
             if (job.RunId == activeRunId)
                 return Result<bool>.Success(data: false);
 
-            job.Status = AiJobStatus.Completed;
+            job.Status = AiJobStatus.Failed;
+            job.ErrorCode = "StaleIgnored";
+            job.ErrorMessage = "تم تجاهل نتيجة قديمة لأنها لا تخص نسخة سير العمل الحالية.";
             job.CompletedAt = DateTime.UtcNow;
             job.HangfireJobId = null;
+            var lawyerId = await GetLawyerIdForCaseAsync(job.CaseId, ct);
+            await _points.MarkNoChargeAsync(job, lawyerId, AiPointReasonCode.StaleIgnored, "لم يتم خصم أي نقاط لأن نتيجة الطلب أصبحت قديمة.", ct);
             await _db.SaveChangesAsync(ct);
 
             return Result<bool>.Success(data: true);
@@ -249,15 +279,18 @@ namespace Lawyer.Application.Services
                 job.ErrorMessage = "Job auto-cancelled due to stuck processing state (timeout).";
                 job.ErrorCode = "Timeout";
                 job.CompletedAt = DateTime.UtcNow;
+                var lawyerId = await GetLawyerIdForCaseAsync(job.CaseId, ct);
+                await _points.MarkNoChargeAsync(job, lawyerId, AiPointReasonCode.Timeout, "لم يتم خصم أي نقاط لأن الطلب انتهت مهلته قبل اكتماله.", ct);
             }
 
             await _db.SaveChangesAsync(ct);
         }
 
-        private static AiJobStatusDto ToDto(AiJob j) => new(
+        private AiJobStatusDto ToDto(AiJob j) => new(
             j.Id, j.CaseId, j.StepType, j.Status,
             j.ResultJson, j.ErrorMessage, j.CreatedAt, j.CompletedAt,
-            j.RunId, j.WorkflowType, j.StepNumber, j.ErrorCode, null);
+            j.RunId, j.WorkflowType, j.StepNumber, j.ErrorCode, null,
+            _points.BuildChargeMetadata(j));
 
         private async Task<AiJob?> GetActiveJobAsync(Guid caseId, AiStepType stepType, CancellationToken ct)
         {
@@ -322,6 +355,30 @@ namespace Lawyer.Application.Services
             return job;
         }
 
+        private void ApplyPointMetadata(AiJob job, SubmitAiJobDto dto)
+        {
+            job.PointCost = _points.ResolvePointCost(dto.StepType);
+            job.ChargeState = AiChargeState.Pending;
+            job.ChargedPoints = 0;
+            job.ChargeReason = null;
+            job.ChargedAt = null;
+            job.IsRepeatAttempt = dto.RepeatIntent.HasValue;
+            job.RepeatIntent = dto.RepeatIntent;
+            job.ConfirmationAcceptedAt = dto.ConfirmationAcceptedAt;
+        }
+
+        private static Result<bool> ValidateRepeatIntent(SubmitAiJobDto dto)
+        {
+            if (dto.RepeatIntent.HasValue && dto.ConfirmationAcceptedAt == null)
+            {
+                return Result<bool>.Error(
+                    HttpStatusCode.BadRequest,
+                    "يجب تأكيد إعادة المحاولة قبل إرسال طلب جديد يستهلك نقاطًا.");
+            }
+
+            return Result<bool>.Success(result: true);
+        }
+
         private async Task EnqueueJobAsync(AiJob job, string inputJson, CancellationToken ct)
         {
             var hangfireId = _hangfire.Enqueue<AiJobWorker>(
@@ -343,6 +400,19 @@ namespace Lawyer.Application.Services
                 return Result<bool>.Error(HttpStatusCode.Unauthorized, "User not authenticated.");
 
             return await _caseAccessValidator.ValidateAsync(caseId, userId, false, ct);
+        }
+
+        private async Task<Guid> GetLawyerIdForCaseAsync(Guid caseId, CancellationToken ct)
+        {
+            var lawyerId = await _db.Cases
+                .Where(c => c.Id == caseId)
+                .Select(c => c.LawyerId)
+                .FirstOrDefaultAsync(ct);
+
+            if (lawyerId == Guid.Empty)
+                throw new InvalidOperationException("Case not found.");
+
+            return lawyerId;
         }
     }
 }

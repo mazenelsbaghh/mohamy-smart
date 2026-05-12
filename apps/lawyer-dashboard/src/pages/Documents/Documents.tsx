@@ -28,6 +28,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLi
 const MAX_FILE_SIZE_MB = 800;
 const MAX_PDF_PAGES = 1000;
 const MAX_TOTAL_FILES = 90;
+const DOCUMENT_ACCEPT = '.pdf,application/pdf';
+const IMAGE_ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
 
 type TPreparedProcessingFile = {
  file: File;
@@ -62,6 +64,30 @@ const fileToDataUrl = (file: File): Promise<string> => {
  });
 };
 
+const getExtension = (fileName: string) => fileName.split('.').pop()?.toLowerCase() || '';
+
+const isPdfFile = (file: File) =>
+ file.type ==='application/pdf' || getExtension(file.name) ==='pdf';
+
+const isSupportedImageFile = (file: File) => {
+ const extension = getExtension(file.name);
+ return file.type.startsWith('image/') || ['jpg','jpeg','png','webp'].includes(extension);
+};
+
+const normalizeSupportedFile = (file: File): File => {
+ if (isPdfFile(file) && file.type !=='application/pdf') {
+ return new File([file], file.name ||'document.pdf', { type:'application/pdf', lastModified: file.lastModified });
+ }
+
+ if (!file.type && isSupportedImageFile(file)) {
+ const extension = getExtension(file.name);
+ const mimeType = extension ==='jpg' ?'image/jpeg' : `image/${extension}`;
+ return new File([file], file.name, { type: mimeType, lastModified: file.lastModified });
+ }
+
+ return file;
+};
+
 const Documents = () => {
 
  const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
@@ -71,7 +97,8 @@ const Documents = () => {
  const { caseType } = useAppSelector((state) => state.caseType);
  const { loading, ocrResults: persistedResults, manualText } = useAppSelector((state) => state.ocr);
 
- const inputFileRef = useRef<HTMLInputElement | null>(null);
+ const documentInputRef = useRef<HTMLInputElement | null>(null);
+ const imageInputRef = useRef<HTMLInputElement | null>(null);
  const processingToastIdRef = useRef<string | undefined>(undefined);
  const abortControllerRef = useRef<AbortController | null>(null);
  const [results, setResults] = useState<TResult[]>([]);
@@ -95,8 +122,12 @@ const Documents = () => {
  sileo.error({ title:'🛑 تم إلغاء المعالجة' });
  }, []);
 
- const handleClick = () => {
- inputFileRef.current?.click();
+ const handleDocumentClick = () => {
+ documentInputRef.current?.click();
+ };
+
+ const handleImageClick = () => {
+ imageInputRef.current?.click();
  };
  const convertPdfToImages = async (
  pdfFile: File,
@@ -135,7 +166,7 @@ const Documents = () => {
 
  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
- const selectedFiles = e.target.files ? Array.from(e.target.files) : [];
+ const selectedFiles = e.target.files ? Array.from(e.target.files).map(normalizeSupportedFile) : [];
 
  if (selectedFiles.length === 0) return;
 
@@ -153,7 +184,7 @@ const Documents = () => {
  let allFilesToProcess: TPreparedProcessingFile[] = [];
 
  for (const file of selectedFiles) {
- if (file.type ==="application/pdf") {
+ if (isPdfFile(file)) {
  try {
  setProcessingStatus({
  phase:'preparing',
@@ -183,13 +214,13 @@ const Documents = () => {
  } catch {
  sileo.error({ title:"تعذّر قراءة الملف: " + file.name + ". تأكد أن الملف بصيغة PDF صحيحة." });
  }
- } else if (file.type.startsWith("image/")) {
+ } else if (isSupportedImageFile(file)) {
  allFilesToProcess.push({
  file,
  sourceType:'image',
  });
  } else {
- sileo.error({ title:"يدعم النظام الصور وملفات المستندات فقط: JPG, PNG, PDF, DOC, DOCX" });
+ sileo.error({ title:"يدعم النظام الصور وملفات PDF فقط: JPG, PNG, WEBP, PDF" });
  }
  }
 
@@ -394,11 +425,21 @@ const Documents = () => {
 
 	 </div>
  <div className="documents-box mt-4">
- <input type="file"
- ref={inputFileRef}
- accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf"
+ <input
+ type="file"
+ ref={documentInputRef}
+ accept={DOCUMENT_ACCEPT}
  multiple
  onChange={handleFileChange}
+ aria-label="اختيار ملفات PDF"
+ />
+ <input
+ type="file"
+ ref={imageInputRef}
+ accept={IMAGE_ACCEPT}
+ multiple
+ onChange={handleFileChange}
+ aria-label="اختيار صور المستندات"
  />
  <div className="flex items-center gap-5">
  <div className="icon">
@@ -411,15 +452,25 @@ const Documents = () => {
  <p style={{ marginTop:'4px', fontSize:'0.8rem', opacity: 0.7 }}>الصيغ المدعومة: JPG، PNG، WEBP، PDF</p>
  </div>
  </div>
- <div className="btn mt-10 w-full flex justify-center">
+ <div className="btn mt-10 w-full flex flex-col sm:flex-row justify-center gap-3 px-4">
  <CustomButton
  type='button'
- text='اختر الملفات'
+ text='اختر PDF'
  size='lg'
  radius='md'
  color='primary'
  startContent={<FiUpload />}
- onClick={handleClick}
+ onClick={handleDocumentClick}
+ />
+ <CustomButton
+ type='button'
+ text='اختر صورة'
+ size='lg'
+ radius='md'
+ color='primary'
+ variant='bordered'
+ startContent={<FiUpload />}
+ onClick={handleImageClick}
  />
  </div>
  </div>

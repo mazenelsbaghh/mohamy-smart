@@ -25,7 +25,7 @@ const AppealStep2Analysis = ({ nextStep, prevStep , selectedFacts }: TAppealStep
  
  const analysisData = useAppSelector((s) => s.appealBrief.outputs[2]);
 
- const { isLoading, hasFailed, errorMessage, retry } = useAnalysisStep({
+ const { isLoading, hasFailed, errorMessage, retry, charge } = useAnalysisStep({
  parseResult: parseJobResult,
  caseId: caseId as string,
  stepType:'AppealBriefReasoningAnalysis',
@@ -40,6 +40,7 @@ const AppealStep2Analysis = ({ nextStep, prevStep , selectedFacts }: TAppealStep
  hasFailed={hasFailed && !analysisData}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  title={analysisData ? "تحليل الأسباب والعيوب" : undefined}
  sidebar={analysisData ? (
  <>

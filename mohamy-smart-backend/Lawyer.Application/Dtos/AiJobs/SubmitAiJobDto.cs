@@ -7,6 +7,8 @@ namespace Lawyer.Application.Dtos.AiJobs
         string? InputJson,
         string? RunId,
         string? WorkflowType,
-        int? StepNumber
+        int? StepNumber,
+        AiRepeatIntent? RepeatIntent = null,
+        DateTime? ConfirmationAcceptedAt = null
     );
 }

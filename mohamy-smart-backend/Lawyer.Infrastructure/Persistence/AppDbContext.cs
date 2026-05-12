@@ -20,6 +20,7 @@ namespace Lawyer.Infrastructure.Persistence
 		public DbSet<Otp> Otps { get; set; } = null!;
 		public DbSet<AccessToken> AccessTokens { get; set; } = null!;
 		public DbSet<Subscription> Subscriptions { get; set; } = null!;
+		public DbSet<LawyerSubscription> LawyerSubscriptions { get; set; } = null!;
 		public DbSet<CaseType> CaseTypes { get; set; } = null!;
 		public DbSet<Case> Cases { get; set; } = null!;
 		public DbSet<InternalRegulation> InternalRegulations { get; set; } = null!;
@@ -42,6 +43,7 @@ namespace Lawyer.Infrastructure.Persistence
 		public DbSet<EmailDeliveryFailure> EmailDeliveryFailures { get; set; } = null!;
 		public DbSet<AccountEmailEvent> AccountEmailEvents { get; set; } = null!;
 		public DbSet<AiJob> AiJobs { get; set; } = null!;
+		public DbSet<AiPointTransaction> AiPointTransactions { get; set; } = null!;
 		public DbSet<AgendaItem> AgendaItems { get; set; } = null!;
 		public DbSet<ClientFile> ClientFiles { get; set; } = null!;
 		public DbSet<DocumentHandoff> DocumentHandoffs { get; set; } = null!;
@@ -76,6 +78,7 @@ namespace Lawyer.Infrastructure.Persistence
 				entity.Property(e => e.RunId).HasMaxLength(450);
 				entity.Property(e => e.WorkflowType).HasMaxLength(200);
 				entity.Property(e => e.ErrorCode).HasMaxLength(500);
+				entity.Property(e => e.ChargeReason).HasMaxLength(500);
 				entity.HasIndex(e => new { e.RunId, e.StepNumber })
 					  .HasDatabaseName("IX_AiJobs_RunId_StepNumber");
 				entity.HasIndex(e => new { e.CaseId, e.StepType, e.RunId, e.StepNumber })
@@ -89,6 +92,31 @@ namespace Lawyer.Infrastructure.Persistence
 					  .WithMany()
 					  .HasForeignKey(e => e.CaseId)
 					  .OnDelete(DeleteBehavior.Cascade);
+			});
+
+			builder.Entity<AiPointTransaction>(entity =>
+			{
+				entity.HasKey(e => e.Id);
+				entity.Property(e => e.WorkflowType).HasMaxLength(200);
+				entity.Property(e => e.WorkflowRunId).HasMaxLength(450);
+				entity.Property(e => e.MessageAr).HasMaxLength(500);
+				entity.HasIndex(e => e.LawyerId);
+				entity.HasIndex(e => e.CreatedAt);
+				entity.HasIndex(e => new { e.CaseId, e.WorkflowType, e.WorkflowRunId });
+				entity.HasIndex(e => new { e.AiJobId, e.TransactionType })
+					  .IsUnique()
+					  .HasFilter("[AiJobId] IS NOT NULL AND [TransactionType] = 1")
+					  .HasDatabaseName("UX_AiPointTransactions_AiJob_Charge");
+
+				entity.HasOne(e => e.LawyerSubscription)
+					  .WithMany()
+					  .HasForeignKey(e => e.LawyerSubscriptionId)
+					  .OnDelete(DeleteBehavior.Restrict);
+
+				entity.HasOne(e => e.AiJob)
+					  .WithMany()
+					  .HasForeignKey(e => e.AiJobId)
+					  .OnDelete(DeleteBehavior.SetNull);
 			});
 
 			builder.Entity<AgendaItem>()

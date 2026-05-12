@@ -26,7 +26,7 @@ const LawsuitCaseType = ({ caseId, nextStep, selectedFacts }: TLawsuitCaseType) 
   ? JSON.stringify({ caseId, facts: selectedFacts.join('\n\n') })
   : JSON.stringify({ caseId }), [caseId, selectedFacts]);
 
-	 const { isLoading, hasFailed, errorMessage, retry, submit } = useAnalysisStep<TCaseDetails>({
+	 const { isLoading, hasFailed, errorMessage, retry, charge, submit } = useAnalysisStep<TCaseDetails>({
 	 caseId,
 	 stepType:'LawsuitCaseType',
 	 autoSubmit: !hydratedData,
@@ -59,6 +59,7 @@ const LawsuitCaseType = ({ caseId, nextStep, selectedFacts }: TLawsuitCaseType) 
  hasFailed={hasFailed && !data}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  loadingTitle="جاري تحديد نوع الدعوى والاختصاص..."
  loadingSubtitle="يقوم النظام بتحليل وقائع القضية وتكييفها قانونيًا لتحديد نوع الدعوى، المحكمة المختصة، والطبيعة الإجرائية المناسبة."
  title={data ? "تصنيف القضية وتحديد نطاقها القضائي" : undefined}

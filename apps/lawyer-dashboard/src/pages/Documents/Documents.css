@@ -69,7 +69,9 @@ section.documents .documents-box {
 section.documents .documents-box input {
     opacity: 0;
     position: absolute;
-    top: 38%;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
 }
 
 section.documents .documents-box .icon svg {
@@ -89,7 +91,7 @@ section.documents .documents-box .text p {
 }
 
 section.documents .documents-box .btn button {
-    width: 30%;
+    min-width: 180px;
 }
 
 section.documents .document {

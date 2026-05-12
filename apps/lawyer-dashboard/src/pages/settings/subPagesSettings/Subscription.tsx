@@ -10,6 +10,9 @@ import type { TUser } from'../../../types/types';
 import thunkGetLawyerPlan from'../../../redux/subscription/thunk/thunkGetLawyerPlan';
 import { sileo } from"sileo";
 import thunkAddSubscriptionPlan from'../../../redux/subscription/thunk/thunkAddSubscriptionPlan';
+import thunkGetAiPointBalance from'../../../redux/subscription/thunk/thunkGetAiPointBalance';
+import thunkGetAiPointHistory from'../../../redux/subscription/thunk/thunkGetAiPointHistory';
+import { AiPointBalancePill, AiPointHistoryList } from '../../../components/aiPoints';
 
 import { format, parseISO } from'date-fns';
 import { ar } from'date-fns/locale/ar';
@@ -25,7 +28,7 @@ type TSubscription = {
 
 const Subscription = ({ user }: TSubscription) => {
  const dispatch = useAppDispatch();
- const { plans, lawyerPlan, loading, paymentLoading } = useAppSelector((state) => state.subscription);
+ const { plans, lawyerPlan, loading, paymentLoading, aiPointBalance, aiPointHistory } = useAppSelector((state) => state.subscription);
  const [searchParams, setSearchParams] = useSearchParams();
 
  const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,6 +54,8 @@ const Subscription = ({ user }: TSubscription) => {
  }
 
  dispatch(thunkGetSubscriptionPlans());
+ dispatch(thunkGetAiPointBalance());
+ dispatch(thunkGetAiPointHistory());
  dispatch(thunkGetLawyerPlan({ lawyerId: user.profileId }))
  .unwrap()
  .catch((err: string) => sileo.error({ title: err }));
@@ -105,6 +110,7 @@ const Subscription = ({ user }: TSubscription) => {
  <h3 className="text-xl font-bold text-[var(--title-color)]">
  {lawyerPlan.planName}
  </h3>
+ <AiPointBalancePill balance={aiPointBalance} />
  <span className={`text-sm px-3 py-1 rounded-full font-medium ${lawyerPlan.isActive ?'bg-[var(--success-soft)] text-[var(--success-color)]' :'bg-[var(--danger-soft)] text-[var(--danger-color)]'}`}>
  <span className="flex items-center gap-1">{lawyerPlan.isActive ? <><LuCircleCheck size={14} />نشطة</> : <><LuCircleX size={14} />غير نشطة</>}</span>
  </span>
@@ -152,6 +158,9 @@ const Subscription = ({ user }: TSubscription) => {
  </div>
  </div>
  </CustomCard>
+ <div className="mt-4">
+ <AiPointHistoryList items={aiPointHistory} />
+ </div>
  </div>
  )}
 

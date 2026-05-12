@@ -37,6 +37,7 @@ namespace Lawyer.Application.Services
         private readonly IExecRequestService _execRequestService;
         private readonly ICaseOcrService _ocrService;
         private readonly IAiJobService _aiJobService;
+        private readonly IAiPointAccountingService _points;
         private readonly ILogger<AiJobWorker> _logger;
 
 
@@ -61,6 +62,7 @@ namespace Lawyer.Application.Services
             IExecRequestService execRequestService,
             ICaseOcrService ocrService,
             IAiJobService aiJobService,
+            IAiPointAccountingService points,
             ILogger<AiJobWorker> logger)
         {
             _db = db;
@@ -76,7 +78,42 @@ namespace Lawyer.Application.Services
             _execRequestService = execRequestService;
             _ocrService = ocrService;
             _aiJobService = aiJobService;
+            _points = points;
             _logger = logger;
+        }
+
+        public AiJobWorker(
+            IApplicationDbContext db,
+            IFactAnalysisService factAnalysisService,
+            IDefenseService defenseService,
+            ISmartChatService chatService,
+            IPreparingStatementOfClaimsService prepStatements,
+            IAiJobNotificationService notifications,
+            IAppealBriefService appealBriefService,
+            IAdminComplaintService adminComplaintService,
+            ILegalWarningService legalWarningService,
+            IRulingAnalysisService rulingAnalysisService,
+            IExecRequestService execRequestService,
+            ICaseOcrService ocrService,
+            IAiJobService aiJobService,
+            ILogger<AiJobWorker> logger)
+            : this(
+                db,
+                factAnalysisService,
+                defenseService,
+                chatService,
+                prepStatements,
+                notifications,
+                appealBriefService,
+                adminComplaintService,
+                legalWarningService,
+                rulingAnalysisService,
+                execRequestService,
+                ocrService,
+                aiJobService,
+                new AiPointAccountingService(db),
+                logger)
+        {
         }
 
         // Keep a small retry budget for transient provider/network failures.
@@ -106,6 +143,7 @@ namespace Lawyer.Application.Services
                     .Select(c => new { c.Id, c.Lawyer })
                     .FirstOrDefaultAsync(ct);
                 var systemUserId = caseEntity?.Lawyer?.ApplicationUserId.ToString() ?? "";
+                var lawyerId = caseEntity?.Lawyer?.Id ?? Guid.Empty;
 
                 var staleRun = await GetStaleRunDecisionAsync(job, ct);
                 if (staleRun.Ignore)
@@ -140,6 +178,14 @@ namespace Lawyer.Application.Services
                 job.Status = AiJobStatus.Completed;
                 job.ResultJson = resultJson;
                 job.CompletedAt = DateTime.UtcNow;
+                if (lawyerId != Guid.Empty)
+                {
+                    var chargeResult = await _points.ChargeSuccessfulJobAsync(job, lawyerId, ct);
+                    if (!chargeResult.Succeeded)
+                    {
+                        throw new InvalidOperationException(chargeResult.Message ?? "AI point charge could not be finalized.");
+                    }
+                }
                 await _db.SaveChangesAsync(ct);
                 await _notifications.NotifyJobCompletedAsync(job);
 
@@ -433,6 +479,11 @@ namespace Lawyer.Application.Services
             job.Status = AiJobStatus.Failed;
             job.ErrorMessage = errorMessage;
             job.CompletedAt = DateTime.UtcNow;
+            var lawyerId = await GetLawyerGuidForCaseAsync(job.CaseId, ct);
+            if (lawyerId != Guid.Empty)
+            {
+                await _points.MarkNoChargeAsync(job, lawyerId, AiPointReasonCode.Failed, "لم يتم خصم أي نقاط لأن الطلب لم يكتمل بنجاح.", ct);
+            }
             await _db.SaveChangesAsync(ct);
             await _notifications.NotifyJobFailedAsync(job);
         }
@@ -458,6 +509,11 @@ namespace Lawyer.Application.Services
             job.Status = AiJobStatus.Conflict;
             job.ErrorMessage = errorMessage;
             job.CompletedAt = DateTime.UtcNow;
+            var lawyerId = await GetLawyerGuidForCaseAsync(job.CaseId, ct);
+            if (lawyerId != Guid.Empty)
+            {
+                await _points.MarkNoChargeAsync(job, lawyerId, AiPointReasonCode.Conflict, "لم يتم خصم أي نقاط لأن سير العمل تغيّر أثناء تنفيذ الطلب.", ct);
+            }
             await _db.SaveChangesAsync(ct);
             await _notifications.NotifyJobFailedAsync(job);
         }
@@ -575,6 +631,11 @@ namespace Lawyer.Application.Services
             job.ErrorCode = "StaleIgnored";
             job.CompletedAt = DateTime.UtcNow;
             job.HangfireJobId = null;
+            var lawyerId = await GetLawyerGuidForCaseAsync(job.CaseId, ct);
+            if (lawyerId != Guid.Empty)
+            {
+                await _points.MarkNoChargeAsync(job, lawyerId, AiPointReasonCode.StaleIgnored, "لم يتم خصم أي نقاط لأن نتيجة الطلب تخص نسخة قديمة.", ct);
+            }
             await _db.SaveChangesAsync(ct);
         }
 
@@ -583,6 +644,12 @@ namespace Lawyer.Application.Services
             var c = await _db.Cases.FirstOrDefaultAsync(x => x.Id == caseId, ct);
             if (c == null) throw new InvalidOperationException("Case not found");
             return c.LawyerId.ToString();
+        }
+
+        private async Task<Guid> GetLawyerGuidForCaseAsync(Guid caseId, CancellationToken ct)
+        {
+            var c = await _db.Cases.AsNoTracking().FirstOrDefaultAsync(x => x.Id == caseId, ct);
+            return c?.LawyerId ?? Guid.Empty;
         }
     }
 }

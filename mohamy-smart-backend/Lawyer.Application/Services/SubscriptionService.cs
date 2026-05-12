@@ -377,6 +377,8 @@ namespace Lawyer.Application.Services
 
 		public async Task<Result<string>> UseAiRequestAsync(Guid lawyerId, CancellationToken cancellationToken = default)
 		{
+			// Legacy pre-charge path. Chargeable AI job flows must use IAiPointAccountingService
+			// so points are deducted only after a usable AI result is produced.
 			var subscription = await _unitOfWork.Repository<LawyerSubscription>()
 					.FirstOrDefaultAsync(x => x.LawyerId == lawyerId && x.IsActive, cancellationToken, x => x.Subscription);
 

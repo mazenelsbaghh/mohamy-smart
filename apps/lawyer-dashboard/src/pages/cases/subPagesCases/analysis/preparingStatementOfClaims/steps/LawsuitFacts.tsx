@@ -41,7 +41,7 @@ const LawsuitFacts = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLawsu
  [caseId, selectedFacts, caseType?.caseMainType, caseType?.caseSubType, caseType?.courtType],
  );
 
- const { isLoading, hasFailed, errorMessage, submit, retry } = useAnalysisStep({
+ const { isLoading, hasFailed, errorMessage, submit, retry, charge } = useAnalysisStep({
  caseId,
  stepType:'LawsuitFacts',
  autoSubmit: !mergedFactsNarrative,
@@ -73,6 +73,7 @@ const LawsuitFacts = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLawsu
  hasFailed={hasFailed && !lawsuitFact && !mergedFactsNarrative}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  loadingTitle="جاري إعداد الوقائع بصياغة قانونية..."
  loadingSubtitle="يعيد النظام ترتيب التسلسل الواقعي وصياغته في صورة وقائع مترابطة تصلح للإدراج المباشر داخل صحيفة الدعوى."
  title="سرد الوقائع بصياغة مرتبة"

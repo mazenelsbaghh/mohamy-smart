@@ -37,7 +37,7 @@ const FinalRequirements = ({ caseId, nextStep }: TFinalRequirementsProps) => {
  isLoading,
  hasFailed,
  errorMessage,
- retry,
+ retry, charge,
  } = useAnalysisStep<TFinalRequirementsWrapper>({
  caseId,
  stepType:'FinalRequirements',
@@ -108,6 +108,7 @@ const FinalRequirements = ({ caseId, nextStep }: TFinalRequirementsProps) => {
  hasFailed={hasFailed && !isNavigating}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  loadingTitle="جاري التفنيط واستخراج الطلبات..."
  loadingSubtitle="يقوم المحرك الذكي في هذه المرحلة باستخراج كافة الطلبات بناءً على الدفوع والوقائع المعتمدة."
  steps={DEFENSE_MEMO_STEPS}

@@ -117,8 +117,34 @@ public class AiJobServiceTests
         // Arrange
         await using var db = new AppDbContext(_dbOptions);
         var caseId = Guid.NewGuid();
+        var lawyerId = Guid.NewGuid();
         var stepType = AiStepType.LegalWarningClassification;
         var originalCreatedAt = DateTime.UtcNow.AddHours(-2);
+
+        db.Subscriptions.Add(new Subscription
+        {
+            Id = 1,
+            Name = "Test",
+            AiRequestsLimit = 10,
+            DurationDays = 30
+        });
+        db.LawyerSubscriptions.Add(new LawyerSubscription
+        {
+            Id = Guid.NewGuid(),
+            LawyerId = lawyerId,
+            SubscriptionId = 1,
+            StartDate = DateTime.UtcNow.AddDays(-1),
+            EndDate = DateTime.UtcNow.AddDays(30),
+            UsedAiRequests = 0
+        });
+        db.Cases.Add(new Case
+        {
+            Id = caseId,
+            LawyerId = lawyerId,
+            Title = "Test Case",
+            Number = "123",
+            Court = "Test Court"
+        });
 
         var completedJob = new AiJob
         {
@@ -170,18 +196,35 @@ public class AiJobServiceTests
     {
         await using var db = new AppDbContext(_dbOptions);
         var caseId = Guid.NewGuid();
+        var lawyerId = Guid.NewGuid();
         var oldRunId = "run-old";
         var newRunId = "run-new";
 
         var oldCase = new Case
         {
             Id = caseId,
-            LawyerId = Guid.NewGuid(),
+            LawyerId = lawyerId,
             Title = "Test Case",
             Number = "123",
             Court = "Test Court"
         };
         db.Cases.Add(oldCase);
+        db.Subscriptions.Add(new Subscription
+        {
+            Id = 1,
+            Name = "Test",
+            AiRequestsLimit = 10,
+            DurationDays = 30
+        });
+        db.LawyerSubscriptions.Add(new LawyerSubscription
+        {
+            Id = Guid.NewGuid(),
+            LawyerId = lawyerId,
+            SubscriptionId = 1,
+            StartDate = DateTime.UtcNow.AddDays(-1),
+            EndDate = DateTime.UtcNow.AddDays(30),
+            UsedAiRequests = 0
+        });
 
         var staleJob = new AiJob
         {
@@ -222,7 +265,9 @@ public class AiJobServiceTests
         result.Data.Should().BeTrue();
 
         var persistedStale = await db.AiJobs.FindAsync(staleJob.Id);
-        persistedStale!.Status.Should().Be(AiJobStatus.Completed);
+        persistedStale!.Status.Should().Be(AiJobStatus.Failed);
+        persistedStale.ErrorCode.Should().Be("StaleIgnored");
+        persistedStale.ChargeState.Should().Be(AiChargeState.NoCharge);
         persistedStale.HangfireJobId.Should().BeNull();
 
         var persistedNew = await db.AiJobs.FindAsync(newJob.Id);

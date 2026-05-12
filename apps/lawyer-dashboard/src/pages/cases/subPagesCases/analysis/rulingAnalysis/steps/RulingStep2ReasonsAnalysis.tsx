@@ -27,7 +27,7 @@ const RulingStep2ReasonsAnalysis = ({ nextStep, selectedFacts }: TRulingStep2Pro
  const verdictAnalysis = useAppSelector((s) => s.rulingAnalysis.outputs[1]);
  const reasonsAnalysis = useAppSelector((s) => s.rulingAnalysis.outputs[2]);
 
- const { isLoading, hasFailed, errorMessage, retry } = useAnalysisStep<TReasonsAnalysis>({
+ const { isLoading, hasFailed, errorMessage, retry, charge } = useAnalysisStep<TReasonsAnalysis>({
  parseResult: parseWorkflowJobResult,
  caseId: caseId as string,
  stepType:'RulingAnalysisReasoning',
@@ -42,6 +42,7 @@ const RulingStep2ReasonsAnalysis = ({ nextStep, selectedFacts }: TRulingStep2Pro
  hasFailed={hasFailed && !reasonsAnalysis}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  title={reasonsAnalysis ? "تحليل أسباب الحكم والأسانيد" : undefined}
  sidebar={reasonsAnalysis ? (
  <>

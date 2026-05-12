@@ -26,6 +26,7 @@ export const UnifiedStepShell: React.FC<UnifiedStepShellProps> = ({
   loadingSubtitle,
   steps,
   currentStepIndex,
+  charge,
   title,
   actions,
   sidebar,
@@ -41,6 +42,7 @@ export const UnifiedStepShell: React.FC<UnifiedStepShellProps> = ({
       loadingSubtitle={loadingSubtitle}
       steps={steps}
       currentStepIndex={currentStepIndex}
+      charge={charge}
     >
       {title && sidebar ? (
         <AnalysisStageLayout title={title} actions={actions} sidebar={sidebar}>

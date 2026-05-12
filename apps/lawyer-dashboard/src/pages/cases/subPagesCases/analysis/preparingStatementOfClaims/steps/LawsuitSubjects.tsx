@@ -30,7 +30,7 @@ const LawsuitSubjects = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLa
   courtType: caseType?.courtType,
   }), [caseId, selectedFacts, caseType?.caseMainType, caseType?.caseSubType, caseType?.courtType]);
 
- const { isLoading, hasFailed, errorMessage, retry, submit } = useAnalysisStep<TLawsuitSubjects>({
+ const { isLoading, hasFailed, errorMessage, retry, charge, submit } = useAnalysisStep<TLawsuitSubjects>({
  caseId,
  stepType:'LawsuitSubjects',
  autoSubmit: !hydratedData,
@@ -61,6 +61,7 @@ const LawsuitSubjects = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLa
  hasFailed={hasFailed && !data}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  loadingTitle="جاري صياغة موضوع الدعوى ووقائعها..."
  loadingSubtitle="يقوم النظام بصياغة السرد الواقعي المعتمد للصحيفة باعتباره موضوع الدعوى ووقائعها في قسم واحد."
  title={data ? "موضوع الدعوى ووقائعها" : undefined}

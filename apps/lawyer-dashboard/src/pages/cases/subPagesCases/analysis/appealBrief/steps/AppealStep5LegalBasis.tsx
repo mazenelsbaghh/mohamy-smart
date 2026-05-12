@@ -24,7 +24,7 @@ const AppealStep5LegalBasis = ({ nextStep, prevStep , selectedFacts }: TAppealSt
  
  const legalBasisData = useAppSelector((s) => s.appealBrief.outputs[5]);
 
- const { isLoading, hasFailed, errorMessage, retry } = useAnalysisStep({
+ const { isLoading, hasFailed, errorMessage, retry, charge } = useAnalysisStep({
  parseResult: parseJobResult,
  caseId: caseId as string,
  stepType:'AppealBriefLegalBasis',
@@ -39,6 +39,7 @@ const AppealStep5LegalBasis = ({ nextStep, prevStep , selectedFacts }: TAppealSt
  hasFailed={hasFailed && !legalBasisData}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  title={legalBasisData ? "السند القانوني" : undefined}
  sidebar={legalBasisData ? (
  <>

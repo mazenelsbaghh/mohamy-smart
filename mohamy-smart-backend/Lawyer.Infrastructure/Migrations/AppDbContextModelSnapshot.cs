@@ -313,7 +313,23 @@ namespace Lawyer.Infrastructure.Migrations
                     b.Property<Guid>("CaseId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("ChargeReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("ChargeState")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ChargedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ChargedPoints")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ConfirmationAcceptedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("CreatedAt")
@@ -328,6 +344,15 @@ namespace Lawyer.Infrastructure.Migrations
 
                     b.Property<string>("HangfireJobId")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsRepeatAttempt")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PointCost")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RepeatIntent")
+                        .HasColumnType("int");
 
                     b.Property<string>("ResultJson")
                         .HasColumnType("nvarchar(max)");
@@ -366,6 +391,76 @@ namespace Lawyer.Infrastructure.Migrations
                         .HasFilter("[Status] IN (0, 1)");
 
                     b.ToTable("AiJobs");
+                });
+
+            modelBuilder.Entity("Lawyer.Core.Models.AiPointTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AiJobId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("BalanceAfter")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BalanceBefore")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("CaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("LawyerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("LawyerSubscriptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("MessageAr")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReasonCode")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StepType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TransactionType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("WorkflowRunId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("WorkflowType")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("LawyerId");
+
+                    b.HasIndex("LawyerSubscriptionId");
+
+                    b.HasIndex("AiJobId", "TransactionType")
+                        .IsUnique()
+                        .HasDatabaseName("UX_AiPointTransactions_AiJob_Charge")
+                        .HasFilter("[AiJobId] IS NOT NULL AND [TransactionType] = 1");
+
+                    b.HasIndex("CaseId", "WorkflowType", "WorkflowRunId");
+
+                    b.ToTable("AiPointTransactions");
                 });
 
             modelBuilder.Entity("Lawyer.Core.Models.AiStageModelConfig", b =>
@@ -2558,7 +2653,7 @@ namespace Lawyer.Infrastructure.Migrations
 
                     b.HasIndex("SubscriptionId");
 
-                    b.ToTable("LawyerSubscription");
+                    b.ToTable("LawyerSubscriptions");
                 });
 
             modelBuilder.Entity("Lawyer.Core.Models.LawyerTask", b =>
@@ -3674,6 +3769,24 @@ namespace Lawyer.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Case");
+                });
+
+            modelBuilder.Entity("Lawyer.Core.Models.AiPointTransaction", b =>
+                {
+                    b.HasOne("Lawyer.Core.Models.AiJob", "AiJob")
+                        .WithMany()
+                        .HasForeignKey("AiJobId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Lawyer.Core.Models.LawyerSubscription", "LawyerSubscription")
+                        .WithMany()
+                        .HasForeignKey("LawyerSubscriptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AiJob");
+
+                    b.Navigation("LawyerSubscription");
                 });
 
             modelBuilder.Entity("Lawyer.Core.Models.AppealWorkflow", b =>

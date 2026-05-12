@@ -19,12 +19,14 @@ namespace Lawyer.Controllers
 	public class SubscriptionController : AppControllerBase
 	{
 		private readonly ISubscriptionService _subscriptionService;
+		private readonly IAiPointAccountingService _aiPointAccountingService;
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IValidator<UpdateSubscriptionDto> _updateSubscriptionDtoValidator;
 
-		public SubscriptionController(ISubscriptionService subscriptionService, IUnitOfWork unitOfWork, IValidator<UpdateSubscriptionDto> updateSubscriptionDtoValidator)
+		public SubscriptionController(ISubscriptionService subscriptionService, IAiPointAccountingService aiPointAccountingService, IUnitOfWork unitOfWork, IValidator<UpdateSubscriptionDto> updateSubscriptionDtoValidator)
 		{
 			_subscriptionService = subscriptionService;
+			_aiPointAccountingService = aiPointAccountingService;
 			_unitOfWork = unitOfWork;
 			_updateSubscriptionDtoValidator = updateSubscriptionDtoValidator;
 		}
@@ -93,6 +95,36 @@ namespace Lawyer.Controllers
 			}
 
 			var result = await _subscriptionService.GetLawyerPlanAsync(resolvedLawyerId, cancellationToken);
+			return CreateResponse(result);
+		}
+
+		[Authorize]
+		[HttpGet("ai-points/balance")]
+		public async Task<IActionResult> GetAiPointBalance(CancellationToken cancellationToken)
+		{
+			var lawyerResult = await ResolveCurrentLawyerIdAsync(cancellationToken);
+			if (!lawyerResult.Succeeded)
+				return CreateResponse(Result<string>.Error(lawyerResult.StatusCode, lawyerResult.Message));
+
+			var result = await _aiPointAccountingService.GetCurrentBalanceAsync(lawyerResult.Data, cancellationToken);
+			return CreateResponse(result);
+		}
+
+		[Authorize]
+		[HttpGet("ai-points/history")]
+		public async Task<IActionResult> GetAiPointHistory(
+			[FromQuery] DateTime? from,
+			[FromQuery] DateTime? to,
+			[FromQuery] Guid? caseId,
+			[FromQuery] string? workflowType,
+			[FromQuery] Lawyer.Core.Enum.AiPointTransactionType? transactionType,
+			CancellationToken cancellationToken)
+		{
+			var lawyerResult = await ResolveCurrentLawyerIdAsync(cancellationToken);
+			if (!lawyerResult.Succeeded)
+				return CreateResponse(Result<string>.Error(lawyerResult.StatusCode, lawyerResult.Message));
+
+			var result = await _aiPointAccountingService.GetHistoryAsync(lawyerResult.Data, from, to, caseId, workflowType, transactionType, cancellationToken);
 			return CreateResponse(result);
 		}
 
@@ -167,6 +199,21 @@ namespace Lawyer.Controllers
 		{
 			var result = await _subscriptionService.GetLandingPlansAsync(cancellationToken);
 			return CreateResponse(result);
+		}
+
+		private async Task<Result<Guid>> ResolveCurrentLawyerIdAsync(CancellationToken cancellationToken)
+		{
+			var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			if (string.IsNullOrEmpty(userId))
+				return Result<Guid>.Error(System.Net.HttpStatusCode.Unauthorized, "User not authenticated.");
+
+			var lawyer = await _unitOfWork.Repository<Core.Models.Lawyer>()
+				.FirstOrDefaultAsync(l => l.ApplicationUserId == Guid.Parse(userId), cancellationToken);
+
+			if (lawyer == null)
+				return Result<Guid>.Error(System.Net.HttpStatusCode.BadRequest, "Lawyer profile not found.");
+
+			return Result<Guid>.Success(lawyer.Id);
 		}
     }
 }

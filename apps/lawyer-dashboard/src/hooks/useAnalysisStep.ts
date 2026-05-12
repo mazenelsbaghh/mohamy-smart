@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from'react';
 import { useAppDispatch, useAppSelector } from'./reduxHooks';
 import type { AiStepType } from'../redux/aiJobs/aiJobsSlice';
+import type { AiChargeMetadata } from'../redux/aiJobs/aiPointTypes';
 import thunkSubmitAiJob from'../redux/aiJobs/thunk/thunkSubmitAiJob';
 import {  parseWorkflowJobResult  } from"@mohamy/shared-utils";
 
@@ -21,6 +22,8 @@ export type UseAnalysisStepReturn<T = unknown> = {
  result: T | null;
  submit: (input?: string) => void;
  retry: () => void;
+ charge: AiChargeMetadata | null;
+ pointCost: number | null;
 };
 
 export function useAnalysisStep<T = unknown>({
@@ -83,9 +86,30 @@ export function useAnalysisStep<T = unknown>({
  }
  }, [caseId, stepType, inputJson, dispatch]);
 
- const retry = useCallback(() => {
- submit();
- }, [submit]);
+ const retry = useCallback(async () => {
+ const confirmed = window.confirm(
+ 'إعادة المحاولة ستنشئ طلب ذكاء اصطناعي جديد.\nسيتم خصم نقطة واحدة من رصيدك إذا اكتملت النتيجة بنجاح.\nلن يتم خصم أي نقاط إذا فشلت المحاولة.'
+ );
+ if (!confirmed) return;
+
+ if (!caseId) return;
+ setIsSubmitting(true);
+ setLocalError(null);
+
+ try {
+ await dispatch(thunkSubmitAiJob({
+ caseId,
+ stepType,
+ inputJson: inputJson ||"{}",
+ repeatIntent:'RetryAfterFailure',
+ confirmationAcceptedAt: new Date().toISOString(),
+ })).unwrap();
+ } catch (error: unknown) {
+ setLocalError(typeof error ==='string' ? error :'فشل إرسال الطلب');
+ } finally {
+ setIsSubmitting(false);
+ }
+ }, [caseId, stepType, inputJson, dispatch]);
 
  // 6. Auto-submit logic
  const hasAttemptedAutoSubmit = useRef(false);
@@ -105,5 +129,7 @@ export function useAnalysisStep<T = unknown>({
  result: parsedResult,
  submit,
  retry,
+ charge: job?.charge ?? null,
+ pointCost: job?.charge?.pointCost ?? null,
  };
 }

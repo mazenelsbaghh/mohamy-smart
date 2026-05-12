@@ -111,6 +111,11 @@ export interface AiUsageSummary {
  totalRequests: number;
  aiRequests: number;
  ocrRequests: number;
+ chargedPointTransactions: number;
+ noChargePointTransactions: number;
+ restoredPointTransactions: number;
+ chargedPoints: number;
+ restoredPoints: number;
  totalInputTokens: number;
  totalOutputTokens: number;
  perModel: ModelUsage[];

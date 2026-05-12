@@ -21,9 +21,9 @@ import { useWorkflowAutoSave } from'../../../../../../hooks/useWorkflowAutoSave'
 import { hydrateStep, smartAnalysisThunks } from'../../../../../../redux/analysis/smartAnalysisSlice';
 import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHooks';
 import thunkSubmitAiJob from'../../../../../../redux/aiJobs/thunk/thunkSubmitAiJob';
-import { upsertJob } from'../../../../../../redux/aiJobs/aiJobsSlice';
+import type { AiRepeatIntent } from '../../../../../../redux/aiJobs/aiPointTypes';
 import { DEFENSE_MEMO_STEPS } from '../../../../../../components/analysisWorkflow/workflowConstants';
-import ConfirmDialog from'../../../../../../components/common/ConfirmDialog';
+import { AiPointConfirmDialog } from '../../../../../../components/aiPoints';
 import MemoConfirmModal from'./MemoConfirmModal';
 
 type TDefense = {
@@ -347,6 +347,7 @@ const FinalNote = ({ caseId, isActiveTab }: { caseId?: string; isActiveTab?: boo
  const loadingState = useAppSelector((state) => state.smartAnalysis.loadingState);
  const singleCase = useAppSelector((state) => state.cases.singleCase);
  const aiJob = useAppSelector((state) => state.aiJobs.jobs['DefenseMemoDraft']);
+ const aiPointBalance = useAppSelector((state) => state.subscription.aiPointBalance);
 
  const factAnalysis = smartOutputs[1];
  const defenses = smartOutputs[2];
@@ -371,12 +372,14 @@ const FinalNote = ({ caseId, isActiveTab }: { caseId?: string; isActiveTab?: boo
  const [generationError, setGenerationError] = useState<string | null>(null);
  const [snapshots, setSnapshots] = useState<DefenseMemoSnapshot[]>([]);
  const [isRegenConfirmOpen, setIsRegenConfirmOpen] = useState(false);
+ const [repeatIntent, setRepeatIntent] = useState<AiRepeatIntent>('RegenerateAfterSuccess');
  const [isMemoConfirmOpen, setIsMemoConfirmOpen] = useState(false);
  const hasAutoSubmitted = useRef(false);
  const lastSnapshotContentRef = useRef('');
 
  const isGenerating = aiJob?.status ==='Queued' || aiJob?.status ==='Processing';
  const hasContent = !!memoHtml;
+ const memoPointCost = aiJob?.charge?.pointCost ?? 1;
 
  const hasApprovedDefenses = useMemo(() => {
  if (!defenses || !explanationsCache) return false;
@@ -512,6 +515,13 @@ const FinalNote = ({ caseId, isActiveTab }: { caseId?: string; isActiveTab?: boo
 
  const handleRegenerateAiMemo = useCallback(() => {
  if (!caseId) return;
+ setRepeatIntent('RegenerateAfterSuccess');
+ setIsRegenConfirmOpen(true);
+ }, [caseId]);
+
+ const handleRetryAiMemo = useCallback(() => {
+ if (!caseId) return;
+ setRepeatIntent('RetryAfterFailure');
  setIsRegenConfirmOpen(true);
  }, [caseId]);
 
@@ -519,23 +529,15 @@ const FinalNote = ({ caseId, isActiveTab }: { caseId?: string; isActiveTab?: boo
  if (!caseId) return;
  setIsRegenConfirmOpen(false);
  setGenerationError(null);
- dispatch(upsertJob({
- id:'',
- caseId,
- stepType:'DefenseMemoDraft',
- status:'Queued',
- resultJson: null,
- errorMessage: null,
- createdAt: new Date().toISOString(),
- completedAt: null,
- }));
  const inputJson = buildAiInputJson();
  dispatch(thunkSubmitAiJob({
  caseId,
  stepType:'DefenseMemoDraft',
  inputJson,
+ repeatIntent,
+ confirmationAcceptedAt: new Date().toISOString(),
  }));
- }, [dispatch, caseId, buildAiInputJson]);
+ }, [dispatch, caseId, buildAiInputJson, repeatIntent]);
 
   // Reset the auto-submit flag when user navigates away from this tab
   // so the modal re-opens when they return
@@ -705,7 +707,7 @@ const handleInput = () => {
  <p className="font-bold mb-1">حدث خطأ أثناء الإنشاء</p>
  <p>{generationError}</p>
  <button
- onClick={() => handleGenerateAiMemo()}
+ onClick={handleRetryAiMemo}
  className="mt-2 px-3 py-1.5 bg-[var(--danger-soft)] dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 rounded text-sm font-medium transition-colors"
  >
  إعادة المحاولة
@@ -798,15 +800,14 @@ const handleInput = () => {
  )}
  </div>
  )}
- <ConfirmDialog
+ <AiPointConfirmDialog
  isOpen={isRegenConfirmOpen}
- onClose={() => setIsRegenConfirmOpen(false)}
+ onCancel={() => setIsRegenConfirmOpen(false)}
  onConfirm={performRegenerateAiMemo}
- title="إعادة توليد المذكرة"
- description="سيتم استبدال المحتوى الحالي بمذكرة جديدة من الذكاء الاصطناعي. هل تريد المتابعة؟"
- confirmText="إعادة التوليد"
- cancelText="الاحتفاظ بالحالي"
- danger
+ repeatIntent={repeatIntent}
+ pointCost={memoPointCost}
+ balance={aiPointBalance}
+ isSubmitting={isGenerating}
  />
  <MemoConfirmModal
  isOpen={isMemoConfirmOpen}

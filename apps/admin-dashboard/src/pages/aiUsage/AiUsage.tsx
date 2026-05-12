@@ -9,7 +9,7 @@ import StatsCard from"../../components/public/statsCards/StatsCard";
 import SubTitle from"../../components/public/subTitle/SubTitle";
 
 import { Spinner } from"@heroui/react";
-import { FaDollarSign, FaRobot, FaFileAlt, FaChartBar } from"react-icons/fa";
+import { FaDollarSign, FaRobot, FaFileAlt, FaChartBar, FaCoins } from"react-icons/fa";
 import { setDateRange } from"../../redux/aiUsage/aiUsageSlice";
 import { Input } from"@heroui/react";
 
@@ -164,6 +164,22 @@ const AiUsage = () => {
  iconColor="#F59E0B"
  text="إجمالي الطلبات"
  number={summary?.totalRequests ?? 0}
+ />
+ </div>
+ <div className="stats-grid-item">
+ <StatsCard
+ icon={<FaCoins />}
+ iconColor="#8B5CF6"
+ text="النقاط المخصومة"
+ number={summary?.chargedPoints ?? 0}
+ />
+ </div>
+ <div className="stats-grid-item">
+ <StatsCard
+ icon={<FaCoins />}
+ iconColor="#06B6D4"
+ text="محاولات بدون خصم"
+ number={summary?.noChargePointTransactions ?? 0}
  />
  </div>
  </div>

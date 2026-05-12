@@ -19,5 +19,13 @@ namespace Lawyer.Core.Models
         public string? WorkflowType { get; set; }
         public int? StepNumber { get; set; }
         public string? ErrorCode { get; set; }
+        public int PointCost { get; set; } = 1;
+        public AiChargeState ChargeState { get; set; } = AiChargeState.Pending;
+        public int ChargedPoints { get; set; }
+        public string? ChargeReason { get; set; }
+        public DateTime? ChargedAt { get; set; }
+        public bool IsRepeatAttempt { get; set; }
+        public AiRepeatIntent? RepeatIntent { get; set; }
+        public DateTime? ConfirmationAcceptedAt { get; set; }
     }
 }

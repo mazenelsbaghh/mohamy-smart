@@ -26,7 +26,7 @@ const RulingStep3DefectsEvaluation = ({ nextStep, selectedFacts }: TRulingStep3P
  const reasonsAnalysis = useAppSelector((s) => s.rulingAnalysis.outputs[2]);
  const defectsEvaluation = useAppSelector((s) => s.rulingAnalysis.outputs[3]);
 
- const { isLoading, hasFailed, errorMessage, retry } = useAnalysisStep<TDefectsEvaluation>({
+ const { isLoading, hasFailed, errorMessage, retry, charge } = useAnalysisStep<TDefectsEvaluation>({
  parseResult: parseWorkflowJobResult,
  caseId: caseId as string,
  stepType:'RulingAnalysisDefectEvaluation',
@@ -47,6 +47,7 @@ const RulingStep3DefectsEvaluation = ({ nextStep, selectedFacts }: TRulingStep3P
  hasFailed={hasFailed && !defectsEvaluation}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  title={defectsEvaluation ? "تحليل عيوب ومثالب الحكم" : undefined}
  sidebar={defectsEvaluation ? (
  <>

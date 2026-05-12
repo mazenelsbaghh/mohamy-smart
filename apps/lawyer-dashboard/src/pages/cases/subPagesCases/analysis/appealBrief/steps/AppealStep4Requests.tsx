@@ -25,7 +25,7 @@ const AppealStep4Requests = ({ nextStep, prevStep , selectedFacts }: TAppealStep
  
  const requestsData = useAppSelector((s) => s.appealBrief.outputs[4]);
 
- const { isLoading, hasFailed, errorMessage, retry } = useAnalysisStep({
+ const { isLoading, hasFailed, errorMessage, retry, charge } = useAnalysisStep({
  parseResult: parseJobResult,
  caseId: caseId as string,
  stepType:'AppealBriefRequests',
@@ -40,6 +40,7 @@ const AppealStep4Requests = ({ nextStep, prevStep , selectedFacts }: TAppealStep
  hasFailed={hasFailed && !requestsData}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  title={requestsData ? "الطلبات" : undefined}
  sidebar={requestsData ? (
  <>

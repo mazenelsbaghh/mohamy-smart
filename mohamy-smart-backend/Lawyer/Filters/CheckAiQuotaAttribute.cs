@@ -47,14 +47,16 @@ namespace Lawyer.Filters
 				return;
 			}
 
-			var result = await _subscriptionService.UseAiRequestAsync(lawyer.Id, context.HttpContext.RequestAborted);
-
-			if (!result.Succeeded)
+			var available = await _subscriptionService.CheckAiRequestAvailability(lawyer.Id, context.HttpContext.RequestAborted);
+			if (!available)
 			{
-				context.Result = new ObjectResult(result) { StatusCode = (int)result.StatusCode };
+				context.Result = new ObjectResult(
+					Result<string>.Error(System.Net.HttpStatusCode.PaymentRequired, "رصيد النقاط غير كافٍ لتشغيل هذا الطلب."))
+				{ StatusCode = StatusCodes.Status402PaymentRequired };
 				return;
 			}
 
+			// Consumption is finalized after a usable AI result is produced by IAiPointAccountingService.
 			await next();
 		}
 	}

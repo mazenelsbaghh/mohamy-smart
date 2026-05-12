@@ -76,6 +76,24 @@ namespace Lawyer.Application.Services
                     .OrderByDescending(m => m.TotalCostUsd)
                     .ToList();
 
+                var pointQuery = _unitOfWork.Repository<AiPointTransaction>()
+                    .AsQueryable()
+                    .AsNoTracking();
+
+                if (from.HasValue)
+                    pointQuery = pointQuery.Where(t => t.CreatedAt >= from.Value);
+                if (to.HasValue)
+                    pointQuery = pointQuery.Where(t => t.CreatedAt <= to.Value);
+
+                var pointGroups = await pointQuery
+                    .GroupBy(t => t.TransactionType)
+                    .Select(g => new { Type = g.Key, Count = g.Count(), Points = g.Sum(t => t.Points) })
+                    .ToListAsync(ct);
+
+                var chargePoints = pointGroups.FirstOrDefault(g => g.Type == AiPointTransactionType.Charge);
+                var noChargePoints = pointGroups.FirstOrDefault(g => g.Type == AiPointTransactionType.NoCharge);
+                var restoredPoints = pointGroups.FirstOrDefault(g => g.Type == AiPointTransactionType.Restore);
+
                 var dto = new AiUsageSummaryDto
                 {
                     TotalCostUsd = providerGroups.Sum(g => g.Cost),
@@ -84,6 +102,11 @@ namespace Lawyer.Application.Services
                     TotalRequests = providerGroups.Sum(g => g.Count),
                     AiRequests = aiGroup?.Count ?? 0,
                     OcrRequests = ocrGroup?.Count ?? 0,
+                    ChargedPointTransactions = chargePoints?.Count ?? 0,
+                    NoChargePointTransactions = noChargePoints?.Count ?? 0,
+                    RestoredPointTransactions = restoredPoints?.Count ?? 0,
+                    ChargedPoints = chargePoints?.Points ?? 0,
+                    RestoredPoints = restoredPoints?.Points ?? 0,
                     TotalInputTokens = aiGroup?.Input ?? 0,
                     TotalOutputTokens = aiGroup?.Output ?? 0,
                     PerModel = perModel

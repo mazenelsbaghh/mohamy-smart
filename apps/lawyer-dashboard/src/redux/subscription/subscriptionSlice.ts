@@ -7,6 +7,9 @@ import thunkGetLawyerPlan from"./thunk/thunkGetLawyerPlan";
 import thunkGetPaymentStatus from"./thunk/thunkGetPaymentStatus";
 import type { TPaymentStatusResponse } from"./thunk/thunkGetPaymentStatus";
 import thunkGetPaymentHistory from"./thunk/thunkGetPaymentHistory";
+import thunkGetAiPointBalance from"./thunk/thunkGetAiPointBalance";
+import thunkGetAiPointHistory from"./thunk/thunkGetAiPointHistory";
+import type { AiPointBalance, AiPointTransaction } from"../aiJobs/aiPointTypes";
 
 type TSubscriptionPlan = {
   id: number;
@@ -41,6 +44,8 @@ type TInitialState = {
  activePaymentId: string | null;
  paymentStatus: TPaymentStatusResponse | null;
  paymentHistory: TPaymentAttempt[];
+ aiPointBalance: AiPointBalance | null;
+ aiPointHistory: AiPointTransaction[];
  paymentLoading: TLoading;
 }
 
@@ -53,6 +58,8 @@ const initialState: TInitialState = {
  activePaymentId: null,
  paymentStatus: null,
  paymentHistory: [],
+ aiPointBalance: null,
+ aiPointHistory: [],
  paymentLoading:'idle',
 }
 
@@ -138,6 +145,32 @@ const subscriptionSlice = createSlice({
  state.paymentHistory = action.payload;
  })
  .addCase(thunkGetPaymentHistory.rejected, (state) => {
+ state.loading ='failed';
+ })
+
+ // get AI point balance
+ .addCase(thunkGetAiPointBalance.pending, (state) => {
+ state.loading ='pending';
+ state.error = null;
+ })
+ .addCase(thunkGetAiPointBalance.fulfilled, (state, action) => {
+ state.loading ='succeeded';
+ state.aiPointBalance = action.payload;
+ })
+ .addCase(thunkGetAiPointBalance.rejected, (state, action) => {
+ state.loading ='failed';
+ if (isString(action.payload)) state.error = action.payload;
+ })
+
+ // get AI point history
+ .addCase(thunkGetAiPointHistory.pending, (state) => {
+ state.loading ='pending';
+ })
+ .addCase(thunkGetAiPointHistory.fulfilled, (state, action) => {
+ state.loading ='succeeded';
+ state.aiPointHistory = action.payload;
+ })
+ .addCase(thunkGetAiPointHistory.rejected, (state) => {
  state.loading ='failed';
  });
  },

@@ -26,7 +26,7 @@ const RulingStep1VerdictAnalysis = ({ nextStep, selectedFacts }: TRulingStep1Pro
  // Legacy mapping or Redux
  const verdictAnalysis = useAppSelector((s) => s.rulingAnalysis.outputs[1]);
 
- const { isLoading, hasFailed, errorMessage, retry } = useAnalysisStep<TVerdictAnalysis>({
+ const { isLoading, hasFailed, errorMessage, retry, charge: pointCharge } = useAnalysisStep<TVerdictAnalysis>({
  parseResult: parseWorkflowJobResult,
  caseId: caseId as string,
  stepType:'RulingAnalysisOperative',
@@ -41,6 +41,7 @@ const RulingStep1VerdictAnalysis = ({ nextStep, selectedFacts }: TRulingStep1Pro
  hasFailed={hasFailed && !verdictAnalysis}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={pointCharge}
  title={verdictAnalysis ? "تحليل منطوق الحكم" : undefined}
  sidebar={verdictAnalysis ? (
  <>

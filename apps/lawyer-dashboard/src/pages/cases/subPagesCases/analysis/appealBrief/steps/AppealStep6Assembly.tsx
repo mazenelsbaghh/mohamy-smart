@@ -31,7 +31,7 @@ const AppealStep6Assembly = ({ prevStep , selectedFacts }: TAppealStep6Props) =>
  ? new Date(lastSavedAt).toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' })
  : null;
 
- const { isLoading, hasFailed, errorMessage, retry } = useAnalysisStep({
+ const { isLoading, hasFailed, errorMessage, retry, charge } = useAnalysisStep({
  parseResult: parseJobResult,
  caseId: caseId as string,
  stepType:'AppealBriefAssembly',
@@ -79,6 +79,7 @@ const AppealStep6Assembly = ({ prevStep , selectedFacts }: TAppealStep6Props) =>
  hasFailed={hasFailed && !finalAssemblyData}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  title={finalAssemblyData ? "المسودة النهائية لصحيفة الطعن" : undefined}
  sidebar={finalAssemblyData ? (
  <>

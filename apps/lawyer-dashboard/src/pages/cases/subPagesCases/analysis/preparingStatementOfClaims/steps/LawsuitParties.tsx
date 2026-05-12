@@ -33,7 +33,7 @@ const LawsuitParties = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLaw
  [caseId, selectedFacts, caseType?.caseMainType, caseType?.caseSubType, caseType?.courtType],
  );
 
-	 const { isLoading, hasFailed, errorMessage, submit, retry } = useAnalysisStep<TLawsuitParties>({
+	 const { isLoading, hasFailed, errorMessage, submit, retry, charge } = useAnalysisStep<TLawsuitParties>({
 	 caseId,
 	 stepType:'LawsuitParties',
 	 autoSubmit: !lawsuitParties,
@@ -57,6 +57,7 @@ const LawsuitParties = ({ caseId, nextStep, caseType, selectedFacts = [] }: TLaw
  hasFailed={hasFailed && !lawsuitParties}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  loadingTitle="جاري إعداد أطراف الدعوى..."
  loadingSubtitle="يقوم المحرك الذكي بتجميع الخصوم، تدقيق صفاتهم القانونية، وربط بياناتهم الأساسية بصياغة الصحيفة."
  title={lawsuitParties ? "مراجعة الخصوم وصفاتهم القانونية" : undefined}

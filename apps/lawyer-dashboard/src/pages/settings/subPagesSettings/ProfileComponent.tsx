@@ -123,7 +123,7 @@ const ProfileComponent = ({ profile }: TProfileComponent) => {
                       errorMessage={errors.phoneNumber?.message}
                       isReadOnly
                       endContent={
-                        <Button size="sm" variant="flat" color="primary" onPress={() => setIsChangePhoneOpen(true)}>
+                        <Button type="button" size="sm" variant="flat" color="primary" onPress={() => setIsChangePhoneOpen(true)}>
                           تعديل
                         </Button>
                       }

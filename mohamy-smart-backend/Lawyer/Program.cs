@@ -18,6 +18,7 @@ using Polly;
 using Polly.Extensions.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
 using QuestPDF.Drawing;
 using QuestPDF.Infrastructure;
 using Scalar.AspNetCore;
@@ -387,8 +388,6 @@ using (var scope = app.Services.CreateScope())
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<RequestTimingMiddleware>();
 app.UseCustomExceptionHandling();
-
-using Microsoft.AspNetCore.HttpOverrides;
 
 // Security headers — applied to every response, even on short-circuits
 app.Use(async (ctx, next) =>

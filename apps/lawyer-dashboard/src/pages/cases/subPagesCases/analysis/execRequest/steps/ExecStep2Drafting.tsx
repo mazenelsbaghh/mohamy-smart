@@ -29,7 +29,7 @@ const ExecStep2Drafting = ({ nextStep, selectedFacts }: TExecStep2Props) => {
  const drafting = useAppSelector((s) => s.execRequest.outputs[2]);
 
 
- const { isLoading, hasFailed, errorMessage, retry } = useAnalysisStep({
+ const { isLoading, hasFailed, errorMessage, retry, charge } = useAnalysisStep({
  parseResult: parseJobResult,
  caseId: caseId as string,
  stepType:'ExecRequestDrafting',
@@ -71,6 +71,7 @@ const ExecStep2Drafting = ({ nextStep, selectedFacts }: TExecStep2Props) => {
  hasFailed={hasFailed && !drafting}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  title={drafting ? "مسودة موضوع الطلب التنفيذي" : undefined}
  sidebar={drafting ? (
  <>

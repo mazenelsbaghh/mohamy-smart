@@ -4,6 +4,7 @@ import { isString } from"@mohamy/shared-utils";
 import thunkGetAllAiJobs from"./thunk/thunkGetAllAiJobs";
 import thunkCancelAiJob from"./thunk/thunkCancelAiJob";
 import thunkSubmitAiJob from"./thunk/thunkSubmitAiJob";
+import type { AiChargeMetadata } from './aiPointTypes';
 
 export type AiJobStatus ='Queued' |'Processing' |'Completed' |'Failed' |'Conflict';
 
@@ -41,6 +42,7 @@ export type AiJob = {
   stepNumber?: number | null;
   errorCode?: string | null;
   conflictMessage?: string | null;
+  charge?: AiChargeMetadata | null;
 };
 
 type TAiJobsState = {

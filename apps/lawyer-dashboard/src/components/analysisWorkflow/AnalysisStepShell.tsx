@@ -2,6 +2,8 @@ import React from'react';
 import { Button, Card, CardBody } from'@heroui/react';
 import { IoAlertCircleOutline, IoReload } from'react-icons/io5';
 import SmartAnalysisLoader from'../skeleton/SmartAnalysisLoader';
+import { AiPointChargeStatus, AiPointCostBadge } from '../aiPoints';
+import type { AiChargeMetadata } from '../../redux/aiJobs/aiPointTypes';
 
 export type AnalysisStepShellProps = {
  isLoading: boolean;
@@ -13,6 +15,7 @@ export type AnalysisStepShellProps = {
  steps?: string[];
  currentStepIndex?: number;
  children: React.ReactNode;
+ charge?: AiChargeMetadata | null;
 };
 
 export const AnalysisStepShell: React.FC<AnalysisStepShellProps> = ({
@@ -25,6 +28,7 @@ export const AnalysisStepShell: React.FC<AnalysisStepShellProps> = ({
  steps,
  currentStepIndex,
  children,
+ charge,
 }) => {
  if (isLoading) {
  return (
@@ -48,6 +52,9 @@ export const AnalysisStepShell: React.FC<AnalysisStepShellProps> = ({
  <p className="text-[var(--danger-color)] opacity-80 font-tajawal mb-6 max-w-md">
  {errorMessage ||'تعذّر على الذكاء الاصطناعي معالجة البيانات. أعد المحاولة أو تحقق من صحة الوقائع.'}
  </p>
+ <div className="mb-5">
+ <AiPointChargeStatus charge={charge} />
+ </div>
  
  {onRetry && (
  <Button 
@@ -66,5 +73,12 @@ export const AnalysisStepShell: React.FC<AnalysisStepShellProps> = ({
  );
  }
 
- return <>{children}</>;
+ return (
+ <>
+ <div className="mb-3">
+ <AiPointCostBadge charge={charge} />
+ </div>
+ {children}
+ </>
+ );
 };

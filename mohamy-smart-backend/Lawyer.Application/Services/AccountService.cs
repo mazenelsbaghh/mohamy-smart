@@ -466,6 +466,9 @@ namespace Lawyer.Application.Services
             if (!sent)
             {
                 entity.FailureReason = "SmsDeliveryFailed";
+                await _unitOfWork.Repository<Otp>().Update(entity);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                return ApiExceptionResponse.BadRequest<string>("تعذر إرسال رمز التحقق. يرجى التحقق من الرقم والمحاولة مرة أخرى.");
             }
 
             await _unitOfWork.Repository<Otp>().Update(entity);

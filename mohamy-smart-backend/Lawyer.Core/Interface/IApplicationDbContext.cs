@@ -13,6 +13,8 @@ namespace Lawyer.Application.Common.Interface
 	{
 		DbSet<ApplicationUser> Users { get; }
 		DbSet<AiJob> AiJobs { get; }
+		DbSet<AiPointTransaction> AiPointTransactions { get; }
+		DbSet<LawyerSubscription> LawyerSubscriptions { get; }
 		DbSet<AiStageModelConfig> AiStageModelConfigs { get; }
 		DbSet<AgendaItem> AgendaItems { get; }
 		DbSet<Case> Cases { get; }

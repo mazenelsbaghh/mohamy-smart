@@ -87,7 +87,7 @@ const LawsuitLegalBasis = ({ caseId, nextStep, caseType, selectedFacts = [] }: L
 	 hasFailed,
 	 errorMessage,
 	 result,
-	 retry,
+	 retry, charge,
 	 } = useAnalysisStep<TLawsuitLegalBasis>({
 	 caseId,
 	 stepType:'LawsuitLegalBasis',
@@ -111,6 +111,7 @@ const LawsuitLegalBasis = ({ caseId, nextStep, caseType, selectedFacts = [] }: L
 	 hasFailed={hasFailed && !data}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  loadingTitle="جاري تأسيس الأساس القانوني للدعوى..."
  loadingSubtitle="يقوم المحرك الذكي باستخراج النصوص القانونية وأحكام النقض ذات الصلة وربطها مباشرة بوقائع الدعوى."
  title="الأساس القانوني"

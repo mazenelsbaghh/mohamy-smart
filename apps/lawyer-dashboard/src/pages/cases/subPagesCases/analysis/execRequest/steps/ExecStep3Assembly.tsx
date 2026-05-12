@@ -29,7 +29,7 @@ const ExecStep3Assembly = ({ selectedFacts }: TExecStep3Props) => {
  
  const [copied, setCopied] = useState(false);
 
- const { isLoading, hasFailed, errorMessage, retry } = useAnalysisStep({
+ const { isLoading, hasFailed, errorMessage, retry, charge } = useAnalysisStep({
  parseResult: parseJobResult,
  caseId: caseId as string,
  stepType:'ExecRequestAssembly',
@@ -61,6 +61,7 @@ const ExecStep3Assembly = ({ selectedFacts }: TExecStep3Props) => {
  hasFailed={hasFailed && !finalAssembly}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  title={finalAssembly ? "المسودة النهائية للطلب التنفيذي" : undefined}
  sidebar={finalAssembly ? (
  <>

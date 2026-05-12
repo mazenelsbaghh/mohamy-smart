@@ -24,7 +24,7 @@ const AppealStep1JudgmentData = ({ nextStep, selectedFacts }: TAppealStep1Props)
 
  const judgmentData = useAppSelector((s) => s.appealBrief.outputs[1]);
 
- const { isLoading, hasFailed, errorMessage, retry } = useAnalysisStep({
+ const { isLoading, hasFailed, errorMessage, retry, charge } = useAnalysisStep({
  parseResult: parseJobResult,
  caseId: caseId as string,
  stepType:'AppealBriefJudgmentData',
@@ -39,6 +39,7 @@ const AppealStep1JudgmentData = ({ nextStep, selectedFacts }: TAppealStep1Props)
  hasFailed={hasFailed && !judgmentData}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  title={judgmentData ? "بيانات الحكم المطعون فيه" : undefined}
  sidebar={judgmentData ? (
  <>

@@ -26,7 +26,7 @@ const RulingStep4AppealViability = ({ selectedFacts }: TRulingStep4Props) => {
  const defectsEvaluation = useAppSelector((s) => s.rulingAnalysis.outputs[3]);
  const appealViability = useAppSelector((s) => s.rulingAnalysis.outputs[4]);
 
- const { isLoading, hasFailed, errorMessage, retry } = useAnalysisStep<TAppealViability>({
+ const { isLoading, hasFailed, errorMessage, retry, charge } = useAnalysisStep<TAppealViability>({
  parseResult: parseWorkflowJobResult,
  caseId: caseId as string,
  stepType:'RulingAnalysisFeasibilityReport',
@@ -43,6 +43,7 @@ const RulingStep4AppealViability = ({ selectedFacts }: TRulingStep4Props) => {
  hasFailed={hasFailed && !appealViability}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  title={appealViability ? "خلاصة وجدوى الطعن" : undefined}
  sidebar={appealViability ? (
  <AnalysisStageSidebarCard

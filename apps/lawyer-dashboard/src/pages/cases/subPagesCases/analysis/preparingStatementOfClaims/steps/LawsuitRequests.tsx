@@ -81,7 +81,7 @@ const LawsuitRequests = ({ caseId, nextStep, caseType, selectedFacts = [] }: Law
 	 errorMessage,
 	 result,
 	 submit,
-	 retry,
+	 retry, charge,
 	 } = useAnalysisStep<TLawsuitRequests>({
 	 caseId,
 	 stepType:'LawsuitRequests',
@@ -107,6 +107,7 @@ const LawsuitRequests = ({ caseId, nextStep, caseType, selectedFacts = [] }: Law
 	 hasFailed={hasFailed && !lawsuitRequests}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  loadingTitle="جاري تنسيق الطلبات الختامية..."
  loadingSubtitle="يقوم النظام الاستدلالي ببناء الطلبات الأصلية والاحتياطية والإجرائية اعتمادًا على الوقائع والأساس القانوني المعتمد."
  title="تنسيق الطلبات الختامية للدعوى"

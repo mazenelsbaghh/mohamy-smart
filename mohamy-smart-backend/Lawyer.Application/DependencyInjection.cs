@@ -61,6 +61,7 @@ namespace Lawyer.Application
 
 			services.AddScoped<IAiJobService, AiJobService>();
 			services.AddScoped<IAiJobWorker, AiJobWorker>();
+			services.AddScoped<IAiPointAccountingService, AiPointAccountingService>();
 
 			services.AddScoped<IAiModelConfigService, AiModelConfigService>();
             services.AddScoped<ICaseAccessValidator, CaseAccessValidator>();

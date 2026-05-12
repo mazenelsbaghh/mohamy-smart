@@ -45,6 +45,19 @@ namespace Lawyer.Services
             runId = job.RunId,
             workflowType = job.WorkflowType,
             stepNumber = job.StepNumber,
+            errorCode = job.ErrorCode,
+            charge = new
+            {
+                pointCost = job.PointCost,
+                chargeState = job.ChargeState.ToString(),
+                chargedPoints = job.ChargedPoints,
+                chargeReason = job.ChargeReason,
+                chargedAt = job.ChargedAt,
+                isRepeatAttempt = job.IsRepeatAttempt,
+                repeatKind = job.RepeatIntent?.ToString(),
+                requiresConfirmation = job.IsRepeatAttempt && job.ConfirmationAcceptedAt == null,
+                balance = (object?)null
+            }
         };
     }
 }

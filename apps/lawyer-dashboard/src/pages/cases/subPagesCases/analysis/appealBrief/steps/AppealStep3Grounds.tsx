@@ -25,7 +25,7 @@ const AppealStep3Grounds = ({ nextStep, prevStep , selectedFacts }: TAppealStep3
  
  const groundsData = useAppSelector((s) => s.appealBrief.outputs[3]);
 
- const { isLoading, hasFailed, errorMessage, retry } = useAnalysisStep({
+ const { isLoading, hasFailed, errorMessage, retry, charge } = useAnalysisStep({
  parseResult: parseJobResult,
  caseId: caseId as string,
  stepType:'AppealBriefGrounds',
@@ -40,6 +40,7 @@ const AppealStep3Grounds = ({ nextStep, prevStep , selectedFacts }: TAppealStep3
  hasFailed={hasFailed && !groundsData}
  errorMessage={errorMessage}
  onRetry={retry}
+ charge={charge}
  title={groundsData ? "أوجه الطعن" : undefined}
  sidebar={groundsData ? (
  <>

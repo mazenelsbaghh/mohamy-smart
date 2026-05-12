@@ -1,4 +1,5 @@
 using Lawyer.Core.Enum;
+using Lawyer.Application.Dtos.AiPoints;
 
 namespace Lawyer.Application.Dtos.AiJobs
 {
@@ -15,6 +16,7 @@ namespace Lawyer.Application.Dtos.AiJobs
         string? WorkflowType,
         int? StepNumber,
         string? ErrorCode,
-        string? ConflictMessage
+        string? ConflictMessage,
+        AiChargeMetadataDto? Charge
     );
 }
