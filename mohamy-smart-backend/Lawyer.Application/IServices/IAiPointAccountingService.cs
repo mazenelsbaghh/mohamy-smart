@@ -10,6 +10,7 @@ namespace Lawyer.Application.IServices
         int ResolvePointCost(AiStepType stepType);
         Task<Result<AiPointBalanceDto>> GetCurrentBalanceAsync(Guid lawyerId, CancellationToken ct);
         Task<Result<AiPointBalanceDto>> ValidateCanStartAsync(Guid lawyerId, AiStepType stepType, CancellationToken ct);
+        Task<Result<AiPointBalanceDto>> ChargeSuccessfulDirectActionAsync(Guid lawyerId, AiStepType stepType, int pointCost, Guid? caseId, string? workflowType, string? workflowRunId, string messageAr, CancellationToken ct);
         Task<Result<AiChargeMetadataDto>> ChargeSuccessfulJobAsync(AiJob job, Guid lawyerId, CancellationToken ct);
         Task<Result<AiChargeMetadataDto>> MarkNoChargeAsync(AiJob job, Guid lawyerId, AiPointReasonCode reasonCode, string messageAr, CancellationToken ct);
         Task<Result<AiChargeMetadataDto>> RestoreHoldAsync(AiJob job, Guid lawyerId, AiPointReasonCode reasonCode, string messageAr, CancellationToken ct);

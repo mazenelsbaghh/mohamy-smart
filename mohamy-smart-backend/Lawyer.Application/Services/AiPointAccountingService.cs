@@ -5,6 +5,8 @@ using Lawyer.Core.Enum;
 using Lawyer.Core.Exceptions;
 using Lawyer.Core.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Net;
 
 namespace Lawyer.Application.Services
@@ -12,10 +14,12 @@ namespace Lawyer.Application.Services
     public class AiPointAccountingService : IAiPointAccountingService
     {
         private readonly IApplicationDbContext _db;
+        private readonly ILogger<AiPointAccountingService> _logger;
 
-        public AiPointAccountingService(IApplicationDbContext db)
+        public AiPointAccountingService(IApplicationDbContext db, ILogger<AiPointAccountingService>? logger = null)
         {
             _db = db;
+            _logger = logger ?? NullLogger<AiPointAccountingService>.Instance;
         }
 
         public int ResolvePointCost(AiStepType stepType)
@@ -66,6 +70,72 @@ namespace Lawyer.Application.Services
             }
 
             return balanceResult;
+        }
+
+        public async Task<Result<AiPointBalanceDto>> ChargeSuccessfulDirectActionAsync(
+            Guid lawyerId,
+            AiStepType stepType,
+            int pointCost,
+            Guid? caseId,
+            string? workflowType,
+            string? workflowRunId,
+            string messageAr,
+            CancellationToken ct)
+        {
+            var subscription = await GetActiveSubscriptionAsync(lawyerId, ct);
+            if (subscription == null)
+            {
+                return Result<AiPointBalanceDto>.Error(
+                    HttpStatusCode.BadRequest,
+                    "لا يوجد اشتراك نشط لاستخدام ميزات الذكاء الاصطناعي.");
+            }
+
+            if (subscription.EndDate < DateTime.UtcNow)
+            {
+                subscription.IsActive = false;
+                await _db.SaveChangesAsync(ct);
+                return Result<AiPointBalanceDto>.Error(
+                    HttpStatusCode.BadRequest,
+                    "انتهى الاشتراك الحالي. يرجى تجديد الاشتراك لاستخدام ميزات الذكاء الاصطناعي.");
+            }
+
+            if (pointCost <= 0)
+            {
+                return Result<AiPointBalanceDto>.Success(ToBalance(subscription));
+            }
+
+            var limit = subscription.Subscription.AiRequestsLimit ?? 0;
+            if (subscription.UsedAiRequests + pointCost > limit)
+            {
+                return Result<AiPointBalanceDto>.Error(
+                    HttpStatusCode.PaymentRequired,
+                    "رصيد النقاط غير كافٍ لتشغيل هذا الطلب.");
+            }
+
+            var before = subscription.UsedAiRequests;
+            subscription.UsedAiRequests += pointCost;
+
+            _db.AiPointTransactions.Add(new AiPointTransaction
+            {
+                LawyerId = lawyerId,
+                LawyerSubscriptionId = subscription.Id,
+                AiJobId = null,
+                CaseId = caseId,
+                WorkflowType = workflowType,
+                WorkflowRunId = workflowRunId,
+                StepType = stepType,
+                TransactionType = AiPointTransactionType.Charge,
+                Points = pointCost,
+                BalanceBefore = before,
+                BalanceAfter = subscription.UsedAiRequests,
+                ReasonCode = AiPointReasonCode.Success,
+                MessageAr = messageAr
+            });
+
+            await _db.SaveChangesAsync(ct);
+            LogPointDeduction(lawyerId, subscription.Id, null, caseId, workflowType, workflowRunId, stepType, pointCost, before, subscription.UsedAiRequests, messageAr);
+
+            return Result<AiPointBalanceDto>.Success(ToBalance(subscription));
         }
 
         public async Task<Result<AiChargeMetadataDto>> ChargeSuccessfulJobAsync(AiJob job, Guid lawyerId, CancellationToken ct)
@@ -143,6 +213,7 @@ namespace Lawyer.Application.Services
             });
 
             await _db.SaveChangesAsync(ct);
+            LogPointDeduction(lawyerId, subscription.Id, job.Id, job.CaseId, job.WorkflowType, job.RunId, job.StepType, job.PointCost, before, subscription.UsedAiRequests, job.ChargeReason);
             return Result<AiChargeMetadataDto>.Success(BuildChargeMetadata(job, ToBalance(subscription)));
         }
 
@@ -294,5 +365,33 @@ namespace Lawyer.Application.Services
 
         private static string FormatPoints(int points) =>
             points == 1 ? "نقطة واحدة" : $"{points} نقاط";
+
+        private void LogPointDeduction(
+            Guid lawyerId,
+            Guid subscriptionId,
+            Guid? aiJobId,
+            Guid? caseId,
+            string? workflowType,
+            string? workflowRunId,
+            AiStepType stepType,
+            int points,
+            int balanceBefore,
+            int balanceAfter,
+            string messageAr)
+        {
+            _logger.LogInformation(
+                "AI point deducted. LawyerId={LawyerId} SubscriptionId={SubscriptionId} AiJobId={AiJobId} CaseId={CaseId} WorkflowType={WorkflowType} WorkflowRunId={WorkflowRunId} StepType={StepType} Points={Points} BalanceBefore={BalanceBefore} BalanceAfter={BalanceAfter} Message={Message}",
+                lawyerId,
+                subscriptionId,
+                aiJobId,
+                caseId,
+                workflowType,
+                workflowRunId,
+                stepType,
+                points,
+                balanceBefore,
+                balanceAfter,
+                messageAr);
+        }
     }
 }

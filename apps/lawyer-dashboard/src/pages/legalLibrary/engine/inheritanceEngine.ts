@@ -597,12 +597,15 @@ function calculateFaraidBase(estate: EstateInput, heirs: HeirInput[]): Inheritan
  const remainingFraction = 1 - totalFixedFraction;
 
  const raddEligible = allShares.filter(s => RADD_ELIGIBLE.includes(s.heirType));
- if (raddEligible.length > 0 && remainingFraction > 0) {
- const totalRaddShares = raddEligible.reduce((sum, s) => sum + s.percentage, 0);
+ const effectiveRaddEligible = raddEligible.length > 0
+ ? raddEligible
+ : allShares.filter(s => s.heirType ==='HUSBAND' || s.heirType ==='WIFE');
+ if (effectiveRaddEligible.length > 0 && remainingFraction > 0) {
+ const totalRaddShares = effectiveRaddEligible.reduce((sum, s) => sum + s.percentage, 0);
  if (totalRaddShares > 0) {
  const remainingAmount = remainingFraction * distributable;
  for (const share of allShares) {
- if (RADD_ELIGIBLE.includes(share.heirType)) {
+ if (effectiveRaddEligible.includes(share)) {
  const proportion = share.percentage / totalRaddShares;
  const raddAmount = remainingAmount * proportion;
  share.totalAmount = Math.round((share.totalAmount + raddAmount) * 100) / 100;

@@ -1,4 +1,5 @@
 using Hangfire;
+using Lawyer.Application.Dtos.AiPoints;
 using Lawyer.Application.Dtos.Case;
 using Lawyer.Application.Common;
 using System.Linq;
@@ -15,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using PDFtoImage;
 using SkiaSharp;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -35,8 +37,10 @@ namespace Lawyer.Application.Services
         private readonly string? _googleVisionApiKey;
         private readonly bool _enableTesseractFallback;
         private readonly IAiUsageTrackingService _trackingService;
+        private readonly IAiPointAccountingService _pointAccounting;
         private readonly PromptTemplateCache _promptCache;
         private readonly IVirusScannerService? _virusScanner;
+        private const int GenerateCasePointCost = 1;
 
         // Upload constraints (defense in depth alongside controller-level checks)
         private const int MaxFileCount = 200;
@@ -58,6 +62,7 @@ namespace Lawyer.Application.Services
 			IConfiguration config,
 			IUnitOfWork unitOfWork,
 			IAiUsageTrackingService trackingService,
+			IAiPointAccountingService pointAccounting,
 			PromptTemplateCache promptCache,
 			IVirusScannerService? virusScanner = null)
 		{
@@ -65,6 +70,7 @@ namespace Lawyer.Application.Services
 			_aiProviderFactory = aiProviderFactory;
 			_httpClientFactory = httpClientFactory;
 			_trackingService = trackingService;
+			_pointAccounting = pointAccounting;
 			_virusScanner = virusScanner;
 
 			 _contentRootPath = config.GetValue<string>(WebHostDefaults.ContentRootKey)
@@ -365,6 +371,25 @@ namespace Lawyer.Application.Services
 		// 2️⃣ Send revised text + prompt to configured AI provider to generate case JSON
 		public async Task<Result<CaseExtractionResultDto>> GenerateCaseFromTextAsync(string revisedText, List<AvailableCaseTypeDto> availableCaseTypes, string? userId, CancellationToken cancellationToken)
 		{
+			var chargeLawyerId = await ResolveLawyerProfileIdAsync(userId, cancellationToken);
+			if (!chargeLawyerId.HasValue)
+			{
+				_logger.LogWarning("OCR generate-case rejected because lawyer profile could not be resolved. UserId={UserId}", RedactForLog(userId ?? string.Empty));
+				return ApiExceptionResponse.Unauthorized<CaseExtractionResultDto>("تعذر تحديد حساب المحامي لاستخدام الذكاء الاصطناعي.");
+			}
+
+			var balanceResult = await _pointAccounting.GetCurrentBalanceAsync(chargeLawyerId.Value, cancellationToken);
+			if (!balanceResult.Succeeded || balanceResult.Data == null)
+			{
+				return Result<CaseExtractionResultDto>.Error(balanceResult.StatusCode, balanceResult.Message);
+			}
+
+			if (balanceResult.Data.Available < GenerateCasePointCost)
+			{
+				return Result<CaseExtractionResultDto>.Error(
+					HttpStatusCode.PaymentRequired,
+					"رصيد النقاط غير كافٍ لتحليل المستند وإنشاء قضية جديدة.");
+			}
 
 			// 📁 قراءة prompt من ملف الجذر
 			var promptFilePath = Path.Combine(_contentRootPath, "wwwroot", "prompts", "OCR", "ocr-extraction.txt");
@@ -406,20 +431,16 @@ namespace Lawyer.Application.Services
 
 			string aiResponse = AnalysisHelpers.TryExtractJsonPayload(aiResult.Data.Content);
 
-			if (Guid.TryParse(userId, out var lawyerId) && lawyerId != Guid.Empty)
+			if (chargeLawyerId.Value != Guid.Empty)
 			{
 				try
 				{
-						BackgroundJob.Enqueue<IAiUsageTrackingService>(s => s.RecordGeminiUsageAsync(lawyerId, null, AiStepType.Ocr, ocrModel, aiResult.Data.Usage, CancellationToken.None, null, null, null));
+						BackgroundJob.Enqueue<IAiUsageTrackingService>(s => s.RecordGeminiUsageAsync(chargeLawyerId.Value, null, AiStepType.Ocr, ocrModel, aiResult.Data.Usage, CancellationToken.None, null, null, null));
 				}
 				catch
 				{
-					await _trackingService.RecordGeminiUsageAsync(lawyerId, null, AiStepType.Ocr, ocrModel, aiResult.Data.Usage, CancellationToken.None);
+					await _trackingService.RecordGeminiUsageAsync(chargeLawyerId.Value, null, AiStepType.Ocr, ocrModel, aiResult.Data.Usage, CancellationToken.None);
 				}
-			}
-			else
-			{
-				_logger.LogWarning("Skipping OCR AI usage tracking because user id is missing or invalid.");
 			}
 
 			try
@@ -436,6 +457,13 @@ namespace Lawyer.Application.Services
 						Types = typeNames ?? new List<string>(),
 						Type = typeNames?.FirstOrDefault() ?? string.Empty,
 					};
+
+					var fallbackChargeResult = await ChargeGenerateCasePointAsync(chargeLawyerId.Value, cancellationToken);
+					if (!fallbackChargeResult.Succeeded)
+					{
+						return Result<CaseExtractionResultDto>.Error(fallbackChargeResult.StatusCode, fallbackChargeResult.Message);
+					}
+
 					return ApiExceptionResponse.Success(fallbackDto, "Case data generated successfully (partial — types only)");
 				}
 
@@ -445,6 +473,12 @@ namespace Lawyer.Application.Services
 
 				_logger.LogInformation("Case JSON generated successfully");
 
+				var caseChargeResult = await ChargeGenerateCasePointAsync(chargeLawyerId.Value, cancellationToken);
+				if (!caseChargeResult.Succeeded)
+				{
+					return Result<CaseExtractionResultDto>.Error(caseChargeResult.StatusCode, caseChargeResult.Message);
+				}
+
 				return ApiExceptionResponse.Success(caseData, "Case data generated successfully");
 			}
 			catch (JsonException ex)
@@ -452,6 +486,30 @@ namespace Lawyer.Application.Services
 				_logger.LogError(ex, "Failed to deserialize Gemini response. {RedactedPayload}", RedactForLog(aiResponse));
 				return ApiExceptionResponse.ServerError<CaseExtractionResultDto>("عذراً، فشل تحليل البيانات المستخرجة من الذكاء الاصطناعي بسبب استجابة غير مكتملة أو غير صالحة. يرجى المحاولة مرة أخرى.");
 			}
+		}
+
+		private async Task<Guid?> ResolveLawyerProfileIdAsync(string? userId, CancellationToken cancellationToken)
+		{
+			if (!Guid.TryParse(userId, out var parsedId) || parsedId == Guid.Empty)
+				return null;
+
+			var lawyer = await _unitOfWork.Repository<Core.Models.Lawyer>()
+				.FirstOrDefaultAsync(x => x.Id == parsedId || x.ApplicationUserId == parsedId, cancellationToken);
+
+			return lawyer?.Id;
+		}
+
+		private Task<Result<AiPointBalanceDto>> ChargeGenerateCasePointAsync(Guid lawyerId, CancellationToken cancellationToken)
+		{
+			return _pointAccounting.ChargeSuccessfulDirectActionAsync(
+				lawyerId,
+				AiStepType.Ocr,
+				GenerateCasePointCost,
+				null,
+				"ocr-generate-case",
+				null,
+				"تم خصم نقطة واحدة بعد تحليل المستند وإنشاء بيانات القضية بنجاح.",
+				cancellationToken);
 		}
 
 
