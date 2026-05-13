@@ -88,6 +88,7 @@ const InheritanceCalculator = () => {
  const getShareTypeLabel = (type: string): string => {
  switch (type) {
  case'fard': return'فرض';
+ case'fard_radd': return'فرض + رد';
  case"ta'sib": return'تعصيب';
  case'radd': return'رد';
  case'wasiyya_wajiba': return'وصية واجبة';
@@ -98,6 +99,7 @@ const InheritanceCalculator = () => {
  const getShareTypeBadgeClass = (type: string): string => {
  switch (type) {
  case'fard': return'share-type-fard';
+ case'fard_radd': return'share-type-radd';
  case"ta'sib": return'share-type-tasib';
  case'radd': return'share-type-radd';
  case'wasiyya_wajiba': return'share-type-wasiyya';

@@ -611,7 +611,7 @@ function calculateFaraidBase(estate: EstateInput, heirs: HeirInput[]): Inheritan
  share.totalAmount = Math.round((share.totalAmount + raddAmount) * 100) / 100;
  share.perPersonAmount = Math.round((share.totalAmount / share.count) * 100) / 100;
  share.percentage = Math.round((share.percentage + (remainingFraction * proportion * 100)) * 100) / 100;
- share.shareType ='radd';
+ share.shareType = share.shareType ==='fard' ?'fard_radd' :'radd';
  share.legalBasis +=' + رد';
  }
  }

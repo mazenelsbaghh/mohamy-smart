@@ -36,7 +36,7 @@ export interface EstateInput {
 export interface HeirShare {
  heirType: HeirType;
  count: number;
- shareType:'fard' |"ta'sib" |'radd' |'wasiyya_wajiba';
+ shareType:'fard' |'fard_radd' |"ta'sib" |'radd' |'wasiyya_wajiba';
  fraction: string | null;
  totalAmount: number;
  perPersonAmount: number;

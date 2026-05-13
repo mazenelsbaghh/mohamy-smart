@@ -19,7 +19,7 @@ describe('calculateInheritance', () => {
  expect(wife?.shareType).toBe('fard');
  expect(fullSister?.fraction).toBe('1/2');
  expect(fullSister?.totalAmount).toBe(75000);
- expect(fullSister?.shareType).toBe('radd');
+ expect(fullSister?.shareType).toBe('fard_radd');
  expect(result.remainingEstate).toBe(0);
  });
 
@@ -33,7 +33,7 @@ describe('calculateInheritance', () => {
 
  expect(wife?.fraction).toBe('1/4');
  expect(wife?.totalAmount).toBe(100000);
- expect(wife?.shareType).toBe('radd');
+ expect(wife?.shareType).toBe('fard_radd');
  expect(result.remainingEstate).toBe(0);
  });
 });
