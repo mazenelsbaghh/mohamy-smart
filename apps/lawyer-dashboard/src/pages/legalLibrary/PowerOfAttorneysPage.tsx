@@ -211,6 +211,7 @@ const PowerOfAttorneysPage = () => {
   <CustomButton
   type="button"
   text={isAdding ? 'إغلاق' : 'إضافة توكيل'}
+  size="md"
   color={isAdding ? 'default' : 'primary'}
   variant={isAdding ? 'flat' : 'solid'}
   radius="full"
@@ -275,8 +276,8 @@ const PowerOfAttorneysPage = () => {
   )} />
   </div>
   <div className="pa-form-actions">
-  <CustomButton type="button" text="إلغاء" variant="flat" radius="full" onClick={() => setIsAdding(false)} />
-  <CustomButton type="submit" text="حفظ التوكيل" color="primary" radius="full" startContent={<FiSave size={14} />} isLoading={saving} />
+  <CustomButton type="button" text="إلغاء" size="md" variant="flat" radius="full" onClick={() => setIsAdding(false)} />
+  <CustomButton type="submit" text="حفظ التوكيل" size="md" color="primary" radius="full" startContent={<FiSave size={14} />} isLoading={saving} />
   </div>
   </form>
   )}

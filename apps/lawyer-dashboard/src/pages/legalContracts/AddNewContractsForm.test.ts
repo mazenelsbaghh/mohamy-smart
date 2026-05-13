@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseGeneratedContractSuggestions } from './AddNewContractsForm';
+import { parseGeneratedContractSuggestions } from './contractSuggestionParser';
 
 describe('parseGeneratedContractSuggestions', () => {
  it('parses JSON wrapped in markdown fences', () => {

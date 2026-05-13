@@ -406,15 +406,20 @@ namespace Lawyer.Application.Services
 
 			string aiResponse = AnalysisHelpers.TryExtractJsonPayload(aiResult.Data.Content);
 
-			var lawyerIdStr = userId;
-			var lawyerId = !string.IsNullOrEmpty(lawyerIdStr) ? Guid.Parse(lawyerIdStr) : Guid.Empty;
-			try
+			if (Guid.TryParse(userId, out var lawyerId) && lawyerId != Guid.Empty)
 			{
-					BackgroundJob.Enqueue<IAiUsageTrackingService>(s => s.RecordGeminiUsageAsync(lawyerId, null, AiStepType.Ocr, ocrModel, aiResult.Data.Usage, CancellationToken.None, null, null, null));
+				try
+				{
+						BackgroundJob.Enqueue<IAiUsageTrackingService>(s => s.RecordGeminiUsageAsync(lawyerId, null, AiStepType.Ocr, ocrModel, aiResult.Data.Usage, CancellationToken.None, null, null, null));
+				}
+				catch
+				{
+					await _trackingService.RecordGeminiUsageAsync(lawyerId, null, AiStepType.Ocr, ocrModel, aiResult.Data.Usage, CancellationToken.None);
+				}
 			}
-			catch
+			else
 			{
-				await _trackingService.RecordGeminiUsageAsync(lawyerId, null, AiStepType.Ocr, ocrModel, aiResult.Data.Usage, CancellationToken.None);
+				_logger.LogWarning("Skipping OCR AI usage tracking because user id is missing or invalid.");
 			}
 
 			try

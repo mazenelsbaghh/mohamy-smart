@@ -24,7 +24,7 @@ type TCaseData = {
 export type TOcrPersistedResult = {
  fileName: string;
  text: string;
- fileType:'image' |'pdf' |'pdf-page';
+ fileType:'image' |'pdf' |'pdf-page' |'word';
  pageNumber?: number;
  totalPages?: number;
  imageUrl?: string;

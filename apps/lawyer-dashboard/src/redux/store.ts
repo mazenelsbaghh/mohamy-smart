@@ -60,6 +60,24 @@ type TOcrSlice = {
  manualText?: unknown;
 };
 
+const MAX_PERSISTED_OCR_IMAGE_CHARS = 3_500_000;
+
+function sanitizeOcrResultsForStorage(ocrResults: TOcrSlice['ocrResults']) {
+ let imageChars = 0;
+
+ return ocrResults?.map((result) => {
+ const imageUrl = typeof result.imageUrl ==='string' ? result.imageUrl :'';
+ if (!imageUrl) return result;
+
+ imageChars += imageUrl.length;
+ if (imageChars > MAX_PERSISTED_OCR_IMAGE_CHARS) {
+ return { ...result, imageUrl:'' };
+ }
+
+ return result;
+ }) ?? [];
+}
+
 function saveOcrToStorage(ocr: TOcrSlice) {
  try {
  const { ocrResults, generatedCase, extractedText, manualText } = ocr;
@@ -67,11 +85,16 @@ function saveOcrToStorage(ocr: TOcrSlice) {
  localStorage.removeItem(OCR_STORAGE_KEY);
  return;
  }
- localStorage.setItem(OCR_STORAGE_KEY, JSON.stringify({ ocrResults, generatedCase, extractedText, manualText }));
+ localStorage.setItem(OCR_STORAGE_KEY, JSON.stringify({
+ ocrResults: sanitizeOcrResultsForStorage(ocrResults),
+ generatedCase,
+ extractedText,
+ manualText,
+ }));
  } catch {
  try {
  const fallback = {
- ocrResults: ocr.ocrResults?.map((r: Record<string, unknown>) => ({ ...r, imageUrl:'' })) ?? [],
+ ocrResults: sanitizeOcrResultsForStorage(ocr.ocrResults).map((r: Record<string, unknown>) => ({ ...r, imageUrl:'' })),
  generatedCase: ocr.generatedCase,
  extractedText: ocr.extractedText,
  manualText: ocr.manualText,

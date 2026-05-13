@@ -21,7 +21,15 @@ type PageGuidanceProps = {
 
 const getDismissedValue = (key: string) => {
  try {
- return localStorage.getItem(key) ==='true';
+ if (localStorage.getItem(key) ==='true') return true;
+ } catch {
+ // Local storage is optional UI state; fall back to cookie below.
+ }
+
+ try {
+ return document.cookie
+ .split(';')
+ .some((cookie) => cookie.trim() === `${encodeURIComponent(key)}=true`);
  } catch {
  return false;
  }
@@ -32,6 +40,12 @@ const setDismissedValue = (key: string) => {
  localStorage.setItem(key,'true');
  } catch {
  // Local storage is optional UI state; ignore browser storage failures.
+ }
+
+ try {
+ document.cookie = `${encodeURIComponent(key)}=true; Max-Age=31536000; Path=/; SameSite=Lax`;
+ } catch {
+ // Cookie persistence is a fallback only.
  }
 };
 
@@ -54,6 +68,7 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
  const descriptionId = useId();
  const dismissStorageKey = useMemo(() => `mohamy:page-guidance:${content.key}:dismissed`, [content.key]);
  const steps = useMemo(() => content.tourSteps?.length ? content.tourSteps : buildFallbackSteps(content), [content]);
+ const [isDismissed, setIsDismissed] = useState(() => getDismissedValue(dismissStorageKey));
  const [isOpen, setIsOpen] = useState(() => !getDismissedValue(dismissStorageKey));
  const [activeStepIndex, setActiveStepIndex] = useState(0);
 
@@ -62,7 +77,9 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
  const isLastStep = activeStepIndex >= steps.length - 1;
 
  useEffect(() => {
- setIsOpen(!getDismissedValue(dismissStorageKey));
+ const dismissed = getDismissedValue(dismissStorageKey);
+ setIsDismissed(dismissed);
+ setIsOpen(!dismissed);
  setActiveStepIndex(0);
  }, [dismissStorageKey]);
 
@@ -93,6 +110,7 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
 
  const dismissPermanently = () => {
  setDismissedValue(dismissStorageKey);
+ setIsDismissed(true);
  setIsOpen(false);
  };
 
@@ -108,7 +126,7 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
  setActiveStepIndex((current) => Math.min(current + 1, steps.length - 1));
  };
 
- if (!isOpen || !activeStep || typeof document ==='undefined') return null;
+ if (isDismissed || !isOpen || !activeStep || typeof document ==='undefined') return null;
 
  const rootClassName = [
  'page-guidance-overlay',

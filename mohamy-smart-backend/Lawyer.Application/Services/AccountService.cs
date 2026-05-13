@@ -68,7 +68,7 @@ namespace Lawyer.Application.Services
 				.Include(u => u.Lawyer)
 					.ThenInclude(l => l!.LawyerSubscriptions)
 						.ThenInclude(ls => ls.Subscription)
-				.OrderByDescending(u => u.CreatedAt);
+				.AsQueryable();
 
 			// Prefer the actual linked profile for lawyer filtering so legacy rows with
 			// a missing/stale UserType still appear in admin listings.
@@ -76,11 +76,13 @@ namespace Lawyer.Application.Services
 			{
 				query = filterByUserType.Value switch
 				{
-					UserType.Lawyer => (IOrderedQueryable<ApplicationUser>)query.Where(u => u.Lawyer != null),
-					UserType.Admin => (IOrderedQueryable<ApplicationUser>)query.Where(u => u.UserType == UserType.Admin),
+					UserType.Lawyer => query.Where(u => u.Lawyer != null),
+					UserType.Admin => query.Where(u => u.UserType == UserType.Admin),
 					_ => query
 				};
 			}
+
+			query = query.OrderByDescending(u => u.CreatedAt);
 
 			var caseCounts = await _unitOfWork.Repository<Case>().AsQueryable()
 				.Where(c => c.IsActive)

@@ -12,9 +12,13 @@ const thunkChangePhoneVerify = createAsyncThunk(
     try {
       const response = await api.post(API_ROUTES.VERIFY_CHANGE_PHONE, args);
       return response.data;
-    } catch (error: any) {
-      if (error.response?.data?.message) {
-        return thunkAPI.rejectWithValue(error.response.data.message);
+    } catch (error: unknown) {
+      const responseMessage = error && typeof error === 'object' && 'response' in error
+        ? (error as { response?: { data?: { message?: unknown } } }).response?.data?.message
+        : undefined;
+
+      if (typeof responseMessage === 'string') {
+        return thunkAPI.rejectWithValue(responseMessage);
       }
       return thunkAPI.rejectWithValue('حدث خطأ أثناء التحقق من رمز OTP');
     }

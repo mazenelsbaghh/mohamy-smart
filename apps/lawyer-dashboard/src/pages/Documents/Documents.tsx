@@ -21,6 +21,7 @@ import { MdOutlineClear } from'react-icons/md';
 import thunkGetAllCaseType from'../../redux/caseType/thunk/thunkGetAllCaseType';
 
 import * as pdfjsLib from'pdfjs-dist';
+import JSZip from'jszip';
 
 // Use CDN to ensure the worker loads correctly in production without Vite bundling issues
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -28,21 +29,22 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLi
 const MAX_FILE_SIZE_MB = 800;
 const MAX_PDF_PAGES = 1000;
 const MAX_TOTAL_FILES = 90;
-const DOCUMENT_ACCEPT = '.pdf,application/pdf';
+const DOCUMENT_ACCEPT = '.pdf,application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const IMAGE_ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
 
 type TPreparedProcessingFile = {
  file: File;
- sourceType:'image' |'pdf';
+ sourceType:'image' |'pdf' |'word';
  pageNumber?: number;
  totalPages?: number;
+ extractedText?: string;
 };
 
 type TResult = {
  file: File | null;
  imageUrl: string;
  text: string;
- fileType:'image' |'pdf' |'pdf-page';
+ fileType:'image' |'pdf' |'pdf-page' |'word';
  pageNumber?: number;
  totalPages?: number;
  fileName?: string;
@@ -55,10 +57,27 @@ type TProcessingStatus = {
  label: string;
 };
 
-const fileToDataUrl = (file: File): Promise<string> => {
+const fileToPreviewDataUrl = (file: File, maxWidth = 900): Promise<string> => {
  return new Promise((resolve) => {
  const reader = new FileReader();
- reader.onload = () => resolve(reader.result as string);
+ reader.onload = () => {
+ const image = new Image();
+ image.onload = () => {
+ const scale = Math.min(1, maxWidth / image.width);
+ const canvas = document.createElement('canvas');
+ canvas.width = Math.max(1, Math.round(image.width * scale));
+ canvas.height = Math.max(1, Math.round(image.height * scale));
+ const context = canvas.getContext('2d');
+ if (!context) {
+ resolve(reader.result as string);
+ return;
+ }
+ context.drawImage(image, 0, 0, canvas.width, canvas.height);
+ resolve(canvas.toDataURL('image/jpeg', 0.76));
+ };
+ image.onerror = () => resolve(reader.result as string);
+ image.src = reader.result as string;
+ };
  reader.onerror = () => resolve('');
  reader.readAsDataURL(file);
  });
@@ -68,6 +87,10 @@ const getExtension = (fileName: string) => fileName.split('.').pop()?.toLowerCas
 
 const isPdfFile = (file: File) =>
  file.type ==='application/pdf' || getExtension(file.name) ==='pdf';
+
+const isWordFile = (file: File) =>
+ file.type ==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+ || getExtension(file.name) ==='docx';
 
 const isSupportedImageFile = (file: File) => {
  const extension = getExtension(file.name);
@@ -86,6 +109,22 @@ const normalizeSupportedFile = (file: File): File => {
  }
 
  return file;
+};
+
+const extractTextFromDocx = async (file: File): Promise<string> => {
+ const zip = await JSZip.loadAsync(await file.arrayBuffer());
+ const documentXml = await zip.file('word/document.xml')?.async('text');
+ if (!documentXml) throw new Error('لا يمكن قراءة محتوى ملف Word.');
+
+ const xml = new DOMParser().parseFromString(documentXml,'application/xml');
+ const paragraphs = Array.from(xml.getElementsByTagName('w:p'));
+ const lines = paragraphs.map((paragraph) => {
+ return Array.from(paragraph.getElementsByTagName('w:t'))
+ .map((node) => node.textContent ??'')
+ .join('');
+ }).map((line) => line.trim()).filter(Boolean);
+
+ return lines.join('\n');
 };
 
 const Documents = () => {
@@ -219,8 +258,19 @@ const Documents = () => {
  file,
  sourceType:'image',
  });
+ } else if (isWordFile(file)) {
+ try {
+ const extractedText = await extractTextFromDocx(file);
+ allFilesToProcess.push({
+ file,
+ sourceType:'word',
+ extractedText,
+ });
+ } catch {
+ sileo.error({ title:"تعذّر قراءة ملف Word: " + file.name + ". تأكد أن الملف بصيغة DOCX." });
+ }
  } else {
- sileo.error({ title:"يدعم النظام الصور وملفات PDF فقط: JPG, PNG, WEBP, PDF" });
+ sileo.error({ title:"يدعم النظام الصور وملفات PDF و Word بصيغة DOCX فقط: JPG, PNG, WEBP, PDF, DOCX" });
  }
  }
 
@@ -260,8 +310,17 @@ const Documents = () => {
  const isImage = file.type.startsWith("image/");
 
  try {
+ if (sourceType ==='word') {
+ accumulated.push({
+ file,
+ imageUrl:'',
+ text: preparedFile.extractedText ||'',
+ fileType:'word',
+ fileName: file.name,
+ });
+ } else {
  const ocrPromise = dispatch(thunkOcrExtract(file)).unwrap();
- const dataUrlPromise = isImage ? fileToDataUrl(file) : Promise.resolve('');
+ const dataUrlPromise = isImage ? fileToPreviewDataUrl(file) : Promise.resolve('');
 
  const [pageTexts, dataUrl] = await Promise.all([ocrPromise, dataUrlPromise]);
 
@@ -272,7 +331,9 @@ const Documents = () => {
  file,
  imageUrl: dataUrl,
  text: pageTexts[0] ||"",
- fileType:"image",
+ fileType: sourceType ==='pdf' ?"pdf-page" :"image",
+ pageNumber,
+ totalPages,
  fileName: file.name,
  });
  } else {
@@ -288,18 +349,19 @@ const Documents = () => {
  });
  });
  }
+ }
  } catch (errorMessage) {
  if (controller.signal.aborted) break;
  sileo.error({ title: `حدث خطأ أثناء معالجة الملف: ${file.name}\n ${errorMessage}` });
  let errorImageUrl ='';
  if (isImage) {
- try { errorImageUrl = await fileToDataUrl(file); } catch { /* swallow */ }
+ try { errorImageUrl = await fileToPreviewDataUrl(file); } catch { /* swallow */ }
  }
  accumulated.push({
  file,
  imageUrl: errorImageUrl,
  text:"— حدث خطأ أثناء استخراج النص —",
- fileType: isImage ?"image" :"pdf",
+ fileType: sourceType ==='word' ?"word" : isImage ?"image" :"pdf",
  fileName: file.name,
  });
  }
@@ -312,6 +374,8 @@ const Documents = () => {
  total: selectedFiles.length,
  label: sourceType ==='pdf'
  ? `جاري معالجة PDF: تم إنجاز ${completed} من ${selectedFiles.length} صفحة`
+ : sourceType ==='word'
+ ? `جاري قراءة ملفات Word: تم إنجاز ${completed} من ${selectedFiles.length} ملف`
  : `جاري معالجة الصور: تم إنجاز ${completed} من ${selectedFiles.length} صورة`,
  });
  }
@@ -431,7 +495,7 @@ const Documents = () => {
  accept={DOCUMENT_ACCEPT}
  multiple
  onChange={handleFileChange}
- aria-label="اختيار ملفات PDF"
+ aria-label="اختيار ملفات PDF أو Word"
  />
  <input
  type="file"
@@ -447,15 +511,15 @@ const Documents = () => {
  </div>
  <div className="text">
  <h3>ارفع مستند القضية وسنحوّله إلى قضية ذكية</h3>
- <p>ارفع صورة أو ملف PDF لأي مستند قانوني (صحيفة دعوى، حكم، محضر…)</p>
+ <p>ارفع صورة أو ملف PDF أو Word لأي مستند قانوني (صحيفة دعوى، حكم، محضر…)</p>
  <p style={{ marginTop:'4px', fontSize:'0.8rem' }}>سيقوم النظام تلقائيًا باستخراج النص من المستند، ثم يمكنك تحليله بالذكاء الاصطناعي وإنشاء قضية جديدة من محتواه مباشرةً.</p>
- <p style={{ marginTop:'4px', fontSize:'0.8rem', opacity: 0.7 }}>الصيغ المدعومة: JPG، PNG، WEBP، PDF</p>
+ <p style={{ marginTop:'4px', fontSize:'0.8rem', opacity: 0.7 }}>الصيغ المدعومة: JPG، PNG، WEBP، PDF، DOCX</p>
  </div>
  </div>
  <div className="btn mt-10 w-full flex flex-col sm:flex-row justify-center gap-3 px-4">
  <CustomButton
  type='button'
- text='اختر PDF'
+ text='اختر PDF أو Word'
  size='lg'
  radius='md'
  color='primary'
@@ -528,11 +592,24 @@ const Documents = () => {
  alt={item.fileName || item.file?.name || ''}
  className="w-full md:w-1/2"
  />
+ ) : item.fileType ==='pdf-page' && item.imageUrl ? (
+ <img
+ src={item.imageUrl}
+ alt={item.fileName || item.file?.name || `صفحة ${item.pageNumber || idx + 1}`}
+ className="w-full md:w-1/2"
+ />
  ) : item.fileType ==='pdf-page' ? (
  <div className='w-full md:w-1/2 flex justify-center items-center'>
  <div className="pdf-page-indicator">
  <BsFileEarmarkText />
  <span>صفحة {item.pageNumber} من {item.totalPages}</span>
+ </div>
+ </div>
+ ) : item.fileType ==='word' ? (
+ <div className='w-full md:w-1/2 flex justify-center items-center'>
+ <div className="pdf-page-indicator">
+ <BsFileEarmarkText />
+ <span>{item.fileName ||'ملف Word'}</span>
  </div>
  </div>
  ) : (

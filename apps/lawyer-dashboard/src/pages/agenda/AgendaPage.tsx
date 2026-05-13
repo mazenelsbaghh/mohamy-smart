@@ -28,6 +28,7 @@ import { FaPlus } from "react-icons/fa";
 import { LuScale, LuClipboardList } from "react-icons/lu";
 import type { AgendaItem, SessionAgendaItem } from "../../types/agenda";
 import { sileo } from "sileo";
+import type { TCase } from '../../redux/cases/casesSlice';
 
 const locales = {
   "ar-EG": arEG,
@@ -178,7 +179,7 @@ const AgendaPage = () => {
  <HeadTitle title="أجندة الجلسات والأعمال" />
  <Button
  className="bg-[var(--main-color)] text-white font-medium shadow-sm"
- onPress={handleAddClick}
+ onPress={() => handleAddClick()}
  startContent={<span dir="ltr"><FaPlus /></span>}
  >
  إضافة
@@ -197,7 +198,7 @@ const AgendaPage = () => {
  setFilterCaseId(val ||"");
  }}
  className="w-52"
- options={(cases || []).map((c: { id: number; title: string }) => ({
+ options={(cases || []).map((c: TCase) => ({
  value: String(c.id),
  label: c.title,
  }))}
@@ -383,7 +384,7 @@ const AgendaPage = () => {
  }}
  dir="rtl"
  >
- {(cases || []).map((c: { id: number; title: string }) => (
+ {(cases || []).map((c: TCase) => (
  <SelectItem key={String(c.id)}>{c.title}</SelectItem>
  ))}
  </Select>
