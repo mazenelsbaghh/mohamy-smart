@@ -1,6 +1,7 @@
 import './Header.css';
 
 
+import { useEffect } from 'react';
 import { HiSun, HiMenu } from "react-icons/hi";
 
 
@@ -9,7 +10,9 @@ import { FaMoon, FaUserTie } from 'react-icons/fa';
 import { HiSparkles } from 'react-icons/hi';
 import { IconButton } from '@mohamy/shared-ui';
 import { Link } from 'react-router-dom';
-import { useAppSelector } from '../../hooks/reduxHooks';
+import { AiPointBalancePill } from '../aiPoints';
+import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
+import thunkGetAiPointBalance from '../../redux/subscription/thunk/thunkGetAiPointBalance';
 import { useSidebar } from '../sidebar/sidebarContext';
 
 type THeader = {
@@ -18,8 +21,15 @@ type THeader = {
 }
 
 const Header = ({ theme, setTheme }: THeader) => {
+    const dispatch = useAppDispatch();
     const user = useAppSelector((state) => state.auth.user);
+    const { aiPointBalance, loading: subscriptionLoading } = useAppSelector((state) => state.subscription);
     const { toggle } = useSidebar();
+
+    useEffect(() => {
+        if (!user || aiPointBalance || subscriptionLoading === 'pending') return;
+        dispatch(thunkGetAiPointBalance());
+    }, [dispatch, user, aiPointBalance, subscriptionLoading]);
 
     return (
         <header className="px-4 py-3 md:px-6 md:py-4 mx-4 sm:mx-8 mt-4 md:mt-6 rounded-2xl bg-[var(--white-color)] dark:app-surface border app-border dark:app-border-strong shadow-sm transition-colors duration-300 z-40 relative flex flex-wrap items-center justify-between gap-y-3 gap-x-4">
@@ -43,6 +53,9 @@ const Header = ({ theme, setTheme }: THeader) => {
 
             {/* Left Side (RTL): Actions */}
             <div className="flex items-center gap-2 md:gap-3 shrink-0 order-2 md:order-3">
+                <Link to="/subscription" className="header-ai-points-link" aria-label="عرض رصيد نقاط الذكاء الاصطناعي">
+                    <AiPointBalancePill balance={aiPointBalance} />
+                </Link>
                 <IconButton
                     icon={theme === 'light' ? <FaMoon size={15} /> : <HiSun size={17} />}
                     radius='full'

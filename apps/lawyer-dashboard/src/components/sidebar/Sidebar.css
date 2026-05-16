@@ -6,6 +6,7 @@ aside {
     gap: 20px;
     height: 100vh;
     transition: var(--transition);
+    overflow: visible;
 }
 
 aside .logo {
@@ -27,12 +28,17 @@ aside nav {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 aside nav ul,
 aside .actions {
     width: 70px;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--main-color) transparent;
     transition: var(--transition);
     border-radius: 35px;
     padding: 10px 10px;
@@ -43,6 +49,27 @@ aside .actions {
     background-color: color-mix(in srgb, var(--surface-color) 88%, transparent);
     backdrop-filter: var(--blur);
     box-shadow: 0 12px 32px rgba(27, 27, 27, 0.06);
+}
+
+aside nav ul {
+    max-height: calc(100vh - 245px);
+    overscroll-behavior: contain;
+}
+
+aside nav ul::-webkit-scrollbar,
+aside .actions::-webkit-scrollbar {
+    width: 4px;
+}
+
+aside nav ul::-webkit-scrollbar-track,
+aside .actions::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+aside nav ul::-webkit-scrollbar-thumb,
+aside .actions::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--main-color) 60%, transparent);
 }
 
 @media (min-width: 1000px) {
@@ -167,6 +194,9 @@ aside .drag-box svg {
         justify-content: center;
         border-bottom-start-radius: var(--sm-radius);
         border-bottom-end-radius: var(--sm-radius);
+        overflow-y: auto;
+        overflow-x: hidden;
+        overscroll-behavior: contain;
     }
 
     aside .drag-box {
@@ -182,6 +212,10 @@ aside .drag-box svg {
         display: flex;
         justify-content: center;
         padding: 0;
+        flex: 0 1 auto;
+        max-height: 62vh;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     aside .actions {
@@ -197,6 +231,7 @@ aside .drag-box svg {
 
     aside nav ul {
         width: 100%;
+        max-height: none;
     }
 }
 

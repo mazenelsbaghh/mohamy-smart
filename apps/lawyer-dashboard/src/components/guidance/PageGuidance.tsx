@@ -5,6 +5,7 @@ import {
  CheckCircle2,
  ChevronLeft,
  ChevronRight,
+ CirclePlay,
  EyeOff,
  Info,
  ShieldCheck,
@@ -14,9 +15,25 @@ import {
 import type { GuidedTourStep, PageGuidanceContent } from'./guidanceContent';
 import'./PageGuidance.css';
 
+const YOUTUBE_VIDEO_ID = 'RLO_qRNAu0s';
+
 type PageGuidanceProps = {
  content: PageGuidanceContent;
  className?: string;
+};
+
+const buildGuidanceVideoUrl = (start: number, end?: number) => {
+ const params = new URLSearchParams({
+ start: String(start),
+ rel: '0',
+ modestbranding: '1',
+ });
+
+ if (end) {
+ params.set('end', String(end));
+ }
+
+ return `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?${params.toString()}`;
 };
 
 const getDismissedValue = (key: string) => {
@@ -68,6 +85,10 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
  const descriptionId = useId();
  const dismissStorageKey = useMemo(() => `mohamy:page-guidance:${content.key}:dismissed`, [content.key]);
  const steps = useMemo(() => content.tourSteps?.length ? content.tourSteps : buildFallbackSteps(content), [content]);
+ const videoUrl = useMemo(
+ () => content.video ? buildGuidanceVideoUrl(content.video.start, content.video.end) : undefined,
+ [content.video]
+ );
  const [isDismissed, setIsDismissed] = useState(() => getDismissedValue(dismissStorageKey));
  const [isOpen, setIsOpen] = useState(() => !getDismissedValue(dismissStorageKey));
  const [activeStepIndex, setActiveStepIndex] = useState(0);
@@ -126,7 +147,27 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
  setActiveStepIndex((current) => Math.min(current + 1, steps.length - 1));
  };
 
- if (isDismissed || !isOpen || !activeStep || typeof document ==='undefined') return null;
+ if (typeof document ==='undefined') return null;
+
+ if (isDismissed || !isOpen) {
+ return createPortal(
+ <button
+ type="button"
+ className="page-guidance-launcher"
+ onClick={() => {
+ setIsDismissed(false);
+ setIsOpen(true);
+ }}
+ aria-label={content.video ?'فتح فيديو شرح الصفحة' :'فتح إرشاد الصفحة'}
+ >
+ <CirclePlay size={18} aria-hidden="true" />
+ <span>{content.video ?'فيديو الصفحة' :'إرشاد الصفحة'}</span>
+ </button>,
+ document.body
+ );
+ }
+
+ if (!activeStep) return null;
 
  const rootClassName = [
  'page-guidance-overlay',
@@ -169,6 +210,25 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
  </div>
 
  <div className="page-guidance-dialog__body">
+ {content.video && videoUrl ? (
+ <section className="page-guidance-dialog__video" aria-labelledby={`${titleId}-video`}>
+ <div className="page-guidance-dialog__video-header">
+ <h3 id={`${titleId}-video`}>{content.video.title}</h3>
+ <span>فيديو الصفحة</span>
+ </div>
+ <div className="page-guidance-dialog__video-frame">
+ <iframe
+ src={videoUrl}
+ title={content.video.title}
+ loading="lazy"
+ allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+ referrerPolicy="strict-origin-when-cross-origin"
+ allowFullScreen
+ />
+ </div>
+ </section>
+ ) : null}
+
  <p id={descriptionId} className="page-guidance-dialog__summary">{content.summary}</p>
 
  <section className={`page-guidance-dialog__active-step page-guidance-dialog__active-step--${activeStep.tone ||'default'}`} aria-live="polite">
@@ -224,6 +284,7 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
  </ul>
  </section>
  ) : null}
+
  </div>
 
  <div className="page-guidance-dialog__footer">

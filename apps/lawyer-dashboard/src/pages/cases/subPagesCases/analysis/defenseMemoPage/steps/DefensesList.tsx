@@ -6,6 +6,7 @@ import { useDisclosure } from"@heroui/react";
 import FormModal from'../../../../../../components/ui/form/FormModal';
 import { HiOutlineDocumentDuplicate, HiOutlineArrowDownTray } from"react-icons/hi2";
 import { sileo } from"sileo";
+import { parseWorkflowJobResult } from"@mohamy/shared-utils";
 import { useAppDispatch, useAppSelector } from"../../../../../../hooks/reduxHooks";
 import NotFoundImage from"../../../../../../components/notFound/NotFoundImage";
 import ConfirmDialog from'../../../../../../components/common/ConfirmDialog';
@@ -47,6 +48,30 @@ type TDefenseWithCategory = TDefense & {
  categoryLabel: string;
  categoryTone:'formal' |'substantive' |'evidentiary';
  matchScore: number;
+};
+
+type CompletedDefenseAnalysisPayload = {
+ defenseId?: string;
+ clientDefenseId?: string;
+ memorandum?: TDefenseMemorandum;
+ explanation?: TDefenseMemorandum;
+ data?: {
+ defenseId?: string;
+ clientDefenseId?: string;
+ memorandum?: TDefenseMemorandum;
+ explanation?: TDefenseMemorandum;
+ };
+};
+
+const getCompletedDefenseAnalysis = (resultJson: string | null | undefined) => {
+ const parsed = parseWorkflowJobResult<CompletedDefenseAnalysisPayload>(resultJson);
+ if (!parsed) return null;
+
+ const defenseId = parsed.clientDefenseId ?? parsed.defenseId ?? parsed.data?.clientDefenseId ?? parsed.data?.defenseId;
+ const memorandum = parsed.memorandum ?? parsed.explanation ?? parsed.data?.memorandum ?? parsed.data?.explanation;
+ if (!defenseId || !memorandum) return null;
+
+ return { defenseId, memorandum };
 };
 
 const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefensesList) => {
@@ -145,6 +170,44 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  .catch(() => { /* swallow */ })
  .finally(() => { fetchingIdsRef.current.delete(id); });
  }, [activeDefenseId, explanationsCache, dispatch]);
+
+ useEffect(() => {
+ if (currentJob?.status ==='Queued' || currentJob?.status ==='Processing') return;
+ setIsLoading(false);
+ }, [currentJob?.status]);
+
+ useEffect(() => {
+ if (currentJob?.status !=='Completed') return;
+
+ const completedAnalysis = getCompletedDefenseAnalysis(currentJob.resultJson);
+ if (completedAnalysis) {
+ if (!explanationsCache[completedAnalysis.defenseId]) {
+ dispatch(hydrateStep({
+ stepNumber: 3,
+ result: {
+ defenseId: completedAnalysis.defenseId,
+ explanation: completedAnalysis.memorandum,
+ },
+ }));
+ }
+ setActiveDefenseId(completedAnalysis.defenseId);
+ return;
+ }
+
+ if (!activeDefenseId || activeDefenseId.startsWith('local-') || explanationsCache[activeDefenseId] || fetchingIdsRef.current.has(activeDefenseId)) return;
+ const id = activeDefenseId;
+ fetchingIdsRef.current.add(id);
+ dispatch(thunkGetDefenseAnalysis({ defenseId: id })).unwrap()
+ .then((response: { memorandum?: TDefenseMemorandum }) => {
+ if (!response.memorandum) return;
+ dispatch(hydrateStep({
+ stepNumber: 3,
+ result: { defenseId: id, explanation: response.memorandum }
+ }));
+ })
+ .catch(() => { /* fallback is best-effort */ })
+ .finally(() => { fetchingIdsRef.current.delete(id); });
+ }, [activeDefenseId, currentJob?.resultJson, currentJob?.status, dispatch, explanationsCache]);
 
  useEffect(() => {
  const handleBeforeUnload = (e: BeforeUnloadEvent) => {

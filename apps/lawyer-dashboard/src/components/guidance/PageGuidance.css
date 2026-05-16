@@ -2,6 +2,44 @@
   margin: 0;
 }
 
+.page-guidance-launcher {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 2147482500;
+  min-height: 2.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid var(--main-color);
+  border-radius: 999px;
+  padding: 0.68rem 0.95rem;
+  background: var(--main-color);
+  color: #fffdf8;
+  box-shadow: 0 14px 36px rgba(27, 27, 27, 0.18);
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 900;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.page-guidance-launcher:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 42px rgba(27, 27, 27, 0.22);
+}
+
+.page-guidance-launcher:focus-visible {
+  outline: 3px solid var(--accent-soft-strong);
+  outline-offset: 3px;
+}
+
+.page-guidance-launcher:active {
+  transform: scale(0.98);
+}
+
 .page-guidance-overlay {
   position: fixed;
   inset: 0;
@@ -16,7 +54,7 @@
 
 .page-guidance-dialog {
   width: min(34rem, calc(100vw - 2rem));
-  max-height: min(76vh, 40rem);
+  max-height: min(88dvh, 44rem);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -38,6 +76,7 @@
   padding: 0.8rem 0.95rem 0.75rem;
   border-bottom: 1px solid var(--border-color);
   background: var(--surface-color);
+  flex: 0 0 auto;
 }
 
 .page-guidance-dialog__title-wrap {
@@ -120,11 +159,29 @@
 }
 
 .page-guidance-dialog__body {
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0.8rem 0.95rem 0.9rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--main-color) transparent;
+}
+
+.page-guidance-dialog__body::-webkit-scrollbar {
+  width: 0.42rem;
+}
+
+.page-guidance-dialog__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.page-guidance-dialog__body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--main-color) 62%, transparent);
 }
 
 .page-guidance-dialog__summary {
@@ -274,6 +331,56 @@
   color: #1d4ed8;
 }
 
+.page-guidance-dialog__video {
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 0.88rem;
+  background: var(--surface-muted);
+}
+
+.page-guidance-dialog__video-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.68rem 0.78rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.page-guidance-dialog__video-header h3 {
+  margin: 0;
+  color: var(--title-color);
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.page-guidance-dialog__video-header span {
+  flex: 0 0 auto;
+  color: var(--muted-color);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.page-guidance-dialog__video-frame {
+  flex: 0 0 auto;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  min-height: 0;
+  background: #11100d;
+}
+
+.page-guidance-dialog__video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 .dark .page-guidance-dialog__review-note svg {
   color: #93c5fd;
 }
@@ -286,6 +393,7 @@
   padding: 0.72rem 0.95rem;
   border-top: 1px solid var(--border-color);
   background: var(--surface-color);
+  flex: 0 0 auto;
 }
 
 .page-guidance-dialog__nav {
@@ -335,27 +443,42 @@
 }
 
 @media (max-width: 640px) {
+  .page-guidance-launcher {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    width: auto;
+    min-height: 2.85rem;
+  }
+
   .page-guidance-overlay {
     align-items: flex-end;
-    padding: 0.75rem;
+    padding: 0.5rem;
   }
 
   .page-guidance-overlay--target-lower,
   .page-guidance-overlay--target-upper {
     align-items: flex-end;
-    padding: 0.75rem;
+    padding: 0.5rem;
   }
 
   .page-guidance-dialog {
     width: 100%;
-    max-height: 88vh;
+    max-width: calc(100vw - 1rem);
+    max-height: 92dvh;
     border-radius: 1rem;
+  }
+
+  .page-guidance-dialog__video-frame {
+    aspect-ratio: 16 / 9;
+    height: auto;
+    min-height: 0;
   }
 
   .page-guidance-dialog__header,
   .page-guidance-dialog__body,
   .page-guidance-dialog__footer {
-    padding-inline: 1rem;
+    padding-inline: 0.85rem;
   }
 
   .page-guidance-dialog__title {

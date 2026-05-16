@@ -23,6 +23,13 @@ export type PageGuidanceContent = {
  details?: string[];
  ai?: AiUsageGuidance;
  tourSteps?: GuidedTourStep[];
+ video?: GuidanceVideo;
+};
+
+export type GuidanceVideo = {
+ title: string;
+ start: number;
+ end?: number;
 };
 
 export type GuidanceKey =
@@ -57,6 +64,38 @@ export type GuidanceKey =
  |'notFound';
 
 const AI_REVIEW_NOTE = 'استخدم الناتج كمسودة أو تحليل مساعد فقط. راجع الوقائع والسند القانوني والصياغة النهائية قبل الاعتماد أو التقديم، فالمسؤولية المهنية والقرار النهائي يظلان للمحامي.';
+
+const guidanceVideoSegments: Partial<Record<GuidanceKey, GuidanceVideo>> = {
+ home: { title:'شرح الصفحة الرئيسية والقوائم', start:71, end:276 },
+ cases: { title:'رفع المستندات وتوليد قضية', start:358, end:494 },
+ caseDetails: { title:'تشغيل التحليل الذكي للقضايا', start:494, end:1056 },
+ documentSelection: { title:'اختيار مسار التحليل الذكي', start:494, end:1056 },
+ defenseMemo: { title:'تشغيل التحليل الذكي للقضايا', start:494, end:1056 },
+ statementOfClaims: { title:'تشغيل التحليل الذكي للقضايا', start:494, end:1056 },
+ appealBrief: { title:'تشغيل التحليل الذكي للقضايا', start:494, end:1056 },
+ adminComplaint: { title:'تشغيل التحليل الذكي للقضايا', start:494, end:1056 },
+ rulingAnalysis: { title:'تشغيل التحليل الذكي للقضايا', start:494, end:1056 },
+ legalWarning: { title:'تشغيل التحليل الذكي للقضايا', start:494, end:1056 },
+ execRequest: { title:'تشغيل التحليل الذكي للقضايا', start:494, end:1056 },
+ clients: { title:'شرح صفحة الموكلين', start:1056, end:1116 },
+ clientDetails: { title:'شرح صفحة الموكلين', start:1056, end:1116 },
+ documents: { title:'رفع المستندات وتوليد قضية', start:358, end:494 },
+ legalContracts: { title:'شرح العقود القانونية الذكية', start:1116, end:1273 },
+ newLegalContract: { title:'شرح العقود القانونية الذكية', start:1116, end:1273 },
+ legalContractDetails: { title:'شرح العقود القانونية الذكية', start:1116, end:1273 },
+ legalLibrary: { title:'شرح المكتبة القانونية', start:1273, end:1424 },
+ inheritance: { title:'شرح المكتبة القانونية', start:1273, end:1424 },
+ courtFees: { title:'شرح المكتبة القانونية', start:1273, end:1424 },
+ powerOfAttorneys: { title:'شرح المكتبة القانونية', start:1273, end:1424 },
+ internalRegulations: { title:'شرح المكتبة القانونية', start:1273, end:1424 },
+ processServerPapers: { title:'شرح المكتبة القانونية', start:1273, end:1424 },
+ agenda: { title:'تشغيل الأجندة القضائية', start:340, end:358 },
+ agendaDetails: { title:'تشغيل الأجندة القضائية', start:340, end:358 },
+ chat: { title:'تشغيل المحادثة الذكية', start:276, end:340 },
+ settings: { title:'التعرف على الموقع والتبويبات', start:71, end:276 },
+ subscription: { title:'التعرف على الموقع والتبويبات', start:71, end:276 },
+ notFound: { title:'التعرف على الموقع والتبويبات', start:71, end:276 },
+};
 
 const workflowAi = (workflowName: string, expectedOutput: string): AiUsageGuidance => ({
  whenToUse: `استخدم الذكاء الاصطناعي في ${workflowName} بعد تثبيت الوقائع المهمة واختيار المسار الصحيح من ملف القضية.`,
@@ -766,4 +805,7 @@ export const guidanceContent: Record<GuidanceKey, PageGuidanceContent> = {
  },
 };
 
-export const getGuidanceContent = (key: GuidanceKey) => guidanceContent[key];
+export const getGuidanceContent = (key: GuidanceKey): PageGuidanceContent => ({
+ ...guidanceContent[key],
+ video: guidanceVideoSegments[key],
+});

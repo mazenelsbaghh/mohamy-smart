@@ -9,7 +9,11 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN npm install --include=dev && npm rebuild
+	RUN npm install --include=dev --include=optional \
+		&& arch="$(node -p "process.arch")" \
+		&& if [ "$arch" = "arm64" ]; then npm install --no-save lightningcss-linux-arm64-gnu@1.30.1; fi \
+		&& if [ "$arch" = "x64" ]; then npm install --no-save lightningcss-linux-x64-gnu@1.30.1; fi \
+		&& npm rebuild
 COPY apps/landing ./apps/landing
 WORKDIR /app/apps/landing
 CMD ["npm", "run", "dev"]
@@ -25,7 +29,11 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN rm -rf node_modules package-lock.json && npm install
+	RUN rm -rf node_modules package-lock.json \
+		&& npm install --include=optional \
+		&& arch="$(node -p "process.arch")" \
+		&& if [ "$arch" = "arm64" ]; then npm install --no-save lightningcss-linux-arm64-gnu@1.30.1; fi \
+		&& if [ "$arch" = "x64" ]; then npm install --no-save lightningcss-linux-x64-gnu@1.30.1; fi
 COPY apps/landing ./apps/landing
 RUN npm run build --workspace=@mohamy/landing
 

@@ -38,6 +38,18 @@ const DEFENSE_JOB_STEP_MAP = {
 
 type DefenseJobKey = keyof typeof DEFENSE_JOB_STEP_MAP;
 type DefenseJobMap = Partial<Record<DefenseJobKey, { status?: string } | undefined>>;
+type DefenseAnalysisJobResult = {
+  defenseId?: string;
+  clientDefenseId?: string;
+  memorandum?: Record<string, unknown>;
+  explanation?: Record<string, unknown>;
+  data?: {
+    defenseId?: string;
+    clientDefenseId?: string;
+    memorandum?: Record<string, unknown>;
+    explanation?: Record<string, unknown>;
+  };
+};
 
 const isRunningDefenseJob = (job: { status?: string } | undefined | null) =>
   job?.status === 'Queued' || job?.status === 'Processing';
@@ -130,16 +142,17 @@ const DefenseMemoPage = () => {
     },
     onJobCompleted: (jobKey, job, outputs, dispatch) => {
       if (jobKey === 'AnalysisDefense') {
-        const parsed = parseJobResult<{ defenseId?: string; clientDefenseId?: string; memorandum?: Record<string, unknown> }>(job.resultJson!);
-        const defenseId = parsed?.clientDefenseId || parsed?.defenseId;
-        if (!defenseId || !parsed?.memorandum) return;
+        const parsed = parseWorkflowJobResult<DefenseAnalysisJobResult>(job.resultJson!) ?? parseJobResult<DefenseAnalysisJobResult>(job.resultJson!);
+        const defenseId = parsed?.clientDefenseId || parsed?.defenseId || parsed?.data?.clientDefenseId || parsed?.data?.defenseId;
+        const memorandum = parsed?.memorandum || parsed?.explanation || parsed?.data?.memorandum || parsed?.data?.explanation;
+        if (!defenseId || !memorandum) return;
 
         const cache = (outputs[3] || {}) as Record<string, unknown>;
         const hydratedKey = `__job:${job.id}:${job.completedAt ?? job.createdAt}`;
         if (cache[hydratedKey]) return;
 
-        dispatch(hydrateStep({ stepNumber: 3, result: { defenseId, explanation: parsed.memorandum } }));
-        dispatch(hydrateStep({ stepNumber: 3, result: { defenseId: hydratedKey, explanation: parsed.memorandum } }));
+        dispatch(hydrateStep({ stepNumber: 3, result: { defenseId, explanation: memorandum } }));
+        dispatch(hydrateStep({ stepNumber: 3, result: { defenseId: hydratedKey, explanation: memorandum } }));
         return;
       }
 

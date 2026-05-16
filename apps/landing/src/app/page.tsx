@@ -11,6 +11,7 @@ const Footer = dynamic(() => import('@/components/footer/Footer'));
 const AboutSection = dynamic(() => import('@/components/aboutSection/AboutSection'));
 const FeaturesSection = dynamic(() => import('@/components/featuresSection/FeaturesSection'));
 const HowToUseSection = dynamic(() => import('@/components/howToUseSection/HowToUseSection'));
+const VideoGuideSection = dynamic(() => import('@/components/videoGuideSection/VideoGuideSection'));
 const FaqSection = dynamic(() => import('@/components/faqSection/FaqSection'));
 
 export default function Home() {
@@ -22,6 +23,7 @@ export default function Home() {
       <FeaturesSection />
       <WhoWeAreSection />
       <HowToUseSection />
+      <VideoGuideSection />
       <PricingPlans />
       <TestimonialsSection />
       <FaqSection />

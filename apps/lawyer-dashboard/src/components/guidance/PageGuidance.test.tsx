@@ -20,6 +20,7 @@ describe('PageGuidance', () => {
  expect(localStorage.getItem('mohamy:page-guidance:home:dismissed')).toBe('true');
  expect(document.cookie).toContain('mohamy%3Apage-guidance%3Ahome%3Adismissed=true');
  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+ expect(screen.getByRole('button', { name:/فتح إرشاد الصفحة/i })).toBeInTheDocument();
  });
 
  it('does not reopen dismissed guidance when the same page is rendered again', () => {
@@ -29,6 +30,7 @@ describe('PageGuidance', () => {
  rerender(<PageGuidance content={guidanceContent.home} />);
 
  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+ expect(screen.getByRole('button', { name:/فتح إرشاد الصفحة/i })).toBeInTheDocument();
  });
 
  it('uses the dismissal cookie when local storage is unavailable or cleared', () => {
@@ -37,6 +39,16 @@ describe('PageGuidance', () => {
  render(<PageGuidance content={guidanceContent.home} />);
 
  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+ expect(screen.getByRole('button', { name:/فتح إرشاد الصفحة/i })).toBeInTheDocument();
+ });
+
+ it('opens dismissed guidance from the page launcher', () => {
+ localStorage.setItem('mohamy:page-guidance:home:dismissed','true');
+
+ render(<PageGuidance content={guidanceContent.home} />);
+ fireEvent.click(screen.getByRole('button', { name:/فتح إرشاد الصفحة/i }));
+
+ expect(screen.getByRole('dialog')).toBeInTheDocument();
  });
 
  it('keeps dismissal scoped to the page key', () => {

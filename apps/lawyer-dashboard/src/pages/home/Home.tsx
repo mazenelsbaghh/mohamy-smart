@@ -207,6 +207,24 @@ const Home = () => {
                         </div>
                     </div>
 
+                    <section className="home-training-video" aria-labelledby="home-training-video-title">
+                        <div className="home-training-video__content">
+                            <span className="home-training-video__eyebrow">شرح المنصة</span>
+                            <h3 id="home-training-video-title">شاهد الجولة الكاملة لمحامي سمارت</h3>
+                            <p>الفيديو يشرح التسجيل، القوائم، المحادثة الذكية، الأجندة، رفع المستندات، تحليل القضايا، الموكلين، العقود، والمكتبة القانونية.</p>
+                        </div>
+                        <div className="home-training-video__player">
+                            <iframe
+                                src="https://www.youtube.com/embed/RLO_qRNAu0s?rel=0&modestbranding=1"
+                                title="شرح منصة محامي سمارت"
+                                loading="lazy"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                referrerPolicy="strict-origin-when-cross-origin"
+                                allowFullScreen
+                            />
+                        </div>
+                    </section>
+
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
                         <div className="lg:col-span-2 flex flex-col gap-6">
                             {/* Cases */}

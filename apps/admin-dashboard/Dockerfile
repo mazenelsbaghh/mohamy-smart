@@ -9,7 +9,11 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN npm install --include=dev && npm rebuild
+	RUN npm install --include=dev --include=optional \
+		&& arch="$(node -p "process.arch")" \
+		&& if [ "$arch" = "arm64" ]; then npm install --no-save lightningcss-linux-arm64-gnu@1.30.1; fi \
+		&& if [ "$arch" = "x64" ]; then npm install --no-save lightningcss-linux-x64-gnu@1.30.1; fi \
+		&& npm rebuild
 COPY apps/admin-dashboard ./apps/admin-dashboard
 WORKDIR /app/apps/admin-dashboard
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5079"]
@@ -27,7 +31,11 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN rm -rf node_modules package-lock.json && npm install --include=dev
+	RUN rm -rf node_modules package-lock.json \
+		&& npm install --include=dev --include=optional \
+		&& arch="$(node -p "process.arch")" \
+		&& if [ "$arch" = "arm64" ]; then npm install --no-save lightningcss-linux-arm64-gnu@1.30.1; fi \
+		&& if [ "$arch" = "x64" ]; then npm install --no-save lightningcss-linux-x64-gnu@1.30.1; fi
 COPY apps/admin-dashboard ./apps/admin-dashboard
 RUN npx vite build --filter=@mohamy/admin-dashboard 2>/dev/null || cd apps/admin-dashboard && npx vite build
 
