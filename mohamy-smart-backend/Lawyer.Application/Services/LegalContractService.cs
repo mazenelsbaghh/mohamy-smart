@@ -182,7 +182,7 @@ namespace Lawyer.Application.Services
                     .Replace("{CUSTOM_CLAUSES}", string.IsNullOrWhiteSpace(request.CustomClauses)
                         ? "لا توجد بنود خاصة إضافية." : request.CustomClauses);
 
-                var step1Options = AIRequestOptions.ForContractDraft with { Model = step1Model, MaxTokens = 4000 }; // Analysis needs fewer tokens
+                var step1Options = AIRequestOptions.ForContractDraft with { Model = step1Model };
                 var step1Result = await provider.SendChatCompletionAsync(
                     step1Prompt, "حلل المدخلات الآن واستخرج العناصر الأساسية.", step1Options, cancellationToken);
 

@@ -36,8 +36,10 @@ namespace Lawyer.Application.IServices.AI
     /// </summary>
     public record AIRequestOptions
     {
+        public const int GeminiMaxOutputTokens = 65_536;
+
         public float Temperature { get; init; } = 0.1f;
-        public int MaxTokens { get; init; } = 4000;
+        public int MaxTokens { get; init; } = GeminiMaxOutputTokens;
         public string? Model { get; init; } // Optional: override default model
 
         public static AIRequestOptions Default => new();
@@ -45,25 +47,25 @@ namespace Lawyer.Application.IServices.AI
         public static AIRequestOptions ForAnalysis => new()
         {
             Temperature = 0.1f,
-            MaxTokens = 8192
+            MaxTokens = GeminiMaxOutputTokens
         };
 
         public static AIRequestOptions ForDefenses => new()
         {
             Temperature = 0.1f,
-            MaxTokens = 8192
+            MaxTokens = GeminiMaxOutputTokens
         };
 
         public static AIRequestOptions ForDefenseAnalysis => new()
         {
             Temperature = 0.1f,
-            MaxTokens = 8192
+            MaxTokens = GeminiMaxOutputTokens
         };
 
         public static AIRequestOptions ForFinalRequirements => new()
         {
             Temperature = 0.1f,
-            MaxTokens = 8192
+            MaxTokens = GeminiMaxOutputTokens
         };
 
         /// <summary>
@@ -73,7 +75,7 @@ namespace Lawyer.Application.IServices.AI
         public static AIRequestOptions ForContractDraft => new()
         {
             Temperature = 0.05f,
-            MaxTokens = 16000
+            MaxTokens = GeminiMaxOutputTokens
         };
     }
 }

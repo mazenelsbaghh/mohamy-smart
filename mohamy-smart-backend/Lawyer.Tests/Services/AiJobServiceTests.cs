@@ -112,6 +112,46 @@ public class AiJobServiceTests
     }
 
     [Fact]
+    public async Task GetAllByCaseAsync_ShouldProjectJobsAfterMaterialization()
+    {
+        await using var db = new AppDbContext(_dbOptions);
+        var caseId = Guid.NewGuid();
+
+        db.AiJobs.AddRange(
+            new AiJob
+            {
+                Id = Guid.NewGuid(),
+                CaseId = caseId,
+                StepType = AiStepType.FactAnalysis,
+                Status = AiJobStatus.Completed,
+                CreatedAt = DateTime.UtcNow.AddMinutes(-2)
+            },
+            new AiJob
+            {
+                Id = Guid.NewGuid(),
+                CaseId = caseId,
+                StepType = AiStepType.FinalRequirements,
+                Status = AiJobStatus.Processing,
+                CreatedAt = DateTime.UtcNow
+            });
+        await db.SaveChangesAsync();
+
+        var hangfireMock = new Mock<IBackgroundJobClient>();
+        var notificationsMock = new Mock<IAiJobNotificationService>();
+        var accessMock = new Mock<ICaseAccessValidator>();
+        accessMock.Setup(x => x.ValidateAsync(caseId, "user123", false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Lawyer.Core.Exceptions.Result<bool> { Succeeded = true, Data = true, StatusCode = System.Net.HttpStatusCode.OK });
+
+        var sut = new AiJobService(db, hangfireMock.Object, notificationsMock.Object, accessMock.Object);
+
+        var result = await sut.GetAllByCaseAsync(caseId, "user123", CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data.Should().HaveCount(2);
+        result.Data!.Select(x => x.StepType).Should().ContainInOrder(AiStepType.FactAnalysis, AiStepType.FinalRequirements);
+    }
+
+    [Fact]
     public async Task SubmitAsync_ShouldRefreshCreatedAt_WhenReusingCompletedJob()
     {
         // Arrange

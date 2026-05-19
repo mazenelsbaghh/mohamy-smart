@@ -706,7 +706,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 var aiResult = await aiProvider.SendChatCompletionAsync(
                     systemPrompt,
                     userPrompt,
-                    AIRequestOptions.ForAnalysis with { Model = memoModel, MaxTokens = 32768 },
+                    AIRequestOptions.ForAnalysis with { Model = memoModel },
                     ct);
 
                 if (!aiResult.Succeeded || string.IsNullOrWhiteSpace(aiResult.Data?.Content))

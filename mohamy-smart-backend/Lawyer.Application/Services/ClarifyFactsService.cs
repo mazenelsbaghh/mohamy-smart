@@ -28,6 +28,7 @@ namespace Lawyer.Application.Services
         private readonly string _contentRootPath;
         private readonly ICaseAccessValidator _caseAccessValidator;
         private readonly IAiUsageTrackingService _trackingService;
+        private readonly IAiPointAccountingService _pointAccounting;
         private readonly PromptTemplateCache _promptCache;
 
         private static readonly JsonSerializerOptions DeserializeOptions = Common.JsonOptions.Deserialize;
@@ -39,6 +40,7 @@ namespace Lawyer.Application.Services
             IConfiguration config,
             ICaseAccessValidator caseAccessValidator,
             IAiUsageTrackingService trackingService,
+            IAiPointAccountingService pointAccounting,
             PromptTemplateCache promptCache)
         {
             _unitOfWork = unitOfWork;
@@ -48,6 +50,7 @@ namespace Lawyer.Application.Services
                                ?? Directory.GetCurrentDirectory();
             _caseAccessValidator = caseAccessValidator;
             _trackingService = trackingService;
+            _pointAccounting = pointAccounting;
             _promptCache = promptCache;
         }
 
@@ -99,7 +102,7 @@ namespace Lawyer.Application.Services
                     AIRequestOptions.Default with
                     {
                         Temperature = 0.1f,
-                        MaxTokens = 16384,
+                        MaxTokens = AIRequestOptions.GeminiMaxOutputTokens,
                         Model = model
                     },
                     cancellationToken);
@@ -122,6 +125,23 @@ namespace Lawyer.Application.Services
                         request.CaseId, RedactForLog(aiResult.Data?.Content ?? string.Empty));
                     return Result<ClarifyFactsResponseDto>.Error(
                         HttpStatusCode.InternalServerError, "فشل في تحليل استجابة الذكاء الاصطناعي");
+                }
+
+                var chargeResult = await _pointAccounting.ChargeSuccessfulDirectActionAsync(
+                    caseEntity.LawyerId,
+                    AiStepType.ClarifyFacts,
+                    _pointAccounting.ResolvePointCost(AiStepType.ClarifyFacts),
+                    caseEntity.Id,
+                    "clarify-facts",
+                    null,
+                    "تم خصم نقطة واحدة بعد مراجعة الوقائع واستيضاح الأسئلة بنجاح.",
+                    cancellationToken);
+
+                if (!chargeResult.Succeeded)
+                {
+                    return Result<ClarifyFactsResponseDto>.Error(
+                        chargeResult.StatusCode,
+                        chargeResult.Message ?? "تعذر خصم نقاط مراجعة الوقائع");
                 }
 
                 _logger.LogInformation("Facts gap evaluation completed for Case {CaseId}. Questions count: {Count}",

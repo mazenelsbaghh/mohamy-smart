@@ -41,7 +41,7 @@ namespace Lawyer.API.Extensions
                     var result = await provider.SendChatCompletionAsync(
                         "ping",
                         "ping",
-                        AIRequestOptions.Default with { MaxTokens = 10, Temperature = 0 },
+                        AIRequestOptions.Default with { MaxTokens = AIRequestOptions.GeminiMaxOutputTokens, Temperature = 0 },
                         cancellationToken);
 
                     if (result.Succeeded)

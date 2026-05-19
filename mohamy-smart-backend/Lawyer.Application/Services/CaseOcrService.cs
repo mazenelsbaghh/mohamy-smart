@@ -418,7 +418,7 @@ namespace Lawyer.Application.Services
 				AIRequestOptions.Default with
 				{
 					Temperature = 0,
-					MaxTokens = 8000,
+					MaxTokens = AIRequestOptions.GeminiMaxOutputTokens,
 					Model = ocrModel
 				},
 				cancellationToken);

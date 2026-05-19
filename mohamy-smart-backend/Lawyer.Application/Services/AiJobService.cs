@@ -54,9 +54,8 @@ namespace Lawyer.Application.Services
                 .Where(j => j.CaseId == caseId)
                 .OrderBy(j => j.StepType)
                 .ThenBy(j => j.CreatedAt)
-                .Select(j => ToDto(j))
                 .ToListAsync(ct);
-            return Result<List<AiJobStatusDto>>.Success(jobs);
+            return Result<List<AiJobStatusDto>>.Success(jobs.Select(ToDto).ToList());
         }
 
         public async Task<Result<AiJobStatusDto>> GetByCaseAndStepAsync(Guid caseId, AiStepType step, string userId, CancellationToken ct)
