@@ -1,6 +1,6 @@
 # mohamy smart Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-05-12
+Auto-generated from all feature plans. Last updated: 2026-05-20
 
 ## Active Technologies
 - TypeScript 5.x / React 19 for lawyer dashboard; C# / .NET 9 for backend services + Redux Toolkit, React Router 7, HeroUI, SignalR client, Axios, Hangfire, EF Core 9, SQL Server, System.Text.Json (068-workflow-start-resume)
@@ -17,6 +17,8 @@ Auto-generated from all feature plans. Last updated: 2026-05-12
 - Browser localStorage for per-page guidance dismissal only; existing Redux/API state for cases (073-guidance-search-audit)
 - C# / .NET 9 backend; TypeScript 5.x / React 19 lawyer dashboard + ASP.NET Core Authorization, EF Core 9, Hangfire, SignalR, System.Text.Json, Redux Toolkit, React Router 7, HeroUI, Axios, react-hot-toast (074-ai-points-deduction)
 - SQL Server 2022 via existing EF Core migrations; existing `AiJobs`, `AiUsageRecords`, `LawyerSubscription`, `Subscriptions` with new accounting fields/indexes (074-ai-points-deduction)
+- C# / .NET 9 backend; TypeScript 5.x / React 19 admin dashboard + ASP.NET Core Authorization, EF Core 9, Redux Toolkit, React Router 7, HeroUI, Axios, System.Text.Json (075-add-gemini-35-flash)
+- Existing SQL Server AI configuration and usage tables; no schema changes required (075-add-gemini-35-flash)
 
 - TypeScript 5.x / React 19 + Redux Toolkit, React Router 7, HeroUI, Tailwind CSS 4 (065-unify-workflow-arch)
 
@@ -36,9 +38,9 @@ npm test && npm run lint
 TypeScript 5.x / React 19: Follow standard conventions
 
 ## Recent Changes
+- 075-add-gemini-35-flash: Added C# / .NET 9 backend; TypeScript 5.x / React 19 admin dashboard + ASP.NET Core Authorization, EF Core 9, Redux Toolkit, React Router 7, HeroUI, Axios, System.Text.Json
 - 074-ai-points-deduction: Added C# / .NET 9 backend; TypeScript 5.x / React 19 lawyer dashboard + ASP.NET Core Authorization, EF Core 9, Hangfire, SignalR, System.Text.Json, Redux Toolkit, React Router 7, HeroUI, Axios, react-hot-toast
 - 073-guidance-search-audit: Added TypeScript 5.x / React 19 for lawyer dashboard + React Router 7, Redux Toolkit, HeroUI, shared UI components, lucide-react, date-fns
-- 072-guided-popup-tour: Added TypeScript 5.x / React 19 + React Router 7, lucide-react, Tailwind CSS 4, existing CSS variables, existing guidance component
 
 
 <!-- MANUAL ADDITIONS START -->

@@ -150,7 +150,7 @@ namespace Lawyer.Application.Services
                     caseEntity.LawyerId,
                     request.CaseId,
                     AiStepType.LawsuitCaseType,
-                    caseTypeModel ?? "gemini-3-flash-preview",
+                    caseTypeModel ?? "gemini-3.5-flash",
                     aiResult.Data.Usage,
                     CancellationToken.None);
 
@@ -302,7 +302,7 @@ namespace Lawyer.Application.Services
                     caseEntity.LawyerId,
                     request.CaseId,
                     AiStepType.LawsuitParties,
-                    partiesModel ?? "gemini-3-flash-preview",
+                    partiesModel ?? "gemini-3.5-flash",
                     aiResult.Data.Usage,
                     CancellationToken.None);
 
@@ -468,7 +468,7 @@ namespace Lawyer.Application.Services
                     caseEntity.LawyerId,
                     request.CaseId,
                     AiStepType.LawsuitSubjects,
-                    subjectsModel ?? "gemini-3-flash-preview",
+                    subjectsModel ?? "gemini-3.5-flash",
                     aiResult.Data.Usage,
                     CancellationToken.None);
 
@@ -634,7 +634,7 @@ namespace Lawyer.Application.Services
                     caseEntity.LawyerId,
                     request.CaseId,
                     AiStepType.LawsuitFacts,
-                    factsModel ?? "gemini-3-flash-preview",
+                    factsModel ?? "gemini-3.5-flash",
                     aiResult.Data.Usage,
                     CancellationToken.None);
 
@@ -778,7 +778,7 @@ namespace Lawyer.Application.Services
                     caseEntity.LawyerId,
                     request.CaseId,
                     AiStepType.LawsuitLegalBasis,
-                    legalBasisModel ?? "gemini-3-flash-preview",
+                    legalBasisModel ?? "gemini-3.5-flash",
                     aiResult.Data.Usage,
                     CancellationToken.None);
 
@@ -979,7 +979,7 @@ namespace Lawyer.Application.Services
                     caseEntity.LawyerId,
                     request.CaseId,
                     AiStepType.LawsuitRequests,
-                    requestsModel ?? "gemini-3-flash-preview",
+                    requestsModel ?? "gemini-3.5-flash",
                     aiResult.Data.Usage,
                     CancellationToken.None);
 

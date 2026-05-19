@@ -10,6 +10,7 @@ import { Select, SelectItem } from'@heroui/react';
 import type { UpdateAiModelConfigItem } from'../../types';
 
 const MODEL_OPTIONS = [
+ { key:'gemini-3.5-flash', label:'Gemini 3.5 Flash' },
  { key:'gemini-3-flash-preview', label:'Flash 3' },
  { key:'gemini-3.1-flash-lite-preview', label:'Flash Lite 3.1' },
  { key:'gemini-3.1-pro-preview', label:'Pro 3.1' },

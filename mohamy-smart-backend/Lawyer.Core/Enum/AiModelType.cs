@@ -5,6 +5,7 @@ namespace Lawyer.Core.Enum
         Pro = 0,
         Flash = 1,
         FlashLite = 2,
+        Gemini35Flash = 3,
     }
 
     public static class AiModelTypeExtensions
@@ -14,6 +15,7 @@ namespace Lawyer.Core.Enum
             AiModelType.Pro => "gemini-3.1-pro-preview",
             AiModelType.Flash => "gemini-3-flash-preview",
             AiModelType.FlashLite => "gemini-3.1-flash-lite-preview",
+            AiModelType.Gemini35Flash => "gemini-3.5-flash",
             _ => "gemini-3.1-pro-preview"
         };
 
@@ -22,6 +24,7 @@ namespace Lawyer.Core.Enum
             AiModelType.Pro => "Pro 3.1",
             AiModelType.Flash => "Flash 3",
             AiModelType.FlashLite => "Flash Lite 3.1",
+            AiModelType.Gemini35Flash => "Gemini 3.5 Flash",
             _ => "Pro 3.1"
         };
 
@@ -30,6 +33,7 @@ namespace Lawyer.Core.Enum
             AiModelType.Pro => "أعلى جودة وأعلى تكلفة",
             AiModelType.Flash => "متوازن بين الجودة والسرعة",
             AiModelType.FlashLite => "أسرع وأقل تكلفة",
+            AiModelType.Gemini35Flash => "أداء أحدث وسرعة عالية للمهام المعقدة",
             _ => ""
         };
 
@@ -37,7 +41,8 @@ namespace Lawyer.Core.Enum
         [
             "gemini-3.1-pro-preview",
             "gemini-3-flash-preview",
-            "gemini-3.1-flash-lite-preview"
+            "gemini-3.1-flash-lite-preview",
+            "gemini-3.5-flash"
         ];
 
         public static string ToModelDisplayName(string modelIdentifier) => modelIdentifier switch
@@ -45,6 +50,7 @@ namespace Lawyer.Core.Enum
             "gemini-3.1-pro-preview" => "Pro 3.1",
             "gemini-3-flash-preview" => "Flash 3",
             "gemini-3.1-flash-lite-preview" => "Flash Lite 3.1",
+            "gemini-3.5-flash" => "Gemini 3.5 Flash",
             _ => modelIdentifier
         };
     }

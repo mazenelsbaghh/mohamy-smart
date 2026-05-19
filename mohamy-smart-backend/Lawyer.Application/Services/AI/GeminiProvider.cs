@@ -38,7 +38,7 @@ namespace Lawyer.Application.Services.AI
             _logger = logger;
             _apiKey = configuration["Gemini:ApiKey"]
                 ?? throw new InvalidOperationException("Gemini:ApiKey is not configured");
-            _defaultModel = configuration["Gemini:Model"] ?? "gemini-3-flash-preview";
+            _defaultModel = configuration["Gemini:Model"] ?? "gemini-3.5-flash";
         }
 
         public async Task<Result<AIResponse>> SendChatCompletionAsync(

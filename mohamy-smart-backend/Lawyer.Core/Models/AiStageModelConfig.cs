@@ -6,7 +6,7 @@ namespace Lawyer.Core.Models
     {
         public int Id { get; set; }
         public AiStepType StepType { get; set; }
-        public string ModelIdentifier { get; set; } = "gemini-3-flash-preview-pro";
+        public string ModelIdentifier { get; set; } = "gemini-3.5-flash";
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         public string? UpdatedBy { get; set; }
     }

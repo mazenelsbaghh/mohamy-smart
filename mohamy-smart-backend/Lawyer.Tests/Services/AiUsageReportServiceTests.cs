@@ -23,6 +23,30 @@ public class AiUsageReportServiceTests : IDisposable
     }
 
     [Fact]
+    public void CalculateGeminiCost_Gemini35Flash_UsesPaidTierTokenPricing()
+    {
+        var cost = AiCostCalculator.CalculateGeminiCost("gemini-3.5-flash", 1_000_000, 1_000_000);
+
+        cost.Should().Be(10.50m);
+    }
+
+    [Fact]
+    public async Task GetModelUsageAsync_NoGemini35FlashUsage_IncludesZeroRow()
+    {
+        var sut = CreateSut();
+
+        var result = await sut.GetModelUsageAsync(null, null, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        var model = result.Data.Should().ContainSingle(m => m.ModelIdentifier == "gemini-3.5-flash").Subject;
+        model.DisplayName.Should().Be("Gemini 3.5 Flash");
+        model.RequestCount.Should().Be(0);
+        model.TotalCostUsd.Should().Be(0);
+        model.InputTokens.Should().Be(0);
+        model.OutputTokens.Should().Be(0);
+    }
+
+    [Fact]
     public async Task GetLawyerUsageDetailAsync_LawyerId_IncludesRecordsStoredWithApplicationUserId()
     {
         var now = DateTime.UtcNow;

@@ -14,6 +14,8 @@ namespace Lawyer.Application.Services
     public class AiModelConfigService : IAiModelConfigService
     {
         private const string AllConfigsCacheKey = "AllAiModelConfigs";
+        private const string Gemini35FlashDocumentationUrl = "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash";
+        private const string Gemini35FlashPricingNotes = "Paid tier: input $1.50/1M tokens, output including thinking tokens $9.00/1M tokens. Context caching $0.15/1M tokens plus $1.00/1M tokens/hour storage. Google Search and Maps grounding: free tier unavailable; paid tier includes 5,000 prompts/month free shared across Gemini 3 then $14/1,000 search queries. Used to improve products: free tier yes, paid tier no.";
         private readonly IApplicationDbContext _db;
         private readonly IMemoryCache _cache;
         private readonly ILogger<AiModelConfigService> _logger;
@@ -41,7 +43,7 @@ namespace Lawyer.Application.Services
                 var result = PipelineRegistry.GetAllIncludedStages().Select(sd =>
                 {
                     configMap.TryGetValue(sd.StepType, out var config);
-                    var modelIdentifier = config?.ModelIdentifier ?? "gemini-3.1-pro-preview";
+                    var modelIdentifier = config?.ModelIdentifier ?? "gemini-3.5-flash";
                     return new AiStageModelConfigDto(
                         (int)sd.StepType,
                         sd.StepType.ToString(),
@@ -128,7 +130,9 @@ namespace Lawyer.Application.Services
             var models = Enum.GetValues<AiModelType>().Select(mt => new AiModelOptionDto(
                 mt.ToModelIdentifier(),
                 mt.ToDisplayName(),
-                mt.ToDescription()
+                mt.ToDescription(),
+                mt == AiModelType.Gemini35Flash ? Gemini35FlashDocumentationUrl : null,
+                mt == AiModelType.Gemini35Flash ? Gemini35FlashPricingNotes : null
             )).ToList();
 
             return Result<List<AiModelOptionDto>>.Success(models);

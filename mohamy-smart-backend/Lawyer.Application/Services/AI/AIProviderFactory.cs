@@ -17,7 +17,7 @@ namespace Lawyer.Application.Services.AI
         private readonly IApplicationDbContext _db;
         private readonly IMemoryCache _cache;
         private readonly Dictionary<string, IAIProvider> _providers;
-        private const string FallbackModel = "gemini-3-flash-preview";
+        private const string FallbackModel = "gemini-3.5-flash";
         private readonly string _defaultModel;
         private readonly IAIProvider _fallbackProvider;
 

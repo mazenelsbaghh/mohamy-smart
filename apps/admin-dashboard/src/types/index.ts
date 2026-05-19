@@ -77,6 +77,8 @@ export interface AiModelOption {
  identifier: string;
  displayName: string;
  description: string;
+ documentationUrl?: string | null;
+ pricingNotes?: string | null;
 }
 
 export interface AiStageInfo {
