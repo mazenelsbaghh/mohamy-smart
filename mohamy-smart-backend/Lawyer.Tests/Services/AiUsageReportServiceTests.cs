@@ -47,6 +47,82 @@ public class AiUsageReportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetLawyerUsageDetailAsync_NonCaseOcrAndChatRecords_AppearAsStandaloneCosts()
+    {
+        var now = DateTime.UtcNow;
+        var lawyerId = Guid.NewGuid();
+        var applicationUserId = Guid.NewGuid();
+
+        var user = new ApplicationUser
+        {
+            Id = applicationUserId,
+            FullName = "standalone usage lawyer",
+            UserName = "standalone@example.com",
+            Email = "standalone@example.com",
+            UserType = UserType.Lawyer,
+            IsActive = true
+        };
+
+        var lawyer = new Core.Models.Lawyer
+        {
+            Id = lawyerId,
+            ApplicationUserId = applicationUserId,
+            ApplicationUser = user,
+            Created = now,
+            CreatedBy = applicationUserId,
+            UpdatedBy = applicationUserId,
+            IsActive = true
+        };
+        user.Lawyer = lawyer;
+
+        _dbContext.Users.Add(user);
+        _dbContext.Set<Core.Models.Lawyer>().Add(lawyer);
+        _dbContext.AiUsageRecords.AddRange(
+            new AiUsageRecord
+            {
+                Id = Guid.NewGuid(),
+                LawyerId = lawyerId,
+                Provider = "GoogleVision",
+                ModelIdentifier = "google-vision",
+                AiStepType = AiStepType.Ocr,
+                EstimatedCostUsd = 0.02m,
+                CreatedAt = now
+            },
+            new AiUsageRecord
+            {
+                Id = Guid.NewGuid(),
+                LawyerId = lawyerId,
+                Provider = "Gemini",
+                ModelIdentifier = "gemini-3.5-flash",
+                AiStepType = AiStepType.Chat,
+                EstimatedCostUsd = 0.03m,
+                InputTokens = 100,
+                OutputTokens = 50,
+                TotalTokens = 150,
+                CreatedAt = now
+            });
+        await _dbContext.SaveChangesAsync();
+
+        var sut = CreateSut();
+
+        var result = await sut.GetLawyerUsageDetailAsync(lawyerId, null, null, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.PerCaseWorkflows.Should().BeEmpty();
+        result.Data.StandaloneCosts.Should().HaveCount(2);
+        result.Data.StandaloneCosts.Should().Contain(w =>
+            w.WorkflowKey == "ocr" &&
+            w.WorkflowName == "التعرف البصري OCR" &&
+            w.RequestCount == 1 &&
+            w.TotalCostUsd == 0.02m);
+        result.Data.StandaloneCosts.Should().Contain(w =>
+            w.WorkflowKey == "chat" &&
+            w.WorkflowName == "المحادثة" &&
+            w.RequestCount == 1 &&
+            w.TotalCostUsd == 0.03m);
+    }
+
+    [Fact]
     public async Task GetLawyerUsageDetailAsync_LawyerId_IncludesRecordsStoredWithApplicationUserId()
     {
         var now = DateTime.UtcNow;

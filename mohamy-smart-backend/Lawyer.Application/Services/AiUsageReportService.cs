@@ -524,6 +524,15 @@ namespace Lawyer.Application.Services
             or AiStepType.LegalContractReview
                 => ("legal-contract", "إنشاء العقود القانونية"),
 
+            AiStepType.Ocr
+                => ("ocr", "التعرف البصري OCR"),
+
+            AiStepType.Chat
+                => ("chat", "المحادثة"),
+
+            AiStepType.ClarifyFacts
+                => ("clarify-facts", "استيضاح الوقائع"),
+
             _ => null
         };
 
