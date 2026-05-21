@@ -6,6 +6,7 @@ import { guidanceContent } from'./guidanceContent';
 describe('PageGuidance', () => {
  beforeEach(() => {
  localStorage.clear();
+ sessionStorage.clear();
  document.cookie.split(';').forEach((cookie) => {
  const name = cookie.split('=')[0]?.trim();
  if (name) document.cookie = `${name}=; Max-Age=0; Path=/`;
@@ -58,4 +59,34 @@ describe('PageGuidance', () => {
 
  expect(screen.getByRole('dialog')).toBeInTheDocument();
  });
+
+ it('stores session closing and hides the guidance for the current session', () => {
+    const { rerender } = render(<PageGuidance content={guidanceContent.home} />);
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /إغلاق الإرشاد الآن/i }));
+
+    expect(sessionStorage.getItem('mohamy:page-guidance:home:dismissed:closed')).toBe('true');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    rerender(<PageGuidance content={guidanceContent.home} />);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /فتح إرشاد الصفحة/i })).toBeInTheDocument();
+  });
+
+  it('clears session closed status and opens guidance when launcher is clicked', () => {
+    sessionStorage.setItem('mohamy:page-guidance:home:dismissed:closed', 'true');
+
+    render(<PageGuidance content={guidanceContent.home} />);
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    const launcher = screen.getByRole('button', { name: /فتح إرشاد الصفحة/i });
+    expect(launcher).toBeInTheDocument();
+
+    fireEvent.click(launcher);
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(sessionStorage.getItem('mohamy:page-guidance:home:dismissed:closed')).toBeNull();
+  });
 });

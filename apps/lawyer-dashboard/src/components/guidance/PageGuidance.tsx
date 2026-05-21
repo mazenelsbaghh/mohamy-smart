@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from'react';
+import { useCallback, useEffect, useId, useMemo, useState } from'react';
 import { createPortal } from'react-dom';
 import {
  BookOpenCheck,
@@ -66,6 +66,27 @@ const setDismissedValue = (key: string) => {
  }
 };
 
+const getSessionClosedValue = (key: string) => {
+ try {
+ if (sessionStorage.getItem(key) === 'true') return true;
+ } catch {
+ // Session storage is optional UI state.
+ }
+ return false;
+};
+
+const setSessionClosedValue = (key: string, value: boolean) => {
+ try {
+ if (value) {
+ sessionStorage.setItem(key, 'true');
+ } else {
+ sessionStorage.removeItem(key);
+ }
+ } catch {
+ // Ignore browser storage failures.
+ }
+};
+
 const buildFallbackSteps = (content: PageGuidanceContent): GuidedTourStep[] => [
  ...content.primaryActions.map((action) => ({
  title:`شرح: ${action}`,
@@ -84,13 +105,14 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
  const titleId = useId();
  const descriptionId = useId();
  const dismissStorageKey = useMemo(() => `mohamy:page-guidance:${content.key}:dismissed`, [content.key]);
+ const sessionClosedKey = useMemo(() => `${dismissStorageKey}:closed`, [dismissStorageKey]);
  const steps = useMemo(() => content.tourSteps?.length ? content.tourSteps : buildFallbackSteps(content), [content]);
  const videoUrl = useMemo(
  () => content.video ? buildGuidanceVideoUrl(content.video.start, content.video.end) : undefined,
  [content.video]
  );
  const [isDismissed, setIsDismissed] = useState(() => getDismissedValue(dismissStorageKey));
- const [isOpen, setIsOpen] = useState(() => !getDismissedValue(dismissStorageKey));
+ const [isOpen, setIsOpen] = useState(() => !getDismissedValue(dismissStorageKey) && !getSessionClosedValue(sessionClosedKey));
  const [activeStepIndex, setActiveStepIndex] = useState(0);
 
  const activeStep = steps[Math.min(activeStepIndex, steps.length - 1)];
@@ -99,9 +121,21 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
 
  useEffect(() => {
  const dismissed = getDismissedValue(dismissStorageKey);
+ const sessionClosed = getSessionClosedValue(sessionClosedKey);
  setIsDismissed(dismissed);
- setIsOpen(!dismissed);
+ setIsOpen(!dismissed && !sessionClosed);
  setActiveStepIndex(0);
+ }, [dismissStorageKey, sessionClosedKey]);
+
+ const closeForNow = useCallback(() => {
+ setSessionClosedValue(sessionClosedKey, true);
+ setIsOpen(false);
+ }, [sessionClosedKey]);
+
+ const dismissPermanently = useCallback(() => {
+ setDismissedValue(dismissStorageKey);
+ setIsDismissed(true);
+ setIsOpen(false);
  }, [dismissStorageKey]);
 
  useEffect(() => {
@@ -109,7 +143,7 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
 
  const handleKeyDown = (event: KeyboardEvent) => {
  if (event.key ==='Escape') {
- setIsOpen(false);
+ closeForNow();
  }
  if (event.key ==='ArrowLeft') {
  setActiveStepIndex((current) => Math.min(current + 1, steps.length - 1));
@@ -121,19 +155,7 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
 
  window.addEventListener('keydown', handleKeyDown);
  return () => window.removeEventListener('keydown', handleKeyDown);
- }, [isOpen, steps.length]);
-
-
-
- const closeForNow = () => {
- setIsOpen(false);
- };
-
- const dismissPermanently = () => {
- setDismissedValue(dismissStorageKey);
- setIsDismissed(true);
- setIsOpen(false);
- };
+ }, [isOpen, steps.length, closeForNow]);
 
  const goPrevious = () => {
  setActiveStepIndex((current) => Math.max(current - 1, 0));
@@ -155,6 +177,7 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
  type="button"
  className="page-guidance-launcher"
  onClick={() => {
+ setSessionClosedValue(sessionClosedKey, false);
  setIsDismissed(false);
  setIsOpen(true);
  }}

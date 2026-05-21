@@ -105,6 +105,7 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  const fetchingIdsRef = useRef<Set<string>>(new Set());
  const analysisToastRef = useRef<string | undefined>(undefined);
  const lastAnnouncedAnalysisStateRef = useRef<string | null>(null);
+ const handledCompletedAnalysisJobRef = useRef<string | null>(null);
 
  const isGeneratingFinalReq = isNavigating || (!!finalReqJob && (finalReqJob.status ==='Queued' || finalReqJob.status ==='Processing'));
 
@@ -181,6 +182,9 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
 
  const completedAnalysis = getCompletedDefenseAnalysis(currentJob.resultJson);
  if (completedAnalysis) {
+ const completedJobKey = `${currentJob.id}:${currentJob.resultJson ??''}`;
+ if (handledCompletedAnalysisJobRef.current === completedJobKey) return;
+ handledCompletedAnalysisJobRef.current = completedJobKey;
  if (!explanationsCache[completedAnalysis.defenseId]) {
  dispatch(hydrateStep({
  stepNumber: 3,
@@ -207,7 +211,7 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  })
  .catch(() => { /* fallback is best-effort */ })
  .finally(() => { fetchingIdsRef.current.delete(id); });
- }, [activeDefenseId, currentJob?.resultJson, currentJob?.status, dispatch, explanationsCache]);
+ }, [activeDefenseId, currentJob?.id, currentJob?.resultJson, currentJob?.status, dispatch, explanationsCache]);
 
  useEffect(() => {
  const handleBeforeUnload = (e: BeforeUnloadEvent) => {

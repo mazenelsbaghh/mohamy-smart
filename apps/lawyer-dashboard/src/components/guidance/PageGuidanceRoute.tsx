@@ -4,11 +4,15 @@ import { getGuidanceContent, type GuidanceKey } from'./guidanceContent';
 import { guidanceRoutes } from'./guidanceRoutes';
 
 const getGuidanceKeyForPath = (pathname: string): GuidanceKey => {
- const matchedRoute = guidanceRoutes.find((route) =>
- matchPath({ path: route.pattern, end: true }, pathname)
- );
+  const cleanPathname = pathname.length > 1 && pathname.endsWith('/')
+    ? pathname.slice(0, -1)
+    : pathname;
 
- return matchedRoute?.key ??'notFound';
+  const matchedRoute = guidanceRoutes.find((route) =>
+    matchPath({ path: route.pattern, end: true }, cleanPathname)
+  );
+
+  return matchedRoute?.key ?? 'notFound';
 };
 
 const PageGuidanceRoute = () => {
