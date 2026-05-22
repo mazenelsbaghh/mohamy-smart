@@ -270,13 +270,7 @@ namespace Lawyer.Application.Services
 
 					if (existingTrialSub != null)
 					{
-						existingTrialSub.IsActive = true;
-						existingTrialSub.StartDate = DateTime.UtcNow;
-						existingTrialSub.EndDate = DateTime.UtcNow.AddDays(freeTrialPlan.DurationDays);
-						existingTrialSub.UsedAiRequests = 0;
-
-						await _unitOfWork.Repository<LawyerSubscription>().Update(existingTrialSub);
-						_logger.LogInformation("Lawyer {LawyerId} existing trial subscription reactivated.", lawyer.Id);
+						_logger.LogInformation("Lawyer {LawyerId} already has an existing trial subscription record. Not subscribing again.", lawyer.Id);
 					}
 					else
 					{

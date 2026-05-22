@@ -149,6 +149,23 @@ namespace Lawyer.Application.Services
 			if (lawyer == null)
 				return ApiExceptionResponse.NotFound<LawyerSubscriptionDto>("Lawyer not found");
 
+			const string trialPlanName = "الباقة التجريبية";
+			const string legacyTrialPlanName = "Free Trial";
+
+			if (plan.Name == trialPlanName || plan.Name == legacyTrialPlanName)
+			{
+				var existingTrialSub = await _unitOfWork.Repository<LawyerSubscription>()
+					.AsQueryable()
+					.IgnoreQueryFilters()
+					.Include(ls => ls.Subscription)
+					.FirstOrDefaultAsync(ls => ls.LawyerId == lawyerId && (ls.Subscription.Name == trialPlanName || ls.Subscription.Name == legacyTrialPlanName), cancellationToken);
+
+				if (existingTrialSub != null)
+				{
+					return ApiExceptionResponse.BadRequest<LawyerSubscriptionDto>("لا يمكن الاشتراك في الباقة التجريبية أكثر من مرة.");
+				}
+			}
+
 			var current = await _unitOfWork.Repository<LawyerSubscription>()
 				.FirstOrDefaultAsync(x => x.LawyerId == lawyerId && x.IsActive, cancellationToken);
 

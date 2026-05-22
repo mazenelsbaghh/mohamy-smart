@@ -597,21 +597,34 @@ namespace Lawyer.Application.Services
                         }
                     }
 
-                    var freeTrialSub = new LawyerSubscription
-                    {
-                        Lawyer = lawyer,
-                        LawyerId = lawyer.Id,
-                        Subscription = freeTrialPlan,
-                        SubscriptionId = freeTrialPlan.Id,
-                        UsedAiRequests = 0,
-                        StartDate = DateTime.UtcNow,
-                        EndDate = DateTime.UtcNow.AddDays(freeTrialPlan.DurationDays),
-                        IsActive = true
-                    };
+					var existingTrialSub = await _unitOfWork.Repository<LawyerSubscription>()
+						.AsQueryable()
+						.IgnoreQueryFilters()
+						.Include(ls => ls.Subscription)
+						.FirstOrDefaultAsync(ls => ls.LawyerId == lawyer.Id && (ls.Subscription.Name == trialPlanName || ls.Subscription.Name == legacyTrialPlanName), cancellationToken);
 
-                    await _unitOfWork.Repository<LawyerSubscription>().AddAsync(freeTrialSub);
-                    _logger.LogInformation("Lawyer {LawyerId} activated and subscribed to trial plan after phone verification.", lawyer.Id);
-                }
+					if (existingTrialSub != null)
+					{
+						_logger.LogInformation("Lawyer {LawyerId} already has an existing trial subscription record. Not subscribing again.", lawyer.Id);
+					}
+					else
+					{
+						var freeTrialSub = new LawyerSubscription
+						{
+							Lawyer = lawyer,
+							LawyerId = lawyer.Id,
+							Subscription = freeTrialPlan,
+							SubscriptionId = freeTrialPlan.Id,
+							UsedAiRequests = 0,
+							StartDate = DateTime.UtcNow,
+							EndDate = DateTime.UtcNow.AddDays(freeTrialPlan.DurationDays),
+							IsActive = true
+						};
+
+						await _unitOfWork.Repository<LawyerSubscription>().AddAsync(freeTrialSub);
+						_logger.LogInformation("Lawyer {LawyerId} activated and subscribed to trial plan after phone verification.", lawyer.Id);
+					}
+				}
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
