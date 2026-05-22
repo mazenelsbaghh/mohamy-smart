@@ -5,6 +5,9 @@ namespace Lawyer.Application.Dtos.AdminReport
 		public int TotalLawyers { get; set; }
 		public int TotalActive { get; set; }
 		public int TotalInactive { get; set; }
+		public int ActiveSubscribers { get; set; }
+		public int ActivePaidSubscribers { get; set; }
+		public int ExpiredSubscribers { get; set; }
 		public List<RecentLawyerDto> RecentRegistrations { get; set; } = new();
 	}
 

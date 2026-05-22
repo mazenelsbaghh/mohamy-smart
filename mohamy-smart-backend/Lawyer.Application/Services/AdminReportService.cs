@@ -43,15 +43,47 @@ namespace Lawyer.Application.Services
 			})
 			.ToListAsync(cancellationToken);
 
+		var now = DateTime.UtcNow;
+
+		var activeSubscribers = await _unitOfWork.Repository<LawyerSubscription>()
+			.AsQueryable()
+			.AsNoTracking()
+			.Where(s => s.IsActive && s.EndDate >= now)
+			.Select(s => s.LawyerId)
+			.Distinct()
+			.CountAsync(cancellationToken);
+
+		var activePaidSubscribers = await _unitOfWork.Repository<LawyerSubscription>()
+			.AsQueryable()
+			.AsNoTracking()
+			.Where(s => s.IsActive && s.EndDate >= now && s.Subscription.Price > 0)
+			.Select(s => s.LawyerId)
+			.Distinct()
+			.CountAsync(cancellationToken);
+
+		var totalSubscribers = await _unitOfWork.Repository<LawyerSubscription>()
+			.AsQueryable()
+			.AsNoTracking()
+			.Select(s => s.LawyerId)
+			.Distinct()
+			.CountAsync(cancellationToken);
+
+		var expiredSubscribers = totalSubscribers - activeSubscribers;
+		if (expiredSubscribers < 0) expiredSubscribers = 0;
+
 		var dto = new LawyersReportDto
 		{
 			TotalLawyers = total,
 			TotalActive = active,
 			TotalInactive = total - active,
+			ActiveSubscribers = activeSubscribers,
+			ActivePaidSubscribers = activePaidSubscribers,
+			ExpiredSubscribers = expiredSubscribers,
 			RecentRegistrations = recentRegistrations
 		};
 
-		_logger.LogInformation("Lawyers report generated: Total={Total}, Active={Active}", total, active);
+		_logger.LogInformation("Lawyers report generated: Total={Total}, Active={Active}, ActiveSubscribers={ActiveSubscribers}, ActivePaidSubscribers={ActivePaidSubscribers}, ExpiredSubscribers={ExpiredSubscribers}", 
+			total, active, activeSubscribers, activePaidSubscribers, expiredSubscribers);
 
 		return ApiExceptionResponse.Success(dto, "Lawyers report generated successfully");
 	}

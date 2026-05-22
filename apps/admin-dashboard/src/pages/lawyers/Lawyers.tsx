@@ -7,7 +7,7 @@ import { Button } from "@heroui/react";
 
 import SubTitle from "../../components/public/subTitle/SubTitle";
 import ServerPaginationTable from "../../components/ui/table/ServerPaginationTable";
-import { FaUsers, FaUserCheck } from "react-icons/fa";
+import { FaUsers, FaUserCheck, FaCrown, FaUserClock } from "react-icons/fa";
 import fetchLawyers from "../../redux/lawyers/thunk/fetchLawyers";
 import updateLawyerStatus from "../../redux/lawyers/thunk/updateLawyerStatus";
 import fetchLawyersReport from "../../redux/reports/thunk/fetchLawyersReport";
@@ -91,6 +91,7 @@ const Lawyers = () => {
         <Container>
           <HeadTitle title="إدارة المحامين" />
           <SkeletonStatsCards />
+          <SkeletonStatsCards />
           <div className="w-full">
             <SkeletonTable rows={7} cols={8} />
           </div>
@@ -122,6 +123,27 @@ const Lawyers = () => {
             iconColor: "#06B6D4",
             text: "المحامين الموقوفين",
             number: lawyersReport?.totalInactive ?? 0,
+          }}
+        />
+
+        <StatsCards
+          card1={{
+            icon: <FaUsers />,
+            iconColor: "#3B82F6",
+            text: "المشتركين في الباقات",
+            number: lawyersReport?.activeSubscribers ?? 0,
+          }}
+          card2={{
+            icon: <FaCrown />,
+            iconColor: "#F59E0B",
+            text: "المشتركين في الباقات المدفوعة",
+            number: lawyersReport?.activePaidSubscribers ?? 0,
+          }}
+          card3={{
+            icon: <FaUserClock />,
+            iconColor: "#EF4444",
+            text: "الاشتراكات المنتهية",
+            number: lawyersReport?.expiredSubscribers ?? 0,
           }}
         />
 

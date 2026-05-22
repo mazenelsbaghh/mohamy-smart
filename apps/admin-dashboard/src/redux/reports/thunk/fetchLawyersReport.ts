@@ -3,9 +3,12 @@ import { axiosErrorHandler } from"@mohamy/shared-api";
 import api from"../../../APIs/api";
 
 export type TLawyersReport = {
- totalLawyers: number;
- totalActive: number;
- totalInactive: number;
+  totalLawyers: number;
+  totalActive: number;
+  totalInactive: number;
+  activeSubscribers: number;
+  activePaidSubscribers: number;
+  expiredSubscribers: number;
 };
 
 const fetchLawyersReport = createAsyncThunk('reports/fetchLawyersReport',
