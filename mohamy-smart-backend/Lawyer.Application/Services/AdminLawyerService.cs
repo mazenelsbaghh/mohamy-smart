@@ -198,7 +198,10 @@ namespace Lawyer.Application.Services
 		public async Task<Result<string>> UpdateLawyerStatusAsync(Guid lawyerId, bool isActive, CancellationToken cancellationToken)
 		{
 			var lawyer = await _unitOfWork.Repository<Core.Models.Lawyer>()
-				.FirstOrDefaultAsync(l => l.Id == lawyerId || l.ApplicationUserId == lawyerId, cancellationToken, l => l.ApplicationUser);
+				.AsQueryable()
+				.IgnoreQueryFilters()
+				.Include(l => l.ApplicationUser)
+				.FirstOrDefaultAsync(l => l.Id == lawyerId || l.ApplicationUserId == lawyerId, cancellationToken);
 
 			if (lawyer == null)
 				return ApiExceptionResponse.NotFound<string>("Lawyer not found");
