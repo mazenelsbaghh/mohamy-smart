@@ -481,6 +481,12 @@ if (!app.Environment.IsEnvironment("Testing"))
             service => service.CleanupStuckJobsAsync(CancellationToken.None),
             "*/15 * * * *" // Run every 15 minutes
         );
+
+        recurringJobManager.AddOrUpdate<ISubscriptionService>(
+            "ExpireExpiredSubscriptions",
+            service => service.ExpireExpiredSubscriptionsAsync(CancellationToken.None),
+            "0 0 * * *" // Run daily at midnight UTC
+        );
     }
 }
 

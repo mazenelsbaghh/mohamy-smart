@@ -1,7 +1,13 @@
+import '@testing-library/jest-dom';
 import { fireEvent, render, screen } from'@testing-library/react';
-import { beforeEach, describe, expect, it } from'vitest';
+import { beforeEach, describe, expect, it, vi } from'vitest';
 import PageGuidance from'./PageGuidance';
 import { guidanceContent } from'./guidanceContent';
+
+vi.mock('../../hooks/reduxHooks', () => ({
+  useAppDispatch: () => vi.fn(),
+  useAppSelector: (selector: (state: { auth: { user: null } }) => unknown) => selector({ auth: { user: null } }),
+}));
 
 describe('PageGuidance', () => {
  beforeEach(() => {

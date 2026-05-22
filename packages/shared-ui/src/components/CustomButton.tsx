@@ -37,7 +37,7 @@ const CustomButton = ({ type, text = 'العنوان', radius, variant, size, st
             isLoading={isLoading}
             isDisabled={isDisabled}
             fullWidth={fullWidth}
-            onClick={onClick}
+            onPress={onClick}
         >
             {text}
         </Button>

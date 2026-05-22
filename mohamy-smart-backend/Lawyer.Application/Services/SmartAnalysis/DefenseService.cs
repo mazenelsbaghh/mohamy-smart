@@ -431,10 +431,16 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 if (!accessResult.Succeeded)
                     return Result<DefenseDetailDto>.Error(accessResult.StatusCode, accessResult.Message);
 
+                var defenseType = Core.Enum.DefenseType.Substantive;
+                if (!string.IsNullOrWhiteSpace(request.Type) && Enum.TryParse<Core.Enum.DefenseType>(request.Type, true, out var parsedType))
+                {
+                    defenseType = parsedType;
+                }
+
                 var defense = new Core.Models.Defense
                 {
                     CaseId = request.CaseId,
-                    Type = Core.Enum.DefenseType.Substantive,
+                    Type = defenseType,
                     DefenseTitle = title,
                     BasisFromCase = string.IsNullOrWhiteSpace(request.BasisFromCase)
                         ? "دفع مضاف يدويًا بواسطة المحامي"
@@ -681,7 +687,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
                     return Result<DefenseMemoDraftResponseDto>.Error(HttpStatusCode.BadRequest, "معرف القضية غير صالح");
 
                 var caseEntity = await _unitOfWork.Repository<Core.Models.Case>()
-                    .FirstOrDefaultAsync(x => x.Id == request.CaseId, ct);
+                    .FirstOrDefaultAsync(x => x.Id == request.CaseId, ct, x => x.CaseType);
 
                 if (caseEntity == null)
                     return Result<DefenseMemoDraftResponseDto>.Error(HttpStatusCode.NotFound, "القضية غير موجودة");
@@ -692,30 +698,53 @@ namespace Lawyer.Application.Services.SmartAnalysis
 
                 var normalizedRequest = NormalizeDefenseMemoRequest(request, caseEntity);
 
-                var systemPrompt = await LoadDefenseMemoPromptAsync(normalizedRequest, ct);
-                if (systemPrompt == null)
-                    return Result<DefenseMemoDraftResponseDto>.Error(HttpStatusCode.InternalServerError, "Defense memo prompt file not found");
-
-                var userPrompt = BuildDefenseMemoUserPrompt(normalizedRequest);
+                if (normalizedRequest.ApprovedDefenses.Count == 0)
+                    return Result<DefenseMemoDraftResponseDto>.Error(HttpStatusCode.BadRequest, "يجب اختيار دفع واحد على الأقل لإصدار المذكرة");
+                if (normalizedRequest.FinalRequests.Count == 0)
+                    return Result<DefenseMemoDraftResponseDto>.Error(HttpStatusCode.BadRequest, "يجب اختيار طلب ختامي واحد على الأقل لإصدار المذكرة");
 
                 _logger.LogInformation("Generating defense memo draft for Case ID: {CaseId}", request.CaseId);
 
                 var aiProvider = _aiProviderFactory.GetProvider();
                 var memoModel = await _aiProviderFactory.GetModelForStepAsync(AiStepType.DefenseMemoDraft);
+                var lawyerId = ResolveLawyerGuid(userId, caseEntity.LawyerId);
 
-                var aiResult = await aiProvider.SendChatCompletionAsync(
-                    systemPrompt,
-                    userPrompt,
-                    AIRequestOptions.ForAnalysis with { Model = memoModel },
+                var frameResult = await GenerateDefenseMemoFrameAsync(
+                    aiProvider,
+                    memoModel,
+                    normalizedRequest,
+                    lawyerId,
                     ct);
 
-                if (!aiResult.Succeeded || string.IsNullOrWhiteSpace(aiResult.Data?.Content))
-                    return Result<DefenseMemoDraftResponseDto>.Error(HttpStatusCode.InternalServerError, "فشل في توليد مذكرة الدفاع");
+                if (!frameResult.Succeeded || frameResult.Data == null)
+                    return Result<DefenseMemoDraftResponseDto>.Error(
+                        frameResult.StatusCode,
+                        frameResult.Message ?? "فشل في توليد أجزاء المذكرة الأساسية");
 
-                var memoHtml = SanitizeMemoHtml(aiResult.Data.Content);
+                var defenseSections = new List<DraftedDefenseSectionDto>();
+                for (var i = 0; i < normalizedRequest.ApprovedDefenses.Count; i++)
+                {
+                    var defense = normalizedRequest.ApprovedDefenses[i];
+                    var defenseResult = await GenerateSingleDefenseSectionAsync(
+                        aiProvider,
+                        memoModel,
+                        normalizedRequest,
+                        defense,
+                        i,
+                        lawyerId,
+                        ct);
 
-                var lawyerId = !string.IsNullOrEmpty(userId) ? Guid.Parse(userId) : caseEntity.LawyerId;
-                await TrackUsageAsync(lawyerId, request.CaseId, AiStepType.DefenseMemoDraft, memoModel, aiResult.Data.Usage, request.RunId);
+                    if (!defenseResult.Succeeded || defenseResult.Data == null)
+                        return Result<DefenseMemoDraftResponseDto>.Error(
+                            defenseResult.StatusCode,
+                            defenseResult.Message ?? $"فشل في صياغة الدفع: {defense.DefenseTitle}");
+
+                    defenseSections.Add(defenseResult.Data);
+                }
+
+                var memoHtml = AssembleDefenseMemoHtml(frameResult.Data, defenseSections);
+                if (!HasHtmlContent(memoHtml))
+                    return Result<DefenseMemoDraftResponseDto>.Error(HttpStatusCode.InternalServerError, "فشل في تجميع مذكرة الدفاع");
 
                 return Result<DefenseMemoDraftResponseDto>.Success(
                     new DefenseMemoDraftResponseDto { MemoHtml = memoHtml },
@@ -969,23 +998,241 @@ namespace Lawyer.Application.Services.SmartAnalysis
             }
         }
 
-        private async Task<string?> LoadDefenseMemoPromptAsync(DefenseMemoDraftRequestDto request, CancellationToken ct)
+        private async Task<Result<DefenseMemoFrameSectionsDto>> GenerateDefenseMemoFrameAsync(
+            IAIProvider aiProvider,
+            string memoModel,
+            DefenseMemoDraftRequestDto request,
+            Guid lawyerId,
+            CancellationToken ct)
         {
-            var promptRelative = Path.Combine("المرحلة الأولى إعداد مذكرة الدفاع", "defense-step5-memo-draft.txt");
-            var template = await _promptService.GetPromptIfExistsAsync(promptRelative, ct);
-            if (template == null)
+            var systemPrompt = await LoadDefenseMemoPromptFileAsync("defense-step5-frame.txt", ct);
+            if (systemPrompt == null)
+                return Result<DefenseMemoFrameSectionsDto>.Error(HttpStatusCode.InternalServerError, "Defense memo frame prompt file not found");
+
+            var aiResult = await aiProvider.SendChatCompletionAsync(
+                systemPrompt,
+                BuildDefenseMemoFrameUserPrompt(request),
+                AIRequestOptions.ForAnalysis with { Model = memoModel },
+                ct);
+
+            if (!aiResult.Succeeded || string.IsNullOrWhiteSpace(aiResult.Data?.Content))
+                return Result<DefenseMemoFrameSectionsDto>.Error(HttpStatusCode.InternalServerError, "فشل في توليد مقدمة ووقائع وطلبات المذكرة");
+
+            await TrackUsageAsync(lawyerId, request.CaseId, AiStepType.DefenseMemoDraft, memoModel, aiResult.Data.Usage, request.RunId);
+
+            var frame = ParseDefenseMemoFrameJson(aiResult.Data.Content);
+            if (frame == null)
+                return Result<DefenseMemoFrameSectionsDto>.Error(HttpStatusCode.InternalServerError, "فشل في قراءة أجزاء المذكرة الأساسية");
+
+            frame.OpeningHtml = SanitizeMemoHtml(frame.OpeningHtml);
+            frame.FactsHtml = SanitizeMemoHtml(frame.FactsHtml);
+            frame.RequestsHtml = SanitizeMemoHtml(frame.RequestsHtml);
+            frame.ClosingHtml = SanitizeMemoHtml(frame.ClosingHtml);
+
+            if (!IsValidFrame(frame))
+                return Result<DefenseMemoFrameSectionsDto>.Error(HttpStatusCode.InternalServerError, "أجزاء المذكرة الأساسية غير مكتملة");
+
+            return Result<DefenseMemoFrameSectionsDto>.Success(frame);
+        }
+
+        private async Task<Result<DraftedDefenseSectionDto>> GenerateSingleDefenseSectionAsync(
+            IAIProvider aiProvider,
+            string memoModel,
+            DefenseMemoDraftRequestDto request,
+            ApprovedDefenseInput defense,
+            int sourceIndex,
+            Guid lawyerId,
+            CancellationToken ct)
+        {
+            var systemPrompt = await LoadDefenseMemoPromptFileAsync("defense-step5-single-defense.txt", ct);
+            if (systemPrompt == null)
+                return Result<DraftedDefenseSectionDto>.Error(HttpStatusCode.InternalServerError, "Defense memo single-defense prompt file not found");
+
+            if (string.IsNullOrWhiteSpace(defense.DefenseTitle))
+                return Result<DraftedDefenseSectionDto>.Error(HttpStatusCode.BadRequest, "عنوان الدفع مطلوب قبل إصدار المذكرة");
+
+            var aiResult = await aiProvider.SendChatCompletionAsync(
+                systemPrompt,
+                BuildSingleDefenseMemoUserPrompt(request, defense, sourceIndex),
+                AIRequestOptions.ForAnalysis with { Model = memoModel },
+                ct);
+
+            if (!aiResult.Succeeded || string.IsNullOrWhiteSpace(aiResult.Data?.Content))
+                return Result<DraftedDefenseSectionDto>.Error(HttpStatusCode.InternalServerError, $"فشل في صياغة الدفع: {defense.DefenseTitle}");
+
+            await TrackUsageAsync(lawyerId, request.CaseId, AiStepType.DefenseMemoDraft, memoModel, aiResult.Data.Usage, request.RunId);
+
+            var html = SanitizeMemoHtml(aiResult.Data.Content);
+            if (!HasHtmlContent(html))
+                return Result<DraftedDefenseSectionDto>.Error(HttpStatusCode.InternalServerError, $"صياغة الدفع رجعت فارغة: {defense.DefenseTitle}");
+
+            return Result<DraftedDefenseSectionDto>.Success(new DraftedDefenseSectionDto
+            {
+                DefenseTitle = defense.DefenseTitle,
+                DefenseType = defense.Type,
+                SourceOrder = sourceIndex,
+                Html = html
+            });
+        }
+
+        private async Task<string?> LoadDefenseMemoPromptFileAsync(string fileName, CancellationToken ct)
+        {
+            return await _promptService.GetPromptIfExistsAsync(
+                Path.Combine("المرحلة الأولى إعداد مذكرة الدفاع", fileName),
+                ct);
+        }
+
+        private DefenseMemoFrameSectionsDto? ParseDefenseMemoFrameJson(string jsonText)
+        {
+            try
+            {
+                jsonText = AnalysisHelpers.TryExtractJsonPayload(jsonText);
+                return PromptService.DeserializeSnakeOrCamelJson<DefenseMemoFrameSectionsDto>(jsonText);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to parse defense memo frame JSON. Payload: {JsonText}", PromptService.RedactForLog(jsonText));
                 return null;
+            }
+        }
 
+        private static string BuildDefenseMemoFrameUserPrompt(DefenseMemoDraftRequestDto request)
+        {
+            var defendedName = ResolveDefendedName(request);
+            var opposingName = request.DefendingParty == "client" ? request.ApponentName : request.ClientName;
+            var input = new
+            {
+                caseNumber = request.CaseNumber,
+                caseType = request.CaseType,
+                courtName = request.CourtName,
+                clientName = request.ClientName,
+                opponentName = request.ApponentName,
+                defendingParty = request.DefendingParty == "client" ? "الموكل" : "الخصم",
+                defendedName,
+                opposingName,
+                legalFactsSummary = request.LegalFactsSummary,
+                defendantsPositions = request.DefendantsPositions,
+                finalRequests = request.FinalRequests
+            };
+
+            return "اكتب أجزاء إطار مذكرة الدفاع فقط بناءً على البيانات التالية. لا تكتب أي دفوع ولا تضع عنوان الدفاع:\n"
+                + JsonSerializer.Serialize(input, CamelCaseOptions);
+        }
+
+        private static string BuildSingleDefenseMemoUserPrompt(
+            DefenseMemoDraftRequestDto request,
+            ApprovedDefenseInput defense,
+            int sourceIndex)
+        {
+            var input = new
+            {
+                ordinal = GetArabicOrdinal(sourceIndex),
+                defenseHeading = $"{GetArabicOrdinal(sourceIndex)}: {defense.DefenseTitle}",
+                caseData = new
+                {
+                    caseNumber = request.CaseNumber,
+                    caseType = request.CaseType,
+                    courtName = request.CourtName,
+                    clientName = request.ClientName,
+                    opponentName = request.ApponentName,
+                    defendingParty = request.DefendingParty == "client" ? "الموكل" : "الخصم",
+                    defendedName = ResolveDefendedName(request)
+                },
+                legalFactsSummary = request.LegalFactsSummary,
+                defendantsPositions = request.DefendantsPositions,
+                defense
+            };
+
+            return "اكتب HTML دفع واحد فقط، ولا تكتب المقدمة أو الوقائع أو الطلبات أو الخاتمة. البيانات:\n"
+                + JsonSerializer.Serialize(input, CamelCaseOptions);
+        }
+
+        private static string AssembleDefenseMemoHtml(
+            DefenseMemoFrameSectionsDto frame,
+            IReadOnlyCollection<DraftedDefenseSectionDto> defenseSections)
+        {
+            var orderedDefenses = defenseSections
+                .OrderBy(x => x.SourceOrder)
+                .ToList();
+
+            var sb = new StringBuilder();
+            AppendMemoSection(sb, frame.OpeningHtml, addDividerAfter: true);
+            AppendMemoSection(sb, frame.FactsHtml, addDividerAfter: true);
+
+            sb.AppendLine("<h2 style=\"text-align:center;font-size:1.2rem;font-weight:800;text-decoration:underline;\">الدفـــــــــــاع</h2>");
+            sb.AppendLine("<p style=\"line-height:2;text-align:justify;\">بادئ ذي بدء وقبل الخوض في الموضوع وعلى ضوء ما جاء بأوراق الدعوى ومستنداتها نلتمس في دعواه وذلك تأسيساً على:</p>");
+
+            foreach (var defense in orderedDefenses)
+            {
+                AppendMemoSection(sb, defense.Html, addDividerAfter: false);
+            }
+
+            AppendDivider(sb);
+            AppendMemoSection(sb, frame.RequestsHtml, addDividerAfter: true);
+            AppendMemoSection(sb, frame.ClosingHtml, addDividerAfter: false);
+
+            return SanitizeMemoHtml(sb.ToString());
+        }
+
+        private static void AppendMemoSection(StringBuilder sb, string? html, bool addDividerAfter)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+                return;
+
+            sb.AppendLine(html.Trim());
+            if (addDividerAfter)
+                AppendDivider(sb);
+        }
+
+        private static void AppendDivider(StringBuilder sb)
+        {
+            sb.AppendLine("<hr style=\"border:none;border-top:1px solid rgba(0,0,0,0.08);margin:24px 0;\">");
+        }
+
+        private static bool IsValidFrame(DefenseMemoFrameSectionsDto frame)
+        {
+            return HasHtmlContent(frame.OpeningHtml)
+                && HasHtmlContent(frame.FactsHtml)
+                && HasHtmlContent(frame.RequestsHtml)
+                && HasHtmlContent(frame.ClosingHtml);
+        }
+
+        private static bool HasHtmlContent(string? html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+                return false;
+
+            var textOnly = Regex.Replace(html, "<.*?>", string.Empty).Trim();
+            return !string.IsNullOrWhiteSpace(WebUtility.HtmlDecode(textOnly));
+        }
+
+        private static string ResolveDefendedName(DefenseMemoDraftRequestDto request)
+        {
             var defendedName = request.DefendingParty == "client" ? request.ClientName : request.ApponentName;
-            if (string.IsNullOrWhiteSpace(defendedName))
-                defendedName = request.ClientName;
+            return string.IsNullOrWhiteSpace(defendedName) ? request.ClientName : defendedName;
+        }
 
-            return template
-                .Replace("{court_name}", request.CourtName)
-                .Replace("{case_number}", request.CaseNumber)
-                .Replace("{case_type}", request.CaseType)
-                .Replace("{current_year}", DateTime.UtcNow.Year.ToString())
-                .Replace("{defended_name}", defendedName);
+        private static Guid ResolveLawyerGuid(string userId, Guid fallback)
+        {
+            return Guid.TryParse(userId, out var lawyerId) ? lawyerId : fallback;
+        }
+
+        private static string GetArabicOrdinal(int zeroBasedIndex)
+        {
+            return zeroBasedIndex switch
+            {
+                0 => "أولًا",
+                1 => "ثانيًا",
+                2 => "ثالثًا",
+                3 => "رابعًا",
+                4 => "خامسًا",
+                5 => "سادسًا",
+                6 => "سابعًا",
+                7 => "ثامنًا",
+                8 => "تاسعًا",
+                9 => "عاشرًا",
+                _ => $"{zeroBasedIndex + 1}-"
+            };
         }
 
         private static DefenseMemoDraftRequestDto NormalizeDefenseMemoRequest(
@@ -1007,10 +1254,10 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 ClientName = FirstNonBlank(request.ClientName, caseEntity.ClientName),
                 ApponentName = FirstNonBlank(request.ApponentName, caseEntity.ApponentName),
                 DefendingParty = defendingParty,
-                LegalFactsSummary = request.LegalFactsSummary,
-                DefendantsPositions = request.DefendantsPositions,
-                ApprovedDefenses = request.ApprovedDefenses,
-                FinalRequests = request.FinalRequests
+                LegalFactsSummary = request.LegalFactsSummary ?? new(),
+                DefendantsPositions = request.DefendantsPositions ?? new(),
+                ApprovedDefenses = request.ApprovedDefenses ?? new(),
+                FinalRequests = request.FinalRequests ?? new()
             };
         }
 
@@ -1024,90 +1271,6 @@ namespace Lawyer.Application.Services.SmartAnalysis
         {
             var trimmed = value?.Trim() ?? string.Empty;
             return trimmed == "بدون محكمة" ? string.Empty : trimmed;
-        }
-
-        private static string BuildDefenseMemoUserPrompt(DefenseMemoDraftRequestDto request)
-        {
-            var sb = new StringBuilder();
-
-            sb.AppendLine("بيانات القضية:");
-            sb.AppendLine($"- رقم القضية: {request.CaseNumber}");
-            sb.AppendLine($"- نوع القضية: {request.CaseType}");
-            sb.AppendLine($"- المحكمة: {request.CourtName}");
-            sb.AppendLine($"- الموكل: {request.ClientName}");
-            sb.AppendLine($"- الخصم: {request.ApponentName}");
-            sb.AppendLine($"- المدافع عن: {(request.DefendingParty == "client" ? "الموكل" : "الخصم")}");
-            sb.AppendLine();
-
-            if (request.LegalFactsSummary?.Count > 0)
-            {
-                sb.AppendLine("ملخص الوقائع القانونية:");
-                foreach (var fact in request.LegalFactsSummary)
-                    sb.AppendLine($"- {fact}");
-                sb.AppendLine();
-            }
-
-            if (request.DefendantsPositions?.Count > 0)
-            {
-                sb.AppendLine("مواقف الخصوم:");
-                foreach (var pos in request.DefendantsPositions)
-                    sb.AppendLine($"- {pos.DefendantName} ({pos.RelationshipToClient}): {pos.PositionSummary}");
-                sb.AppendLine();
-            }
-
-            if (request.ApprovedDefenses?.Count > 0)
-            {
-                sb.AppendLine("الدفوع المعتمدة مع التحليل:");
-                foreach (var defense in request.ApprovedDefenses)
-                {
-                    sb.AppendLine($"### الدفع: {defense.DefenseTitle}");
-                    sb.AppendLine($"- النوع: {defense.Type}");
-                    sb.AppendLine($"- الأساس: {defense.BasisFromCase}");
-
-                    if (defense.Explanation != null)
-                    {
-                        var exp = defense.Explanation;
-                        if (!string.IsNullOrEmpty(exp.Introduction))
-                            sb.AppendLine($"- التأصيل القانوني: {exp.Introduction}");
-                        if (!string.IsNullOrEmpty(exp.FactualBasis))
-                            sb.AppendLine($"- الأساس الواقعي: {exp.FactualBasis}");
-
-                        if (exp.LegalTexts?.Count > 0)
-                        {
-                            sb.AppendLine("- النصوص القانونية:");
-                            foreach (var text in exp.LegalTexts)
-                                sb.AppendLine($"  * {text.LawName} - المادة {text.ArticleNumber}: {text.FullText}");
-                        }
-
-                        if (!string.IsNullOrEmpty(exp.LinkingTextsToFacts))
-                            sb.AppendLine($"- ربط النصوص بالوقائع: {exp.LinkingTextsToFacts}");
-
-                        if (exp.CassationPrecedents?.Count > 0)
-                        {
-                            sb.AppendLine("- السوابق القضائية:");
-                            foreach (var prec in exp.CassationPrecedents)
-                                sb.AppendLine($"  * طعن {prec.AppealNumber} لسنة {prec.JudicialYear} ({prec.SessionDate}): {prec.FullText}");
-                        }
-
-                        if (!string.IsNullOrEmpty(exp.LegalApplication))
-                            sb.AppendLine($"- التطبيق القانوني: {exp.LegalApplication}");
-                        if (!string.IsNullOrEmpty(exp.CounterArguments))
-                            sb.AppendLine($"- الرد على الحجج المضادة: {exp.CounterArguments}");
-                        if (!string.IsNullOrEmpty(exp.LegalEffectOfAcceptance))
-                            sb.AppendLine($"- الأثر القانوني للقبول: {exp.LegalEffectOfAcceptance}");
-                    }
-                    sb.AppendLine();
-                }
-            }
-
-            if (request.FinalRequests?.Count > 0)
-            {
-                sb.AppendLine("الطلبات النهائية:");
-                foreach (var req in request.FinalRequests)
-                    sb.AppendLine($"- [{req.RequestLevel}] {req.RequestText}");
-            }
-
-            return sb.ToString();
         }
 
         private static string SanitizeMemoHtml(string html)

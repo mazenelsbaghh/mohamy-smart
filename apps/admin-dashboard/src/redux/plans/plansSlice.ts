@@ -3,6 +3,7 @@ import fetchPlans from"./thunk/fetchPlans";
 import updatePlan from"./thunk/updatePlan";
 import createPlan from"./thunk/createPlan";
 import archivePlan from"./thunk/archivePlan";
+import restorePlan from"./thunk/restorePlan";
 import { showErrorToast } from"../../utils/toastHelpers";
 import type { TSubscription } from"./thunk/fetchPlans";
 
@@ -71,6 +72,18 @@ const plansSlice = createSlice({
  }
  })
  .addCase(archivePlan.rejected, (state, action) => {
+ if (typeof action.payload ==="string") {
+ state.error = action.payload;
+ showErrorToast(action.payload);
+ }
+ })
+ .addCase(restorePlan.fulfilled, (state, action) => {
+ const idx = state.list.findIndex((p) => p.id === action.payload);
+ if (idx !== -1) {
+ state.list[idx].isActive = true;
+ }
+ })
+ .addCase(restorePlan.rejected, (state, action) => {
  if (typeof action.payload ==="string") {
  state.error = action.payload;
  showErrorToast(action.payload);

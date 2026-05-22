@@ -190,7 +190,7 @@
 
 /* ── Accent Right Border (handoff items) ───────────── */
 .cd-accent-right {
-    border-right: 3px solid var(--cd-gold);
+    border: 1px solid var(--cd-gold);
     border-radius: var(--cd-radius-sm);
 }
 
@@ -341,7 +341,7 @@
     padding: 0.75rem 1rem;
     background: var(--cd-muted-bg);
     border-radius: var(--cd-radius-sm);
-    border-right: 3px solid var(--cd-gold);
+    border: 1px solid rgba(239, 149, 10, 0.25);
     transition: all 0.25s;
 }
 

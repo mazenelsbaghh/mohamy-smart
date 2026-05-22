@@ -230,7 +230,7 @@ const FinalStatementOfClaims = ({ caseId }: TFinalStatementOfClaims) => {
   : `الحكم للطالب بطلباته في ${claimSubject}.`;
 
   return `
-  <div style="font-family:Arial, sans-serif;color:#111;font-size:18px;font-weight:700;line-height:1.9;text-align:justify;direction:rtl;">
+  <div style="color:#111;font-size:18px;font-weight:700;line-height:1.9;text-align:justify;direction:rtl;">
   <p style="text-align:center;font-size:21px;margin:0 0 8px;">صحيفة ${claimSubject}</p>
   <p style="margin:0 0 8px;">إنه في يوم ........................ الموافق .... / .... / ........ الساعة ........</p>
   <p style="margin:0 0 8px;">بناءً على طلب السيد / ${claimantName}</p>

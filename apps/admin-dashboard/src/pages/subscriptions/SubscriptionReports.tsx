@@ -44,7 +44,12 @@ const SubscriptionReports = () => {
  const tableData = filteredRecords.map((r) => ({
  key: r.lawyerId,
  lawyerName: r.lawyerName ||"-",
- planName: r.planName ||"-",
+ planName: r.planName === 'الباقة التجريبية' || r.planName === 'Free Trial' ? (
+    <div className="flex items-center gap-1.5 justify-start">
+      <span>{r.planName}</span>
+      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--main-color)]/10 text-[var(--main-color)] font-medium">تجريبية</span>
+    </div>
+  ) : r.planName ||"-",
  startDate: r.startDate ? new Date(r.startDate).toLocaleDateString("ar-EG") :"-",
  endDate: r.endDate ? new Date(r.endDate).toLocaleDateString("ar-EG") :"-",
  isActiveLabel: r.isActive ?"نشطة" :"منتهية",

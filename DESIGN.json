@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-22T00:30:00Z",
+  "title": "Design System: Mohamy Smart",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Orange", "canonical": "oklch(75% 0.16 55)" },
+      "secondary": { "role": "secondary", "displayName": "Warm Cream", "canonical": "oklch(98% 0.04 90)" },
+      "background": { "role": "neutral", "displayName": "Page Background", "canonical": "oklch(94% 0.01 90)" },
+      "text-primary": { "role": "neutral", "displayName": "Near Black", "canonical": "oklch(15% 0.005 0)" },
+      "text-secondary": { "role": "neutral", "displayName": "Muted Charcoal", "canonical": "oklch(15% 0.005 0 / 65%)" },
+      "success": { "role": "success", "displayName": "Success Green", "canonical": "oklch(70% 0.18 140)" },
+      "danger": { "role": "danger", "displayName": "Danger Red", "canonical": "oklch(50% 0.2 20)" },
+      "dark-bg": { "role": "neutral", "displayName": "Dark Background", "canonical": "oklch(10% 0.005 0)" },
+      "dark-surface": { "role": "neutral", "displayName": "Dark Surface", "canonical": "oklch(18% 0.005 0)" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero and greeting headlines." },
+      "headline": { "displayName": "Headline", "purpose": "Main section titles." },
+      "title": { "displayName": "Title", "purpose": "Card and panel titles." },
+      "body": { "displayName": "Body", "purpose": "Main content readability." },
+      "label": { "displayName": "Label", "purpose": "Forms, inputs, and supporting details." }
+    },
+    "shadows": [
+      { "name": "interactive-hover", "value": "0 4px 20px rgba(27, 27, 27, 0.05)", "purpose": "Subtle hover lift." },
+      { "name": "dropdown-overlay", "value": "0 10px 30px rgba(27, 27, 27, 0.08)", "purpose": "Overlay depth." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Main state transitions." }
+    ],
+    "breakpoints": [
+      { "name": "mobile-sm", "value": "550px" },
+      { "name": "tablet", "value": "1000px" },
+      { "name": "desktop-md", "value": "1100px" },
+      { "name": "desktop-lg", "value": "1600px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Used for main calls to action across the lawyer and admin portal.",
+      "html": "<button class=\"ds-btn-primary\">استمرار</button>",
+      "css": ".ds-btn-primary { background: #EF950A; color: #fff; padding: 12px 24px; font-family: 'Tajawal', sans-serif; font-size: 1rem; font-weight: 500; border: none; border-radius: 16px; transition: all 0.4s ease; cursor: pointer; } .ds-btn-primary:hover { background: #d18105; box-shadow: 0 4px 20px rgba(239, 149, 10, 0.2); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Refined Quill",
+    "overview": "Mohamy Smart is a premium legal-tech application tailored for legal professionals and administrators in the Gulf/MENA region. It rejects the generic SaaS and sterile corporate enterprise aesthetics, drawing inspiration instead from the visual weight, precision, and elegance of high-end editorial layouts and elite legal institutions.",
+    "keyCharacteristics": [
+      "RTL Native: Designed Arabic-first.",
+      "Restrained Palette: Sophisticated warm tones with Amber-Orange accents.",
+      "Clean Typography: Exclusively Tajawal."
+    ],
+    "rules": [
+      { "name": "The 10% Accent Rule", "body": "The primary Orange accent is used on ≤10% of any given screen.", "section": "colors" },
+      { "name": "No Pure Neutrals Rule", "body": "Never use pure black (#000000) or pure white (#ffffff) as backgrounds or text.", "section": "colors" },
+      { "name": "The Single Family Rule", "body": "The Tajawal font family is the sole typeface allowed.", "section": "typography" }
+    ],
+    "dos": [
+      "Do design in RTL native layout first.",
+      "Do use Tajawal exclusively across all applications.",
+      "Do limit the use of the Orange brand color to focal points."
+    ],
+    "donts": [
+      "Don't use pure black #000000 for dialog backdrops.",
+      "Don't use side-tab accent borders (thick vertical lines on one side of cards).",
+      "Don't animate CSS layout properties like width, height, padding, or margin."
+    ]
+  }
+}

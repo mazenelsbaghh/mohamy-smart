@@ -269,7 +269,7 @@ const AddNewCaseFromOCRForm = ({ onClose }: Props) => {
  };
  const autocompleteClass = {
  base:"w-full",
- listboxWrapper:"max-min-h-[220px]",
+ listboxWrapper:"max-h-[220px]",
  trigger:"app-surface border app-border hover:border-[var(--main-color)] rounded-xl",
  input:"text-[var(--title-color)]",
  selectorButton:"app-text-muted",
@@ -362,7 +362,7 @@ const AddNewCaseFromOCRForm = ({ onClose }: Props) => {
  dir="rtl"
  />
 
- <div className="flex flex-col gap-2 max-min-h-[260px] overflow-y-auto">
+ <div className="flex flex-col gap-2 max-h-[260px] overflow-y-auto">
  {casesLoading ==='pending' && (
  <p className="text-sm app-text-muted text-center py-4">جاري البحث عن القضايا...</p>
  )}
@@ -504,7 +504,7 @@ const AddNewCaseFromOCRForm = ({ onClose }: Props) => {
  <p className="text-sm app-text-muted">الأسماء المتشابهة لـ"{watched.clientName}"</p>
  </div>
 
- <div className="flex flex-col gap-2 max-min-h-[280px] overflow-y-auto">
+ <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto">
  {similarClients.length === 0 && (
  <p className="text-sm app-text-muted py-2 text-center">لا توجد نتائج تطابق ما كتبته.</p>
  )}

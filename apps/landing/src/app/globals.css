@@ -64,33 +64,48 @@
   font-display: swap;
 }
 
-html, body {
+html,
+body {
   overscroll-behavior: none;
 }
 
 :root {
   /* Brand colors */
   --main-color: #EF950A;
-  --main-color-25: #EF950A40;    /* brand orange at 25% opacity */
-  --accent-gold: #CBAA5D;        /* golden secondary accent */
+  --main-gradient: linear-gradient(135deg, #FFAD26 0%, #EF950A 50%, #C35900 100%);
+  --main-gradient-hover: linear-gradient(135deg, #ffbd59 0%, #f3a325 50%, #d96300 100%);
+  --main-color-25: #EF950A40;
+  /* brand orange at 25% opacity */
+  --accent-orange: #FFAD26;
+  /* orange secondary accent */
 
   /* Text & foreground */
   --white-color: #FBFAE8;
-  --text-color: #FBFAE8A6;       /* muted foreground (65% opacity) */
+  --text-color: #FBFAE8A6;
+  /* muted foreground (65% opacity) */
 
   /* Backgrounds & surfaces */
   --bg-color: #0A0A0A;
-  --dark-surface: #1B1B1B;       /* cards, elevated dark surfaces */
-  --card-bg: #18181B80;          /* semi-transparent feature card bg */
-  --icon-bg: #271F11;            /* dark brown icon container */
-  --testimonial-bg: #040b16;     /* deep dark for testimonial cards */
-  --progress-track: #1F2B15;     /* progress bar track (dark green) */
+  --dark-surface: #1B1B1B;
+  /* cards, elevated dark surfaces */
+  --card-bg: #18181B80;
+  /* semi-transparent feature card bg */
+  --icon-bg: #271F11;
+  /* dark brown icon container */
+  --testimonial-bg: #040b16;
+  /* deep dark for testimonial cards */
+  --progress-track: #1F2B15;
+  /* progress bar track (dark green) */
 
   /* Glassmorphism */
-  --glass-bg: #D3D3D31A;         /* subtle glass surface */
-  --glass-map: #9c9b9b2a;        /* darker glass for map overlay */
-  --swiper-bg: #adaaaa09;        /* very subtle swiper track */
-  --fade-overlay: #00000065;     /* edge fade for carousels */
+  --glass-bg: #D3D3D31A;
+  /* subtle glass surface */
+  --glass-map: #9c9b9b2a;
+  /* darker glass for map overlay */
+  --swiper-bg: #adaaaa09;
+  /* very subtle swiper track */
+  --fade-overlay: #00000065;
+  /* edge fade for carousels */
 
   /* Semantic */
   --danger-color: #CA0000;
@@ -122,12 +137,12 @@ body::selection {
   color: var(--white-color);
 }
 
-body::-webkit-scrollbar{
+body::-webkit-scrollbar {
   background-color: #0A0A0A;
   width: 8px;
 }
 
-body::-webkit-scrollbar-thumb{
+body::-webkit-scrollbar-thumb {
   background-color: #EF950A;
   border-radius: var(--lg-radius);
 }
@@ -179,7 +194,10 @@ button.main-btn {
 
 /* A11y: Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

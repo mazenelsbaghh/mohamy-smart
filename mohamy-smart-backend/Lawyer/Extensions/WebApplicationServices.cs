@@ -184,44 +184,46 @@ namespace Lawyer.API.Extensions
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-                .AddJwtBearer(o =>
-            {
-                // HTTPS metadata is enforced in every non-dev environment. Local dev (Docker, localhost) is exempt
-                // so the JWT cookie flow works over plain HTTP during development.
-                o.RequireHttpsMetadata = !environment.IsDevelopment();
-                o.SaveToken = false;
-                o.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = jwt!.Issuer,
+                .AddJwtBearer();
 
-                    ValidateAudience = true,
-                    ValidAudience = jwt.Audience,
-
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
-                    ClockSkew = TimeSpan.FromSeconds(30)
-                };
-                o.Events = new JwtBearerEvents
+            services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+                .Configure<IOptions<JWT>>((o, jwtOptions) =>
                 {
-                    // T006: Read JWT from httpOnly session cookie when no Authorization header is present.
-                    // Covers both API requests and the SignalR hub WebSocket upgrade.
-                    // The ?access_token= query-string fallback is removed — it logs tokens in proxy access logs.
-                    OnMessageReceived = context =>
+                    var jwtSetting = jwtOptions.Value;
+                    o.RequireHttpsMetadata = !environment.IsDevelopment();
+                    o.SaveToken = false;
+                    o.TokenValidationParameters = new TokenValidationParameters
                     {
-                        if (string.IsNullOrEmpty(context.Token))
+                        ValidateIssuer = true,
+                        ValidIssuer = jwtSetting.Issuer,
+
+                        ValidateAudience = true,
+                        ValidAudience = jwtSetting.Audience,
+
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSetting.Key)),
+                        ClockSkew = TimeSpan.FromSeconds(30)
+                    };
+                    o.Events = new JwtBearerEvents
+                    {
+                        // T006: Read JWT from httpOnly session cookie when no Authorization header is present.
+                        // Covers both API requests and the SignalR hub WebSocket upgrade.
+                        // The ?access_token= query-string fallback is removed — it logs tokens in proxy access logs.
+                        OnMessageReceived = context =>
                         {
-                            // Production uses __Host- prefix (enforces Secure + Path=/ + no Domain)
-                            var cookie = context.Request.Cookies["__Host-session"]
-                                ?? context.Request.Cookies["session"];
-                            if (!string.IsNullOrEmpty(cookie))
-                                context.Token = cookie;
+                            if (string.IsNullOrEmpty(context.Token))
+                            {
+                                // Production uses __Host- prefix (enforces Secure + Path=/ + no Domain)
+                                var cookie = context.Request.Cookies["__Host-session"]
+                                    ?? context.Request.Cookies["session"];
+                                if (!string.IsNullOrEmpty(cookie))
+                                    context.Token = cookie;
+                            }
+                            return Task.CompletedTask;
                         }
-                        return Task.CompletedTask;
-                    }
-                };
-            });
+                    };
+                });
         }
     }
 }

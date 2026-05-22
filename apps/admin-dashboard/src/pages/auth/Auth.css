@@ -24,25 +24,25 @@
     --auth-label-color:        #3D3420;
 
     /* Page-footer legal link color */
-    --auth-footer-link:        oklch(0.40 0.06 80);
+    --auth-footer-link:        oklch(0.40 0.06 55);
 
     /* Badge border & native input/select border */
-    --auth-badge-border:       oklch(0.85 0.03 80);
-    --auth-input-border:       oklch(0.78 0.04 80);
+    --auth-badge-border:       oklch(0.85 0.03 55);
+    --auth-input-border:       oklch(0.78 0.04 55);
 
     /* Focus ring for native inputs (amber glow) */
-    --auth-focus-ring:         oklch(0.75 0.16 55 / 0.15);
+    --auth-focus-ring:         oklch(0.72 0.14 55 / 0.15);
 
     /* CTA hover — slightly darkened amber */
-    --auth-cta-hover:          #d97f00;
+    --auth-cta-hover:          #d18105;
 
     /* Form panel background gradient overlays */
-    --auth-gradient-a:         oklch(0.87 0.04 80 / 0.5);
-    --auth-gradient-b:         oklch(0.87 0.04 80 / 0.3);
+    --auth-gradient-a:         oklch(0.87 0.04 55 / 0.5);
+    --auth-gradient-b:         oklch(0.87 0.04 55 / 0.3);
 
     /* Back link chip background */
-    --auth-back-link-bg:       oklch(0.90 0.03 80 / 0.6);
-    --auth-back-link-bg-hover: oklch(0.90 0.03 80 / 0.9);
+    --auth-back-link-bg:       oklch(0.90 0.03 55 / 0.6);
+    --auth-back-link-bg-hover: oklch(0.90 0.03 55 / 0.9);
 
     /* Select dropdown chevron stroke — URL-encoded for background-image */
     --auth-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235C4E2E' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
@@ -51,26 +51,26 @@
 /* ── Dark Mode Overrides for form-panel tokens ───────────────────────────── */
 .dark .auth-layout {
     /* Warm creamy tones on dark surface */
-    --auth-secondary-text:     oklch(0.82 0.05 80);
-    --auth-label-color:        oklch(0.72 0.05 80);
-    --auth-footer-link:        oklch(0.80 0.08 80);
+    --auth-secondary-text:     oklch(0.82 0.05 55);
+    --auth-label-color:        oklch(0.72 0.05 55);
+    --auth-footer-link:        oklch(0.80 0.08 55);
 
     /* Borders lighten slightly to be visible on dark */
-    --auth-badge-border:       oklch(0.28 0.03 80);
-    --auth-input-border:       oklch(0.30 0.04 80);
+    --auth-badge-border:       oklch(0.28 0.03 55);
+    --auth-input-border:       oklch(0.30 0.04 55);
 
     /* Subtler focus ring on dark */
-    --auth-focus-ring:         oklch(0.75 0.16 55 / 0.14);
+    --auth-focus-ring:         oklch(0.72 0.14 55 / 0.14);
 
     /* Warm amber glow on dark canvas */
-    --auth-gradient-a:         oklch(0.24 0.07 55 / 0.30);
-    --auth-gradient-b:         oklch(0.22 0.05 55 / 0.18);
+    --auth-gradient-a:         oklch(0.24 0.06 55 / 0.30);
+    --auth-gradient-b:         oklch(0.22 0.04 55 / 0.18);
 
     /* Back-link chip becomes a dark warm chip */
-    --auth-back-link-bg:       oklch(0.22 0.04 80 / 0.70);
-    --auth-back-link-bg-hover: oklch(0.26 0.04 80 / 0.90);
+    --auth-back-link-bg:       oklch(0.22 0.04 55 / 0.70);
+    --auth-back-link-bg-hover: oklch(0.26 0.04 55 / 0.90);
 
-    /* Chevron becomes amber on dark select */
+    /* Chevron becomes gold on dark select */
     --auth-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23EF950A' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
 }
 
@@ -95,7 +95,7 @@
 
 /* Subtle divider in dark mode — both panels are dark, this creates separation */
 .dark .auth-form-panel {
-    border-right: 1px solid oklch(0.22 0.03 80 / 0.6);
+    border-right: 1px solid oklch(0.22 0.03 55 / 0.6);
 }
 
 /* Brand — standalone centered logo mark */
@@ -239,14 +239,14 @@
     width: 100%;
     padding: 0.875rem 1.5rem;
     border-radius: 14px;
-    background-color: var(--main-color);
+    background: var(--main-gradient);
     color: var(--white-color); /* Always white — intentional; do not use --white-color here */
     font-weight: 700;
     font-size: 1rem;
     font-family: "Tajawal", sans-serif;
     border: none;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -257,7 +257,7 @@
 }
 
 .auth-cta:hover:not(:disabled) {
-    background-color: var(--auth-cta-hover);
+    background: var(--main-gradient-hover);
     box-shadow: 0 4px 16px oklch(0.65 0.16 55 / 0.35);
     transform: translateY(-1px);
 }
@@ -275,7 +275,7 @@
 .auth-cta:focus-visible {
     outline: 2px solid var(--main-color);
     outline-offset: 3px;
-    box-shadow: 0 0 0 4px oklch(0.75 0.16 55 / 0.25);
+    box-shadow: 0 0 0 4px oklch(0.72 0.14 55 / 0.25);
 }
 
 /* Form footer */
@@ -389,7 +389,7 @@
     border: 1px solid color-mix(in oklab, var(--auth-badge-border) 85%, transparent);
     background-color: color-mix(in oklab, var(--white-color) 90%, transparent);
     box-shadow:
-        0 18px 40px oklch(0.58 0.04 80 / 0.08),
+        0 18px 40px oklch(0.58 0.04 55 / 0.08),
         0 1px 0 color-mix(in oklab, white 55%, transparent) inset;
     padding: clamp(1.4rem, 2vw, 2rem);
 }
@@ -466,7 +466,7 @@
     border: 1px solid color-mix(in oklab, var(--auth-badge-border) 85%, transparent);
     background-color: color-mix(in oklab, var(--white-color) 90%, transparent);
     box-shadow:
-        0 18px 40px oklch(0.58 0.04 80 / 0.08),
+        0 18px 40px oklch(0.58 0.04 55 / 0.08),
         0 1px 0 color-mix(in oklab, white 55%, transparent) inset;
 }
 
@@ -575,8 +575,8 @@
 
     /* Subtle warm texture overlays */
     background-image:
-        radial-gradient(ellipse 80% 50% at 20% 80%, oklch(0.55 0.16 55 / 0.18) 0%, transparent 65%),
-        radial-gradient(ellipse 60% 40% at 80% 15%, oklch(0.55 0.14 55 / 0.08) 0%, transparent 55%);
+        radial-gradient(ellipse 80% 50% at 20% 80%, oklch(0.58 0.14 55 / 0.18) 0%, transparent 65%),
+        radial-gradient(ellipse 60% 40% at 80% 15%, oklch(0.58 0.13 55 / 0.08) 0%, transparent 55%);
 }
 
 /* Large decorative Arabic watermark */
@@ -594,7 +594,7 @@
 .auth-visual-bg-text-inner {
     font-size: clamp(14rem, 25vw, 28rem);
     font-weight: 900;
-    color: oklch(0.35 0.06 80);
+    color: oklch(0.35 0.06 55);
     line-height: 1;
     letter-spacing: -0.05em;
     user-select: none;
@@ -640,7 +640,7 @@
     font-size: 0.6875rem;
     font-weight: 700;
     letter-spacing: 0.2em;
-    color: oklch(0.7 0.04 80);
+    color: oklch(0.7 0.04 55);
 }
 
 /* Quote block */
@@ -661,7 +661,7 @@
 .auth-quote-text {
     font-size: clamp(1.375rem, 2.5vw, 1.875rem);
     font-weight: 700;
-    color: oklch(0.96 0.01 80);
+    color: oklch(0.96 0.01 55);
     line-height: 1.55;
     margin: 0 0 1.5rem;
     letter-spacing: -0.01em;
@@ -670,7 +670,7 @@
 .auth-quote-source {
     font-size: 0.8125rem;
     font-weight: 500;
-    color: oklch(0.65 0.04 80);
+    color: oklch(0.65 0.04 55);
     letter-spacing: 0.06em;
 }
 
@@ -757,8 +757,8 @@
         border-radius: var(--lg-radius);
         border: 1px solid var(--auth-badge-border);
         box-shadow:
-            0 4px 32px oklch(0.6 0.05 80 / 0.10),
-            0 1px 4px oklch(0.6 0.05 80 / 0.06);
+            0 4px 32px oklch(0.6 0.05 55 / 0.10),
+            0 1px 4px oklch(0.6 0.05 55 / 0.06);
     }
 
     /* Footer loses its margin-top: auto push in the centered layout —

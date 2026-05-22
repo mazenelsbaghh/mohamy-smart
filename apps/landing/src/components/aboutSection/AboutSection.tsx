@@ -124,7 +124,7 @@ function SectionCard({
     return (
         <Card className="card-list shadow-md rounded-2xl card">
             <CardBody className="space-y-5 p-8">
-                <h3 className="text-3xl font-semibold ps-4">
+                <h3 className="text-3xl font-semibold">
                     {title}
                 </h3>
                 <div className="leading-relaxed text-base md:text-lg">

@@ -175,7 +175,7 @@ const Chat = () => {
  const afterMention = messageValue.slice(atIndex + 1);
  if (afterMention.includes('\n')) return null;
  const token = afterMention.match(/^([^\s]*)/)?.[1] ??'';
- if (token.length > 80) return null;
+ if (token.length > 55) return null;
  return { atIndex, query: token.toLowerCase(), rawLength: token.length };
  }, [messageValue, selectedRegulation]);
  const mentionQuery = mentionMatch?.query ?? null;

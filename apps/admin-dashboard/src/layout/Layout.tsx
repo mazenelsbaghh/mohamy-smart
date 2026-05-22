@@ -61,7 +61,7 @@ const Layout = () => {
 						type="button"
 						aria-label="إغلاق القائمة"
 						onClick={() => setIsSidebarOpen(false)}
-						className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
+						className="fixed inset-0 bg-[#1b1b1b]/50 backdrop-blur-sm z-30 lg:hidden"
 					/>
 				)}
 				<div className="outlet-box">

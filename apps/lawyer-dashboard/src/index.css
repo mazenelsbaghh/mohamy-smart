@@ -87,6 +87,8 @@ html {
 
 :root {
   --main-color: #EF950A;
+  --main-gradient: linear-gradient(135deg, #FFAD26 0%, #EF950A 50%, #C35900 100%);
+  --main-gradient-hover: linear-gradient(135deg, #ffbd59 0%, #f3a325 50%, #d96300 100%);
   --second-color: #FBFAE8;
   --bg-color: #f0eee7;
   --title-color: #1B1B1B;
@@ -124,6 +126,9 @@ html {
 
 .dark {
   --main-color: #EF950A;
+  --main-gradient: linear-gradient(135deg, #FFAD26 0%, #EF950A 50%, #C35900 100%);
+  --main-gradient-hover: linear-gradient(135deg, #ffbd59 0%, #f3a325 50%, #d96300 100%);
+  --second-color: #161616;
   --title-color: #FFFFFF;
   --text-color: #FFFFFFA6;
   --muted-color: #c7baa1;
@@ -273,43 +278,43 @@ main {
   overflow-x: clip;
 }
 
-.app-surface {
+@utility app-surface {
   background-color: var(--surface-color);
   border-color: var(--border-color);
 }
 
-.app-surface-muted {
+@utility app-surface-muted {
   background-color: var(--surface-muted);
   border-color: var(--border-color);
 }
 
-.app-surface-soft {
+@utility app-surface-soft {
   background-color: var(--surface-soft);
   border-color: var(--border-color);
 }
 
-.app-text-muted {
+@utility app-text-muted {
   color: var(--text-color);
 }
 
-.app-text-subtle {
+@utility app-text-subtle {
   color: var(--muted-color);
 }
 
-.app-border {
+@utility app-border {
   border-color: var(--border-color);
 }
 
-.app-border-strong {
+@utility app-border-strong {
   border-color: var(--border-strong);
 }
 
-.app-accent-soft {
+@utility app-accent-soft {
   background-color: var(--accent-soft);
   border-color: var(--accent-soft-strong);
 }
 
-.app-toggle-shell {
+@utility app-toggle-shell {
   background-color: var(--surface-soft);
   border: 1px solid var(--border-color);
 }

@@ -236,7 +236,7 @@ const FinancialsTab = ({ clientId, clientName }: Props) => {
                         </button>
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-1 max-min-h-[280px] overflow-y-auto">
+                    <div className="flex flex-col gap-1 max-h-[280px] overflow-y-auto">
                         {transactions.map((t: TClientTransaction) => (
                             <div key={t.id} className="cd-tx-item">
                                 <div className="flex items-center gap-2.5">

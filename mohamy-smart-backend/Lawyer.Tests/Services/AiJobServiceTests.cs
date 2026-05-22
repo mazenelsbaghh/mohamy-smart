@@ -513,6 +513,82 @@ public class AiJobServiceTests
         result.Data.Should().BeNull();
     }
 
+    [Fact]
+    public async Task SubmitAsync_ShouldAlwaysCreateNewAttempt_WhenStepTypeIsAnalysisDefense()
+    {
+        // Arrange
+        await using var db = new AppDbContext(_dbOptions);
+        var caseId = Guid.NewGuid();
+        var lawyerId = Guid.NewGuid();
+        var stepType = AiStepType.AnalysisDefense;
+
+        db.Subscriptions.Add(new Subscription
+        {
+            Id = 1,
+            Name = "Test",
+            AiRequestsLimit = 10,
+            DurationDays = 30
+        });
+        db.LawyerSubscriptions.Add(new LawyerSubscription
+        {
+            Id = Guid.NewGuid(),
+            LawyerId = lawyerId,
+            SubscriptionId = 1,
+            StartDate = DateTime.UtcNow.AddDays(-1),
+            EndDate = DateTime.UtcNow.AddDays(30),
+            UsedAiRequests = 0
+        });
+        db.Cases.Add(new Case
+        {
+            Id = caseId,
+            LawyerId = lawyerId,
+            Title = "Test Case",
+            Number = "123",
+            Court = "Test Court"
+        });
+
+        var completedJob = new AiJob
+        {
+            Id = Guid.NewGuid(),
+            CaseId = caseId,
+            StepType = stepType,
+            Status = AiJobStatus.Completed,
+            ResultJson = "{\"old\":true}",
+            CompletedAt = DateTime.UtcNow.AddHours(-1),
+            HangfireJobId = "old-hangfire-id",
+            CreatedAt = DateTime.UtcNow.AddHours(-2)
+        };
+
+        db.AiJobs.Add(completedJob);
+        await db.SaveChangesAsync();
+
+        var hangfireMock = new Mock<IBackgroundJobClient>();
+        hangfireMock
+            .Setup(x => x.Create(It.IsAny<Job>(), It.IsAny<IState>()))
+            .Returns("new-hangfire-id");
+
+        var notificationsMock = new Mock<IAiJobNotificationService>();
+        var accessMock = new Mock<ICaseAccessValidator>();
+        accessMock.Setup(x => x.ValidateAsync(caseId, "user123", false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Lawyer.Core.Exceptions.Result<bool> { Succeeded = true, Data = true, StatusCode = System.Net.HttpStatusCode.OK });
+
+        var sut = new AiJobService(db, hangfireMock.Object, notificationsMock.Object, accessMock.Object);
+
+        // Act
+        var result = await sut.SubmitAsync(caseId, new SubmitAiJobDto(stepType, "{}", null, null, null), "user123", CancellationToken.None);
+
+        // Assert
+        result.Succeeded.Should().BeTrue();
+        result.Data.Should().NotBeNull();
+        result.Data!.Id.Should().NotBe(completedJob.Id); // Verify it did NOT reuse the old job ID
+        result.Data.Status.Should().Be(AiJobStatus.Queued);
+        result.Data.CompletedAt.Should().BeNull();
+
+        var allJobs = await db.AiJobs.Where(j => j.CaseId == caseId && j.StepType == stepType).ToListAsync();
+        allJobs.Should().HaveCount(2); // Verify we now have 2 jobs in the database (old one completed, new one queued)
+    }
+
+
     private class SqlExceptionStub : Exception
     {
         public int Number { get; }

@@ -38,7 +38,7 @@ export const WORKFLOW_STEP_METADATA: Partial<Record<AiStepType, WorkflowStepMeta
     workflowType: 'SmartAnalysis',
     workflowId: 'defense-memo',
     stepNumber: 5,
-    progressLabel: 'جاري صياغة المذكرة النهائية',
+    progressLabel: 'جاري صياغة الدفوع وتجميع المذكرة النهائية',
   },
 
   LawsuitCaseType: {

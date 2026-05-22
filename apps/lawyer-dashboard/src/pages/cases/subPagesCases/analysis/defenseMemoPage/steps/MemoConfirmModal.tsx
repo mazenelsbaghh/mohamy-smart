@@ -133,7 +133,7 @@ const MemoConfirmModal = ({
  return (
   <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" dir="rtl">
    {/* Backdrop */}
-   <div className="absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm" onClick={onClose} />
+   <div className="absolute inset-0 bg-[#1b1b1b]/50 dark:bg-[#0a0a0a]/70 backdrop-blur-sm" onClick={onClose} />
 
    {/* Modal */}
    <div className="relative w-full max-w-2xl max-h-[90vh] bg-[var(--white-color)] dark:bg-[var(--surface-color)] border app-border dark:app-border-strong rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-[modalSlideUp_0.3s_ease-out]">
@@ -150,7 +150,7 @@ const MemoConfirmModal = ({
      </div>
      <button
       onClick={onClose}
-      className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+      className="p-2 rounded-xl hover:bg-[#1b1b1b]/5 dark:hover:bg-white/10 transition-colors"
      >
       <IoClose className="text-xl text-[var(--text-color)]" />
      </button>
@@ -376,7 +376,7 @@ const MemoConfirmModal = ({
      <div className="flex items-center gap-3">
       <button
        onClick={onClose}
-       className="flex-1 px-5 py-3 rounded-xl text-sm font-bold text-[var(--title-color)] border app-border dark:app-border-strong hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+       className="flex-1 px-5 py-3 rounded-xl text-sm font-bold text-[var(--title-color)] border app-border dark:app-border-strong hover:bg-[#1b1b1b]/5 dark:hover:bg-white/5 transition-colors"
       >
        رجوع
       </button>

@@ -119,7 +119,7 @@ namespace Lawyer.Application.Services
                 var latestJob = !string.IsNullOrEmpty(dto.RunId) && dto.StepNumber.HasValue
                     ? await GetLatestJobByRunAsync(caseId, dto.RunId, dto.WorkflowType, dto.StepNumber.Value, ct)
                     : await GetLatestJobAsync(caseId, dto.StepType, ct);
-                var shouldCreateNewAttempt = latestJob is null || dto.RepeatIntent.HasValue;
+                var shouldCreateNewAttempt = latestJob is null || dto.RepeatIntent.HasValue || dto.StepType == AiStepType.AnalysisDefense;
                 var job = shouldCreateNewAttempt
                     ? CreateQueuedJob(caseId, dto.StepType, dto.RunId, dto.WorkflowType, dto.StepNumber)
                     : ResetForResubmission(latestJob!, dto.RunId, dto.WorkflowType, dto.StepNumber);

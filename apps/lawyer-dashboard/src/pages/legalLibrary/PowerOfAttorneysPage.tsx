@@ -357,7 +357,7 @@ const PowerOfAttorneysPage = () => {
   size="md"
   classNames={{
    base: 'bg-white dark:app-surface-soft border app-border dark:app-border-strong shadow-lg',
-   backdrop: 'bg-black/40',
+   backdrop: 'bg-[#1b1b1b]/40',
   }}
   >
   <ModalContent>

@@ -74,6 +74,9 @@ defenses_evidentiary:
 defense_title:
 - Concise Arabic legal heading.
 - No explanation, no conjunctions, no pleading language.
+- CRITICAL: A defense (دفع) must always be framed as an objection, denial, challenge, or plea of invalidity/non-acceptability from the perspective of the DEFENDANT. It must NEVER confirm or validate the opponent's procedures or claims. For example, do NOT generate "صحة إجراءات إعلان صحيفة الدعوى" (Validity of service of process) because that validates the opponent's procedure; instead, frame it as a challenge: "بطلان إعلان صحيفة الدعوى لـ..." (Invalidity of service of process for...). Even if the facts say a procedure was done, the defense title must represent the challenge/objection (the opposite, e.g., claiming it was invalid, lacking jurisdiction, or lacking evidence).
+- هام جداً: يجب أن يُصاغ عنوان الدفع دائماً كاعتراض أو بطلان أو إنكار أو دفع بعدم القبول من وجهة نظر المتهم/المدعى عليه. لا يجب أبداً صياغة الدفع بشكل يؤكد أو يثبت صحة إجراءات الخصم أو ادعاءاته (مثال: لا تُنتج أبداً دفعاً بعنوان "صحة إجراءات إعلان صحيفة الدعوى" لأن هذا يؤكد صحة الإعلان ويضر بمصلحة موكلك؛ بل يجب صياغة الدفع كطعن أو بطلان مثل "بطلان إعلان صحيفة الدعوى لـ..." حتى لو ظهر من الأوراق إتمام الإجراء، فالهدف هو إيجاد ثغرة أو صياغة وجه الدفاع المعاكس).
+
 
 basis_from_case:
 - Must explicitly reference a concrete point from the previous analysis,

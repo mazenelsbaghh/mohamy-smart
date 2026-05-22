@@ -96,6 +96,7 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  const [isNavigating, setIsNavigating] = useState(false);
  const [editingTitle, setEditingTitle] = useState('');
  const [newDefenseTitle, setNewDefenseTitle] = useState('');
+ const [newDefenseType, setNewDefenseType] = useState<'Substantive' | 'Formal' | 'Evidentiary'>('Substantive');
  const [isSavingTitle, setIsSavingTitle] = useState(false);
  const [isAddingDefense, setIsAddingDefense] = useState(false);
  const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
@@ -120,6 +121,14 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  ? prev.filter((id) => id !== activeDefenseId)
  : [...prev, activeDefenseId]
  );
+ };
+
+ const toggleApproveForId = (id: string) => {
+   setApprovedDefenses((prev) =>
+     prev.includes(id)
+       ? prev.filter((itemId) => itemId !== id)
+       : [...prev, id]
+   );
  };
 
  const allDefenses = useMemo<TDefenseWithCategory[]>(() => {
@@ -416,35 +425,42 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  }, []);
 
  const handleAddDefense = async () => {
- const title = newDefenseTitle.trim();
- if (!title) {
- sileo.error({ title:'اكتب عنوان الدفع الجديد أولاً' });
- return;
- }
- setIsAddingDefense(true);
- try {
- const createdDefense = await dispatch(thunkCreateDefense({
- caseId,
- defenseTitle: title,
- })).unwrap() as TDefense;
- dispatch(addDefense({
- id: createdDefense.id,
- defenseTitle: createdDefense.defenseTitle,
- basisFromCase: createdDefense.basisFromCase,
- scope: createdDefense.scope,
- strength: createdDefense.strength,
- }));
- setNewDefenseTitle('');
- onClose();
- setActiveDefenseId(createdDefense.id);
- void onDefensesMutated?.();
- await generateDetailedExplanation(createdDefense.id);
- } catch (error) {
- sileo.error({ title: typeof error ==='string' ? error :'تعذر إضافة الدفع' });
- } finally {
- setIsAddingDefense(false);
- }
- };
+    const title = newDefenseTitle.trim();
+    if (!title) {
+      sileo.error({ title: 'اكتب عنوان الدفع الجديد أولاً' });
+      return;
+    }
+    setIsAddingDefense(true);
+    try {
+      const createdDefense = await dispatch(
+        thunkCreateDefense({
+          caseId,
+          defenseTitle: title,
+          type: newDefenseType,
+        })
+      ).unwrap() as TDefense;
+      dispatch(
+        addDefense({
+          id: createdDefense.id,
+          defenseTitle: createdDefense.defenseTitle,
+          basisFromCase: createdDefense.basisFromCase,
+          scope: createdDefense.scope,
+          strength: createdDefense.strength,
+          type: newDefenseType,
+        })
+      );
+      setNewDefenseTitle('');
+      setNewDefenseType('Substantive');
+      onClose();
+      setActiveDefenseId(createdDefense.id);
+      void onDefensesMutated?.();
+      await generateDetailedExplanation(createdDefense.id);
+    } catch (error) {
+      sileo.error({ title: typeof error === 'string' ? error : 'تعذر إضافة الدفع' });
+    } finally {
+      setIsAddingDefense(false);
+    }
+  };
 
  const cancelCurrentDefenseAnalysis = async () => {
  setIsCancellingAnalysis(true);
@@ -639,180 +655,242 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  </button>
  }
  sidebar={
- <>
- <AnalysisStageSidebarCard
- label="إجمالي الدفوع"
- value={`${allDefenses.length} دفع`}
- description={`تم تحليل ${analyzedCount} من ${allDefenses.length} · معتمد ${approvedDefenses.length}`}
- tone="accent"
- />
+    <>
+      <AnalysisStageSidebarCard
+        label="إجمالي الدفوع"
+        value={`${allDefenses.length} دفع`}
+        description={`تم تحليل ${analyzedCount} من ${allDefenses.length} · معتمد ${approvedDefenses.length}`}
+        tone="accent"
+      />
 
- <CustomCard className="border app-border dark:app-border-strong shadow-sm p-5 app-surface-soft/40 dark:app-surface-muted/60 relative overflow-hidden">
- <div className="absolute top-0 end-0 h-full w-1 bg-gradient-to-b from-[var(--main-color)] to-orange-300 opacity-80" />
+      <CustomCard className="border app-border dark:app-border-strong shadow-sm p-5 app-surface-soft/40 dark:app-surface-muted/60 relative overflow-hidden">
+        <div className="absolute top-0 right-0 h-full w-1 bg-gradient-to-b from-[var(--main-color)] to-orange-300 opacity-80" />
 
- <div className="flex items-center justify-between mb-5 pe-2">
- <h3 className="text-base font-bold text-[var(--title-color)]">قائمة الدفوع</h3>
- <span className="text-xs font-bold app-surface-soft app-text-subtle dark:app-text-subtle px-3 py-1.5 rounded-full border app-border-strong dark:app-border-strong">
- {allDefenses.length} نتائج
- </span>
- </div>
+        <h3 className="text-sm font-bold text-[var(--title-color)] mb-4 text-right">إجراءات الدفوع</h3>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed app-border-strong dark:app-border-strong text-sm font-bold text-[var(--main-color)] dark:text-white hover:bg-orange-50 dark:hover:bg-white/10 transition-colors"
+        >
+          <IoAddOutline className="text-lg" />
+          إضافة دفع جديد
+        </button>
 
- <div className="max-min-h-[500px] overflow-y-auto flex flex-col gap-3 pe-2 scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
- {allDefenses.map((item) => (
- <div
- key={item.id}
- onClick={() => setActiveDefenseId(item.id)}
- onKeyDown={(e) => {
- if (e.key ==='Enter' || e.key ==='') {
- setActiveDefenseId(item.id);
- }
- }}
- tabIndex={0}
- role="button"
- className={`flex flex-col gap-3 p-4 rounded-xl border transition-colors cursor-pointer text-end w-full
- ${activeDefense.id === item.id
- ?'border-[var(--main-color)] bg-orange-50/30 dark:bg-orange-950/20 shadow-sm'
- :'app-border dark:app-border-strong app-surface-soft hover:border-orange-100 dark:hover:border-orange-800/50 hover:shadow-sm'
- }`}
- >
- <div className="flex flex-wrap items-center justify-between w-full gap-2">
- <div className="flex items-center gap-2">
- <span className={`text-[10px] font-bold px-2 py-1 rounded border ${
- item.categoryTone ==='formal' ?'bg-[var(--info-soft)] dark:bg-blue-950/40 text-[var(--blue-color)] dark:text-blue-300 border-blue-100 dark:border-blue-800/50' :
- item.categoryTone ==='substantive' ?'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-100 dark:border-purple-800/50' :'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-100 dark:border-emerald-800/50'
- }`}>
- {item.categoryLabel}
- </span>
- {approvedDefenses.includes(item.id) && (
- <span className="text-[10px] font-bold text-[var(--success-color)] dark:text-green-300 flex items-center gap-1 bg-[var(--success-soft)] dark:bg-green-950/40 px-2 py-1 rounded border border-[var(--success-soft)] dark:border-green-800/50">
- <LuCheck size={10}/> معتمد
- </span>
- )}
- </div>
- <span className="text-xs app-text-subtle font-bold whitespace-nowrap">بنـسبة {item.matchScore}%</span>
- </div>
+        <FormModal
+          isOpen={isOpen}
+          onOpenChange={onOpenChange}
+          title="إضافة دفع جديد"
+          icon={<IoAddOutline />}
+        >
+          <div className="p-6 flex flex-col gap-4">
+            <input
+              value={newDefenseTitle}
+              onChange={(e) => setNewDefenseTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isAnalyzingDefense && !isAddingDefense) void handleAddDefense();
+              }}
+              placeholder="عنوان الدفع"
+              className="w-full rounded-xl border app-border dark:app-border-strong app-surface-soft px-4 py-3 text-sm outline-none focus:border-[var(--main-color)] transition-colors text-right"
+              dir="rtl"
+              autoFocus
+            />
 
- <h4 className="text-[14px] font-extrabold text-[var(--title-color)] leading-snug break-words w-full"
- style={{ wordBreak:'break-word', whiteSpace:'normal', overflowWrap:'anywhere' }}
- dir="rtl">
- {item.defenseTitle}
- </h4>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold app-text-subtle text-right">نوع الدفع</label>
+              <div className="grid grid-cols-3 gap-2" dir="rtl">
+                <button
+                  type="button"
+                  onClick={() => setNewDefenseType('Substantive')}
+                  className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all text-center ${
+                    newDefenseType === 'Substantive'
+                      ? 'border-[var(--main-color)] bg-orange-50/30 dark:bg-orange-950/20 text-[var(--main-color)] font-extrabold'
+                      : 'app-border dark:app-border-strong app-surface-soft app-text-subtle hover:border-orange-100 dark:hover:border-orange-900/50'
+                  }`}
+                >
+                  موضوعي
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewDefenseType('Formal')}
+                  className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all text-center ${
+                    newDefenseType === 'Formal'
+                      ? 'border-[var(--main-color)] bg-orange-50/30 dark:bg-orange-950/20 text-[var(--main-color)] font-extrabold'
+                      : 'app-border dark:app-border-strong app-surface-soft app-text-subtle hover:border-orange-100 dark:hover:border-orange-900/50'
+                  }`}
+                >
+                  شكلي
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewDefenseType('Evidentiary')}
+                  className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all text-center ${
+                    newDefenseType === 'Evidentiary'
+                      ? 'border-[var(--main-color)] bg-orange-50/30 dark:bg-orange-950/20 text-[var(--main-color)] font-extrabold'
+                      : 'app-border dark:app-border-strong app-surface-soft app-text-subtle hover:border-orange-100 dark:hover:border-orange-900/50'
+                  }`}
+                >
+                  متعلق بالأدلة
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddDefense}
+              disabled={isAnalyzingDefense || isAddingDefense || !newDefenseTitle.trim()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--main-color)] text-white text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <IoAddOutline className="text-lg" />
+              {isAddingDefense || isAnalyzingDefense ? 'جاري الإضافة والتحليل...' : 'إضافة وتحليل'}
+            </button>
+          </div>
+        </FormModal>
+      </CustomCard>
 
- <p className="text-xs app-text-subtle leading-relaxed w-full"
- style={{ wordBreak:'break-word', whiteSpace:'normal', overflowWrap:'anywhere' }}
- dir="rtl">
- {item.basisFromCase?.replace(/^[a-z_]+\s*[-:]\s*/i,'')}
- </p>
+      <AnalysisStageActionButton
+        label={finalRequirements && finalRequirements.length > 0 ? 'الذهاب للطلبات الختامية' : 'الطلبات الختامية'}
+        icon={IoArrowBackOutline}
+        onClick={handleNext}
+        disabled={isLoading}
+      />
+    </>
+  }
+  >
+    <div className="flex flex-col gap-3 mb-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-bold text-[var(--title-color)]">قائمة الدفوع المقترحة</h3>
+        <span className="text-xs font-bold app-surface-soft app-text-subtle dark:app-text-subtle px-3 py-1.5 rounded-full border app-border-strong dark:app-border-strong">
+          {allDefenses.length} نتائج
+        </span>
+      </div>
 
- <div className="flex items-center justify-end pt-3 mt-1 border-t border-black/5" dir="rtl">
- {explanationsCache[item.id] ? (
- <div className="flex items-center gap-1.5">
- <span className="text-xs font-bold text-[var(--success-color)] dark:text-green-300 bg-[var(--success-soft)] dark:bg-green-950/40 border border-[var(--success-soft)] dark:border-green-800/50 px-2.5 py-1.5 rounded-lg flex items-center gap-1">
- <LuCheck size={11} />
- تم التحليل
- </span>
- <button
- type="button"
- className="p-1.5 app-text-subtle hover:text-[var(--main-color)] dark:hover:text-white app-surface-soft border app-border dark:app-border-strong hover:border-orange-100 dark:hover:border-orange-800/50 rounded-lg transition-colors"
- title="إعادة التحليل"
- onClick={(e) => {
- e.stopPropagation();
- if (!isAnalyzingDefense) void generateDetailedExplanation(item.id);
- }}
- disabled={isAnalyzingDefense}
- >
- <IoReload size={12} />
- </button>
- </div>
- ) : (
- <button
- type="button"
- className="text-xs font-bold app-text-muted app-surface-soft border app-border dark:app-border-strong hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[var(--main-color)] dark:hover:text-white hover:border-orange-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
- onClick={(e) => {
- e.stopPropagation();
- if (!isAnalyzingDefense) void generateDetailedExplanation(item.id);
- }}
- disabled={isAnalyzingDefense}
- >
- {isAnalyzingDefense && activeDefenseId === item.id ? (
- <IoReload className="text-orange-500 text-sm animate-spin" />
- ) : (
- <IoSparklesOutline className={activeDefense.id === item.id ?"text-orange-500 text-sm" :"app-text-subtle text-sm"} />
- )}
- {isAnalyzingDefense && activeDefenseId === item.id ?'جاري التحليل...' :'تحليل'}
- </button>
- )}
- </div>
- </div>
- ))}
- </div>
+      <div className="flex gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800 scroll-smooth" dir="rtl">
+        {allDefenses.map((item) => (
+          <div
+            key={item.id}
+            onClick={() => setActiveDefenseId(item.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                setActiveDefenseId(item.id);
+              }
+            }}
+            tabIndex={0}
+            role="button"
+            className={`flex-shrink-0 w-[280px] md:w-[320px] snap-start flex flex-col justify-between gap-3 p-4 rounded-xl border transition-all cursor-pointer text-right relative overflow-hidden
+            ${activeDefense.id === item.id
+              ? 'border-[var(--main-color)] bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-[var(--main-color)]'
+              : 'app-border dark:app-border-strong bg-white dark:bg-zinc-900 hover:border-orange-100 dark:hover:border-orange-800/50 hover:shadow-sm'
+            }`}
+          >
+            {activeDefense.id === item.id && (
+              <div className="absolute top-0 right-0 h-full w-1 bg-[var(--main-color)]" />
+            )}
+            
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between w-full gap-2">
+                <span className={`text-[10px] font-bold px-2 py-1 rounded border ${
+                  item.categoryTone === 'formal' ? 'bg-[var(--info-soft)] dark:bg-blue-950/40 text-[var(--blue-color)] dark:text-blue-300 border-blue-100 dark:border-blue-800/50' :
+                  item.categoryTone === 'substantive' ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-100 dark:border-purple-800/50' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-100 dark:border-emerald-800/50'
+                }`}>
+                  {item.categoryLabel}
+                </span>
+                <span className="text-xs app-text-subtle font-bold whitespace-nowrap">بنسبة {item.matchScore}%</span>
+              </div>
 
- <div className="mt-4 pt-4 border-t app-border dark:app-border-strong">
- <button
- type="button"
- onClick={onOpen}
- className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed app-border-strong dark:app-border-strong text-sm font-bold text-[var(--main-color)] dark:text-white hover:bg-orange-50 dark:hover:bg-white/10 transition-colors"
- >
- <IoAddOutline className="text-lg" />
- إضافة دفع جديد
- </button>
+              <h4 className="text-[14px] font-extrabold text-[var(--title-color)] leading-snug break-words line-clamp-2 min-h-[40px] text-right"
+                  dir="rtl">
+                {item.defenseTitle}
+              </h4>
 
- <FormModal
- isOpen={isOpen}
- onOpenChange={onOpenChange}
- title="إضافة دفع جديد"
- icon={<IoAddOutline />}
- >
- <div className="p-6 flex flex-col gap-4">
- <input
- value={newDefenseTitle}
- onChange={(e) => setNewDefenseTitle(e.target.value)}
- onKeyDown={(e) => {
- if (e.key === 'Enter' && !isAnalyzingDefense && !isAddingDefense) void handleAddDefense();
- }}
- placeholder="عنوان الدفع"
- className="w-full rounded-xl border app-border dark:app-border-strong app-surface-soft px-4 py-3 text-sm outline-none focus:border-[var(--main-color)] transition-colors"
- dir="rtl"
- autoFocus
- />
- <button
- type="button"
- onClick={handleAddDefense}
- disabled={isAnalyzingDefense || isAddingDefense || !newDefenseTitle.trim()}
- className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--main-color)] text-white text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
- >
- <IoAddOutline className="text-lg" />
- {isAddingDefense || isAnalyzingDefense ? 'جاري الإضافة والتحليل...' : 'إضافة وتحليل'}
- </button>
- </div>
- </FormModal>
- </div>
- </CustomCard>
+              <p className="text-xs app-text-subtle leading-relaxed line-clamp-2 min-h-[36px] text-right"
+                 dir="rtl">
+                {item.basisFromCase?.replace(/^[a-z_]+\s*[-:]\s*/i, '')}
+              </p>
+            </div>
 
- <AnalysisStageActionButton
- label={finalRequirements && finalRequirements.length > 0 ?'الذهاب للطلبات الختامية' :'الطلبات الختامية'}
- icon={IoArrowBackOutline}
- onClick={handleNext}
- disabled={isLoading}
- />
- </>
- }
- >
+            <div className="flex items-center justify-between pt-3 mt-1 border-t border-black/5" dir="rtl">
+              {approvedDefenses.includes(item.id) ? (
+                <button
+                  type="button"
+                  className="text-[10px] font-bold text-white bg-green-600 hover:bg-green-700 flex items-center gap-1 px-2.5 py-1 rounded-lg border border-green-700 transition-colors cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveDefenseId(item.id);
+                    toggleApproveForId(item.id);
+                  }}
+                >
+                  <LuCheck size={10}/> معتمد
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="text-[10px] font-bold text-gray-500 hover:text-[var(--main-color)] dark:text-gray-400 dark:hover:text-white bg-transparent hover:bg-orange-50 dark:hover:bg-orange-950/20 border border-gray-200 dark:border-zinc-800 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveDefenseId(item.id);
+                    toggleApproveForId(item.id);
+                  }}
+                >
+                  اعتماد
+                </button>
+              )}
+
+              {explanationsCache[item.id] ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold text-[var(--success-color)] dark:text-green-300 bg-[var(--success-soft)] dark:bg-green-950/40 border border-[var(--success-soft)] dark:border-green-800/50 px-2 py-1 rounded flex items-center gap-0.5">
+                    <LuCheck size={10} />
+                    محلل
+                  </span>
+                  <button
+                    type="button"
+                    className="p-1 app-text-subtle hover:text-[var(--main-color)] dark:hover:text-white app-surface-soft border app-border dark:app-border-strong hover:border-orange-100 dark:hover:border-orange-800/50 rounded transition-colors"
+                    title="إعادة التحليل"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isAnalyzingDefense) void generateDetailedExplanation(item.id);
+                    }}
+                    disabled={isAnalyzingDefense}
+                  >
+                    <IoReload size={10} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="text-[10px] font-bold app-text-muted app-surface-soft border app-border dark:app-border-strong hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[var(--main-color)] dark:hover:text-white hover:border-orange-100 px-2 py-1 rounded transition-colors flex items-center gap-1 whitespace-nowrap"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isAnalyzingDefense) void generateDetailedExplanation(item.id);
+                  }}
+                  disabled={isAnalyzingDefense}
+                >
+                  {isAnalyzingDefense && activeDefenseId === item.id ? (
+                    <IoReload className="text-orange-500 text-xs animate-spin" />
+                  ) : (
+                    <IoSparklesOutline className={activeDefense.id === item.id ? "text-orange-500 text-xs" : "app-text-subtle text-xs"} />
+                  )}
+                  {isAnalyzingDefense && activeDefenseId === item.id ? 'جاري التحليل...' : 'تحليل'}
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
  <AnalysisStageDocumentCard
  label="مذكرة الدفع"
  badge={activeDefenseIsAnalyzing ? "جاري التحليل..." : activeExplanation ?"تم التحليل" :"في الانتظار"}
  badgeTone={activeExplanation && !activeDefenseIsAnalyzing ?"success" :"accent"}
  >
  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
- <div className="flex-1 min-w-0 pe-4 border-e-4 border-e-[var(--main-color)]">
+ <div className="flex-1 min-w-0 pr-4 border-r-4 border-r-[var(--main-color)] border-l-0 pl-0">
  <div className="flex flex-col gap-3">
- <label className="text-xs font-bold app-text-subtle">عنوان الدفع</label>
+ <label className="text-xs font-bold app-text-subtle text-right">عنوان الدفع</label>
  <div className="flex flex-col sm:flex-row gap-2">
  <input
  value={editingTitle}
  onChange={(e) => setEditingTitle(e.target.value)}
  disabled={isDefenseLocked}
- className="flex-1 rounded-xl border app-border dark:app-border-strong app-surface-soft px-4 py-3 text-sm font-bold text-[var(--title-color)] outline-none focus:border-[var(--main-color)] disabled:opacity-60"
+ className="flex-1 rounded-xl border app-border dark:app-border-strong app-surface-soft px-4 py-3 text-sm font-bold text-[var(--title-color)] outline-none focus:border-[var(--main-color)] disabled:opacity-60 text-right"
  dir="rtl"
  />
  <button

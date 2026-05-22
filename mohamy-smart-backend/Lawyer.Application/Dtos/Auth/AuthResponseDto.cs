@@ -1,4 +1,4 @@
-﻿using Lawyer.Core.Enum;
+using Lawyer.Core.Enum;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,6 +18,7 @@ namespace Lawyer.Application.Dto.Auth
 		public bool PhoneNumberConfirmed { get; set; }
 		public bool RequiresPhoneVerification { get; set; }
 		public List<string> Roles { get; set; } = new();
+		public List<string> DismissedGuidanceKeys { get; set; } = new();
 	}
 
 	public class TokenRequest

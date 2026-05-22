@@ -216,7 +216,7 @@ const SnapshotsHistory = ({ caseId }: Props) => {
  </div>
  <div className="divide-y app-border">
  {current && (
- <div className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[var(--success-soft)] border-r-4 border-[var(--success-color)]">
+ <div className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[var(--success-soft)]">
  <div className="flex-1 min-w-0">
  <div className="flex items-center gap-2 flex-wrap">
  <span className="font-bold text-[var(--title-color)]">النسخة الحالية</span>

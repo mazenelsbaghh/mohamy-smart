@@ -61,6 +61,7 @@ namespace Lawyer.Infrastructure.Persistence
         public DbSet<ProcessServerPaper> ProcessServerPapers { get; set; } = null!;
         public DbSet<Review> Reviews { get; set; } = null!;
         public DbSet<WorkflowSnapshot> WorkflowSnapshots { get; set; } = null!;
+        public DbSet<GuidanceDismissal> GuidanceDismissals { get; set; } = null!;
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
 		{
 			ChangeTracker.DetectChanges();
@@ -219,6 +220,19 @@ namespace Lawyer.Infrastructure.Persistence
 					  .HasDatabaseName("IX_ExecRequestWorkflows_CaseId_RunId");
 			};
 			builder.Entity<ExecRequestWorkflow>(configureExecRequest);
+
+			builder.Entity<GuidanceDismissal>(entity =>
+			{
+				entity.HasKey(e => e.Id);
+				entity.Property(e => e.GuidanceKey).HasMaxLength(200);
+				entity.HasIndex(e => new { e.UserId, e.GuidanceKey })
+					  .IsUnique()
+					  .HasDatabaseName("UX_GuidanceDismissals_UserId_GuidanceKey");
+				entity.HasOne(e => e.User)
+					  .WithMany()
+					  .HasForeignKey(e => e.UserId)
+					  .OnDelete(DeleteBehavior.Cascade);
+			});
 
 			builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 		}

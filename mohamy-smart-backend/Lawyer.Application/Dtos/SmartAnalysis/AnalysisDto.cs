@@ -122,6 +122,7 @@ namespace Lawyer.Application.Dtos.SmartAnalysis
         public string DefenseTitle { get; set; } = string.Empty;
         public string BasisFromCase { get; set; } = string.Empty;
         public string Scope { get; set; } = string.Empty;
+        public string? Type { get; set; }
     }
 
     public class UpdateDefenseTitleRequestDto

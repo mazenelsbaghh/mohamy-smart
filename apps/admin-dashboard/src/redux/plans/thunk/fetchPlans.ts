@@ -21,7 +21,7 @@ const fetchPlans = createAsyncThunk<TSubscription[], void, { rejectValue: string
  async (_, thunkAPI) => {
  const { rejectWithValue } = thunkAPI;
  try {
- const res = await api.get<{ data: TSubscription[] }>("/Subscription");
+ const res = await api.get<{ data: TSubscription[] }>("/Subscription?includeArchived=true");
  return res.data.data;
  } catch (error) {
  return rejectWithValue(axiosErrorHandler(error));

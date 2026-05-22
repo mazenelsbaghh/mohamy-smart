@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardBody } from '@heroui/react';
+import Link from 'next/link';
 
 const faqs = [
   {
@@ -101,12 +102,12 @@ export default function FaqPage() {
             >
               راسلنا على info@mohamy-smart.com
             </a>
-            <a
+            <Link
               href="/"
               className="inline-block px-8 py-3 border border-[var(--main-color)] text-[var(--main-color)] font-semibold rounded-2xl hover:bg-[var(--main-color)] hover:text-[var(--bg-color)] transition-all"
             >
               الصفحة الرئيسية
-            </a>
+            </Link>
           </div>
         </div>
       </div>

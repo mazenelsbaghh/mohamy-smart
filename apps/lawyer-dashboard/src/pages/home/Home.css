@@ -126,11 +126,13 @@ section.home .today-appointments .appointment-card::before {
     background-color: #FFDAA7;
     top: 0;
     right: 0;
-    transition: width 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+    transform: scaleX(1);
+    transform-origin: right;
+    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 section.home .today-appointments .appointment-card:hover::before {
-    width: 16px;
+    transform: scaleX(1.33);
 }
 section.home .today-appointments .appointment-card:nth-child(3)::before {
     background-color: #BEF0C7;
@@ -160,13 +162,13 @@ section.home .today-appointments .appointment-card .text p.title {
 
 section.home .today-appointments .appointment-card .text p {
     font-size: 1rem;
-    color: #1B1B1BA6;
+    color: var(--text-color);
 }
 
 section.home .today-appointments .appointment-card span {
     width: 25px;
     height: 25px;
-    background-color: #1B1B1BA6;
+    background-color: var(--opacity-color);
     border-radius: 50%;
 }
 

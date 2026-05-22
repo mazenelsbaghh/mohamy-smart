@@ -15,6 +15,7 @@ type TLoginResponse = {
  profileId: string;
  roles: string[];
  phone: string;
+ dismissedGuidanceKeys?: string[];
  // T014: accessToken / refreshToken may still be in response body during the
  // transition period (Auth:ReturnTokensInBody=true on backend). We deliberately
  // do NOT read or store them — the browser already received and stored the
@@ -36,8 +37,8 @@ const thunkAuthLogin = createAsyncThunk("auth/thunkAuthLogin",
  await fetchCsrfToken();
 
  // T014: Return only the safe user profile — no tokens.
- const { userId, fullName, profileId, roles, phone } = res.data.data;
- return { userId, fullName, profileId, roles, phone } as TUser;
+ const { userId, fullName, profileId, roles, phone, dismissedGuidanceKeys } = res.data.data;
+ return { userId, fullName, profileId, roles, phone, dismissedGuidanceKeys } as TUser;
  } catch (error) {
  return rejectWithValue(axiosErrorHandler(error));
  }

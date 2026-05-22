@@ -40,8 +40,8 @@ const ConfirmDialog = ({
             backdrop="blur"
             size="md"
             classNames={{
-                base: 'bg-white dark:app-surface-soft border app-border dark:app-border-strong shadow-lg',
-                backdrop: 'bg-black/40',
+                base: 'app-surface dark:app-surface-soft border app-border dark:app-border-strong shadow-lg',
+                backdrop: 'bg-[#1b1b1b]/40',
             }}
         >
             <ModalContent>
@@ -66,7 +66,7 @@ const ConfirmDialog = ({
                         variant="flat"
                         onPress={onClose}
                         isDisabled={isLoading}
-                        className="font-bold text-sm bg-gray-100 hover:bg-gray-200 dark:app-surface-muted dark:hover:app-surface-soft text-[var(--title-color)] border border-transparent"
+                        className="font-bold text-sm app-surface-muted hover:app-surface-soft text-[var(--title-color)] border border-transparent"
                     >
                         {cancelText}
                     </Button>

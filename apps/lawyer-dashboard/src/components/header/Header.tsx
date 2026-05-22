@@ -32,27 +32,47 @@ const Header = ({ theme, setTheme }: THeader) => {
     }, [dispatch, user, aiPointBalance, subscriptionLoading]);
 
     return (
-        <header className="px-4 py-3 md:px-6 md:py-4 mx-4 sm:mx-8 mt-4 md:mt-6 rounded-2xl bg-[var(--white-color)] dark:app-surface border app-border dark:app-border-strong shadow-sm transition-colors duration-300 z-40 relative flex flex-wrap items-center justify-between gap-y-3 gap-x-4">
+        <header className="px-4 py-3.5 md:px-6 md:py-4 mx-4 sm:mx-8 mt-4 md:mt-6 rounded-2xl bg-[var(--white-color)] dark:app-surface border app-border dark:app-border-strong shadow-sm transition-colors duration-300 z-40 relative flex flex-col lg:flex-row lg:items-center justify-between gap-y-3.5 gap-x-4">
             
-            {/* Right Side (RTL): Menu + Logo */}
-            <div className="flex items-center gap-3 shrink-0 order-1">
-                <div className="lg:hidden flex items-center shrink-0">
+            {/* Mobile Top Bar (Only visible on mobile/tablet < 1024px, hidden on desktop) */}
+            <div className="flex lg:hidden justify-between items-center w-full">
+                {/* Right (RTL): Menu toggle + Logo */}
+                <div className="flex items-center gap-3">
                     <button
                         onClick={toggle}
                         aria-label="فتح القائمة"
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--main-color)]/10 text-[var(--main-color)] hover:bg-[var(--main-color)] hover:text-white transition-colors text-sm font-bold shadow-sm"
+                        className="flex items-center justify-center p-2 rounded-xl bg-[var(--main-color)]/10 text-[var(--main-color)] hover:bg-[var(--main-color)] hover:text-white transition-colors shadow-sm"
                     >
-                        <HiMenu size={20} />
-                        <span>القائمة</span>
+                        <HiMenu size={22} />
                     </button>
+                    <div className="flex items-center">
+                        <img src="/images/logo.png" alt="Mohamy Smart Logo" loading="lazy" decoding="async" className="h-8 w-auto object-contain" />
+                    </div>
                 </div>
-                <div className="logo shrink-0">
-                    <img src="/images/logo.png" alt="Mohamy Smart Logo" loading="lazy" decoding="async" className="h-9 md:h-10 w-auto object-contain" />
+
+                {/* Left (RTL): Theme toggle + Avatar */}
+                <div className="flex items-center gap-2">
+                    <IconButton
+                        icon={theme === 'light' ? <FaMoon size={14} /> : <HiSun size={16} />}
+                        radius='full'
+                        size='sm'
+                        onclick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                        variant="flat"
+                        ariaLabel="تبديل المظهر"
+                        className="bg-gray-100 hover:bg-gray-200 dark:bg-[#2A2A2A] dark:hover:bg-[#333] w-9 h-9 min-w-9"
+                    />
+                    <Link to='/settings' className="transition-opacity hover:opacity-90" aria-label="الإعدادات">
+                        <Avatar
+                            size='sm'
+                            className="bg-[var(--main-color)] text-white shadow-sm ring-2 ring-white dark:ring-[#1A1A1A] w-9 h-9"
+                            icon={<FaUserTie size={15} className="text-white" />}
+                        />
+                    </Link>
                 </div>
             </div>
 
-            {/* Left Side (RTL): Actions */}
-            <div className="flex items-center gap-2 md:gap-3 shrink-0 order-2 md:order-3">
+            {/* Desktop Left Side (RTL): Actions (Only visible on lg:flex, hidden on mobile) */}
+            <div className="hidden lg:flex items-center gap-3 order-3 shrink-0">
                 <Link to="/subscription" className="header-ai-points-link" aria-label="عرض رصيد نقاط الذكاء الاصطناعي">
                     <AiPointBalancePill balance={aiPointBalance} />
                 </Link>
@@ -65,21 +85,21 @@ const Header = ({ theme, setTheme }: THeader) => {
                     ariaLabel="تبديل المظهر"
                     className="bg-gray-100 hover:bg-gray-200 dark:bg-[#2A2A2A] dark:hover:bg-[#333]"
                 />
-                <Link to="/subscription" className="flex items-center gap-1 md:gap-1.5 px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-full bg-[var(--main-color)]/10 text-[var(--main-color)] hover:bg-[var(--main-color)] hover:text-white transition-colors font-semibold text-[11px] md:text-sm">
-                    <HiSparkles size={14} className="md:w-4 md:h-4" />
+                <Link to="/subscription" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--main-color)]/10 text-[var(--main-color)] hover:bg-[var(--main-color)] hover:text-white transition-colors font-semibold text-sm">
+                    <HiSparkles size={14} />
                     <span>الباقات</span>
                 </Link>
                 <Link to='/settings' className="transition-opacity hover:opacity-90" aria-label="الإعدادات">
                     <Avatar
                         size='sm'
-                        className="bg-[var(--main-color)] text-white shadow-sm ring-2 ring-white dark:ring-[#1A1A1A] w-8 h-8 md:w-10 md:h-10"
+                        className="bg-[var(--main-color)] text-white shadow-sm ring-2 ring-white dark:ring-[#1A1A1A] w-10 h-10"
                         icon={<FaUserTie size={16} className="text-white" />}
                     />
                 </Link>
             </div>
 
-            {/* Center/Bottom (RTL): Greeting Text */}
-            <div className="flex flex-col w-full md:w-auto md:flex-1 order-3 md:order-2 mt-1 md:mt-0 md:px-4">
+            {/* Greeting Text & Mobile Actions (RTL) */}
+            <div className="flex flex-col w-full lg:flex-1 order-2 mt-1 lg:mt-0 lg:px-4">
                 <h3 className="text-base md:text-xl font-bold text-[var(--title-color)] m-0 leading-tight">
                     مرحباً سيادة المستشار:{' '}
                     <span className="text-[var(--main-color)] dark:text-white">{user?.fullName || 'المستخدم'}</span>
@@ -87,6 +107,17 @@ const Header = ({ theme, setTheme }: THeader) => {
                 <p className="text-xs md:text-sm text-[var(--text-color)] mt-1 opacity-80 font-medium max-w-xl hidden sm:block m-0">
                     مساعدك الذكي بيرتبلك الشغل.. بس متنساش تراجع وراه، القرار النهائي دايماً لك
                 </p>
+
+                {/* Mobile Actions (Pill + Packages) - Only visible on mobile/tablet < 1024px (lg breakpoint) */}
+                <div className="flex lg:hidden items-center justify-between gap-3 mt-3 w-full border-t border-[var(--title-color)]/10 dark:border-white/10 pt-3">
+                    <Link to="/subscription" className="header-ai-points-link flex-1" aria-label="عرض رصيد نقاط الذكاء الاصطناعي">
+                        <AiPointBalancePill balance={aiPointBalance} />
+                    </Link>
+                    <Link to="/subscription" className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--main-color)]/10 text-[var(--main-color)] hover:bg-[var(--main-color)] hover:text-white transition-colors font-semibold text-xs min-h-[36px]">
+                        <HiSparkles size={14} />
+                        <span>الباقات</span>
+                    </Link>
+                </div>
             </div>
             
         </header>

@@ -15,7 +15,12 @@
     display: flex;
     flex-direction: row;
     overflow: hidden;
-    background-color: var(--bg-color);
+    background-color: #0F0D08;
+    background-image: url("/images/auth-robot-bg.png");
+    background-size: cover;
+    background-position: left center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
 
     /* Warm secondary text (subtitles, back link, form footer copy) */
     --auth-secondary-text:     #5C4E2E;
@@ -24,25 +29,25 @@
     --auth-label-color:        #3D3420;
 
     /* Page-footer legal link color */
-    --auth-footer-link:        oklch(0.40 0.06 80);
+    --auth-footer-link:        oklch(0.40 0.06 55);
 
     /* Badge border & native input/select border */
-    --auth-badge-border:       oklch(0.85 0.03 80);
-    --auth-input-border:       oklch(0.78 0.04 80);
+    --auth-badge-border:       oklch(0.85 0.03 55);
+    --auth-input-border:       oklch(0.78 0.04 55);
 
     /* Focus ring for native inputs (amber glow) */
-    --auth-focus-ring:         oklch(0.75 0.16 55 / 0.15);
+    --auth-focus-ring:         oklch(0.72 0.14 55 / 0.15);
 
     /* CTA hover — slightly darkened amber */
-    --auth-cta-hover:          #d97f00;
+    --auth-cta-hover:          #d18105;
 
     /* Form panel background gradient overlays */
-    --auth-gradient-a:         oklch(0.87 0.04 80 / 0.5);
-    --auth-gradient-b:         oklch(0.87 0.04 80 / 0.3);
+    --auth-gradient-a:         oklch(0.87 0.04 55 / 0.5);
+    --auth-gradient-b:         oklch(0.87 0.04 55 / 0.3);
 
     /* Back link chip background */
-    --auth-back-link-bg:       oklch(0.90 0.03 80 / 0.6);
-    --auth-back-link-bg-hover: oklch(0.90 0.03 80 / 0.9);
+    --auth-back-link-bg:       oklch(0.90 0.03 55 / 0.6);
+    --auth-back-link-bg-hover: oklch(0.90 0.03 55 / 0.9);
 
     /* Select dropdown chevron stroke — URL-encoded for background-image */
     --auth-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235C4E2E' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
@@ -55,26 +60,26 @@
 /* ── Dark Mode Overrides for form-panel tokens ───────────────────────────── */
 .dark .auth-layout {
     /* Warm creamy tones on dark surface */
-    --auth-secondary-text:     oklch(0.82 0.05 80);
-    --auth-label-color:        oklch(0.72 0.05 80);
-    --auth-footer-link:        oklch(0.80 0.08 80);
+    --auth-secondary-text:     oklch(0.82 0.05 55);
+    --auth-label-color:        oklch(0.72 0.05 55);
+    --auth-footer-link:        oklch(0.80 0.08 55);
 
     /* Borders lighten slightly to be visible on dark */
-    --auth-badge-border:       oklch(0.28 0.03 80);
-    --auth-input-border:       oklch(0.30 0.04 80);
+    --auth-badge-border:       oklch(0.28 0.03 55);
+    --auth-input-border:       oklch(0.30 0.04 55);
 
     /* Subtler focus ring on dark */
-    --auth-focus-ring:         oklch(0.75 0.16 55 / 0.14);
+    --auth-focus-ring:         oklch(0.72 0.14 55 / 0.14);
 
     /* Warm amber glow on dark canvas */
-    --auth-gradient-a:         oklch(0.24 0.07 55 / 0.30);
-    --auth-gradient-b:         oklch(0.22 0.05 55 / 0.18);
+    --auth-gradient-a:         oklch(0.24 0.06 55 / 0.30);
+    --auth-gradient-b:         oklch(0.22 0.04 55 / 0.18);
 
     /* Back-link chip becomes a dark warm chip */
-    --auth-back-link-bg:       oklch(0.22 0.04 80 / 0.70);
-    --auth-back-link-bg-hover: oklch(0.26 0.04 80 / 0.90);
+    --auth-back-link-bg:       oklch(0.22 0.04 55 / 0.70);
+    --auth-back-link-bg-hover: oklch(0.26 0.04 55 / 0.90);
 
-    /* Chevron becomes amber on dark select */
+    /* Chevron becomes gold on dark select */
     --auth-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23EF950A' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
 }
 
@@ -99,7 +104,7 @@
 
 /* Subtle divider in dark mode — both panels are dark, this creates separation */
 .dark .auth-form-panel {
-    border-right: 1px solid oklch(0.22 0.03 80 / 0.6);
+    border-right: 1px solid oklch(0.22 0.03 55 / 0.6);
 }
 
 /* Brand — standalone centered logo mark */
@@ -331,7 +336,7 @@
     font-family: "Tajawal", sans-serif;
     border: none;
     cursor: pointer;
-    transition: background-color 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+    transition: background-color 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -343,7 +348,7 @@
 
 /* Interaction hover: subtle translation on the arrow */
 .auth-cta > svg {
-    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .auth-cta:hover:not(:disabled) {
@@ -369,7 +374,7 @@
 .auth-cta:focus-visible {
     outline: 2px solid var(--main-color);
     outline-offset: 3px;
-    box-shadow: 0 0 0 4px oklch(0.75 0.16 55 / 0.25);
+    box-shadow: 0 0 0 4px oklch(0.72 0.14 55 / 0.25);
 }
 
 /* Form footer */
@@ -483,7 +488,7 @@
     border: 1px solid color-mix(in oklab, var(--auth-badge-border) 85%, transparent);
     background-color: color-mix(in oklab, var(--white-color) 90%, transparent);
     box-shadow:
-        0 18px 40px oklch(0.58 0.04 80 / 0.08),
+        0 18px 40px oklch(0.58 0.04 55 / 0.08),
         0 1px 0 color-mix(in oklab, white 55%, transparent) inset;
     padding: clamp(1.4rem, 2vw, 2rem);
 }
@@ -560,7 +565,7 @@
     border: 1px solid color-mix(in oklab, var(--auth-badge-border) 85%, transparent);
     background-color: color-mix(in oklab, var(--white-color) 90%, transparent);
     box-shadow:
-        0 18px 40px oklch(0.58 0.04 80 / 0.08),
+        0 18px 40px oklch(0.58 0.04 55 / 0.08),
         0 1px 0 color-mix(in oklab, white 55%, transparent) inset;
 }
 
@@ -654,6 +659,41 @@
     box-shadow: 0 0 0 3px oklch(0.45 0.22 25 / 0.18);
 }
 
+/* ── Form Header Welcome & Back Arrow ── */
+.auth-form-header-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    margin-bottom: 1.25rem;
+}
+
+.auth-welcome-title {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--auth-secondary-text);
+}
+
+.auth-back-button-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 8px;
+    border: 1.5px solid var(--auth-input-border);
+    color: var(--title-color);
+    background-color: var(--white-color);
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.auth-back-button-circle:hover {
+    background-color: var(--accent-soft);
+    border-color: var(--main-color);
+    color: var(--main-color);
+    transform: translateX(3px); /* moves right in RTL */
+}
+
 /* ══════════════════════════════════════════════════════
    VISUAL PANEL — dark typographic statement
    Always dark — intentionally unaffected by theme switching.
@@ -665,12 +705,15 @@
     flex-grow: 1;
     position: relative;
     overflow: hidden;
-    background-color: var(--auth-visual-bg);
+    /* Vibrant, premium metallic gold gradient */
+    background: var(--main-gradient);
+}
 
-    /* Subtle warm texture overlays */
-    background-image:
-        radial-gradient(ellipse 80% 50% at 20% 80%, oklch(0.55 0.16 55 / 0.18) 0%, transparent 65%),
-        radial-gradient(ellipse 60% 40% at 80% 15%, oklch(0.55 0.14 55 / 0.08) 0%, transparent 55%);
+/* Subtle brand diagonal texture overlays */
+.auth-visual-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
 }
 
 /* Large decorative Arabic watermark */
@@ -688,7 +731,7 @@
 .auth-visual-bg-text-inner {
     font-size: clamp(14rem, 25vw, 28rem);
     font-weight: 900;
-    color: oklch(0.35 0.06 80);
+    color: rgba(255, 255, 255, 0.07);
     line-height: 1;
     letter-spacing: -0.05em;
     user-select: none;
@@ -701,7 +744,7 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(to left, var(--main-color), transparent 70%);
+    background: linear-gradient(to left, rgba(255, 255, 255, 0.6), transparent 70%);
     z-index: 3;
 }
 
@@ -720,52 +763,117 @@
 .auth-visual-brand {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
 }
 
-.auth-visual-brand-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: var(--main-color);
+.auth-visual-brand-logo {
+    width: 2.75rem;
+    height: 2.75rem;
+    object-fit: contain;
+    border-radius: 8px;
 }
 
-.auth-visual-brand-label {
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.2em;
-    color: oklch(0.7 0.04 80);
-}
-
-/* Quote block */
-.auth-quote-block {
-    max-width: 34rem;
-}
-
-.auth-quote-mark {
-    font-size: 5rem;
-    font-weight: 900;
-    color: var(--main-color);
-    line-height: 0.6;
-    margin-bottom: 1.5rem;
-    display: block;
-    opacity: 0.6;
-}
-
-.auth-quote-text {
-    font-size: clamp(1.375rem, 2.5vw, 1.875rem);
-    font-weight: 700;
-    color: oklch(0.96 0.01 80);
-    line-height: 1.55;
-    margin: 0 0 1.5rem;
+.auth-visual-brand-text {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #ffffff;
     letter-spacing: -0.01em;
 }
 
-.auth-quote-source {
+/* Middle features content */
+.auth-visual-middle {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-grow: 1;
+}
+
+.auth-visual-heading {
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.3;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.auth-visual-subtitle {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+    max-width: 32rem;
+}
+
+/* Features List */
+.auth-features-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    max-width: 32rem;
+}
+
+.auth-feature-item {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+}
+
+.auth-feature-icon-wrapper {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 16px;
+    background-color: #ffffff;
+    border: none;
+    color: var(--main-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 8px 24px rgba(212, 98, 0, 0.25);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s;
+}
+
+.auth-feature-item:hover .auth-feature-icon-wrapper {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 12px 28px rgba(212, 98, 0, 0.35);
+}
+
+.auth-feature-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.auth-feature-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.auth-feature-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+}
+
+.auth-feature-description {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* Footer Copyright */
+.auth-visual-footer {
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.35);
     font-size: 0.8125rem;
-    font-weight: 500;
-    color: oklch(0.65 0.04 80);
-    letter-spacing: 0.06em;
 }
 
 
@@ -936,19 +1044,34 @@
 
 /* ── Desktop (≥1024px): split screen visible ─────────────────────────────── */
 @media (min-width: 1024px) {
-    .auth-form-panel {
-        width: 44%;
+    .auth-form-panel-container {
+        width: 48%;
         min-width: 440px;
+        display: flex;
+        position: relative;
+        filter: drop-shadow(-2px 0px 0px #EF950A) drop-shadow(-8px 0px 15px rgba(239, 149, 10, 0.3));
+        z-index: 10;
+    }
+
+    .auth-form-panel {
+        width: 100%;
         padding: 1.5rem clamp(1.75rem, 3.5vw, 3.5rem) 1.25rem;
         align-items: center;
+        background-color: #FAF7F0;
+        clip-path: ellipse(95% 130% at 100% 50%);
+    }
+
+    .dark .auth-form-panel {
+        background-color: #12110E;
     }
 
     .auth-visual-panel {
         display: block;
+        background: transparent !important;
     }
 
     .auth-brand {
-        margin-bottom: 1.25rem;
+        display: none !important;
     }
 
     .auth-form-wrapper {
@@ -962,8 +1085,10 @@
 }
 
 @media (min-width: 1400px) {
+    .auth-form-panel-container {
+        width: 44%;
+    }
     .auth-form-panel {
-        width: 40%;
         padding-inline: clamp(2.5rem, 3.2vw, 4.5rem);
     }
 }
@@ -989,8 +1114,8 @@
         border-radius: var(--lg-radius);
         border: 1px solid var(--auth-badge-border);
         box-shadow:
-            0 4px 32px oklch(0.6 0.05 80 / 0.10),
-            0 1px 4px oklch(0.6 0.05 80 / 0.06);
+            0 4px 32px oklch(0.6 0.05 55 / 0.10),
+            0 1px 4px oklch(0.6 0.05 55 / 0.06);
     }
 
     /* Footer loses its margin-top: auto push in the centered layout —
@@ -1208,5 +1333,234 @@
     .auth-form-wrapper,
     .auth-brand {
         animation: none;
+    }
+}
+
+/* ── Custom UI extensions (Paymob alignment) ──────────────────────────────── */
+
+.auth-lang-switcher {
+    position: absolute;
+    top: 2rem;
+    left: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--auth-secondary-text);
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.9rem;
+    z-index: 15;
+    transition: opacity 0.25s ease;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid var(--auth-input-border);
+    background-color: var(--white-color);
+}
+
+.auth-lang-switcher:hover {
+    background-color: var(--accent-soft);
+    border-color: var(--main-color);
+}
+
+.auth-lang-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    color: var(--main-color);
+}
+
+.auth-welcome-title-large {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--title-color);
+    margin-bottom: 2rem;
+    letter-spacing: -0.02em;
+    line-height: 1.4;
+}
+
+.auth-back-btn-row {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 1.75rem;
+}
+
+/* Override HeroUI OTP Inputs for Premium Paymob styling */
+.auth-otp-wrapper [data-slot="segment-wrapper"] {
+    gap: 0.75rem !important;
+}
+
+.auth-otp-wrapper [data-slot="segment"] {
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    border-radius: 12px !important;
+    border: 2px solid var(--auth-input-border) !important;
+    background-color: var(--white-color) !important;
+    color: var(--title-color) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Empty segment placeholder dot like in the screenshot */
+.auth-otp-wrapper [data-slot="segment"]:empty::before {
+    content: "•" !important;
+    color: oklch(0.78 0.04 55) !important;
+    font-size: 1.5rem !important;
+    line-height: 1 !important;
+}
+
+.dark .auth-otp-wrapper [data-slot="segment"]:empty::before {
+    color: oklch(0.35 0.04 55) !important;
+}
+
+.auth-otp-wrapper [data-slot="segment"][data-active="true"] {
+    border-color: var(--main-color) !important;
+    box-shadow: 0 0 0 3px var(--auth-focus-ring) !important;
+}
+
+.auth-otp-wrapper [data-slot="segment"][data-invalid="true"] {
+    border-color: var(--danger-color) !important;
+    box-shadow: 0 0 0 3px oklch(0.45 0.22 25 / 0.12) !important;
+}
+
+@media (max-width: 1023px) {
+    .auth-lang-switcher {
+        top: 1.5rem;
+        left: 1.5rem;
+    }
+}
+
+@media (max-width: 679px) {
+    .auth-lang-switcher {
+        position: static;
+        margin-inline-start: auto;
+        margin-bottom: 1.5rem;
+        width: fit-content;
+    }
+    
+    .auth-welcome-title-large {
+        font-size: 1.35rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .auth-back-btn-row {
+        margin-bottom: 1.25rem;
+    }
+    
+    .auth-otp-wrapper [data-slot="segment"] {
+        width: 3rem !important;
+        height: 3rem !important;
+        font-size: 1.25rem !important;
+    }
+}
+
+/* ── Custom UI extensions (Paymob alignment) ──────────────────────────────── */
+
+/* Hide redundant visual panel content since it's baked into background image */
+.auth-visual-content,
+.auth-visual-bg-text,
+.auth-visual-accent-line {
+    display: none !important;
+}
+
+/* Style the primary button inside auth forms to use gold theme */
+.auth-form-panel button[type="submit"],
+.auth-form-panel .custom-btn-primary {
+    background: var(--main-gradient) !important;
+    color: #ffffff !important;
+    font-weight: 700;
+}
+
+.auth-form-panel button[type="submit"]:hover,
+.auth-form-panel .custom-btn-primary:hover {
+    background: var(--main-gradient-hover) !important;
+}
+
+/* Style bottom footer columns */
+.auth-footer-features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    width: 100%;
+    max-width: 29rem;
+    margin: 2.5rem auto 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--auth-input-border);
+}
+
+.auth-footer-feature-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.5rem;
+    position: relative;
+}
+
+.auth-footer-feature-col:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 15%;
+    left: -0.5rem;
+    height: 70%;
+    width: 1px;
+    background-color: var(--auth-input-border);
+}
+
+.auth-footer-feature-icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    background-color: color-mix(in oklab, #EF950A 10%, transparent);
+}
+
+.auth-footer-feature-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.auth-footer-feature-title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--title-color);
+    margin: 0;
+}
+
+.auth-footer-feature-desc {
+    font-size: 0.6875rem;
+    color: var(--auth-secondary-text);
+    margin: 0;
+    line-height: 1.3;
+}
+
+/* Mobile responsive for footer features */
+@media (max-width: 679px) {
+    .auth-footer-features {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+    }
+    
+    .auth-footer-feature-col {
+        flex-direction: row;
+        align-items: center;
+        text-align: right;
+        gap: 0.75rem;
+    }
+    
+    .auth-footer-feature-col:not(:last-child)::after {
+        display: none;
+    }
+    
+    .auth-footer-feature-icon-box {
+        flex-shrink: 0;
     }
 }

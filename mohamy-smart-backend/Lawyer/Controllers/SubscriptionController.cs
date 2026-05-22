@@ -53,10 +53,11 @@ namespace Lawyer.Controllers
 
 		[Authorize]
 		[HttpGet()]
-		[OutputCache(Duration = 300)]
-		public async Task<IActionResult> GetPlans(CancellationToken cancellationToken)
+		[OutputCache(Duration = 300, VaryByQueryKeys = new[] { "includeArchived" })]
+		public async Task<IActionResult> GetPlans([FromQuery] bool includeArchived = false, CancellationToken cancellationToken = default)
 		{
-			var result = await _subscriptionService.GetAllPlansAsync( cancellationToken);
+			bool shouldIncludeArchived = includeArchived && User.IsInRole("Admin");
+			var result = await _subscriptionService.GetAllPlansAsync(shouldIncludeArchived, cancellationToken);
 			return CreateResponse(result);
 		}
 
@@ -185,6 +186,17 @@ namespace Lawyer.Controllers
 		public async Task<IActionResult> ArchivePlan(int id, CancellationToken cancellationToken)
 		{
 			var result = await _subscriptionService.ArchivePlanAsync(id, cancellationToken);
+			return CreateResponse(result);
+		}
+
+		/// <summary>
+		/// Restore an archived subscription plan.
+		/// </summary>
+		[Authorize(Roles = "Admin")]
+		[HttpPatch("plan/{id:int}/restore")]
+		public async Task<IActionResult> RestorePlan(int id, CancellationToken cancellationToken)
+		{
+			var result = await _subscriptionService.RestorePlanAsync(id, cancellationToken);
 			return CreateResponse(result);
 		}
 

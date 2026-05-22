@@ -11,6 +11,7 @@ import fetchPlans from"../../redux/plans/thunk/fetchPlans";
 import updatePlan from"../../redux/plans/thunk/updatePlan";
 import createPlan from"../../redux/plans/thunk/createPlan";
 import archivePlan from"../../redux/plans/thunk/archivePlan";
+import restorePlan from"../../redux/plans/thunk/restorePlan";
 import type { TSubscription } from"../../redux/plans/thunk/fetchPlans";
 import ConfirmDialog from"../../components/ui/modal/ConfirmDialog";
 
@@ -22,6 +23,7 @@ const PlansAndReview = () => {
  const { isOpen, onOpen, onOpenChange } = useDisclosure();
  const { isOpen: isCreateOpen, onOpen: onCreateOpen, onOpenChange: onCreateOpenChange } = useDisclosure();
  const [archivingPlanId, setArchivingPlanId] = useState<number | null>(null);
+ const [restoringPlanId, setRestoringPlanId] = useState<number | null>(null);
  const [editingPlan, setEditingPlan] = useState<TSubscription | null>(null);
   const [formState, setFormState] = useState({
   name:"",
@@ -101,16 +103,27 @@ const PlansAndReview = () => {
  });
  };
 
- const handleArchive = (planId: number) => {
- setArchivingPlanId(planId);
- };
+  const handleArchive = (planId: number) => {
+  setArchivingPlanId(planId);
+  };
 
- const confirmArchive = () => {
- if (archivingPlanId != null) {
- dispatch(archivePlan(archivingPlanId));
- }
- setArchivingPlanId(null);
- };
+  const confirmArchive = () => {
+  if (archivingPlanId != null) {
+  dispatch(archivePlan(archivingPlanId));
+  }
+  setArchivingPlanId(null);
+  };
+
+  const handleRestore = (planId: number) => {
+  setRestoringPlanId(planId);
+  };
+
+  const confirmRestore = () => {
+  if (restoringPlanId != null) {
+  dispatch(restorePlan(restoringPlanId));
+  }
+  setRestoringPlanId(null);
+  };
 
   const planCards = plans.map((plan) => ({
   id: plan.id,
@@ -162,11 +175,12 @@ const PlansAndReview = () => {
  ) : (
  planCards.map((plan) => (
  <div key={plan.id} className="w-full md:w-6/12 lg:w-4/12 p-4">
- <SubscriptionPlanCard
- plan={plan}
- onEdit={() => handleOpenEdit(plans.find((p) => p.id === plan.id)!)}
- onArchive={() => handleArchive(plan.id)}
- />
+  <SubscriptionPlanCard
+  plan={plan}
+  onEdit={() => handleOpenEdit(plans.find((p) => p.id === plan.id)!)}
+  onArchive={() => handleArchive(plan.id)}
+  onRestore={() => handleRestore(plan.id)}
+  />
  </div>
  ))
  )}
@@ -317,18 +331,29 @@ const PlansAndReview = () => {
  </ModalContent>
  </Modal>
 
- {/* Archive Confirmation - Branded ConfirmDialog */}
- <ConfirmDialog
- isOpen={archivingPlanId !== null}
- onClose={() => setArchivingPlanId(null)}
- onConfirm={confirmArchive}
- title="أرشفة الخطة"
- description="هل أنت متأكد من أرشفة هذه الخطة؟ لا يمكن التراجع عن هذا الإجراء."
- confirmText="أرشفة"
- cancelText="إلغاء"
- danger
- />
- </section>
+  {/* Archive Confirmation - Branded ConfirmDialog */}
+  <ConfirmDialog
+  isOpen={archivingPlanId !== null}
+  onClose={() => setArchivingPlanId(null)}
+  onConfirm={confirmArchive}
+  title="أرشفة الخطة"
+  description="هل أنت متأكد من أرشفة هذه الخطة؟"
+  confirmText="أرشفة"
+  cancelText="إلغاء"
+  danger
+  />
+
+  {/* Restore Confirmation - Branded ConfirmDialog */}
+  <ConfirmDialog
+  isOpen={restoringPlanId !== null}
+  onClose={() => setRestoringPlanId(null)}
+  onConfirm={confirmRestore}
+  title="استعادة الخطة"
+  description="هل أنت متأكد من استعادة هذه الخطة وجعلها نشطة مرة أخرى؟"
+  confirmText="استعادة"
+  cancelText="إلغاء"
+  />
+  </section>
  );
 };
 

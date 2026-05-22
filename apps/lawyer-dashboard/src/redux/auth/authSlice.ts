@@ -10,6 +10,7 @@ import thunkRequestPhoneVerification from"./thunk/thunkRequestPhoneVerification"
 import thunkVerifyPhoneNumber from"./thunk/thunkVerifyPhoneNumber";
 import thunkAuthMe from"./thunk/thunkAuthMe";
 import thunkLogout from"./thunk/thunkLogout";
+import thunkDismissGuidance from"./thunk/thunkDismissGuidance";
 
 // T022: auth status drives ProtectedRoute rendering.
 //'unknown' = /auth/me not yet called (app boot / page refresh).
@@ -145,6 +146,7 @@ const authSlice = createSlice({
  profileId: action.payload.profileId,
  roles: action.payload.roles,
  phone: action.payload.phone,
+ dismissedGuidanceKeys: action.payload.dismissedGuidanceKeys,
  };
  state.user = userData;
  state.status ="authenticated";
@@ -230,7 +232,18 @@ const authSlice = createSlice({
  if (isString(action.payload)) {
  state.error = action.payload;
  }
- });
+ })
+ .addCase(thunkDismissGuidance.fulfilled, (state, action) => {
+  if (state.user) {
+  if (!state.user.dismissedGuidanceKeys) {
+  state.user.dismissedGuidanceKeys = [];
+  }
+  if (!state.user.dismissedGuidanceKeys.includes(action.payload)) {
+  state.user.dismissedGuidanceKeys.push(action.payload);
+  }
+  localStorage.setItem("user", JSON.stringify(state.user));
+  }
+  });
  },
 });
 

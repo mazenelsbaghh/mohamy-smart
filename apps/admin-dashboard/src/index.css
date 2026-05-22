@@ -69,6 +69,8 @@ html, body {
 
 :root {
   --main-color: #EF950A;
+  --main-gradient: linear-gradient(135deg, #FFAD26 0%, #EF950A 50%, #C35900 100%);
+  --main-gradient-hover: linear-gradient(135deg, #ffbd59 0%, #f3a325 50%, #d96300 100%);
   --second-color: #FBFAE8;
   --bg-color: #f0eee7;
   --title-color: #1B1B1B;
@@ -104,6 +106,8 @@ html, body {
 
 .dark {
   --main-color: #EF950A;
+  --main-gradient: linear-gradient(135deg, #FFAD26 0%, #EF950A 50%, #C35900 100%);
+  --main-gradient-hover: linear-gradient(135deg, #ffbd59 0%, #f3a325 50%, #d96300 100%);
   --title-color: #FFFFFF;
   --text-color: #FFFFFFA6;
   --muted-color: #c7baa1;

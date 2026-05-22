@@ -125,12 +125,12 @@ const Subscription = () => {
  </div>
  </div>
  
- <div className="w-full md:w-auto flex-1 max-w-md bg-[var(--surface-muted)] dark:bg-black/20 p-5 rounded-2xl border border-[var(--border-color)] dark:border-white/5 relative z-10">
+ <div className="w-full md:w-auto flex-1 max-w-md bg-[var(--surface-muted)] dark:bg-[#1b1b1b]/20 p-5 rounded-2xl border border-[var(--border-color)] dark:border-white/5 relative z-10">
  <div className="flex justify-between text-sm mb-3">
  <span className="font-bold text-[var(--title-color)]">استهلاك الذكاء الاصطناعي</span>
  <span className="text-[var(--main-color)] font-bold">{lawyerPlan.usedAiRequests} / {lawyerPlan.limit}</span>
  </div>
- <div className="w-full h-2.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
+ <div className="w-full h-2.5 bg-[#1b1b1b]/5 dark:bg-white/5 rounded-full overflow-hidden">
  <div 
  className="h-full rounded-full transition-colors duration-1000 ease-out relative"
  style={{ 
@@ -247,7 +247,7 @@ const Subscription = () => {
  {FEATURE_DESCRIPTIONS[f as string] && (
  <div className="relative flex items-center shrink-0 mt-0.5">
  <BiInfoCircle className="text-[var(--text-color)] opacity-50 hover:text-[var(--main-color)] hover:opacity-100 cursor-help transition-colors" size={16} />
- <div className="absolute bottom-full start-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-black/90 backdrop-blur-md text-white text-xs leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-colors duration-200 z-10 text-center shadow-xl pointer-events-none">
+ <div className="absolute bottom-full start-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-[#1b1b1b]/90 backdrop-blur-md text-white text-xs leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-colors duration-200 z-10 text-center shadow-xl pointer-events-none">
  {FEATURE_DESCRIPTIONS[f as string]}
  <div className="absolute top-full start-1/2 -translate-x-1/2 border-4 border-transparent border-t-black/90" />
  </div>
@@ -294,11 +294,11 @@ const Subscription = () => {
  منصتنا مصممة خصيصاً لتلبية احتياجات السوق القانوني. نحن نجمع بين أحدث تقنيات الذكاء الاصطناعي ومعايير الأمان الصارمة لنقدم لك مساعداً يختصر ساعات من البحث والمراجعة بدقة متناهية.
  </p>
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
- <div className="bg-[var(--surface-muted)] dark:bg-black/20 p-5 rounded-2xl border border-[var(--border-color)] dark:border-white/5 shadow-sm">
+ <div className="bg-[var(--surface-muted)] dark:bg-[#1b1b1b]/20 p-5 rounded-2xl border border-[var(--border-color)] dark:border-white/5 shadow-sm">
  <p className="text-3xl font-black text-[var(--main-color)] mb-1 drop-shadow-sm">+10x</p>
  <p className="text-xs font-bold text-[var(--title-color)] uppercase tracking-wider opacity-80">سرعة في المراجعة</p>
  </div>
- <div className="bg-[var(--surface-muted)] dark:bg-black/20 p-5 rounded-2xl border border-[var(--border-color)] dark:border-white/5 shadow-sm">
+ <div className="bg-[var(--surface-muted)] dark:bg-[#1b1b1b]/20 p-5 rounded-2xl border border-[var(--border-color)] dark:border-white/5 shadow-sm">
  <p className="text-3xl font-black text-[var(--main-color)] mb-1 drop-shadow-sm">100%</p>
  <p className="text-xs font-bold text-[var(--title-color)] uppercase tracking-wider opacity-80">تشفير وحماية</p>
  </div>

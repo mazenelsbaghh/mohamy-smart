@@ -63,13 +63,18 @@ namespace Lawyer.Application.Services
 			}, "Plan created successfully");
 		}
 
-		public async Task<Result<List<SubscriptionDto>>> GetAllPlansAsync(CancellationToken cancellationToken)
+		public async Task<Result<List<SubscriptionDto>>> GetAllPlansAsync(bool includeInactive = false, CancellationToken cancellationToken = default)
 		{
-			var plans = await _unitOfWork.Repository<Subscription>()
+			var query = _unitOfWork.Repository<Subscription>()
 				.AsQueryable()
-				.AsNoTracking()
-				.Where(p => p.IsActive)
-				.ToListAsync(cancellationToken);
+				.AsNoTracking();
+
+			if (!includeInactive)
+			{
+				query = query.Where(p => p.IsActive);
+			}
+
+			var plans = await query.ToListAsync(cancellationToken);
 
 			var result = plans.Select(p => new SubscriptionDto
 			{
@@ -300,6 +305,13 @@ namespace Lawyer.Application.Services
 				return false;
 			}
 
+			if (subscription.UsedAiRequests > 0)
+			{
+				subscription.UsedAiRequests = 0;
+				await _unitOfWork.Repository<LawyerSubscription>().Update(subscription);
+				await _unitOfWork.SaveChangesAsync(cancellationToken);
+			}
+
 			// Check available requests
 			return subscription.UsedAiRequests < (subscription.Subscription.AiRequestsLimit ?? 0);
 		}
@@ -432,6 +444,51 @@ namespace Lawyer.Application.Services
 			_logger.LogInformation("Subscription plan archived: {PlanId} - {PlanName}", planId, plan.Name);
 
 			return ApiExceptionResponse.Success(true, "Plan archived successfully");
+		}
+
+		/// <summary>
+		/// Restore an archived subscription plan (make it active again).
+		/// </summary>
+		public async Task<Result<bool>> RestorePlanAsync(int planId, CancellationToken cancellationToken)
+		{
+			var plan = await _unitOfWork.Repository<Subscription>().GetByIdAsync(planId);
+			if (plan == null)
+				return ApiExceptionResponse.NotFound<bool>("Plan not found");
+
+			if (plan.IsActive)
+				return ApiExceptionResponse.BadRequest<bool>("Plan is already active");
+
+			plan.IsActive = true;
+			await _unitOfWork.Repository<Subscription>().Update(plan);
+			await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+			_logger.LogInformation("Subscription plan restored: {PlanId} - {PlanName}", planId, plan.Name);
+
+			return ApiExceptionResponse.Success(true, "Plan restored successfully");
+		}
+
+		/// <summary>
+		/// Background job task to find active lawyer subscriptions that have ended, and mark them inactive.
+		/// </summary>
+		public async Task<Result<int>> ExpireExpiredSubscriptionsAsync(CancellationToken cancellationToken = default)
+		{
+			var expiredSubscriptions = await _unitOfWork.Repository<LawyerSubscription>()
+				.AsQueryable()
+				.Where(s => s.IsActive && s.EndDate < DateTime.UtcNow)
+				.ToListAsync(cancellationToken);
+
+			if (expiredSubscriptions.Any())
+			{
+				foreach (var sub in expiredSubscriptions)
+				{
+					sub.IsActive = false;
+					await _unitOfWork.Repository<LawyerSubscription>().Update(sub);
+					_logger.LogInformation("Expired subscription for Lawyer {LawyerId}, Subscription {SubscriptionId}. End date was {EndDate}", sub.LawyerId, sub.SubscriptionId, sub.EndDate);
+				}
+				await _unitOfWork.SaveChangesAsync(cancellationToken);
+			}
+
+			return ApiExceptionResponse.Success(expiredSubscriptions.Count, $"{expiredSubscriptions.Count} expired subscriptions deactivated successfully.");
 		}
 
 		public async Task<Result<List<SubscriptionDto>>> GetLandingPlansAsync(CancellationToken cancellationToken)

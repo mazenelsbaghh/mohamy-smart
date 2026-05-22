@@ -107,9 +107,14 @@ const Subscription = ({ user }: TSubscription) => {
  <div className="p-6">
  {/* Name + Status */}
  <div className="flex items-center justify-between mb-5">
- <h3 className="text-xl font-bold text-[var(--title-color)]">
- {lawyerPlan.planName}
- </h3>
+  <div className="flex items-center gap-1.5">
+    <h3 className="text-xl font-bold text-[var(--title-color)]">
+      {lawyerPlan.planName}
+    </h3>
+    {(lawyerPlan.planName === 'الباقة التجريبية' || lawyerPlan.planName === 'Free Trial') && (
+      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--main-color)]/10 text-[var(--main-color)] font-medium">تجريبية</span>
+    )}
+  </div>
  <AiPointBalancePill balance={aiPointBalance} />
  <span className={`text-sm px-3 py-1 rounded-full font-medium ${lawyerPlan.isActive ?'bg-[var(--success-soft)] text-[var(--success-color)]' :'bg-[var(--danger-soft)] text-[var(--danger-color)]'}`}>
  <span className="flex items-center gap-1">{lawyerPlan.isActive ? <><LuCircleCheck size={14} />نشطة</> : <><LuCircleX size={14} />غير نشطة</>}</span>
@@ -179,9 +184,14 @@ const Subscription = ({ user }: TSubscription) => {
  className="bg-[var(--white-color)] rounded-2xl shadow-md p-6 border border-[var(--border-color)] hover:shadow-xl transition-colors duration-200 flex flex-col justify-between"
  >
  <div>
- <h2 className="text-xl font-bold text-[var(--title-color)] mb-1">
- {plan.name}
- </h2>
+  <div className="flex items-center gap-1.5 mb-1">
+    <h2 className="text-xl font-bold text-[var(--title-color)]">
+      {plan.name}
+    </h2>
+    {(plan.name === 'الباقة التجريبية' || plan.name === 'Free Trial') && (
+      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--main-color)]/10 text-[var(--main-color)] font-medium">تجريبية</span>
+    )}
+  </div>
  <h5 className="text-2xl font-bold text-[var(--main-color)] mb-4">
  {plan.price} ج.م
  <span className="text-sm text-[var(--text-color)] font-normal"> / شهرياً</span>

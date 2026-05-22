@@ -7,7 +7,6 @@ import { useForm, Controller } from"react-hook-form";
 import { Link, useNavigate, useSearchParams, useLocation } from"react-router-dom";
 import z from"zod";
 import { sileo } from"sileo";
-import { IoIosArrowForward } from"react-icons/io";
 import { useAppDispatch, useAppSelector } from"../../hooks/reduxHooks";
 import thunkRequestPhoneVerification from"../../redux/auth/thunk/thunkRequestPhoneVerification";
 import thunkVerifyPhoneNumber from"../../redux/auth/thunk/thunkVerifyPhoneNumber";
@@ -81,39 +80,39 @@ const VerifyPhone = () => {
  }
  };
 
- return (
- <div>
- <Link to='/auth/sign-up' className="auth-back-link">
- <IoIosArrowForward />
- <span>العودة للتسجيل</span>
- </Link>
-
- <header style={{ marginBottom:'2rem', textAlign:'center' }}>
- <h1 className="auth-heading">تأكيد رقم الهاتف</h1>
- <p className="auth-subtitle" style={{ marginBottom:'0.25rem' }}>
- أرسلنا رمزًا من 6 أرقام إلى رقم الموبايل المسجل.
- </p>
- {phoneNumber && (
- <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginBottom:'1rem' }}>
- <div className="auth-phone-chip" dir="ltr" style={{ margin: 0 }}>{phoneNumber}</div>
- <button
- type="button"
- onClick={() => navigate('/auth/sign-up')}
- className="text-[var(--main-color)] bg-transparent border-none cursor-pointer text-sm underline hover:opacity-80 transition-opacity"
- >
- تعديل الرقم
- </button>
- </div>
- )}
- {pendingVerificationMessage && (
- <div className="auth-status-message auth-status-success">
- {pendingVerificationMessage}
- </div>
- )}
- {error && (
- <div className="auth-status-message auth-status-error">{error}</div>
- )}
- </header>
+  return (
+    <div>
+      <header className="auth-header">
+        <div className="auth-welcome-title-large">
+          تأكيد الحساب في <span className="text-[var(--main-color)] font-extrabold">محامي سمارت</span>
+        </div>
+        <h1 className="auth-heading">تأكيد رقم الهاتف</h1>
+        <p className="auth-subtitle">
+          أرسلنا رمزًا من 6 أرقام إلى رقم الهاتف المسجل للمتابعة.
+        </p>
+        
+        {phoneNumber && (
+          <div className="flex items-center justify-center gap-2 mt-3 mb-2">
+            <div className="auth-phone-chip" dir="ltr" style={{ margin: 0 }}>{phoneNumber}</div>
+            <button
+              type="button"
+              onClick={() => navigate('/auth/sign-up')}
+              className="text-[var(--main-color)] bg-transparent border-none cursor-pointer text-sm underline hover:opacity-80 transition-opacity"
+            >
+              تعديل الرقم
+            </button>
+          </div>
+        )}
+        
+        {pendingVerificationMessage && (
+          <div className="auth-status-message auth-status-success">
+            {pendingVerificationMessage}
+          </div>
+        )}
+        {error && (
+          <div className="auth-status-message auth-status-error">{error}</div>
+        )}
+      </header>
 
  <form onSubmit={form.handleSubmit(onSubmit)}>
  <div className="auth-otp-wrapper">

@@ -2071,6 +2071,56 @@ namespace Lawyer.Infrastructure.Migrations
                     b.ToTable("FinalPrayers", (string)null);
                 });
 
+            modelBuilder.Entity("Lawyer.Core.Models.GuidanceDismissal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnOrder(0);
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("datetime2")
+                        .HasColumnOrder(110);
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnOrder(120);
+
+                    b.Property<string>("GuidanceKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnOrder(150);
+
+                    b.Property<DateTime>("Updated")
+                        .HasColumnType("datetime2")
+                        .HasColumnOrder(130);
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnOrder(140);
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "GuidanceKey")
+                        .IsUnique()
+                        .HasDatabaseName("UX_GuidanceDismissals_UserId_GuidanceKey");
+
+                    b.ToTable("GuidanceDismissals");
+                });
+
             modelBuilder.Entity("Lawyer.Core.Models.InternalRegulation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3937,6 +3987,17 @@ namespace Lawyer.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Case");
+                });
+
+            modelBuilder.Entity("Lawyer.Core.Models.GuidanceDismissal", b =>
+                {
+                    b.HasOne("Lawyer.Core.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Lawyer.Core.Models.InternalRegulation", b =>

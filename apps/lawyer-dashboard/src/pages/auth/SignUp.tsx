@@ -76,13 +76,15 @@ const SignUp = () => {
  {formError}
  </div>
  )}
- <header className="auth-header">
- <span className="auth-kicker">انضم إلى محامي سمارت</span>
- <h1 className="auth-heading">أنشئ حسابك</h1>
- <p className="auth-subtitle">
- أدخل بياناتك لتبدأ استخدام أدوات التحليل القانوني الذكية.
- </p>
- </header>
+  <header className="auth-header">
+    <div className="auth-welcome-title-large">
+      ابدأ رحلتك مع <span className="text-[var(--main-color)] font-extrabold">محامي سمارت</span>
+    </div>
+    <h1 className="auth-heading">إنشاء حساب جديد</h1>
+    <p className="auth-subtitle">
+      أدخل بياناتك لتبدأ استخدام أدوات التحليل القانوني الذكية فورًا.
+    </p>
+  </header>
 
  <div className="auth-input-group mb-4">
  <label htmlFor="signup-fullname" className="auth-input-label">الاسم الكامل</label>

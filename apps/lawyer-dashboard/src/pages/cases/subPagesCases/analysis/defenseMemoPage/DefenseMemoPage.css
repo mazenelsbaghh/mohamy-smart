@@ -291,8 +291,7 @@
 
 .legal-analysis-highlight {
     background: color-mix(in srgb, var(--white-color) 88%, var(--bg-color) 12%);
-    border: 1px solid rgba(27, 27, 27, 0.06);
-    border-inline-start: 4px solid var(--main-color);
+    border: 1px solid rgba(239, 149, 10, 0.24);
     border-radius: 20px;
     padding: 24px;
     box-shadow: 0 10px 30px rgba(27, 27, 27, 0.03);
@@ -700,12 +699,11 @@
 .defense-list-card {
     width: 100%;
     text-align: right;
-    border: 0;
+    border: 1px solid rgba(27, 27, 27, 0.05);
     cursor: pointer;
     padding: 18px;
     border-radius: 22px;
     background: color-mix(in srgb, var(--white-color) 86%, var(--bg-color) 14%);
-    border-inline-start: 4px solid transparent;
     transition: background .25s ease, box-shadow .25s ease, border-color .25s ease;
 }
 
@@ -715,7 +713,7 @@
 
 .defense-list-card.is-active {
     background: color-mix(in srgb, var(--white-color) 80%, var(--second-color) 20%);
-    border-inline-start-color: var(--main-color);
+    border-color: var(--main-color);
     box-shadow: 0 12px 30px var(--accent-soft);
 }
 

@@ -2,7 +2,7 @@ import usePageTitle from '../../hooks/usePageTitle';
 import { Container } from'@mohamy/shared-ui';
 import'./LegalLibrary.css';
 import { useNavigate } from'react-router-dom';
-import { FaScaleBalanced, FaMoneyBillWave } from'react-icons/fa6';
+import { FaScaleBalanced } from'react-icons/fa6';
 import { MdOutlineAssignmentInd, MdOutlineDescription, MdOutlineArticle } from'react-icons/md';
 
 import HeadTitle from'../../components/headTitle/HeadTitle';
@@ -23,13 +23,13 @@ const TOOLS: LibraryTool[] = [
  icon: <FaScaleBalanced />,
  route:'/legal-library/inheritance',
  },
- {
- id:'court-fees',
- title:'حاسبة الرسوم القضائية',
- description:'حساب الرسوم القضائية حسب نوع الدعوى وقيمة الحق المدعى به وفقاً لقانون الرسوم القضائية المصري',
- icon: <FaMoneyBillWave />,
- route:'/legal-library/court-fees',
- },
+//  {
+//  id:'court-fees',
+//  title:'حاسبة الرسوم القضائية',
+//  description:'حساب الرسوم القضائية حسب نوع الدعوى وقيمة الحق المدعى به وفقاً لقانون الرسوم القضائية المصري',
+//  icon: <FaMoneyBillWave />,
+//  route:'/legal-library/court-fees',
+//  },
  {
  id:'power-of-attorneys',
  title:'التوكيلات',

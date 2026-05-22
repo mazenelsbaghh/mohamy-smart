@@ -266,7 +266,7 @@ namespace Lawyer.Application.Services
                     sb.AppendLine().AppendLine();
 
                 sb.AppendLine($"{title} - صفحة {page.PageNumber}");
-                sb.AppendLine(new string('=', Math.Min(title.Length + 12, 80)));
+                sb.AppendLine(new string('=', Math.Min(title.Length + 12, 55)));
                 sb.AppendLine(page.Text.Trim());
             }
 

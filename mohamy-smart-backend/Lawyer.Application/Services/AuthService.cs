@@ -249,6 +249,9 @@ namespace Lawyer.Application.Services
             await _unitOfWork.Repository<ApplicationUser>().Update(existingUser);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+            var dismissedGuidance = await _unitOfWork.Repository<GuidanceDismissal>()
+                .WhereAsync(g => g.UserId == existingUser.Id, cancellationToken);
+
             var response = new AuthResponseDto
             {
                 UserId = existingUser.Id.ToString(),
@@ -258,7 +261,8 @@ namespace Lawyer.Application.Services
                 PhoneNumberConfirmed = existingUser.PhoneNumberConfirmed,
                 AccessToken = token,
                 RefreshToken = refreshToken,
-                Roles = roles.ToList()
+                Roles = roles.ToList(),
+                DismissedGuidanceKeys = dismissedGuidance.Select(g => g.GuidanceKey).ToList()
             };
 
             _audit.Log("User logged in", new { UserId = existingUser.Id, Phone = existingUser.PhoneNumber });
@@ -315,6 +319,9 @@ namespace Lawyer.Application.Services
             await _unitOfWork.Repository<ApplicationUser>().Update(existingUser);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+            var dismissedGuidance = await _unitOfWork.Repository<GuidanceDismissal>()
+                .WhereAsync(g => g.UserId == existingUser.Id, cancellationToken);
+
             var response = new AuthResponseDto
             {
                 UserId = existingUser.Id.ToString(),
@@ -323,7 +330,8 @@ namespace Lawyer.Application.Services
                 PhoneNumberConfirmed = existingUser.PhoneNumberConfirmed,
                 AccessToken = token,
                 RefreshToken = refreshToken,
-                Roles = roles.ToList()
+                Roles = roles.ToList(),
+                DismissedGuidanceKeys = dismissedGuidance.Select(g => g.GuidanceKey).ToList()
             };
 
             _audit.Log("Admin logged in", new { UserId = existingUser.Id, Email = existingUser.Email });
@@ -562,17 +570,31 @@ namespace Lawyer.Application.Services
                             Name = trialPlanName,
                             Price = 0,
                             Features = "Basic Features",
-                            AiRequestsLimit = 1,
+                            AiRequestsLimit = 10,
                             DurationDays = 7,
                             IsActive = true
                         };
                         await _unitOfWork.Repository<Subscription>().AddAsync(freeTrialPlan);
-                        _logger.LogInformation("Trial plan created automatically (first-time setup).");
+                        _logger.LogInformation("Trial plan created automatically (first-time setup) with 10 AI requests limit.");
                     }
-                    else if (freeTrialPlan.Name == legacyTrialPlanName)
+                    else
                     {
-                        freeTrialPlan.Name = trialPlanName;
-                        await _unitOfWork.Repository<Subscription>().Update(freeTrialPlan);
+                        bool updated = false;
+                        if (freeTrialPlan.Name == legacyTrialPlanName)
+                        {
+                            freeTrialPlan.Name = trialPlanName;
+                            updated = true;
+                        }
+                        if (freeTrialPlan.AiRequestsLimit == 1)
+                        {
+                            freeTrialPlan.AiRequestsLimit = 10;
+                            updated = true;
+                        }
+                        if (updated)
+                        {
+                            await _unitOfWork.Repository<Subscription>().Update(freeTrialPlan);
+                            _logger.LogInformation("Trial plan properties updated: name normalized or limit set to 10.");
+                        }
                     }
 
                     var freeTrialSub = new LawyerSubscription
@@ -832,6 +854,9 @@ namespace Lawyer.Application.Services
 			await _unitOfWork.Repository<ApplicationUser>().Update(user);
 			await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+			var dismissedGuidance = await _unitOfWork.Repository<GuidanceDismissal>()
+				.WhereAsync(g => g.UserId == user.Id, cancellationToken);
+
 			var response = new AuthResponseDto
 			{
 				UserId = user.Id.ToString(),
@@ -840,7 +865,8 @@ namespace Lawyer.Application.Services
 				Phone = user.PhoneNumber ?? string.Empty,
 				AccessToken = newJwt,
 				RefreshToken = newRefreshToken,
-				Roles = roles.ToList()
+				Roles = roles.ToList(),
+				DismissedGuidanceKeys = dismissedGuidance.Select(g => g.GuidanceKey).ToList()
 			};
 
 			_logger.LogInformation("Refresh token renewed for user {UserId}", user.Id);

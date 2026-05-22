@@ -164,11 +164,12 @@ export const thunkGetDefenseAnalysis = createAsyncThunk('smartAnalysis/getDefens
 );
 
 export const thunkCreateDefense = createAsyncThunk('smartAnalysis/createDefense',
- async ({ caseId, defenseTitle }: { caseId: string; defenseTitle: string }, { rejectWithValue }) => {
+ async ({ caseId, defenseTitle, type }: { caseId: string; defenseTitle: string; type: string }, { rejectWithValue }) => {
  try {
  const res = await api.post('/SmartAnalysis/defenses', {
  caseId,
  defenseTitle,
+ type,
  });
  return res.data.data;
  } catch (error) {
@@ -405,13 +406,20 @@ export const smartAnalysisSlice = createWorkflowSlice<{
  state.outputs[4] = null;
  state.outputs[5] = '';
  },
- addDefense: (state, action: PayloadAction<TDefense>) => {
- const defenses = state.outputs[2] ?? emptyDefenses();
- defenses.defensesSubstantive.push(action.payload);
- state.outputs[2] = defenses;
- state.outputs[4] = null;
- state.outputs[5] = '';
- },
+  addDefense: (state, action: PayloadAction<TDefense & { type?: string }>) => {
+  const defenses = state.outputs[2] ?? emptyDefenses();
+  const typeLower = action.payload.type?.toLowerCase();
+  if (typeLower === 'formal') {
+    defenses.defensesFormal.push(action.payload);
+  } else if (typeLower === 'evidentiary') {
+    defenses.defensesEvidentiary.push(action.payload);
+  } else {
+    defenses.defensesSubstantive.push(action.payload);
+  }
+  state.outputs[2] = defenses;
+  state.outputs[4] = null;
+  state.outputs[5] = '';
+  },
  restoreWorkflowSnapshot: (state, action: PayloadAction<{
  outputs: {
  1?: TFactAnalysis | null;

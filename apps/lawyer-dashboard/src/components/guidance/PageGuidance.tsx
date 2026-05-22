@@ -13,6 +13,8 @@ import {
  X,
 } from'lucide-react';
 import type { GuidedTourStep, PageGuidanceContent } from'./guidanceContent';
+import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
+import thunkDismissGuidance from '../../redux/auth/thunk/thunkDismissGuidance';
 import'./PageGuidance.css';
 
 const YOUTUBE_VIDEO_ID = 'RLO_qRNAu0s';
@@ -102,6 +104,8 @@ const buildFallbackSteps = (content: PageGuidanceContent): GuidedTourStep[] => [
 ];
 
 const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
+ const dispatch = useAppDispatch();
+ const user = useAppSelector((state) => state.auth.user);
  const titleId = useId();
  const descriptionId = useId();
  const dismissStorageKey = useMemo(() => `mohamy:page-guidance:${content.key}:dismissed`, [content.key]);
@@ -111,8 +115,19 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
  () => content.video ? buildGuidanceVideoUrl(content.video.start, content.video.end) : undefined,
  [content.video]
  );
- const [isDismissed, setIsDismissed] = useState(() => getDismissedValue(dismissStorageKey));
- const [isOpen, setIsOpen] = useState(() => !getDismissedValue(dismissStorageKey) && !getSessionClosedValue(sessionClosedKey));
+ 
+ const [isDismissed, setIsDismissed] = useState(() => {
+   const local = getDismissedValue(dismissStorageKey);
+   const server = user?.dismissedGuidanceKeys?.includes(content.key) ?? false;
+   return local || server;
+ });
+ 
+ const [isOpen, setIsOpen] = useState(() => {
+   const local = getDismissedValue(dismissStorageKey);
+   const server = user?.dismissedGuidanceKeys?.includes(content.key) ?? false;
+   return !local && !server && !getSessionClosedValue(sessionClosedKey);
+ });
+ 
  const [activeStepIndex, setActiveStepIndex] = useState(0);
 
  const activeStep = steps[Math.min(activeStepIndex, steps.length - 1)];
@@ -120,12 +135,12 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
  const isLastStep = activeStepIndex >= steps.length - 1;
 
  useEffect(() => {
- const dismissed = getDismissedValue(dismissStorageKey);
+ const dismissed = getDismissedValue(dismissStorageKey) || (user?.dismissedGuidanceKeys?.includes(content.key) ?? false);
  const sessionClosed = getSessionClosedValue(sessionClosedKey);
  setIsDismissed(dismissed);
  setIsOpen(!dismissed && !sessionClosed);
  setActiveStepIndex(0);
- }, [dismissStorageKey, sessionClosedKey]);
+ }, [dismissStorageKey, sessionClosedKey, user?.dismissedGuidanceKeys, content.key]);
 
  const closeForNow = useCallback(() => {
  setSessionClosedValue(sessionClosedKey, true);
@@ -136,7 +151,10 @@ const PageGuidance = ({ content, className ='' }: PageGuidanceProps) => {
  setDismissedValue(dismissStorageKey);
  setIsDismissed(true);
  setIsOpen(false);
- }, [dismissStorageKey]);
+ if (user) {
+   dispatch(thunkDismissGuidance(content.key));
+ }
+ }, [dismissStorageKey, user, content.key, dispatch]);
 
  useEffect(() => {
  if (!isOpen) return;

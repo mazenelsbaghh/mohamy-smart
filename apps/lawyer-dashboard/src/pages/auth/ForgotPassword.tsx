@@ -1,7 +1,5 @@
 import { CustomButton, CustomInput } from'@mohamy/shared-ui';
 import { useState, useEffect } from"react";
-import { Link } from"react-router-dom";
-import { IoIosArrowForward } from"react-icons/io";
 import { InputOtp } from"@heroui/react";
 
 
@@ -114,24 +112,22 @@ const ForgotPassword = () => {
  );
 
  return (
- <div>
- <Link to='/auth/login' className="auth-back-link">
- <IoIosArrowForward />
- <span>العودة لتسجيل الدخول</span>
- </Link>
-
- <header style={{ marginBottom:'1.75rem' }}>
- <h1 className="auth-heading">نسيت كلمة المرور؟</h1>
- <p className="auth-subtitle">
- سنرسل لك رمز تحقق قصير إلى الموبايل لإعادة تعيين كلمة المرور.
- </p>
- {recoveryMessage && (
- <div className="auth-status-message auth-status-success">{recoveryMessage}</div>
- )}
- {error && (
- <div className="auth-status-message auth-status-error">{error}</div>
- )}
- </header>
+    <div>
+      <header className="auth-header">
+        <div className="auth-welcome-title-large">
+          استعادة الحساب في <span className="text-[var(--main-color)] font-extrabold">محامي سمارت</span>
+        </div>
+        <h1 className="auth-heading">نسيت كلمة المرور؟</h1>
+        <p className="auth-subtitle">
+          سنرسل لك رمز تحقق قصير إلى الموبايل لإعادة تعيين كلمة المرور.
+        </p>
+        {recoveryMessage && (
+          <div className="auth-status-message auth-status-success">{recoveryMessage}</div>
+        )}
+        {error && (
+          <div className="auth-status-message auth-status-error">{error}</div>
+        )}
+      </header>
 
  <form onSubmit={requestForm.handleSubmit(onSubmitRequest)}>
  <div className="auth-input-group mb-6">

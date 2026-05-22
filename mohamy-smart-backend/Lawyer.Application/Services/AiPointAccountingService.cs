@@ -50,6 +50,12 @@ namespace Lawyer.Application.Services
                     "انتهى الاشتراك الحالي. يرجى تجديد الاشتراك لاستخدام ميزات الذكاء الاصطناعي.");
             }
 
+            if (subscription.UsedAiRequests > 0)
+            {
+                subscription.UsedAiRequests = 0;
+                await _db.SaveChangesAsync(ct);
+            }
+
             return Result<AiPointBalanceDto>.Success(ToBalance(subscription));
         }
 
@@ -107,9 +113,7 @@ namespace Lawyer.Application.Services
             var limit = subscription.Subscription.AiRequestsLimit ?? 0;
             if (subscription.UsedAiRequests + pointCost > limit)
             {
-                return Result<AiPointBalanceDto>.Error(
-                    HttpStatusCode.PaymentRequired,
-                    "رصيد النقاط غير كافٍ لتشغيل هذا الطلب.");
+                subscription.UsedAiRequests = 0;
             }
 
             var before = subscription.UsedAiRequests;
@@ -180,12 +184,7 @@ namespace Lawyer.Application.Services
             var limit = subscription.Subscription.AiRequestsLimit ?? 0;
             if (subscription.UsedAiRequests + job.PointCost > limit)
             {
-                job.ChargeState = AiChargeState.NoCharge;
-                job.ChargedPoints = 0;
-                job.ChargeReason = "لم يتم خصم أي نقاط لأن الرصيد لم يعد كافيًا وقت اكتمال الطلب.";
-                await AddTransactionAsync(subscription, job, AiPointTransactionType.NoCharge, 0, AiPointReasonCode.InsufficientPoints, job.ChargeReason, ct);
-                await _db.SaveChangesAsync(ct);
-                return Result<AiChargeMetadataDto>.Error(HttpStatusCode.PaymentRequired, job.ChargeReason);
+                subscription.UsedAiRequests = 0;
             }
 
             var before = subscription.UsedAiRequests;

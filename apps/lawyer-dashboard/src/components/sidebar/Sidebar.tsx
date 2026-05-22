@@ -10,6 +10,7 @@ import { BsChatTextFill } from"react-icons/bs";
 import { NavLink } from'react-router-dom';
 import { IoSettings } from"react-icons/io5";
 import { LuLogOut } from"react-icons/lu";
+import { HiX } from "react-icons/hi";
 
 import { motion } from"framer-motion";
 import { useAppDispatch } from'../../hooks/reduxHooks';
@@ -22,7 +23,7 @@ const Sidebar = () => {
  const [isMobile, setIsMobile] = useState<boolean>(false);
  const [isLogoutOpen, setIsLogoutOpen] = useState<boolean>(false);
 
- const { isOpen: ctxOpen } = useSidebar();
+ const { isOpen: ctxOpen, setIsOpen } = useSidebar();
  // Drawer is "open" if either the context (hamburger) or the legacy drag handle says so
  const isDrawerOpen = isMobile ? ctxOpen : true;
 
@@ -67,6 +68,16 @@ const Sidebar = () => {
  >
  <div className="logo">
  <img src="/images/logo.png" alt="Mohamy Smart Logo" loading="lazy" decoding="async" />
+ {isMobile && (
+ <button
+ type="button"
+ onClick={() => setIsOpen(false)}
+ className="mobile-close-btn"
+ aria-label="إغلاق القائمة"
+ >
+ <HiX size={20} />
+ </button>
+ )}
  </div>
  <nav>
  <ul>

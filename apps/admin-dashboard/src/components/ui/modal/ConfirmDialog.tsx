@@ -37,7 +37,7 @@ const ConfirmDialog = ({
             size="md"
             classNames={{
                 base: 'backdrop-blur-2xl bg-white/70 dark:bg-[#161616]/70 border border-white/30 dark:border-white/10 shadow-2xl',
-                backdrop: 'bg-black/20 backdrop-blur-sm',
+                backdrop: 'bg-[#1b1b1b]/20 backdrop-blur-sm',
             }}
         >
             <ModalContent>

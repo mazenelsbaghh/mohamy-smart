@@ -81,7 +81,15 @@ namespace Lawyer.Controllers
                 profileId = lawyer?.Id.ToString() ?? "";
             }
 
-            return Ok(Result<object>.Success(new { userId, profileId, fullName = name, email, roles }));
+            var dismissedGuidanceKeys = new List<string>();
+            if (Guid.TryParse(userId, out var parsedUserId2))
+            {
+                var dismissed = await _unitOfWork.Repository<GuidanceDismissal>()
+                    .WhereAsync(g => g.UserId == parsedUserId2, cancellationToken);
+                dismissedGuidanceKeys = dismissed.Select(g => g.GuidanceKey).ToList();
+            }
+
+            return Ok(Result<object>.Success(new { userId, profileId, fullName = name, email, roles, dismissedGuidanceKeys }));
         }
 
         // ── T008: GET /api/auth/csrf-token ───────────────────────────────────

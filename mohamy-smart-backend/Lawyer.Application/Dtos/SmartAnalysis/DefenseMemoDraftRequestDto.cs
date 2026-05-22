@@ -22,6 +22,22 @@ namespace Lawyer.Application.Dtos.SmartAnalysis
         public List<FinalRequestInput> FinalRequests { get; set; } = new();
     }
 
+    public class DefenseMemoFrameSectionsDto
+    {
+        public string OpeningHtml { get; set; } = string.Empty;
+        public string FactsHtml { get; set; } = string.Empty;
+        public string RequestsHtml { get; set; } = string.Empty;
+        public string ClosingHtml { get; set; } = string.Empty;
+    }
+
+    public class DraftedDefenseSectionDto
+    {
+        public string DefenseTitle { get; set; } = string.Empty;
+        public string DefenseType { get; set; } = string.Empty;
+        public int SourceOrder { get; set; }
+        public string Html { get; set; } = string.Empty;
+    }
+
     public class ApprovedDefenseInput
     {
         public string DefenseTitle { get; set; } = string.Empty;
