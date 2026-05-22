@@ -130,8 +130,8 @@ const Lawyers = () => {
           card1={{
             icon: <FaUsers />,
             iconColor: "#3B82F6",
-            text: "المشتركين في الباقات",
-            number: lawyersReport?.activeSubscribers ?? 0,
+            text: "المشتركين في الباقة التجريبية",
+            number: lawyersReport?.activeTrialSubscribers ?? 0,
           }}
           card2={{
             icon: <FaCrown />,

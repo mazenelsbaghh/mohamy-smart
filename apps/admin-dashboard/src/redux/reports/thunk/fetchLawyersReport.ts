@@ -6,7 +6,7 @@ export type TLawyersReport = {
   totalLawyers: number;
   totalActive: number;
   totalInactive: number;
-  activeSubscribers: number;
+  activeTrialSubscribers: number;
   activePaidSubscribers: number;
   expiredSubscribers: number;
 };
