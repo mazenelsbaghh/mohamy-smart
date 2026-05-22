@@ -214,6 +214,71 @@ namespace Lawyer.Application.Services
 				lawyer.ApplicationUser.IsActive = isActive;
 			}
 
+			if (isActive)
+			{
+				var hasSubscriptions = await _unitOfWork.Repository<LawyerSubscription>()
+					.AsQueryable()
+					.AnyAsync(ls => ls.LawyerId == lawyer.Id, cancellationToken);
+
+				if (!hasSubscriptions)
+				{
+					const string trialPlanName = "الباقة التجريبية";
+					const string legacyTrialPlanName = "Free Trial";
+
+					var freeTrialPlan = await _unitOfWork.Repository<Subscription>()
+						.FirstOrDefaultTrackedAsync(x => x.Name == trialPlanName || x.Name == legacyTrialPlanName, cancellationToken);
+
+					if (freeTrialPlan == null)
+					{
+						freeTrialPlan = new Subscription
+						{
+							Name = trialPlanName,
+							Price = 0,
+							Features = "Basic Features",
+							AiRequestsLimit = 10,
+							DurationDays = 7,
+							IsActive = true
+						};
+						await _unitOfWork.Repository<Subscription>().AddAsync(freeTrialPlan);
+						_logger.LogInformation("Trial plan created automatically by admin service with 10 AI requests limit.");
+					}
+					else
+					{
+						bool updated = false;
+						if (freeTrialPlan.Name == legacyTrialPlanName)
+						{
+							freeTrialPlan.Name = trialPlanName;
+							updated = true;
+						}
+						if (freeTrialPlan.AiRequestsLimit == 1)
+						{
+							freeTrialPlan.AiRequestsLimit = 10;
+							updated = true;
+						}
+						if (updated)
+						{
+							await _unitOfWork.Repository<Subscription>().Update(freeTrialPlan);
+							_logger.LogInformation("Trial plan properties updated: name normalized or limit set to 10.");
+						}
+					}
+
+					var freeTrialSub = new LawyerSubscription
+					{
+						Lawyer = lawyer,
+						LawyerId = lawyer.Id,
+						Subscription = freeTrialPlan,
+						SubscriptionId = freeTrialPlan.Id,
+						UsedAiRequests = 0,
+						StartDate = DateTime.UtcNow,
+						EndDate = DateTime.UtcNow.AddDays(freeTrialPlan.DurationDays),
+						IsActive = true
+					};
+
+					await _unitOfWork.Repository<LawyerSubscription>().AddAsync(freeTrialSub);
+					_logger.LogInformation("Lawyer {LawyerId} automatically subscribed to trial plan upon first admin activation.", lawyer.Id);
+				}
+			}
+
 			await _unitOfWork.Repository<Core.Models.Lawyer>().Update(lawyer);
 			await _unitOfWork.SaveChangesAsync(cancellationToken);
 
