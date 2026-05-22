@@ -356,7 +356,7 @@ const PowerOfAttorneysPage = () => {
   backdrop="blur"
   size="md"
   classNames={{
-   base: 'bg-white dark:app-surface-soft border app-border dark:app-border-strong shadow-lg',
+   base: 'rounded-3xl mx-4 my-4 bg-white dark:app-surface-soft border app-border dark:app-border-strong shadow-lg',
    backdrop: 'bg-[#1b1b1b]/40',
   }}
   >

@@ -42,10 +42,10 @@ const FormModal = ({
  backdrop="blur"
  placement="center"
  classNames={{
- base:"rounded-none sm:rounded-3xl overflow-hidden app-surface border-0 sm:border app-border mx-0 sm:mx-4 my-0 sm:my-4 max-h-[100dvh] sm:max-h-[90dvh]",
+ base: "rounded-3xl overflow-hidden app-surface border app-border mx-4 my-4 max-h-[90dvh]",
  header:"p-0 border-b-0",
  body:"p-0 app-surface",
- wrapper:"items-end sm:items-center",
+ wrapper: "items-center",
  }}
  >
  <ModalContent>

@@ -65,7 +65,7 @@ const ChangePhoneModal = ({ isOpen, onOpenChange }: ChangePhoneModalProps) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={handleClose} dir="rtl">
+    <Modal isOpen={isOpen} onOpenChange={handleClose} dir="rtl" placement="center" classNames={{ base: "rounded-3xl mx-4 my-4" }}>
       <ModalContent>
         {() => (
           <>

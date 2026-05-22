@@ -188,7 +188,7 @@ const PlansAndReview = () => {
  </Container>
 
  {/* Edit Plan Modal */}
- <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg" backdrop="blur">
+ <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg" backdrop="blur" placement="center" classNames={{ base: "rounded-3xl mx-4 my-4" }}>
  <ModalContent>
  <ModalHeader className="flex flex-col gap-1">تعديل الخطة</ModalHeader>
  <ModalBody>
@@ -263,7 +263,7 @@ const PlansAndReview = () => {
  </Modal>
 
  {/* Create Plan Modal */}
- <Modal isOpen={isCreateOpen} onOpenChange={onCreateOpenChange} size="lg" backdrop="blur">
+ <Modal isOpen={isCreateOpen} onOpenChange={onCreateOpenChange} size="lg" backdrop="blur" placement="center" classNames={{ base: "rounded-3xl mx-4 my-4" }}>
  <ModalContent>
  <ModalHeader className="flex flex-col gap-1">إنشاء خطة جديدة</ModalHeader>
  <ModalBody>

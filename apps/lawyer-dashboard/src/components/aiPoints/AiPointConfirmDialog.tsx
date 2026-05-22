@@ -29,7 +29,7 @@ export function AiPointConfirmDialog({
   const pointsLabel = pointCost === 1 ? 'نقطة واحدة' : `${pointCost} نقاط`;
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onCancel(); }} placement="center" dir="rtl">
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onCancel(); }} placement="center" dir="rtl" classNames={{ base: "rounded-3xl mx-4 my-4" }}>
       <ModalContent>
         <ModalHeader className="font-tajawal">{titleByIntent[repeatIntent]}</ModalHeader>
         <ModalBody className="font-tajawal text-right">
