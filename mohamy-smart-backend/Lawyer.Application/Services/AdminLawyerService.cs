@@ -216,11 +216,11 @@ namespace Lawyer.Application.Services
 
 			if (isActive)
 			{
-				var hasSubscriptions = await _unitOfWork.Repository<LawyerSubscription>()
+				var hasActiveSubscription = await _unitOfWork.Repository<LawyerSubscription>()
 					.AsQueryable()
-					.AnyAsync(ls => ls.LawyerId == lawyer.Id, cancellationToken);
+					.AnyAsync(ls => ls.LawyerId == lawyer.Id && ls.IsActive, cancellationToken);
 
-				if (!hasSubscriptions)
+				if (!hasActiveSubscription)
 				{
 					const string trialPlanName = "الباقة التجريبية";
 					const string legacyTrialPlanName = "Free Trial";
@@ -262,20 +262,39 @@ namespace Lawyer.Application.Services
 						}
 					}
 
-					var freeTrialSub = new LawyerSubscription
-					{
-						Lawyer = lawyer,
-						LawyerId = lawyer.Id,
-						Subscription = freeTrialPlan,
-						SubscriptionId = freeTrialPlan.Id,
-						UsedAiRequests = 0,
-						StartDate = DateTime.UtcNow,
-						EndDate = DateTime.UtcNow.AddDays(freeTrialPlan.DurationDays),
-						IsActive = true
-					};
+					var existingTrialSub = await _unitOfWork.Repository<LawyerSubscription>()
+						.AsQueryable()
+						.IgnoreQueryFilters()
+						.Include(ls => ls.Subscription)
+						.FirstOrDefaultAsync(ls => ls.LawyerId == lawyer.Id && (ls.Subscription.Name == trialPlanName || ls.Subscription.Name == legacyTrialPlanName), cancellationToken);
 
-					await _unitOfWork.Repository<LawyerSubscription>().AddAsync(freeTrialSub);
-					_logger.LogInformation("Lawyer {LawyerId} automatically subscribed to trial plan upon first admin activation.", lawyer.Id);
+					if (existingTrialSub != null)
+					{
+						existingTrialSub.IsActive = true;
+						existingTrialSub.StartDate = DateTime.UtcNow;
+						existingTrialSub.EndDate = DateTime.UtcNow.AddDays(freeTrialPlan.DurationDays);
+						existingTrialSub.UsedAiRequests = 0;
+
+						await _unitOfWork.Repository<LawyerSubscription>().Update(existingTrialSub);
+						_logger.LogInformation("Lawyer {LawyerId} existing trial subscription reactivated.", lawyer.Id);
+					}
+					else
+					{
+						var freeTrialSub = new LawyerSubscription
+						{
+							Lawyer = lawyer,
+							LawyerId = lawyer.Id,
+							Subscription = freeTrialPlan,
+							SubscriptionId = freeTrialPlan.Id,
+							UsedAiRequests = 0,
+							StartDate = DateTime.UtcNow,
+							EndDate = DateTime.UtcNow.AddDays(freeTrialPlan.DurationDays),
+							IsActive = true
+						};
+
+						await _unitOfWork.Repository<LawyerSubscription>().AddAsync(freeTrialSub);
+						_logger.LogInformation("Lawyer {LawyerId} automatically subscribed to trial plan upon first admin activation.", lawyer.Id);
+					}
 				}
 			}
 
