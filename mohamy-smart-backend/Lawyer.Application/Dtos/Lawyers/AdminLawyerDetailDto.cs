@@ -32,6 +32,30 @@ public class AdminLawyerDetailDto
     public List<AdminLawyerSubscriptionSummaryDto> RecentSubscriptions { get; set; } = new();
     public List<AdminLawyerRecentReviewDto> RecentReviews { get; set; } = new();
     public List<AdminLawyerRecentAiUsageDto> RecentAiUsage { get; set; } = new();
+    public AdminManualPhoneVerificationAuditDto? LatestManualPhoneVerification { get; set; }
+}
+
+public class AdminManualPhoneVerificationRequestDto
+{
+    public string Reason { get; set; } = string.Empty;
+}
+
+public class AdminPhoneVerificationResultDto
+{
+    public Guid Id { get; set; }
+    public string? PhoneNumber { get; set; }
+    public bool PhoneNumberConfirmed { get; set; }
+    public AdminManualPhoneVerificationAuditDto? LatestManualPhoneVerification { get; set; }
+}
+
+public class AdminManualPhoneVerificationAuditDto
+{
+    public Guid Id { get; set; }
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+    public Guid VerifiedByAdminId { get; set; }
+    public string? VerifiedByAdminName { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 public class AdminLawyerSubscriptionSummaryDto

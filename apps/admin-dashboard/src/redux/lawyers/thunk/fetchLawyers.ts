@@ -79,6 +79,22 @@ export type TRecentLawyerAiUsage = {
  createdAt: string;
 };
 
+export type TManualPhoneVerificationAudit = {
+ id: string;
+ phoneNumber: string;
+ reason: string;
+ verifiedByAdminId: string;
+ verifiedByAdminName: string | null;
+ createdAt: string;
+};
+
+export type TPhoneVerificationResult = {
+ id: string;
+ phoneNumber: string | null;
+ phoneNumberConfirmed: boolean;
+ latestManualPhoneVerification: TManualPhoneVerificationAudit | null;
+};
+
 export type TLawyerDetail = TUser & {
  phoneNumberConfirmed: boolean;
  emailConfirmed: boolean;
@@ -94,6 +110,7 @@ export type TLawyerDetail = TUser & {
  recentSubscriptions: TLawyerSubscriptionSummary[];
  recentReviews: TRecentLawyerReview[];
  recentAiUsage: TRecentLawyerAiUsage[];
+ latestManualPhoneVerification: TManualPhoneVerificationAudit | null;
 };
 
 type TUsersResponse = {

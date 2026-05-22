@@ -1,4 +1,6 @@
+using Lawyer.Application.Common;
 using Lawyer.Application.Common.Interface;
+using Lawyer.Application.Dtos.Lawyers;
 using Lawyer.Application.Services;
 using Lawyer.Core.Enum;
 using Lawyer.Core.Models;
@@ -220,12 +222,127 @@ public class AdminLawyerServiceTests : IDisposable
         result.StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
     }
 
-    private AdminLawyerService CreateSut()
+    [Fact]
+    public async Task VerifyPhoneManuallyAsync_UnverifiedLawyer_SetsPhoneConfirmedAndCreatesAudit()
     {
+        var adminId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var lawyerId = Guid.NewGuid();
+
+        var user = new ApplicationUser
+        {
+            Id = userId,
+            FullName = "محام يحتاج توثيق",
+            PhoneNumber = "01000000000",
+            PhoneNumberConfirmed = false,
+            UserType = UserType.Lawyer,
+            IsActive = true
+        };
+
+        var lawyer = new Core.Models.Lawyer
+        {
+            Id = lawyerId,
+            ApplicationUserId = userId,
+            ApplicationUser = user,
+            Created = DateTime.UtcNow,
+            CreatedBy = userId,
+            UpdatedBy = userId,
+            IsActive = true
+        };
+        user.Lawyer = lawyer;
+
+        _dbContext.Users.AddRange(
+            user,
+            new ApplicationUser
+            {
+                Id = adminId,
+                FullName = "Admin User",
+                UserType = UserType.Admin,
+                IsActive = true
+            });
+        _dbContext.Set<Core.Models.Lawyer>().Add(lawyer);
+        await _dbContext.SaveChangesAsync();
+
+        var sut = CreateSut(adminId);
+
+        var result = await sut.VerifyPhoneManuallyAsync(
+            userId,
+            new AdminManualPhoneVerificationRequestDto { Reason = "OTP failed after support verification" },
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data.Should().NotBeNull();
+        result.Data!.PhoneNumberConfirmed.Should().BeTrue();
+        result.Data.LatestManualPhoneVerification.Should().NotBeNull();
+        result.Data.LatestManualPhoneVerification!.VerifiedByAdminName.Should().Be("Admin User");
+
+        var updatedUser = await _dbContext.Users.FindAsync(userId);
+        updatedUser!.PhoneNumberConfirmed.Should().BeTrue();
+
+        var audit = await _dbContext.ManualPhoneVerificationAudits.SingleAsync();
+        audit.UserId.Should().Be(userId);
+        audit.VerifiedByAdminId.Should().Be(adminId);
+        audit.PhoneNumber.Should().Be("01000000000");
+        audit.Reason.Should().Be("OTP failed after support verification");
+    }
+
+    [Fact]
+    public async Task VerifyPhoneManuallyAsync_BlankReason_ReturnsBadRequestWithoutChangingUser()
+    {
+        var userId = Guid.NewGuid();
+        var user = new ApplicationUser
+        {
+            Id = userId,
+            FullName = "محام يحتاج توثيق",
+            PhoneNumber = "01000000000",
+            PhoneNumberConfirmed = false,
+            UserType = UserType.Lawyer,
+            IsActive = true,
+            Lawyer = new Core.Models.Lawyer
+            {
+                Id = Guid.NewGuid(),
+                Created = DateTime.UtcNow,
+                CreatedBy = userId,
+                UpdatedBy = userId,
+                IsActive = true
+            }
+        };
+        user.Lawyer.ApplicationUserId = userId;
+        user.Lawyer.ApplicationUser = user;
+        _dbContext.Users.Add(user);
+        _dbContext.Set<Core.Models.Lawyer>().Add(user.Lawyer);
+        await _dbContext.SaveChangesAsync();
+
+        var sut = CreateSut();
+
+        var result = await sut.VerifyPhoneManuallyAsync(
+            userId,
+            new AdminManualPhoneVerificationRequestDto { Reason = "   " },
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        _dbContext.ManualPhoneVerificationAudits.Should().BeEmpty();
+
+        var updatedUser = await _dbContext.Users.FindAsync(userId);
+        updatedUser!.PhoneNumberConfirmed.Should().BeFalse();
+    }
+
+    private AdminLawyerService CreateSut(Guid? adminId = null, bool isAdmin = true)
+    {
+        var currentAdminId = adminId ?? Guid.NewGuid();
+        var userContextProvider = new Mock<IUserContextProvider>();
+        userContextProvider.Setup(p => p.GetCurrentContext()).Returns(new UserContext
+        {
+            UserId = currentAdminId,
+            IsAdmin = isAdmin
+        });
+
         return new AdminLawyerService(
             new UnitOfWork(_dbContext, CreateUserManager()),
             new Mock<ILogger<AdminLawyerService>>().Object,
-            new Mock<IAuditService>().Object);
+            new Mock<IAuditService>().Object,
+            userContextProvider.Object);
     }
 
     private static UserManager<ApplicationUser> CreateUserManager()

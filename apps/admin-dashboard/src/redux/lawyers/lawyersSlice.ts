@@ -2,6 +2,7 @@ import { createSlice } from"@reduxjs/toolkit";
 import fetchLawyers from"./thunk/fetchLawyers";
 import fetchLawyerById from"./thunk/fetchLawyerById";
 import updateLawyerStatus from"./thunk/updateLawyerStatus";
+import verifyLawyerPhoneManually from"./thunk/verifyLawyerPhoneManually";
 import { showErrorToast, showSuccessToast } from"../../utils/toastHelpers";
 import type { TLawyerDetail, TUser } from"./thunk/fetchLawyers";
 
@@ -10,6 +11,7 @@ type TLawyersState = {
  selectedLawyer: TLawyerDetail | null;
  isLoading: boolean;
  isLoadingDetail: boolean;
+ isVerifyingPhone: boolean;
  totalPages: number;
  totalCount: number;
  error: string | null;
@@ -20,6 +22,7 @@ const initialState: TLawyersState = {
  selectedLawyer: null,
  isLoading: false,
  isLoadingDetail: false,
+ isVerifyingPhone: false,
  totalPages: 1,
  totalCount: 0,
  error: null,
@@ -71,6 +74,26 @@ const lawyersSlice = createSlice({
  })
  .addCase(fetchLawyerById.rejected, (state, action) => {
  state.isLoadingDetail = false;
+ if (typeof action.payload ==="string") {
+ state.error = action.payload;
+ showErrorToast(action.payload);
+ }
+ })
+ .addCase(verifyLawyerPhoneManually.pending, (state) => {
+ state.isVerifyingPhone = true;
+ state.error = null;
+ })
+ .addCase(verifyLawyerPhoneManually.fulfilled, (state, action) => {
+ state.isVerifyingPhone = false;
+ if (state.selectedLawyer?.id === action.payload.id) {
+ state.selectedLawyer.phoneNumber = action.payload.phoneNumber;
+ state.selectedLawyer.phoneNumberConfirmed = action.payload.phoneNumberConfirmed;
+ state.selectedLawyer.latestManualPhoneVerification = action.payload.latestManualPhoneVerification;
+ }
+ showSuccessToast("تم توثيق رقم الهاتف يدويًا");
+ })
+ .addCase(verifyLawyerPhoneManually.rejected, (state, action) => {
+ state.isVerifyingPhone = false;
  if (typeof action.payload ==="string") {
  state.error = action.payload;
  showErrorToast(action.payload);

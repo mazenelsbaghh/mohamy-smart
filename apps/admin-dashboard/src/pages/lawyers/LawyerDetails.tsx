@@ -1,7 +1,7 @@
 import { Container } from"@mohamy/shared-ui";
-import { useEffect, type ReactNode } from"react";
+import { useEffect, useState, type ReactNode } from"react";
 import { useParams, useNavigate } from"react-router-dom";
-import { Avatar, Button, Spinner } from"@heroui/react";
+import { Avatar, Button, Spinner, Textarea } from"@heroui/react";
 import {
  FaArrowRight,
  FaBalanceScale,
@@ -20,11 +20,13 @@ import {
  FaRobot,
  FaStar,
  FaTimesCircle,
+ FaUserShield,
  FaUsers,
 } from"react-icons/fa";
 import { useAppDispatch, useAppSelector } from"../../redux/hooks";
 import HeadTitle from"../../components/public/headTitle/HeadTitle";
 import fetchLawyerById from"../../redux/lawyers/thunk/fetchLawyerById";
+import verifyLawyerPhoneManually from"../../redux/lawyers/thunk/verifyLawyerPhoneManually";
 
 type Tone ="success" |"warning" |"danger" |"neutral";
 
@@ -122,7 +124,9 @@ const LawyerDetails = () => {
  const { id } = useParams();
  const dispatch = useAppDispatch();
  const navigate = useNavigate();
- const { selectedLawyer: lawyer, isLoadingDetail, error } = useAppSelector(
+ const [manualReason, setManualReason] = useState("");
+ const [manualReasonError, setManualReasonError] = useState<string | null>(null);
+ const { selectedLawyer: lawyer, isLoadingDetail, isVerifyingPhone, error } = useAppSelector(
  (state) => state.lawyers
  );
 
@@ -131,6 +135,22 @@ const LawyerDetails = () => {
  dispatch(fetchLawyerById(id));
  }
  }, [dispatch, id]);
+
+ const handleVerifyPhone = async () => {
+ const reason = manualReason.trim();
+ if (!reason) {
+ setManualReasonError("اكتب سبب التوثيق اليدوي قبل التأكيد");
+ return;
+ }
+
+ if (!lawyer) return;
+
+ setManualReasonError(null);
+ const result = await dispatch(verifyLawyerPhoneManually({ id: lawyer.id, reason }));
+ if (verifyLawyerPhoneManually.fulfilled.match(result)) {
+ setManualReason("");
+ }
+ };
 
  if (isLoadingDetail) {
  return (
@@ -174,6 +194,8 @@ const LawyerDetails = () => {
  const hasLawyerProfile = Boolean(lawyer.lawyerId);
  const activeTone: Tone = lawyer.isActive ?"success" :"danger";
  const subscriptionTone: Tone = subscription?.isActive ?"success" : subscription ?"warning" :"neutral";
+ const canVerifyPhoneManually = Boolean(lawyer.phoneNumber) && !lawyer.phoneNumberConfirmed;
+ const latestManualVerification = lawyer.latestManualPhoneVerification;
 
  return (
  <section className="lawyer-details pb-10">
@@ -302,6 +324,77 @@ const LawyerDetails = () => {
  <InfoField label="تكلفة الذكاء التقديرية" value={formatCost(activity.aiEstimatedCostUsd)} icon={<FaRobot />} />
  <InfoField label="آخر نشاط" value={formatDate(activity.lastActivityAt)} icon={<FaRegClock />} />
  <InfoField label="التقييمات قيد المراجعة" value={formatNumber(activity.pendingReviewsCount)} icon={<FaRegClock />} />
+ </div>
+ </section>
+
+ <section className="space-y-4">
+ <SectionTitle icon={<FaUserShield />} title="توثيق الهاتف" />
+ <div className="rounded-lg border border-[var(--border-color)] bg-[var(--surface-color)] p-4 shadow-sm">
+ <div className="flex flex-wrap items-start justify-between gap-3">
+ <div className="min-w-0">
+ <p className="text-sm font-bold text-[var(--text-primary)]">
+ {lawyer.phoneNumberConfirmed ?"رقم الهاتف موثق" : lawyer.phoneNumber ?"رقم الهاتف يحتاج توثيق" :"لا يوجد رقم هاتف"}
+ </p>
+ <p className="mt-1 max-w-[65ch] text-xs leading-6 text-[var(--text-secondary)]">
+ استخدم التوثيق اليدوي فقط عند تعطل OTP وبعد التحقق من هوية المستخدم عبر الدعم.
+ </p>
+ </div>
+ <StatusBadge tone={lawyer.phoneNumberConfirmed ?"success" : lawyer.phoneNumber ?"warning" :"neutral"} icon={<FaPhone />}>
+ {lawyer.phoneNumberConfirmed ?"موثق" : lawyer.phoneNumber ?"غير موثق" :"غير متاح"}
+ </StatusBadge>
+ </div>
+
+ {canVerifyPhoneManually ? (
+ <div className="mt-4 space-y-3">
+ <Textarea
+ label="سبب التوثيق اليدوي"
+ placeholder="مثال: تعذر وصول OTP وتم التحقق من هوية المستخدم عبر الدعم"
+ minRows={3}
+ maxRows={5}
+ maxLength={500}
+ value={manualReason}
+ onValueChange={(value) => {
+ setManualReason(value);
+ if (manualReasonError && value.trim()) setManualReasonError(null);
+ }}
+ isInvalid={Boolean(manualReasonError)}
+ errorMessage={manualReasonError ?? undefined}
+ classNames={{
+ inputWrapper:"rounded-lg border border-[var(--border-color)] bg-[var(--surface-soft)]",
+ label:"text-[var(--text-secondary)]",
+ }}
+ />
+ <div className="flex flex-wrap items-center justify-between gap-3">
+ <p className="text-xs text-[var(--text-muted)]">
+ سيتم حفظ السبب واسم الأدمن في سجل التدقيق.
+ </p>
+ <Button
+ className="bg-[var(--main-color)] text-white"
+ startContent={<FaCheckCircle />}
+ isLoading={isVerifyingPhone}
+ isDisabled={isVerifyingPhone}
+ onPress={handleVerifyPhone}
+ >
+ توثيق الهاتف يدويًا
+ </Button>
+ </div>
+ </div>
+ ) : null}
+
+ {latestManualVerification ? (
+ <div className="mt-4 rounded-lg border border-[var(--border-color)] bg-[var(--surface-soft)] p-3">
+ <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-[var(--text-muted)]">
+ <FaRegClock className="text-[var(--main-color)]" />
+ <span>آخر توثيق يدوي</span>
+ </div>
+ <div className="grid gap-2 text-xs leading-6 text-[var(--text-secondary)]">
+ <p><span className="font-semibold text-[var(--text-primary)]">بواسطة:</span> {displayValue(latestManualVerification.verifiedByAdminName)}</p>
+ <p><span className="font-semibold text-[var(--text-primary)]">التاريخ:</span> {formatDate(latestManualVerification.createdAt)}</p>
+ <p><span className="font-semibold text-[var(--text-primary)]">الهاتف:</span> {displayValue(latestManualVerification.phoneNumber)}</p>
+ <p className="break-words"><span className="font-semibold text-[var(--text-primary)]">السبب:</span> {displayValue(latestManualVerification.reason)}</p>
+ </div>
+ </div>
+ ) : null}
  </div>
  </section>
  </div>

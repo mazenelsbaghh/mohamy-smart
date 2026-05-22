@@ -59,9 +59,10 @@ namespace Lawyer.Infrastructure.Persistence
         public DbSet<AiUsageRecord> AiUsageRecords { get; set; } = null!;
         public DbSet<LegalContract> LegalContracts { get; set; } = null!;
         public DbSet<ProcessServerPaper> ProcessServerPapers { get; set; } = null!;
-        public DbSet<Review> Reviews { get; set; } = null!;
+		public DbSet<Review> Reviews { get; set; } = null!;
         public DbSet<WorkflowSnapshot> WorkflowSnapshots { get; set; } = null!;
         public DbSet<GuidanceDismissal> GuidanceDismissals { get; set; } = null!;
+        public DbSet<ManualPhoneVerificationAudit> ManualPhoneVerificationAudits { get; set; } = null!;
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
 		{
 			ChangeTracker.DetectChanges();
@@ -157,6 +158,29 @@ namespace Lawyer.Infrastructure.Persistence
 				entity.Property(e => e.DeliveryStatus).HasMaxLength(32);
 				entity.Property(e => e.EventType).HasMaxLength(128);
 				entity.Property(e => e.SubjectTemplateKey).HasMaxLength(128);
+			});
+
+			builder.Entity<ManualPhoneVerificationAudit>(entity =>
+			{
+				entity.HasKey(e => e.Id);
+				entity.Property(e => e.PhoneNumber).HasMaxLength(64).IsRequired();
+				entity.Property(e => e.Reason).HasMaxLength(500).IsRequired();
+				entity.HasIndex(e => e.UserId)
+					.HasDatabaseName("IX_ManualPhoneVerificationAudits_UserId");
+				entity.HasIndex(e => new { e.UserId, e.Created })
+					.HasDatabaseName("IX_ManualPhoneVerificationAudits_UserId_Created");
+				entity.HasIndex(e => e.VerifiedByAdminId)
+					.HasDatabaseName("IX_ManualPhoneVerificationAudits_VerifiedByAdminId");
+
+				entity.HasOne(e => e.User)
+					.WithMany()
+					.HasForeignKey(e => e.UserId)
+					.OnDelete(DeleteBehavior.Restrict);
+
+				entity.HasOne(e => e.VerifiedByAdmin)
+					.WithMany()
+					.HasForeignKey(e => e.VerifiedByAdminId)
+					.OnDelete(DeleteBehavior.Restrict);
 			});
 
 

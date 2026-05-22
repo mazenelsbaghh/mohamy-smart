@@ -1,4 +1,5 @@
 using Lawyer.Application.Common.Interface;
+using Lawyer.Application.Common;
 using Lawyer.Application.Dtos.Lawyers;
 using Lawyer.Application.IServices;
 using Lawyer.Core.Exceptions;
@@ -14,12 +15,18 @@ namespace Lawyer.Application.Services
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly ILogger<AdminLawyerService> _logger;
 		private readonly IAuditService _audit;
+		private readonly IUserContextProvider _userContextProvider;
 
-		public AdminLawyerService(IUnitOfWork unitOfWork, ILogger<AdminLawyerService> logger, IAuditService audit)
+		public AdminLawyerService(
+			IUnitOfWork unitOfWork,
+			ILogger<AdminLawyerService> logger,
+			IAuditService audit,
+			IUserContextProvider userContextProvider)
 		{
 			_unitOfWork = unitOfWork;
 			_logger = logger;
 			_audit = audit;
+			_userContextProvider = userContextProvider;
 		}
 
 		public async Task<Result<AdminLawyerDetailDto>> GetLawyerDetailAsync(Guid userId, CancellationToken cancellationToken)
@@ -166,6 +173,7 @@ namespace Lawyer.Application.Services
 				RecentCases = recentCases,
 				RecentReviews = recentReviews,
 				RecentAiUsage = recentAiUsage,
+				LatestManualPhoneVerification = await GetLatestManualPhoneVerificationAsync(user.Id, cancellationToken),
 				Activity = new AdminLawyerActivitySummaryDto
 				{
 					CasesCount = casesCount,
@@ -214,6 +222,90 @@ namespace Lawyer.Application.Services
 			return ApiExceptionResponse.Success("Lawyer status updated successfully", "Lawyer status updated successfully");
 		}
 
+		public async Task<Result<AdminPhoneVerificationResultDto>> VerifyPhoneManuallyAsync(
+			Guid userId,
+			AdminManualPhoneVerificationRequestDto dto,
+			CancellationToken cancellationToken)
+		{
+			var currentUser = _userContextProvider.GetCurrentContext();
+			if (!currentUser.IsAdmin || currentUser.UserId == Guid.Empty)
+				return ApiExceptionResponse.Forbidden<AdminPhoneVerificationResultDto>("غير مصرح بتنفيذ توثيق الهاتف اليدوي.");
+
+			var reason = dto?.Reason?.Trim() ?? string.Empty;
+			if (string.IsNullOrWhiteSpace(reason))
+				return ApiExceptionResponse.BadRequest<AdminPhoneVerificationResultDto>("سبب توثيق الهاتف اليدوي مطلوب.");
+
+			if (reason.Length > 500)
+				return ApiExceptionResponse.BadRequest<AdminPhoneVerificationResultDto>("سبب توثيق الهاتف اليدوي يجب ألا يتجاوز 500 حرف.");
+
+			var user = await _unitOfWork.Repository<ApplicationUser>()
+				.AsQueryable()
+				.IgnoreQueryFilters()
+				.Include(u => u.Lawyer)
+				.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+			if (user == null)
+				return ApiExceptionResponse.NotFound<AdminPhoneVerificationResultDto>("Lawyer user not found.");
+
+			if (user.Lawyer == null)
+				return ApiExceptionResponse.NotFound<AdminPhoneVerificationResultDto>("Lawyer profile not found.");
+
+			if (string.IsNullOrWhiteSpace(user.PhoneNumber))
+				return ApiExceptionResponse.BadRequest<AdminPhoneVerificationResultDto>("لا يوجد رقم هاتف محفوظ لهذا المستخدم.");
+
+			if (user.PhoneNumberConfirmed)
+				return ApiExceptionResponse.BadRequest<AdminPhoneVerificationResultDto>("رقم الهاتف موثق بالفعل.");
+
+			var now = DateTime.UtcNow;
+			user.PhoneNumberConfirmed = true;
+
+			var audit = new ManualPhoneVerificationAudit
+			{
+				Id = Guid.NewGuid(),
+				UserId = user.Id,
+				PhoneNumber = user.PhoneNumber,
+				VerifiedByAdminId = currentUser.UserId,
+				Reason = reason,
+				Created = now,
+				CreatedBy = currentUser.UserId,
+				Updated = now,
+				UpdatedBy = currentUser.UserId,
+				IsActive = true
+			};
+
+			await _unitOfWork.Repository<ManualPhoneVerificationAudit>().AddAsync(audit);
+			await _unitOfWork.Repository<ApplicationUser>().Update(user);
+			await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+			audit.VerifiedByAdmin = await _unitOfWork.Repository<ApplicationUser>()
+				.AsQueryable()
+				.AsNoTracking()
+				.FirstOrDefaultAsync(u => u.Id == currentUser.UserId, cancellationToken);
+
+			_audit.Log("AdminManuallyVerifiedPhone", new
+			{
+				TargetUserId = user.Id,
+				user.PhoneNumber,
+				VerifiedByAdminId = currentUser.UserId,
+				Reason = reason
+			});
+
+			_logger.LogInformation(
+				"Admin {AdminId} manually verified phone for user {UserId}",
+				currentUser.UserId,
+				user.Id);
+
+			var result = new AdminPhoneVerificationResultDto
+			{
+				Id = user.Id,
+				PhoneNumber = user.PhoneNumber,
+				PhoneNumberConfirmed = user.PhoneNumberConfirmed,
+				LatestManualPhoneVerification = MapManualPhoneVerificationAudit(audit)
+			};
+
+			return ApiExceptionResponse.Success(result, "تم توثيق رقم الهاتف يدويًا.");
+		}
+
 		private static AdminLawyerSubscriptionSummaryDto MapSubscription(LawyerSubscription subscription)
 		{
 			return new AdminLawyerSubscriptionSummaryDto
@@ -228,6 +320,33 @@ namespace Lawyer.Application.Services
 				UsedAiRequests = subscription.UsedAiRequests,
 				Price = subscription.Subscription?.Price ?? 0,
 				YearlyPrice = subscription.Subscription?.YearlyPrice
+			};
+		}
+
+		private async Task<AdminManualPhoneVerificationAuditDto?> GetLatestManualPhoneVerificationAsync(Guid userId, CancellationToken cancellationToken)
+		{
+			var audit = await _unitOfWork.Repository<ManualPhoneVerificationAudit>()
+				.AsQueryable()
+				.AsNoTracking()
+				.Include(a => a.VerifiedByAdmin)
+				.Where(a => a.UserId == userId)
+				.OrderByDescending(a => a.Created)
+				.ThenByDescending(a => a.Id)
+				.FirstOrDefaultAsync(cancellationToken);
+
+			return audit == null ? null : MapManualPhoneVerificationAudit(audit);
+		}
+
+		private static AdminManualPhoneVerificationAuditDto MapManualPhoneVerificationAudit(ManualPhoneVerificationAudit audit)
+		{
+			return new AdminManualPhoneVerificationAuditDto
+			{
+				Id = audit.Id,
+				PhoneNumber = audit.PhoneNumber,
+				Reason = audit.Reason,
+				VerifiedByAdminId = audit.VerifiedByAdminId,
+				VerifiedByAdminName = audit.VerifiedByAdmin?.FullName,
+				CreatedAt = audit.Created
 			};
 		}
 

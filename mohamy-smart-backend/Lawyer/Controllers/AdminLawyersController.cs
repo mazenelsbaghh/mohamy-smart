@@ -31,5 +31,12 @@ namespace Lawyer.Controllers
             var result = await _adminLawyerService.UpdateLawyerStatusAsync(id, dto.IsActive, cancellationToken);
             return CreateResponse(result);
         }
+
+        [HttpPatch("{id:guid}/phone-verification")]
+        public async Task<IActionResult> VerifyPhoneManually(Guid id, [FromBody] AdminManualPhoneVerificationRequestDto dto, CancellationToken cancellationToken)
+        {
+            var result = await _adminLawyerService.VerifyPhoneManuallyAsync(id, dto, cancellationToken);
+            return CreateResponse(result);
+        }
     }
 }
