@@ -46,7 +46,8 @@ LANDING_PORT        := 3000
         backend backend-rebuild lawyer admin landing \
         db-shell migrate migrate-add \
         install bundle-report \
-        test test-backend test-lawyer test-admin \
+        test test-backend test-lawyer test-admin test-mobile \
+        run-web run-chrome run-ios run-android \
         clean nuke
 
 # ══════════════════════════════════════════════════════════════════
@@ -143,10 +144,11 @@ help: ## Show this help message
 	echo "  migrate-add  Create a new migration (NAME=...)"; \
 	echo ""; \
 	echo "Testing:"; \
-	echo "  test         Run all tests (backend + dashboards)"; \
+	echo "  test         Run all tests (backend, dashboards, and mobile)"; \
 	echo "  test-backend Run backend tests only"; \
 	echo "  test-lawyer  Run lawyer dashboard tests only"; \
 	echo "  test-admin   Run admin dashboard tests only"; \
+	echo "  test-mobile  Run mobile app tests only"; \
 	echo ""; \
 	echo "Cleanup:"; \
 	echo "  clean        Remove containers & images (preserves DB state)"; \
@@ -158,6 +160,12 @@ help: ## Show this help message
 	echo "Frontend:"; \
 	echo "  install      Install npm dependencies for all frontend apps"; \
 	echo "  bundle-report Build dashboards and open bundle analysis reports"; \
+	echo ""; \
+	echo "Mobile (Flutter):"; \
+	echo "  run-chrome   Run the mobile application on Chrome (Web)"; \
+	echo "  run-ios      Run the mobile application on iOS Simulator"; \
+	echo "  run-android  Run the mobile application on Android Emulator"; \
+	echo "  test-mobile  Run mobile app tests only"; \
 	echo ""
 
 # ══════════════════════════════════════════════════════════════════
@@ -240,11 +248,6 @@ server-logs-all: ## Stream ALL service logs from the REMOTE production server
 prod-build: ## Rebuild production-oriented images
 	$(REQUIRE_ENV_PROD)
 	docker compose --env-file $(ENV_PROD_FILE) -f $(COMPOSE_PROD_FILE) build
-
-server-logs: ## Stream live backend logs from the REMOTE production server
-	@echo "Connecting to production server (91.108.121.110) to stream live backend logs..."
-	@echo "Press Ctrl+C to exit."
-	ssh -o StrictHostKeyChecking=no root@91.108.121.110 "docker logs -f mohamy-smart-backend-1"
 
 server-migrate: ## Apply EF Core migrations only on the REMOTE production server
 	@echo "Applying EF Core migrations on production server (91.108.121.110)..."
@@ -330,7 +333,7 @@ migrate-add: ## Create a new migration (NAME=...)
 #  Testing
 # ══════════════════════════════════════════════════════════════════
 
-test: test-backend test-lawyer test-admin ## Run all tests
+test: test-backend test-lawyer test-admin test-mobile ## Run all tests
 
 test-backend: ## Run backend tests only
 	cd $(BACKEND_DIR) && $(DOTNET) test
@@ -340,6 +343,9 @@ test-lawyer: ## Run lawyer dashboard tests only
 
 test-admin: ## Run admin dashboard tests only
 	cd $(ADMIN_DIR) && npm run test -- --run
+
+test-mobile: ## Run mobile app tests only
+	cd apps/mohamy_smart_mobile && flutter test
 
 # ══════════════════════════════════════════════════════════════════
 #  Frontend Utilities
@@ -414,5 +420,18 @@ push: ## Push all changes to GitHub (uses MSG="Latest update" by default)
 	else \
 		git push origin main; \
 	fi
-	
+
+# ══════════════════════════════════════════════════════════════════
+#  Mobile (Flutter) Workflows
+# ══════════════════════════════════════════════════════════════════
+
+run-web run-chrome: ## Run mobile app on Chrome (Web)
+	cd apps/mohamy_smart_mobile && flutter run -d chrome
+
+run-ios: ## Run mobile app on iOS Simulator
+	cd apps/mohamy_smart_mobile && flutter run -d ios
+
+run-android: ## Run mobile app on Android Emulator
+	cd apps/mohamy_smart_mobile && flutter run -d android
+
 # docker system prune -a

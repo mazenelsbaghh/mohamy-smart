@@ -29,6 +29,14 @@ build/
 build_*.txt
 build_output.txt
 
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+**/GeneratedPluginRegistrant.*
+*.iml
+
 # Databases — never commit SQLite files
 *.db
 *.sqlite

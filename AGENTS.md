@@ -1,6 +1,6 @@
 # mohamy smart Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-05-21
+Auto-generated from all feature plans. Last updated: 2026-05-22
 
 ## Active Technologies
 - TypeScript 5.x / React 19 for lawyer dashboard; C# / .NET 9 for backend services + Redux Toolkit, React Router 7, HeroUI, SignalR client, Axios, Hangfire, EF Core 9, SQL Server, System.Text.Json (068-workflow-start-resume)
@@ -21,6 +21,8 @@ Auto-generated from all feature plans. Last updated: 2026-05-21
 - Existing SQL Server AI configuration and usage tables; no schema changes required (075-add-gemini-35-flash)
 - C# / .NET 9 backend; TypeScript 5.x / React 19 lawyer dashboard + ASP.NET Core, EF Core 9, Hangfire, System.Text.Json, Redux Toolkit, HeroUI, Axios, existing AI provider factory and usage tracking services (076-split-defense-memo)
 - Existing SQL Server tables only (`AiJobs`, `AiUsageRecords`, defense memo legacy analysis tables); no schema change planned (076-split-defense-memo)
+- Dart 3.11.0 with Flutter 3.41.0 + Flutter Material, flutter_localizations, built-in ChangeNotifier/Listenable state, flutter_tes (077-flutter-mobile-app)
+- In-memory demo repository for MVP; repository boundary isolates future secure/local/API storage (077-flutter-mobile-app)
 
 - TypeScript 5.x / React 19 + Redux Toolkit, React Router 7, HeroUI, Tailwind CSS 4 (065-unify-workflow-arch)
 
@@ -40,9 +42,9 @@ npm test && npm run lint
 TypeScript 5.x / React 19: Follow standard conventions
 
 ## Recent Changes
+- 077-flutter-mobile-app: Added Dart 3.11.0 with Flutter 3.41.0 + Flutter Material, flutter_localizations, built-in ChangeNotifier/Listenable state, flutter_tes
 - 076-split-defense-memo: Added C# / .NET 9 backend; TypeScript 5.x / React 19 lawyer dashboard + ASP.NET Core, EF Core 9, Hangfire, System.Text.Json, Redux Toolkit, HeroUI, Axios, existing AI provider factory and usage tracking services
 - 075-add-gemini-35-flash: Added C# / .NET 9 backend; TypeScript 5.x / React 19 admin dashboard + ASP.NET Core Authorization, EF Core 9, Redux Toolkit, React Router 7, HeroUI, Axios, System.Text.Json
-- 074-ai-points-deduction: Added C# / .NET 9 backend; TypeScript 5.x / React 19 lawyer dashboard + ASP.NET Core Authorization, EF Core 9, Hangfire, SignalR, System.Text.Json, Redux Toolkit, React Router 7, HeroUI, Axios, react-hot-toast
 
 
 <!-- MANUAL ADDITIONS START -->
