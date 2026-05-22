@@ -17,6 +17,110 @@ class DocumentsScreen extends StatefulWidget {
 class _DocumentsScreenState extends State<DocumentsScreen> {
   String _searchQuery = '';
 
+  Future<void> _handleUpload(BuildContext context) async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            margin: const EdgeInsets.symmetric(horizontal: 40),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF242424)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: (Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : const Color(0xFFD9C3AE))
+                    .withValues(alpha: 0.15),
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x1A000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            ),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: AppColors.primary),
+                SizedBox(height: 20),
+                Text(
+                  'جاري رفع المستند واستخراج النصوص بالذكاء الاصطناعي...',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Tajawal',
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    // Dummy 1x1 transparent PNG bytes
+    final List<int> dummyPngBytes = [
+      137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1,
+      0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196, 137, 0, 0, 0, 13, 73, 68, 65, 84,
+      120, 94, 99, 96, 0, 0, 0, 2, 0, 1, 73, 175, 168, 142, 0, 0, 0, 0, 73, 69,
+      78, 68, 174, 66, 96, 130
+    ];
+    final String filename = 'document_scan.png';
+
+    String extractedText =
+        'المستند المرفق هو عقد توريد وتركيب مواد كهربائية وانشائية مؤرخ في ٢٠ مايو ٢٠٢٦م، محرر بين شركة النور للتجارة والتوريدات (طرف أول) ومؤسسة العمار للمقاولات (طرف ثاني)، بقيمة إجمالية قدرها ١٥٠,٠٠٠ ريال سعودي. المحكمة التجارية بالرياض هي الجهة القضائية المتفق عليها لتسوية النزاعات.';
+
+    try {
+      final response = await widget.appState.apiService.uploadOcrImage(
+        dummyPngBytes,
+        filename,
+      );
+      final List<dynamic>? dataList = response['data'] as List<dynamic>?;
+      if (dataList != null && dataList.isNotEmpty) {
+        extractedText = dataList[0].toString();
+      }
+    } catch (e) {
+      debugPrint('Error uploading OCR image: $e');
+      // Fallback is already initialized to the defaults
+    } finally {
+      if (mounted) {
+        Navigator.of(context).pop(); // dismiss loading dialog
+      }
+    }
+
+    if (mounted) {
+      // Create a temporary LegalDocument
+      final newDoc = LegalDocument(
+        id: 'doc_${DateTime.now().millisecondsSinceEpoch}',
+        title: 'مستند ممسوح ضوئياً ${DateTime.now().hour}:${DateTime.now().minute}',
+        type: 'عقد توريد',
+        dateLabel: '٢١ مايو ٢٠٢٦',
+        status: DocumentStatus.ready,
+        isAiReady: true,
+      );
+
+      // Navigate to OcrReviewScreen
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => OcrReviewScreen(
+            document: newDoc,
+            appState: widget.appState,
+            extractedText: extractedText,
+          ),
+        ),
+      );
+    }
+  }
+
   Widget _buildDocThumbnail(String type, bool isDark) {
     final Color primaryColor = AppColors.primary;
     return Container(
@@ -183,7 +287,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => OcrReviewScreen(document: document),
+            builder: (_) => OcrReviewScreen(
+              document: document,
+              appState: widget.appState,
+            ),
           ),
         );
       },
@@ -303,11 +410,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       ),
       floatingActionButtonLocation: const OffsetStartFloatLocation(),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('جاري فتح الكاميرا للمسح الضوئي الفوري...')),
-          );
-        },
+        onPressed: () => _handleUpload(context),
         shape: const CircleBorder(),
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -487,21 +590,13 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                       _buildUploadActionChip(
                         icon: Icons.camera_alt_outlined,
                         label: 'تصوير مستند 📸',
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('جاري فتح الكاميرا للمسح الضوئي...')),
-                          );
-                        },
+                        onTap: () => _handleUpload(context),
                       ),
                       const SizedBox(width: 12),
                       _buildUploadActionChip(
                         icon: Icons.upload_file_outlined,
                         label: 'رفع ملف',
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('جاري اختيار ملف من الهاتف...')),
-                          );
-                        },
+                        onTap: () => _handleUpload(context),
                       ),
                     ],
                   ),

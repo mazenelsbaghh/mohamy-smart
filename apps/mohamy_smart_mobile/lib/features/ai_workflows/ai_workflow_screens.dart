@@ -577,6 +577,9 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
     // Join case-specific SignalR group
     widget.appState.signalR.joinCase(widget.legalCase.id);
 
+    // Fetch snapshots for history
+    widget.appState.fetchSnapshotsForCase(widget.legalCase.id);
+
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
@@ -968,25 +971,21 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
     if (stepType == null) return;
 
     try {
-      final isAndroid = !kIsWeb && Platform.isAndroid;
-      final baseUrl = isAndroid ? 'http://10.0.2.2:8976' : 'http://localhost:8976';
+      final inputJson = jsonEncode({
+        'caseId': widget.legalCase.id,
+        'caseFacts': widget.legalCase.facts.join('\n'),
+      });
 
-      final client = HttpClient();
-      final uri = Uri.parse('$baseUrl/api/cases/${widget.legalCase.id}/ai-jobs');
-      final request = await client.postUrl(uri);
-      request.headers.set('content-type', 'application/json');
+      final response = await widget.appState.apiService.triggerAiJob(
+        caseId: widget.legalCase.id,
+        stepType: stepType,
+        workflowType: widget.workflowType,
+        stepNumber: targetStep,
+        inputJson: inputJson,
+      );
 
-      final body = {
-        'stepType': stepType,
-        'inputJson': '{}',
-        'workflowType': widget.workflowType,
-        'stepNumber': targetStep,
-      };
-
-      request.write(jsonEncode(body));
-      final response = await request.close();
       if (kDebugMode) {
-        print('Backend AI job trigger status: ${response.statusCode}');
+        print('Backend AI job trigger response: $response');
       }
     } catch (e) {
       if (kDebugMode) {

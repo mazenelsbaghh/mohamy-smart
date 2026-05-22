@@ -208,6 +208,11 @@ class AppState extends ChangeNotifier {
   late List<InternalRegulation> _internalRegulations;
   late List<PowerOfAttorney> _powerOfAttorneys;
 
+  LawyerProfile? _profile;
+  List<AgendaItem> _agendaList = [];
+  List<LegalDocument> _documentsList = [];
+  SubscriptionPlan? _subscriptionPlan;
+
   // Track active drafts per case and workflow type
   final Map<String, Map<String, WorkflowDraft>> _activeDrafts = {};
   // Track all snapshots across the application
@@ -218,11 +223,11 @@ class AppState extends ChangeNotifier {
   bool get isDarkMode => _isDarkMode;
   int get selectedTab => _selectedTab;
   String get caseSearchQuery => _caseSearchQuery;
-  LawyerProfile get profile => repository.profile;
+  LawyerProfile get profile => _profile ?? repository.profile;
   List<Client> get clients => List<Client>.unmodifiable(_clients);
-  List<AgendaItem> get agenda => repository.agenda;
-  List<LegalDocument> get documents => repository.documents;
-  SubscriptionPlan get subscription => repository.subscription;
+  List<AgendaItem> get agenda => _agendaList.isEmpty ? repository.agenda : List<AgendaItem>.unmodifiable(_agendaList);
+  List<LegalDocument> get documents => _documentsList.isEmpty ? repository.documents : List<LegalDocument>.unmodifiable(_documentsList);
+  SubscriptionPlan get subscription => _subscriptionPlan ?? repository.subscription;
   List<LegalCase> get cases => List<LegalCase>.unmodifiable(_cases);
   List<InternalRegulation> get internalRegulations => List<InternalRegulation>.unmodifiable(_internalRegulations);
   List<PowerOfAttorney> get powerOfAttorneys => List<PowerOfAttorney>.unmodifiable(_powerOfAttorneys);
@@ -302,7 +307,253 @@ class AppState extends ChangeNotifier {
     );
   }
 
+  WorkflowSnapshot _mapJsonToSnapshot(Map<String, dynamic> json) {
+    final String outputsJsonStr = json['outputsJson']?.toString() ?? '{}';
+    Map<int, Map<String, dynamic>> parsedOutputs = {};
+    try {
+      final decodedOutputs = jsonDecode(outputsJsonStr) as Map<String, dynamic>;
+      decodedOutputs.forEach((key, value) {
+        final parsedKey = int.tryParse(key);
+        if (parsedKey != null && value is Map<String, dynamic>) {
+          parsedOutputs[parsedKey] = Map<String, dynamic>.from(value);
+        }
+      });
+    } catch (_) {}
+
+    return WorkflowSnapshot(
+      id: json['id']?.toString() ?? '',
+      caseId: json['caseId']?.toString() ?? '',
+      workflowType: json['workflowType']?.toString() ?? '',
+      currentStep: json['currentStep'] as int? ?? 0,
+      label: json['label']?.toString(),
+      createdAt: json['creationDate'] != null ? DateTime.parse(json['creationDate'].toString()) : DateTime.now(),
+      outputs: parsedOutputs,
+    );
+  }
+
+  LawyerProfile _mapJsonToProfile(Map<String, dynamic> json, int aiPoints) {
+    return LawyerProfile(
+      id: json['profileId']?.toString() ?? '',
+      displayName: json['fullName']?.toString() ?? '',
+      licenseNumber: '12345', // Default/fallback
+      firmName: 'مكتب المحاماة الخاص', // Default/fallback
+      phone: '', // Default/fallback
+      email: json['email']?.toString() ?? '',
+      aiPoints: aiPoints,
+    );
+  }
+
+  AgendaItem _mapJsonToAgendaItem(Map<String, dynamic> json) {
+    final startsAtStr = json['date']?.toString() ?? json['startsAt']?.toString() ?? '';
+    DateTime startsAt;
+    try {
+      startsAt = startsAtStr.isNotEmpty ? DateTime.parse(startsAtStr) : DateTime.now();
+    } catch (_) {
+      startsAt = DateTime.now();
+    }
+
+    final statusRaw = json['status']?.toString() ?? '';
+    String status = statusRaw;
+    if (statusRaw == 'Pending') {
+      status = 'قيد الانتظار';
+    } else if (statusRaw == 'Completed') {
+      status = 'مكتمل';
+    }
+
+    return AgendaItem(
+      id: json['id']?.toString() ?? '',
+      caseId: json['caseId']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      court: json['courtName']?.toString() ?? json['court']?.toString() ?? 'المحكمة المختصة',
+      startsAt: startsAt,
+      status: status,
+    );
+  }
+
+  LegalDocument _mapJsonToDocument(Map<String, dynamic> json) {
+    final stateRaw = (json['availabilityState']?.toString() ?? 'Ready').toLowerCase();
+    DocumentStatus status;
+    bool isAiReady = false;
+
+    if (stateRaw == 'processing' || stateRaw == 'extractingtext' || stateRaw == 'ocrpending' || stateRaw == 'uploaded') {
+      status = DocumentStatus.processing;
+    } else if (stateRaw == 'failed' || stateRaw == 'error') {
+      status = DocumentStatus.failed;
+    } else {
+      status = DocumentStatus.ready;
+      isAiReady = true;
+    }
+
+    final createdAtStr = json['createdAt']?.toString() ?? '';
+    String dateLabel = '';
+    if (createdAtStr.isNotEmpty) {
+      try {
+        final date = DateTime.parse(createdAtStr);
+        dateLabel = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      } catch (_) {
+        dateLabel = createdAtStr;
+      }
+    }
+
+    return LegalDocument(
+      id: json['documentId']?.toString() ?? json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? 'مستند بدون عنوان',
+      type: json['fileType']?.toString() ?? json['sourceType']?.toString() ?? 'pdf',
+      dateLabel: dateLabel,
+      status: status,
+      isAiReady: isAiReady,
+      caseId: json['caseId']?.toString(),
+    );
+  }
+
+  SubscriptionPlan _mapJsonToSubscriptionPlan(
+      Map<String, dynamic> planJson, int aiPointsBalance, List<dynamic> historyList) {
+    final name = planJson['planName']?.toString() ?? 'الباقة المجانية';
+    final endDateStr = planJson['endDate']?.toString();
+    String renewalDate = '';
+    if (endDateStr != null) {
+      try {
+        final date = DateTime.parse(endDateStr);
+        renewalDate = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      } catch (_) {
+        renewalDate = endDateStr;
+      }
+    }
+
+    final List<UsageEntry> usageEntries = [];
+    for (final item in historyList) {
+      if (item is Map<String, dynamic>) {
+        final dateStr = item['createdAt']?.toString() ?? '';
+        String formattedDate = '';
+        if (dateStr.isNotEmpty) {
+          try {
+            final date = DateTime.parse(dateStr);
+            formattedDate = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+          } catch (_) {
+            formattedDate = dateStr;
+          }
+        }
+
+        final points = item['points'] as int? ?? 0;
+        final txType = item['transactionType']?.toString();
+        final displayPoints = txType == 'Charge' || txType == '0' ? -points : points;
+
+        usageEntries.add(UsageEntry(
+          title: item['messageAr']?.toString() ?? 'استخدام ميزة الذكاء الاصطناعي',
+          points: displayPoints,
+          dateLabel: formattedDate,
+        ));
+      }
+    }
+
+    return SubscriptionPlan(
+      name: name,
+      renewalDate: renewalDate,
+      aiPoints: aiPointsBalance,
+      usageEntries: usageEntries,
+    );
+  }
+
+  Future<void> fetchSnapshotsForCase(String caseId) async {
+    try {
+      final result = await _apiService.fetchWorkflowSnapshots(caseId);
+      if (result['succeeded'] == true) {
+        final list = (result['data'] as List?) ?? [];
+        final backendSnaps = list.map((e) => _mapJsonToSnapshot(e as Map<String, dynamic>)).toList();
+        
+        // Remove existing snapshots for this caseId, then add new ones
+        _snapshots.removeWhere((s) => s.caseId == caseId);
+        _snapshots.addAll(backendSnaps);
+        notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to fetch snapshots for case: $e');
+    }
+  }
+
   Future<void> fetchLiveData() async {
+    // 1. Fetch Profile Info
+    String? profileId;
+    Map<String, dynamic>? profileData;
+    try {
+      final profileResult = await _apiService.getProfile();
+      if (profileResult['succeeded'] == true) {
+        profileData = profileResult['data'] as Map<String, dynamic>?;
+        profileId = profileData?['profileId']?.toString();
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to fetch profile: $e');
+    }
+
+    // 2. Fetch AI Points Balance & History
+    int aiPointsBalance = 0;
+    List<dynamic> pointHistory = [];
+    try {
+      final balanceResult = await _apiService.fetchAiPointBalance();
+      if (balanceResult['succeeded'] == true) {
+        final data = balanceResult['data'];
+        if (data is Map<String, dynamic>) {
+          aiPointsBalance = data['available'] as int? ?? 0;
+        } else if (data is int) {
+          aiPointsBalance = data;
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to fetch AI point balance: $e');
+    }
+
+    try {
+      final historyResult = await _apiService.fetchAiPointHistory();
+      if (historyResult['succeeded'] == true) {
+        pointHistory = (historyResult['data'] as List?) ?? [];
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to fetch AI point history: $e');
+    }
+
+    // 3. Map Profile and Subscription Plan
+    if (profileData != null) {
+      _profile = _mapJsonToProfile(profileData, aiPointsBalance);
+    }
+
+    // 4. Fetch Active Subscription Plan
+    try {
+      final subPlanResult = await _apiService.fetchLawyerPlan();
+      if (subPlanResult['succeeded'] == true) {
+        final data = subPlanResult['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          _subscriptionPlan = _mapJsonToSubscriptionPlan(data, aiPointsBalance, pointHistory);
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to fetch subscription plan: $e');
+    }
+
+    // 5. Fetch Agenda / Appointments (using resolved profileId)
+    if (profileId != null && profileId.isNotEmpty) {
+      try {
+        final agendaResult = await _apiService.fetchAgendaItemsByLawyer(profileId);
+        if (agendaResult['succeeded'] == true) {
+          final list = (agendaResult['data'] as List?) ?? [];
+          _agendaList = list.map((e) => _mapJsonToAgendaItem(e as Map<String, dynamic>)).toList();
+        }
+      } catch (e) {
+        if (kDebugMode) print('Failed to fetch agenda items: $e');
+      }
+    }
+
+    // 6. Fetch Documents
+    try {
+      final docsResult = await _apiService.fetchDocuments();
+      if (docsResult['succeeded'] == true) {
+        final list = (docsResult['data']?['data'] as List?) ?? [];
+        _documentsList = list.map((e) => _mapJsonToDocument(e as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to fetch documents: $e');
+    }
+
+    // 7. Fetch Cases
     try {
       final casesResult = await _apiService.fetchCases();
       if (casesResult['succeeded'] == true) {
@@ -313,6 +564,7 @@ class AppState extends ChangeNotifier {
       if (kDebugMode) print('Failed to fetch cases: $e');
     }
 
+    // 8. Fetch Clients
     try {
       final clientsResult = await _apiService.fetchClients();
       if (clientsResult['succeeded'] == true) {
@@ -323,6 +575,7 @@ class AppState extends ChangeNotifier {
       if (kDebugMode) print('Failed to fetch clients: $e');
     }
 
+    // 9. Fetch Regulations
     try {
       final regsResult = await _apiService.fetchRegulations();
       if (regsResult['succeeded'] == true) {
@@ -333,6 +586,7 @@ class AppState extends ChangeNotifier {
       if (kDebugMode) print('Failed to fetch regulations: $e');
     }
 
+    // 10. Fetch POAs
     try {
       final poaResult = await _apiService.fetchPOAs();
       if (poaResult['succeeded'] == true) {
@@ -529,9 +783,36 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void saveDraftAsSnapshot(String caseId, String workflowType, String label) {
+  Future<void> saveDraftAsSnapshot(String caseId, String workflowType, String label) async {
     final draft = _activeDrafts[caseId]?[workflowType];
     if (draft != null) {
+      final Map<String, Map<String, dynamic>> stringifiedOutputs = {};
+      draft.outputs.forEach((key, value) {
+        stringifiedOutputs[key.toString()] = value;
+      });
+      final outputsJson = jsonEncode(stringifiedOutputs);
+
+      try {
+        final response = await _apiService.createWorkflowSnapshot(
+          caseId: caseId,
+          workflowType: workflowType,
+          outputsJson: outputsJson,
+          currentStep: draft.currentStep,
+          label: label,
+        );
+        if (response['succeeded'] == true) {
+          final newSnapshot = _mapJsonToSnapshot(response['data'] as Map<String, dynamic>);
+          _snapshots.insert(0, newSnapshot);
+          notifyListeners();
+          return;
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Failed to save snapshot to backend: $e. Falling back to local cache.');
+        }
+      }
+
+      // Fallback
       final now = DateTime.now();
       final name = label.trim().isEmpty ? 'نسخة حفظ - ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}' : label;
       final newSnapshot = WorkflowSnapshot(
@@ -570,7 +851,25 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void renameSnapshot(String snapshotId, String newLabel) {
+  Future<void> renameSnapshot(String snapshotId, String newLabel) async {
+    final parsedId = int.tryParse(snapshotId);
+    if (parsedId != null) {
+      try {
+        final response = await _apiService.updateWorkflowSnapshotLabel(parsedId, newLabel);
+        if (response['succeeded'] == true) {
+          final index = _snapshots.indexWhere((s) => s.id == snapshotId);
+          if (index != -1) {
+            _snapshots[index] = _snapshots[index].copyWith(label: newLabel);
+            notifyListeners();
+          }
+          return;
+        }
+      } catch (e) {
+        if (kDebugMode) print('Failed to rename snapshot on backend: $e');
+      }
+    }
+
+    // Fallback
     final index = _snapshots.indexWhere((s) => s.id == snapshotId);
     if (index != -1) {
       _snapshots[index] = _snapshots[index].copyWith(label: newLabel);
@@ -578,7 +877,22 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void deleteSnapshot(String snapshotId) {
+  Future<void> deleteSnapshot(String snapshotId) async {
+    final parsedId = int.tryParse(snapshotId);
+    if (parsedId != null) {
+      try {
+        final response = await _apiService.deleteWorkflowSnapshot(parsedId);
+        if (response['succeeded'] == true) {
+          _snapshots.removeWhere((s) => s.id == snapshotId);
+          notifyListeners();
+          return;
+        }
+      } catch (e) {
+        if (kDebugMode) print('Failed to delete snapshot on backend: $e');
+      }
+    }
+
+    // Fallback
     _snapshots.removeWhere((s) => s.id == snapshotId);
     notifyListeners();
   }
@@ -702,6 +1016,36 @@ class AppState extends ChangeNotifier {
       ..._cases,
     ];
     _caseSearchQuery = '';
+    notifyListeners();
+  }
+
+  Future<void> addClient(String name, String phone, String email) async {
+    try {
+      final response = await _apiService.createClient(
+        name: name,
+        phone: phone,
+        email: email,
+      );
+      if (response['succeeded'] == true) {
+        await fetchLiveData();
+        return;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Failed to create Client on backend: $e. Falling back to local state.');
+      }
+    }
+
+    // Fallback logic
+    final newClient = Client(
+      id: 'client-${_clients.length + 1}',
+      name: name,
+      phone: phone,
+      email: email,
+      caseIds: const [],
+      lastActivity: DateTime.now().toIso8601String(),
+    );
+    _clients.insert(0, newClient);
     notifyListeners();
   }
 

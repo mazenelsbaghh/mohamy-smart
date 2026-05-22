@@ -4,9 +4,20 @@ import '../../app/app_state.dart';
 import '../../core/models/legal_models.dart';
 
 class AddCaseScreen extends StatefulWidget {
-  const AddCaseScreen({required this.appState, super.key});
+  const AddCaseScreen({
+    required this.appState,
+    this.initialCaseNumber,
+    this.initialClientName,
+    this.initialCourt,
+    this.initialCaseType,
+    super.key,
+  });
 
   final AppState appState;
+  final String? initialCaseNumber;
+  final String? initialClientName;
+  final String? initialCourt;
+  final String? initialCaseType;
 
   @override
   State<AddCaseScreen> createState() => _AddCaseScreenState();
@@ -14,10 +25,19 @@ class AddCaseScreen extends StatefulWidget {
 
 class _AddCaseScreenState extends State<AddCaseScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _caseNumber = TextEditingController();
-  final _clientName = TextEditingController();
-  final _court = TextEditingController();
-  final _caseType = TextEditingController();
+  late final TextEditingController _caseNumber;
+  late final TextEditingController _clientName;
+  late final TextEditingController _court;
+  late final TextEditingController _caseType;
+
+  @override
+  void initState() {
+    super.initState();
+    _caseNumber = TextEditingController(text: widget.initialCaseNumber);
+    _clientName = TextEditingController(text: widget.initialClientName);
+    _court = TextEditingController(text: widget.initialCourt);
+    _caseType = TextEditingController(text: widget.initialCaseType);
+  }
 
   @override
   void dispose() {

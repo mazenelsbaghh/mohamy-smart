@@ -2,9 +2,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../app/app_state.dart';
+import '../../core/models/legal_models.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/legal_cards.dart';
 import '../../core/widgets/user_tie_avatar.dart';
 import '../cases/add_case_screen.dart';
+import '../cases/case_details_screen.dart';
 import '../documents/documents_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -123,7 +126,7 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.balance,
                   iconColor: const Color(0xFFD97706),
                   iconBgColor: const Color(0x1AD97706),
-                  count: '28',
+                  count: appState.cases.length.toString(),
                   label: 'إجمالي القضايا',
                 ),
                 const SizedBox(width: 12),
@@ -132,7 +135,7 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.task_alt,
                   iconColor: const Color(0xFF34BF49),
                   iconBgColor: const Color(0x1A34BF49),
-                  count: '12',
+                  count: appState.cases.where((c) => c.status == CaseStatus.active).length.toString(),
                   label: 'القضايا النشطة',
                 ),
                 const SizedBox(width: 12),
@@ -141,7 +144,7 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.groups_outlined,
                   iconColor: const Color(0xFF8B5CF6),
                   iconBgColor: const Color(0x1A8B5CF6),
-                  count: '45',
+                  count: appState.clients.length.toString(),
                   label: 'الموكلين',
                 ),
               ],
@@ -186,97 +189,9 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // Today's Appointment Item
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              height: 90,
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1D1D1D) : Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFD9C3AE).withValues(alpha: 0.1),
-                  width: 1,
-                ),
-                boxShadow: const <BoxShadow>[
-                  BoxShadow(
-                    color: Color(0x0A885200),
-                    blurRadius: 24,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Row(
-                children: <Widget>[
-                  // Right strip of primary color
-                  Container(
-                    width: 6,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          'جلسة قضية مدنية',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : const Color(0xFF1B1B1B),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: <Widget>[
-                            Icon(Icons.schedule, size: 14, color: textMuted),
-                            const SizedBox(width: 4),
-                            Text(
-                              '12:30 - 04:36 PM',
-                              style: TextStyle(
-                                fontFamily: 'Tajawal',
-                                fontSize: 12,
-                                color: textMuted,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Icon(Icons.person_outline, size: 14, color: textMuted),
-                            const SizedBox(width: 4),
-                            Text(
-                              'موكل: أحمد علي',
-                              style: TextStyle(
-                                fontFamily: 'Tajawal',
-                                fontSize: 12,
-                                color: textMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF242424) : const Color(0xFFF0EEE7),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      onPressed: () {
-                        appState.setSelectedTab(3);
-                      },
-                      icon: const Icon(Icons.chevron_left, color: AppColors.primary, size: 20),
-                      padding: EdgeInsets.zero,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                ],
-              ),
-            ),
+            child: _buildTodayAppointment(context, isDark, textMuted),
           ),
           const SizedBox(height: 28),
 
@@ -317,285 +232,22 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // Case 1 (Active)
-          Padding(
+          ...appState.cases.take(2).map((caseItem) => Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Container(
-              decoration: const BoxDecoration(
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Color(0x0F885200),
-                    blurRadius: 32,
-                    offset: Offset(0, 12),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(32),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: (isDark ? const Color(0xFF1D1D1D) : Colors.white).withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(32),
-                      border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFD9C3AE).withValues(alpha: 0.15),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: <Widget>[
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Text(
-                                'نزاع عقاري',
-                                style: TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0x1D34BF49),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Text(
-                                'نشطة',
-                                style: TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF34BF49),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'دعوى استرداد حيازة - القاهرة الجديدة',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            color: isDark ? Colors.white : const Color(0xFF1B1B1B),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Container(
-                          height: 1,
-                          color: const Color(0xFFD9C3AE).withValues(alpha: 0.1),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: <Widget>[
-                            Row(
-                              children: <Widget>[
-                                Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppColors.primary.withValues(alpha: 0.1),
-                                  ),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: Image.network(
-                                    'https://lh3.googleusercontent.com/aida-public/AB6AXuByqO3CvLssfCS8ZTN8hXjzCUGPhmv5yDNbdBO0zjHjym7dJ1cFpjUkZHtpuicYD_OsPUhU2D8Z1J3aXwlxSainKW__M3jvFBIKlU-3au3DbYPip5mxFib91WnPhnFQKL71qygOzBZBhOUJgAgzSSMLkjSwS878lOT1osHwMH-wAB12FLo7YtUbxRUmwXwd1tTUmU86iBR0YPz19ZtgpXwvnKVa5RKeNoNJq7mDKp8AL4fj7ipc3PiI2wADVJHcYLhmhMEcCYQE0HY',
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Center(
-                                        child: Text(
-                                          'م',
-                                          style: TextStyle(
-                                            fontFamily: 'Tajawal',
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.primary,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'محمود كامل',
-                                  style: TextStyle(
-                                    fontFamily: 'Tajawal',
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                    color: isDark ? Colors.white70 : const Color(0xFF141414),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              '١٥ مايو، ٢٠٢٤',
-                              style: TextStyle(
-                                fontFamily: 'Tajawal',
-                                fontSize: 12,
-                                color: textMuted,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+            child: CaseCard(
+              legalCase: caseItem,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => CaseDetailsScreen(
+                      appState: appState,
+                      legalCase: caseItem,
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
-          ),
-
-          // Case 2 (Closed)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Opacity(
-              opacity: 0.8,
-              child: Container(
-                decoration: const BoxDecoration(
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: Color(0x0F885200),
-                      blurRadius: 32,
-                      offset: Offset(0, 12),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(32),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: (isDark ? const Color(0xFF1D1D1D) : Colors.white).withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(32),
-                        border: Border.all(
-                          color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFD9C3AE).withValues(alpha: 0.15),
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: <Widget>[
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  'تجاري',
-                                  style: TextStyle(
-                                    fontFamily: 'Tajawal',
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: textMuted,
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  'مغلقة',
-                                  style: TextStyle(
-                                    fontFamily: 'Tajawal',
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: textMuted,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'عقد توريد - شركة النيل',
-                            style: TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              color: isDark ? Colors.white : const Color(0xFF1B1B1B),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Container(
-                            height: 1,
-                            color: const Color(0xFFD9C3AE).withValues(alpha: 0.1),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: <Widget>[
-                              Row(
-                                children: <Widget>[
-                                  CircleAvatar(
-                                    radius: 12,
-                                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                                    child: const Text(
-                                      'ش',
-                                      style: TextStyle(
-                                        fontFamily: 'Tajawal',
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'شركة النيل للتجارة',
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: isDark ? Colors.white70 : const Color(0xFF141414),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                '١٠ مايو، ٢٠٢٤',
-                                style: TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontSize: 12,
-                                  color: textMuted,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+          )),
               ],
             ),
           ),
@@ -858,6 +510,180 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTodayAppointment(BuildContext context, bool isDark, Color textMuted) {
+    if (appState.agenda.isEmpty) {
+      return Container(
+        height: 90,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1D1D1D) : Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFD9C3AE).withValues(alpha: 0.1),
+            width: 1,
+          ),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x0A885200),
+              blurRadius: 24,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 6,
+              color: textMuted.withValues(alpha: 0.4),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'لا توجد مواعيد اليوم',
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1B1B1B), // Fallback, but text theme handles this mostly
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'يومك خالي من الجلسات والاجتماعات المجدولة.',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 12,
+                      color: textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final appointment = appState.agenda.first;
+    final matchingCase = appState.cases.firstWhere(
+      (c) => c.id == appointment.caseId,
+      orElse: () => const LegalCase(
+        id: '',
+        caseNumber: '',
+        title: '',
+        clientId: '',
+        clientName: 'غير محدد',
+        court: '',
+        caseType: '',
+        status: CaseStatus.active,
+        facts: [],
+        documentIds: [],
+        readiness: CaseReadiness(hasDocuments: false, hasFacts: false, hasEnoughPoints: false),
+      ),
+    );
+    final clientName = matchingCase.clientName.isNotEmpty ? matchingCase.clientName : 'غير محدد';
+    
+    // format time starting at startsAt
+    final time = appointment.startsAt;
+    final hour = time.hour > 12 ? time.hour - 12 : (time.hour == 0 ? 12 : time.hour);
+    final period = time.hour >= 12 ? 'PM' : 'AM';
+    final minute = time.minute.toString().padLeft(2, '0');
+    final timeStr = '${hour.toString().padLeft(2, '0')}:$minute $period';
+
+    return Container(
+      height: 90,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1D1D1D) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFD9C3AE).withValues(alpha: 0.1),
+          width: 1,
+        ),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x0A885200),
+            blurRadius: 24,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        children: <Widget>[
+          // Right strip of primary color
+          Container(
+            width: 6,
+            color: AppColors.primary,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  appointment.title,
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : const Color(0xFF1B1B1B),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: <Widget>[
+                    Icon(Icons.schedule, size: 14, color: textMuted),
+                    const SizedBox(width: 4),
+                    Text(
+                      timeStr,
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 12,
+                        color: textMuted,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(Icons.person_outline, size: 14, color: textMuted),
+                    const SizedBox(width: 4),
+                    Text(
+                      'موكل: $clientName',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 12,
+                        color: textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF242424) : const Color(0xFFF0EEE7),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              onPressed: () {
+                appState.setSelectedTab(3);
+              },
+              icon: const Icon(Icons.chevron_left, color: AppColors.primary, size: 20),
+              padding: EdgeInsets.zero,
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
       ),
     );
   }

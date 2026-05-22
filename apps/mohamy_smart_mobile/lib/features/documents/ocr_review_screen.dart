@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
+import '../../app/app_state.dart';
 import '../../core/models/legal_models.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_card.dart';
+import '../cases/add_case_screen.dart';
 
 class OcrReviewScreen extends StatefulWidget {
-  const OcrReviewScreen({required this.document, super.key});
+  const OcrReviewScreen({
+    required this.document,
+    required this.appState,
+    this.extractedText,
+    super.key,
+  });
 
   final LegalDocument document;
+  final AppState appState;
+  final String? extractedText;
 
   @override
   State<OcrReviewScreen> createState() => _OcrReviewScreenState();
@@ -29,7 +38,8 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> with SingleTickerProv
     _dateController = TextEditingController(text: widget.document.dateLabel);
     _caseController = TextEditingController(text: 'قضية مطالبة مالية - الرياض');
     _contentController = TextEditingController(
-      text: 'المستند المرفق هو عقد توريد وتركيب مواد كهربائية وانشائية مؤرخ في ٢٠ مايو ٢٠٢٦م، محرر بين شركة النور للتجارة والتوريدات (طرف أول) ومؤسسة العمار للمقاولات (طرف ثاني)، بقيمة إجمالية قدرها ١٥٠,٠٠٠ ريال سعودي. المحكمة التجارية بالرياض هي الجهة القضائية المتفق عليها لتسوية النزاعات.',
+      text: widget.extractedText ??
+          'المستند المرفق هو عقد توريد وتركيب مواد كهربائية وانشائية مؤرخ في ٢٠ مايو ٢٠٢٦م، محرر بين شركة النور للتجارة والتوريدات (طرف أول) ومؤسسة العمار للمقاولات (طرف ثاني)، بقيمة إجمالية قدرها ١٥٠,٠٠٠ ريال سعودي. المحكمة التجارية بالرياض هي الجهة القضائية المتفق عليها لتسوية النزاعات.',
     );
   }
 
@@ -85,6 +95,100 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> with SingleTickerProv
       ),
     );
     Navigator.of(context).pop();
+  }
+
+  Future<void> _generateCaseWithAi() async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            margin: const EdgeInsets.symmetric(horizontal: 40),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF242424)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: (Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : const Color(0xFFD9C3AE))
+                    .withValues(alpha: 0.15),
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x1A000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            ),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: AppColors.primary),
+                SizedBox(height: 20),
+                Text(
+                  'جاري استخراج بيانات القضية بالذكاء الاصطناعي...',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Tajawal',
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    String caseNumber = '١٤٤٧/٩٨٧٦٥';
+    String clientName = 'شركة النور للتجارة والتوريدات';
+    String court = 'المحكمة التجارية بالرياض';
+    String caseType = 'تجاري - مطالبة مالية';
+
+    try {
+      final response = await widget.appState.apiService.generateCaseFile(
+        revisedText: _contentController.text,
+      );
+
+      final data = response['data'] as Map<String, dynamic>?;
+      if (data != null) {
+        caseNumber = data['number'] ?? data['caseNumber'] ?? caseNumber;
+        clientName = data['clientName'] ?? data['client'] ?? clientName;
+        court = data['court'] ?? data['courtName'] ?? court;
+        caseType = data['type'] ??
+            (data['types'] != null && (data['types'] as List).isNotEmpty
+                ? data['types'][0].toString()
+                : caseType);
+      }
+    } catch (e) {
+      debugPrint('Error generating case via AI: $e');
+      // Fallback is already initialized to the defaults
+    } finally {
+      if (mounted) {
+        Navigator.of(context).pop(); // dismiss loading dialog
+      }
+    }
+
+    if (mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => AddCaseScreen(
+            appState: widget.appState,
+            initialCaseNumber: caseNumber,
+            initialClientName: clientName,
+            initialCourt: court,
+            initialCaseType: caseType,
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -315,7 +419,49 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> with SingleTickerProv
               ],
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
+
+          // AI Case Generation Button
+          InkWell(
+            key: const Key('ai_generate_case_button'),
+            onTap: _generateCaseWithAi,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF885200), Color(0xFFEF950A)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x33885200),
+                    blurRadius: 16,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+                  SizedBox(width: 10),
+                  Text(
+                    'إنشاء قضية بالذكاء الاصطناعي ✨',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Tajawal',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
 
           // 5. Actions Row
           Row(

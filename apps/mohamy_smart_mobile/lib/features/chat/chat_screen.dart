@@ -821,7 +821,7 @@ class _ChatScreenState extends State<ChatScreen> {
               // Selected Regulation Tag Card
               if (_selectedRegulation != null)
                 Padding(
-                  padding: const EdgeInsets.only(horizontal: 20, bottom: 8),
+                  padding: const EdgeInsets.only(left: 20, right: 20, bottom: 8),
                   child: Row(
                     children: [
                       Container(

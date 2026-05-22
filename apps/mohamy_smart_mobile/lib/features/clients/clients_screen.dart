@@ -53,6 +53,229 @@ class _ClientsScreenState extends State<ClientsScreen> {
     return gradients[index % gradients.length];
   }
 
+
+  void _showAddClientDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+    final emailController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool isLoading = false;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final cardBg = isDark ? AppColors.darkSurface : Colors.white;
+        final titleColor = isDark ? Colors.white : AppColors.primaryBronze;
+        final textColor = isDark ? Colors.white : Colors.black87;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: cardBg,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'إضافة موكل جديد',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'أدخل بيانات الموكل لإنشاء ملفه وتوصيله بالخلفية',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 12,
+                      color: isDark ? Colors.white60 : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: nameController,
+                        style: TextStyle(fontFamily: 'Tajawal', color: textColor),
+                        decoration: InputDecoration(
+                          labelText: 'الاسم الكامل *',
+                          labelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
+                          prefixIcon: const Icon(Icons.person_outline, color: AppColors.primary),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'يرجى إدخال اسم الموكل';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: phoneController,
+                        keyboardType: TextInputType.phone,
+                        style: TextStyle(fontFamily: 'Tajawal', color: textColor),
+                        decoration: InputDecoration(
+                          labelText: 'رقم الهاتف *',
+                          labelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
+                          prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.primary),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'يرجى إدخال رقم الهاتف';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        style: TextStyle(fontFamily: 'Tajawal', color: textColor),
+                        decoration: InputDecoration(
+                          labelText: 'البريد الإلكتروني (اختياري)',
+                          labelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
+                          prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              actions: [
+                TextButton(
+                  onPressed: isLoading ? null : () => Navigator.of(dialogCtx).pop(),
+                  child: const Text(
+                    'إلغاء',
+                    style: TextStyle(fontFamily: 'Tajawal', color: Colors.grey),
+                  ),
+                ),
+                isLoading
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                          ),
+                        ),
+                      )
+                    : ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () async {
+                          if (formKey.currentState?.validate() ?? false) {
+                            setState(() {
+                              isLoading = true;
+                            });
+
+                            try {
+                              await widget.appState.addClient(
+                                nameController.text.trim(),
+                                phoneController.text.trim(),
+                                emailController.text.trim(),
+                              );
+
+                              if (context.mounted) {
+                                Navigator.of(dialogCtx).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'تمت إضافة الموكل بنجاح ومزامنته! ✓',
+                                      style: TextStyle(fontFamily: 'Tajawal'),
+                                    ),
+                                    backgroundColor: Color(0xFF34BF49),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'خطأ أثناء الإضافة: $e',
+                                      style: const TextStyle(fontFamily: 'Tajawal'),
+                                    ),
+                                    backgroundColor: Colors.redAccent,
+                                  ),
+                                );
+                              }
+                            } finally {
+                              if (dialogCtx.mounted) {
+                                setState(() {
+                                  isLoading = false;
+                                });
+                              }
+                            }
+                          }
+                        },
+                        child: Ink(
+                          decoration: BoxDecoration(
+                            gradient: AppColors.goldGradient,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Container(
+                            alignment: Alignment.center,
+                            height: 40,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: const Text(
+                              'إضافة موكل',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -94,7 +317,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
       floatingActionButtonLocation: const OffsetStartFloatLocation(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Action for adding client
+          _showAddClientDialog(context);
         },
         shape: const CircleBorder(),
         elevation: 0,
