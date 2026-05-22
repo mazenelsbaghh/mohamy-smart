@@ -5,7 +5,8 @@ Fix the lawyer activation status toggle bug by ignoring global query filters on 
 ## Problem Description
 
 1. When an admin suspends a lawyer, both `Lawyer.IsActive` and `ApplicationUser.IsActive` are set to `false`. Because `ApplicationUser` has a global query filter `u => u.IsActive`, querying `Lawyer` while including `ApplicationUser` without `.IgnoreQueryFilters()` results in the query returning `null`. This causes subsequent attempts to activate the lawyer to fail with a `404 Not Found` ("Lawyer not found").
-2. When reactivating a lawyer, if they don't have an active subscription, the system previously renewed/reactivated their trial subscription (resetting requests and end dates). The user wants to ensure that a lawyer can never have/subscribe to the trial subscription twice. It should only be given once when their account is first activated.
+2. When reactivating a lawyer, if they don't have an active subscription, the system previously renewed/reactivated their trial subscription (resetting requests and end dates). The user wants to ensure that a lawyer can never have/subscribe to the trial subscription twice. It should only be given once when their account is first activated.df
+
 
 ## Proposed Changes
 
