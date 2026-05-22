@@ -48,21 +48,20 @@ class _ChatScreenState extends State<ChatScreen> {
     _inputController.addListener(_onInputChanged);
     _messages = [
       _ChatMessage(
-        text: 'أهلاً بك سيادة المستشار. أنا مساعدك القانوني الذكي المدعوم بـ Gemini. يمكنني مساعدتك في صياغة العقود، مراجعة المستندات، أو اقتراح دفوع قانونية قوية. كيف يمكنني مساعدتك اليوم؟',
+        text:
+            'أهلاً بك سيادة المستشار. أنا مساعدك القانوني الذكي المدعوم بـ Gemini. يمكنني مساعدتك في صياغة العقود، مراجعة المستندات، أو اقتراح دفوع قانونية قوية. كيف يمكنني مساعدتك اليوم؟',
         isUser: false,
       ),
+      _ChatMessage(text: 'ما أهم الدفوع في قضية مطالبة مالية؟', isUser: true),
       _ChatMessage(
-        text: 'ما أهم الدفوع في قضية مطالبة مالية؟',
-        isUser: true,
-      ),
-      _ChatMessage(
-        text: 'التحليل القانوني:\n١. دراسة طبيعة المطالبة المالية ونوعها (تجارية/مدنية).\n٢. مراجعة المستندات الثبوتية كالعقود والسندات والتحويلات البنكية.\n٣. فحص المدد القانونية لعدم سقوط الحق بالتقادم.\n\nأهم الدفوع في قضايا المطالبات المالية والنزاعات التجارية تتلخص في النقاط التالية:',
+        text:
+            'التحليل القانوني:\n١. دراسة طبيعة المطالبة المالية ونوعها (تجارية/مدنية).\n٢. مراجعة المستندات الثبوتية كالعقود والسندات والتحويلات البنكية.\n٣. فحص المدد القانونية لعدم سقوط الحق بالتقادم.\n\nأهم الدفوع في قضايا المطالبات المالية والنزاعات التجارية تتلخص في النقاط التالية:',
         isUser: false,
         bullets: [
           'الدفع بانتفاء صفة المدعي أو المدعى عليه في الدعوى.',
           'الدفع بعدم قبول الدعوى لعدم سلوك الطريق القانوني المسبق أو الإعذار.',
           'الدفع بانقضاء الالتزام بالإبراء أو الوفاء أو التقادم الطويل.',
-          'الدفع بعدم التنفيذ أو فسخ العقد نتيجة إخلال الطرف الآخر.'
+          'الدفع بعدم التنفيذ أو فسخ العقد نتيجة إخلال الطرف الآخر.',
         ],
         attachmentTitle: 'دليل الدفوع التجارية المعتمدة.pdf',
       ),
@@ -157,7 +156,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_selectedRegulation != null) {
       messageText = '@${_selectedRegulation!.title}\n$text';
     }
-    
+
     setState(() {
       _messages.add(_ChatMessage(text: messageText, isUser: true));
       _isTyping = true;
@@ -193,10 +192,7 @@ class _ChatScreenState extends State<ChatScreen> {
             if (aiReply != null && mounted) {
               setState(() {
                 _isTyping = false;
-                _messages.add(_ChatMessage(
-                  text: aiReply!,
-                  isUser: false,
-                ));
+                _messages.add(_ChatMessage(text: aiReply!, isUser: false));
               });
               _scrollToBottom();
               return;
@@ -213,44 +209,52 @@ class _ChatScreenState extends State<ChatScreen> {
     // Simulated AI response delay fallback
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (!mounted) return;
-      
-      String aiText = 'لقد استلمت استفسارك سيادة المستشار. جاري تحليل مستندات القضية والوقائع المرتبطة لتقديم الرأي القانوني الأمثل مدعوماً بنصوص النظام المعمول بها.';
+
+      String aiText =
+          'لقد استلمت استفسارك سيادة المستشار. جاري تحليل مستندات القضية والوقائع المرتبطة لتقديم الرأي القانوني الأمثل مدعوماً بنصوص النظام المعمول بها.';
       List<String>? aiBullets;
       String? aiAttachment;
 
       final normalizedText = text.trim().toLowerCase();
       if (normalizedText.contains('دفوع') || normalizedText.contains('اقترح')) {
-        aiText = 'خطوات التحليل:\n١. مراجعة عقد الإيجار وتحديد تاريخ توثيقه.\n٢. التحقق من الاختصاص المكاني للمحكمة المختارة.\n٣. تقييم أثر القوة القاهرة في إنهاء الالتزام التعاقدي.\n\nبناءً على وقائع القضية وتفاصيل النزاع، أقترح الدفوع القانونية التالية:';
+        aiText =
+            'خطوات التحليل:\n١. مراجعة عقد الإيجار وتحديد تاريخ توثيقه.\n٢. التحقق من الاختصاص المكاني للمحكمة المختارة.\n٣. تقييم أثر القوة القاهرة في إنهاء الالتزام التعاقدي.\n\nبناءً على وقائع القضية وتفاصيل النزاع، أقترح الدفوع القانونية التالية:';
         aiBullets = [
           'الدفع ببطلان عقد الإيجار لعدم توثيقه في منصة إيجار الرسمية.',
           'الدفع بعدم الاختصاص المكاني للمحكمة طبقاً للبند العاشر من العقد.',
-          'الدفع بانتفاء الضرر الفعلي وثبوت حالة القوة القاهرة.'
+          'الدفع بانتفاء الضرر الفعلي وثبوت حالة القوة القاهرة.',
         ];
-      } else if (normalizedText.contains('لخص') || normalizedText.contains('حكم')) {
-        aiText = 'التسبيب:\n١. استخلاص الوقائع الجوهرية من منطوق الحكم.\n٢. فحص الحيثيات المتعلقة بالإثبات ونكول المدعى عليه المدني.\n٣. تقييم المواعيد النظامية للائحة الاعتراضية.\n\nملخص الحكم القضائي المرفق وتوصياتنا الاستئنافية:';
+      } else if (normalizedText.contains('لخص') ||
+          normalizedText.contains('حكم')) {
+        aiText =
+            'التسبيب:\n١. استخلاص الوقائع الجوهرية من منطوق الحكم.\n٢. فحص الحيثيات المتعلقة بالإثبات ونكول المدعى عليه المدني.\n٣. تقييم المواعيد النظامية للائحة الاعتراضية.\n\nملخص الحكم القضائي المرفق وتوصياتنا الاستئنافية:';
         aiBullets = [
           'منطوق الحكم: إلزام المدعى عليه بسداد مبلغ ١٠0 ألف ريال.',
           'الحيثيات: ثبوت العلاقة التعاقدية وشهادة الشهود ونكول المدعى عليه عن اليمين.',
-          'توصيات الاستئناف: يجب تقديم الاعتراض قبل انتهاء مدة الـ ٣٠ يوماً القانونية.'
+          'توصيات الاستئناف: يجب تقديم الاعتراض قبل انتهاء مدة الـ ٣٠ يوماً القانونية.',
         ];
         aiAttachment = 'ملخص حكم الاستئناف التجاري.pdf';
-      } else if (normalizedText.contains('رسالة') || normalizedText.contains('الموكل')) {
-        aiText = 'منهج الإجابة:\n١. صياغة خطاب مهني يعزز ثقة الموكل.\n٢. توضيح تقديم مذكرة الدفاع وتضمين تقرير الخبير الفني.\n\nإليك مسودة الرسالة المقترحة لإرسالها للموكل عبر الواتساب:';
+      } else if (normalizedText.contains('رسالة') ||
+          normalizedText.contains('الموكل')) {
+        aiText =
+            'منهج الإجابة:\n١. صياغة خطاب مهني يعزز ثقة الموكل.\n٢. توضيح تقديم مذكرة الدفاع وتضمين تقرير الخبير الفني.\n\nإليك مسودة الرسالة المقترحة لإرسالها للموكل عبر الواتساب:';
         aiBullets = [
           'سيادة الموكل، نحيطكم علماً بأنه تم تقديم مذكرة الدفاع القانونية بنجاح.',
           'وتم تضمين تقرير الخبير الفني الذي يعزز موقفنا في استرداد كامل المستحقات.',
-          'سنوافيكم بتطورات الجلسة القادمة المقرر عقدها يوم الخميس المقبل.'
+          'سنوافيكم بتطورات الجلسة القادمة المقرر عقدها يوم الخميس المقبل.',
         ];
       }
 
       setState(() {
         _isTyping = false;
-        _messages.add(_ChatMessage(
-          text: aiText,
-          isUser: false,
-          bullets: aiBullets,
-          attachmentTitle: aiAttachment,
-        ));
+        _messages.add(
+          _ChatMessage(
+            text: aiText,
+            isUser: false,
+            bullets: aiBullets,
+            attachmentTitle: aiAttachment,
+          ),
+        );
       });
       _scrollToBottom();
     });
@@ -281,8 +285,14 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               const SizedBox(height: 14),
               ListTile(
-                leading: const Icon(Icons.all_inclusive, color: AppColors.primary),
-                title: const Text('بدون قضية محددة', style: TextStyle(fontFamily: 'Tajawal')),
+                leading: const Icon(
+                  Icons.all_inclusive,
+                  color: AppColors.primary,
+                ),
+                title: const Text(
+                  'بدون قضية محددة',
+                  style: TextStyle(fontFamily: 'Tajawal'),
+                ),
                 onTap: () {
                   setState(() {
                     _selectedCase = null;
@@ -293,19 +303,33 @@ class _ChatScreenState extends State<ChatScreen> {
               const Divider(),
               Expanded(
                 child: ListView(
-                  children: widget.appState.cases.map(
-                    (c) => ListTile(
-                      leading: const Icon(Icons.gavel, color: AppColors.primary),
-                      title: Text(c.title, style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
-                      subtitle: Text('رقم القضية: ${c.caseNumber} • ${c.clientName}', style: const TextStyle(fontFamily: 'Tajawal')),
-                      onTap: () {
-                        setState(() {
-                          _selectedCase = c;
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ).toList(),
+                  children: widget.appState.cases
+                      .map(
+                        (c) => ListTile(
+                          leading: const Icon(
+                            Icons.gavel,
+                            color: AppColors.primary,
+                          ),
+                          title: Text(
+                            c.title,
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'رقم القضية: ${c.caseNumber} • ${c.clientName}',
+                            style: const TextStyle(fontFamily: 'Tajawal'),
+                          ),
+                          onTap: () {
+                            setState(() {
+                              _selectedCase = c;
+                            });
+                            Navigator.pop(context);
+                          },
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
             ],
@@ -315,7 +339,12 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildWelcomeBanner(bool isDark, Color cardBg, Color titleColor, Color mutedText) {
+  Widget _buildWelcomeBanner(
+    bool isDark,
+    Color cardBg,
+    Color titleColor,
+    Color mutedText,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       margin: const EdgeInsets.only(bottom: 20),
@@ -323,11 +352,15 @@ class _ChatScreenState extends State<ChatScreen> {
         color: cardBg,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.1),
+          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(
+            alpha: 0.1,
+          ),
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF885200).withValues(alpha: isDark ? 0.01 : 0.04),
+            color: const Color(
+              0xFF885200,
+            ).withValues(alpha: isDark ? 0.01 : 0.04),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -339,14 +372,21 @@ class _ChatScreenState extends State<ChatScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.auto_awesome, color: AppColors.primary, size: 14),
+                    Icon(
+                      Icons.auto_awesome,
+                      color: AppColors.primary,
+                      size: 14,
+                    ),
                     SizedBox(width: 6),
                     Text(
                       'المستشار الذكي جاهز',
@@ -395,7 +435,9 @@ class _ChatScreenState extends State<ChatScreen> {
         color: isDark ? const Color(0xFF242424) : const Color(0xFFFBF9F4),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.15),
+          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(
+            alpha: 0.15,
+          ),
         ),
       ),
       child: Row(
@@ -432,7 +474,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 const SnackBar(content: Text('جاري تحميل الملحق...')),
               );
             },
-            icon: const Icon(Icons.download, color: AppColors.primary, size: 18),
+            icon: const Icon(
+              Icons.download,
+              color: AppColors.primary,
+              size: 18,
+            ),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -447,7 +493,11 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.check_circle_outline, color: AppColors.success, size: 16),
+          const Icon(
+            Icons.check_circle_outline,
+            color: AppColors.success,
+            size: 16,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -470,21 +520,20 @@ class _ChatScreenState extends State<ChatScreen> {
       dotAll: true,
       caseSensitive: false,
     );
-    
+
     final match = regExp.firstMatch(content);
     if (match != null) {
       final response = content.substring(0, match.start).trim();
       final reasoning = match.group(0)?.trim() ?? '';
       return {
-        'response': response.isEmpty ? 'تم توليد التحليل والجواب القانوني أدناه:' : response,
+        'response': response.isEmpty
+            ? 'تم توليد التحليل والجواب القانوني أدناه:'
+            : response,
         'reasoning': reasoning,
       };
     }
-    
-    return {
-      'response': content,
-      'reasoning': '',
-    };
+
+    return {'response': content, 'reasoning': ''};
   }
 
   Widget _buildChatBubble(_ChatMessage message, bool isDark, Color cardBg) {
@@ -537,17 +586,25 @@ class _ChatScreenState extends State<ChatScreen> {
               bottomRight: Radius.circular(20),
             ),
             border: Border(
-              right: const BorderSide(
-                color: AppColors.primary,
-                width: 4,
+              right: const BorderSide(color: AppColors.primary, width: 4),
+              left: BorderSide(
+                color: (isDark ? Colors.white : const Color(0xFFD9C3AE))
+                    .withValues(alpha: 0.1),
               ),
-              left: BorderSide(color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.1)),
-              top: BorderSide(color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.1)),
-              bottom: BorderSide(color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.1)),
+              top: BorderSide(
+                color: (isDark ? Colors.white : const Color(0xFFD9C3AE))
+                    .withValues(alpha: 0.1),
+              ),
+              bottom: BorderSide(
+                color: (isDark ? Colors.white : const Color(0xFFD9C3AE))
+                    .withValues(alpha: 0.1),
+              ),
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF885200).withValues(alpha: isDark ? 0.005 : 0.01),
+                color: const Color(
+                  0xFF885200,
+                ).withValues(alpha: isDark ? 0.005 : 0.01),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -564,7 +621,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   fontFamily: 'Tajawal',
                 ),
               ),
-              if (parsed['reasoning'] != null && parsed['reasoning']!.isNotEmpty)
+              if (parsed['reasoning'] != null &&
+                  parsed['reasoning']!.isNotEmpty)
                 _ReasoningAccordion(reasoningText: parsed['reasoning']!),
               if (message.bullets != null) ...[
                 const SizedBox(height: 6),
@@ -591,13 +649,15 @@ class _ChatScreenState extends State<ChatScreen> {
           color: isDark ? Colors.white70 : AppColors.primaryBronze,
         ),
       ),
-      backgroundColor: isDark ? const Color(0xFF1D1D1D) : const Color(0xFFFBF9F4),
+      backgroundColor: isDark
+          ? const Color(0xFF1D1D1D)
+          : const Color(0xFFFBF9F4),
       side: BorderSide(
-        color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.15),
+        color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(
+          alpha: 0.15,
+        ),
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       onPressed: () => _sendMessage(label),
     );
   }
@@ -613,7 +673,9 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     return Positioned(
-      bottom: (_selectedRegulation != null ? 180.0 : 140.0) + (MediaQuery.of(context).viewInsets.bottom > 0 ? 0.0 : 0.0),
+      bottom:
+          (_selectedRegulation != null ? 180.0 : 140.0) +
+          (MediaQuery.of(context).viewInsets.bottom > 0 ? 0.0 : 0.0),
       left: 16,
       right: 16,
       child: Container(
@@ -642,11 +704,18 @@ class _ChatScreenState extends State<ChatScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   color: AppColors.primary.withValues(alpha: 0.08),
                   child: Row(
                     children: [
-                      const Icon(Icons.alternate_email, color: AppColors.primary, size: 14),
+                      const Icon(
+                        Icons.alternate_email,
+                        color: AppColors.primary,
+                        size: 14,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'إشارة إلى لوائح المكتب الداخلية (${activeRegulations.length})',
@@ -665,12 +734,17 @@ class _ChatScreenState extends State<ChatScreen> {
                     shrinkWrap: true,
                     padding: EdgeInsets.zero,
                     itemCount: activeRegulations.length,
-                    separatorBuilder: (context, index) => const Divider(height: 1, thickness: 0.5),
+                    separatorBuilder: (context, index) =>
+                        const Divider(height: 1, thickness: 0.5),
                     itemBuilder: (context, index) {
                       final reg = activeRegulations[index];
                       return ListTile(
                         dense: true,
-                        leading: const Icon(Icons.description, color: AppColors.primary, size: 18),
+                        leading: const Icon(
+                          Icons.description,
+                          color: AppColors.primary,
+                          size: 18,
+                        ),
                         title: Text(
                           reg.title,
                           style: const TextStyle(
@@ -718,7 +792,12 @@ class _ChatScreenState extends State<ChatScreen> {
             children: <Widget>[
               // Custom Header
               Padding(
-                padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 16, 16, 8),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  MediaQuery.of(context).padding.top + 16,
+                  16,
+                  8,
+                ),
                 child: Row(
                   children: <Widget>[
                     Expanded(
@@ -749,16 +828,28 @@ class _ChatScreenState extends State<ChatScreen> {
               Expanded(
                 child: ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   itemCount: _messages.length + 1 + (_isTyping ? 1 : 0),
                   itemBuilder: (context, index) {
                     if (index == 0) {
-                      return _buildWelcomeBanner(isDark, cardBg, titleColor, mutedText);
+                      return _buildWelcomeBanner(
+                        isDark,
+                        cardBg,
+                        titleColor,
+                        mutedText,
+                      );
                     }
-                    
+
                     final msgIndex = index - 1;
                     if (msgIndex < _messages.length) {
-                      return _buildChatBubble(_messages[msgIndex], isDark, cardBg);
+                      return _buildChatBubble(
+                        _messages[msgIndex],
+                        isDark,
+                        cardBg,
+                      );
                     }
 
                     // Show typing indicator
@@ -766,12 +857,19 @@ class _ChatScreenState extends State<ChatScreen> {
                       alignment: Alignment.centerRight,
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: cardBg,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.1),
+                            color:
+                                (isDark
+                                        ? Colors.white
+                                        : const Color(0xFFD9C3AE))
+                                    .withValues(alpha: 0.1),
                           ),
                         ),
                         child: Row(
@@ -821,11 +919,18 @@ class _ChatScreenState extends State<ChatScreen> {
               // Selected Regulation Tag Card
               if (_selectedRegulation != null)
                 Padding(
-                  padding: const EdgeInsets.only(left: 20, right: 20, bottom: 8),
+                  padding: const EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    bottom: 8,
+                  ),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(16),
@@ -836,7 +941,11 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.description, color: AppColors.primary, size: 16),
+                            const Icon(
+                              Icons.description,
+                              color: AppColors.primary,
+                              size: 16,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'اللائحة: ${_selectedRegulation!.title}',
@@ -876,44 +985,67 @@ class _ChatScreenState extends State<ChatScreen> {
                     filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: (isDark ? const Color(0xFF1D1D1D) : Colors.white).withValues(alpha: 0.85),
+                        color: (isDark ? const Color(0xFF1D1D1D) : Colors.white)
+                            .withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.15),
+                          color:
+                              (isDark ? Colors.white : const Color(0xFFD9C3AE))
+                                  .withValues(alpha: 0.15),
                           width: 1.2,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF885200).withValues(alpha: isDark ? 0.01 : 0.03),
+                            color: const Color(
+                              0xFF885200,
+                            ).withValues(alpha: isDark ? 0.01 : 0.03),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
                         ],
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       child: Row(
                         children: <Widget>[
                           IconButton(
                             onPressed: () {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('إرفاق ملف أو مستند للمحادثة...')),
+                                const SnackBar(
+                                  content: Text(
+                                    'إرفاق ملف أو مستند للمحادثة...',
+                                  ),
+                                ),
                               );
                             },
-                            icon: const Icon(Icons.attach_file, color: AppColors.primary, size: 22),
+                            icon: const Icon(
+                              Icons.attach_file,
+                              color: AppColors.primary,
+                              size: 22,
+                            ),
                           ),
                           Expanded(
                             child: TextField(
                               controller: _inputController,
                               onSubmitted: _sendMessage,
                               decoration: const InputDecoration(
-                                hintText: 'اكتب سؤالك أو طلبك سيادة المستشار...',
+                                hintText:
+                                    'اكتب سؤالك أو طلبك سيادة المستشار...',
                                 border: InputBorder.none,
                                 enabledBorder: InputBorder.none,
                                 focusedBorder: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 10,
+                                ),
                                 fillColor: Colors.transparent,
                               ),
-                              style: const TextStyle(fontSize: 13, fontFamily: 'Tajawal'),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontFamily: 'Tajawal',
+                              ),
                             ),
                           ),
                           Container(
@@ -922,8 +1054,13 @@ class _ChatScreenState extends State<ChatScreen> {
                               gradient: AppColors.goldGradient,
                             ),
                             child: IconButton(
-                              onPressed: () => _sendMessage(_inputController.text),
-                              icon: const Icon(Icons.send, color: Colors.white, size: 18),
+                              onPressed: () =>
+                                  _sendMessage(_inputController.text),
+                              icon: const Icon(
+                                Icons.send,
+                                color: Colors.white,
+                                size: 18,
+                              ),
                             ),
                           ),
                         ],
@@ -944,7 +1081,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
 class _ReasoningAccordion extends StatefulWidget {
   const _ReasoningAccordion({required this.reasoningText});
-  
+
   final String reasoningText;
 
   @override
@@ -957,15 +1094,13 @@ class _ReasoningAccordionState extends State<_ReasoningAccordion> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       margin: const EdgeInsets.only(top: 10),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1D1D1D) : const Color(0xFFF7F4EB),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -981,7 +1116,11 @@ class _ReasoningAccordionState extends State<_ReasoningAccordion> {
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  const Icon(Icons.auto_awesome, color: AppColors.primary, size: 18),
+                  const Icon(
+                    Icons.auto_awesome,
+                    color: AppColors.primary,
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(
@@ -995,7 +1134,9 @@ class _ReasoningAccordionState extends State<_ReasoningAccordion> {
                     ),
                   ),
                   Icon(
-                    _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    _isExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
                     color: AppColors.primary,
                     size: 18,
                   ),
@@ -1024,7 +1165,9 @@ class _ReasoningAccordionState extends State<_ReasoningAccordion> {
                 ],
               ),
             ),
-            crossFadeState: _isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            crossFadeState: _isExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 200),
           ),
         ],

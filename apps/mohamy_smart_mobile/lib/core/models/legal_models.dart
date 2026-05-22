@@ -29,6 +29,108 @@ enum AiWorkflowStatus {
   final String label;
 }
 
+enum ScreenLoadStatus {
+  idle('جاهز'),
+  loading('جار التحميل'),
+  ready('جاهز'),
+  empty('لا توجد بيانات'),
+  partial('بيانات جزئية'),
+  error('تعذر التحميل'),
+  offline('غير متصل');
+
+  const ScreenLoadStatus(this.label);
+  final String label;
+}
+
+enum NotificationCategory {
+  aiJob('الذكاء الاصطناعي'),
+  agenda('الأجندة'),
+  document('المستندات'),
+  subscription('النقاط والاشتراك'),
+  system('النظام');
+
+  const NotificationCategory(this.label);
+  final String label;
+}
+
+class ScreenStateInfo {
+  const ScreenStateInfo({
+    required this.status,
+    this.message,
+    this.lastUpdatedAt,
+    this.retryLabel,
+  });
+
+  final ScreenLoadStatus status;
+  final String? message;
+  final DateTime? lastUpdatedAt;
+  final String? retryLabel;
+
+  bool get isLoading => status == ScreenLoadStatus.loading;
+  bool get hasProblem =>
+      status == ScreenLoadStatus.error ||
+      status == ScreenLoadStatus.offline ||
+      status == ScreenLoadStatus.partial;
+
+  ScreenStateInfo copyWith({
+    ScreenLoadStatus? status,
+    String? message,
+    DateTime? lastUpdatedAt,
+    String? retryLabel,
+  }) {
+    return ScreenStateInfo(
+      status: status ?? this.status,
+      message: message ?? this.message,
+      lastUpdatedAt: lastUpdatedAt ?? this.lastUpdatedAt,
+      retryLabel: retryLabel ?? this.retryLabel,
+    );
+  }
+}
+
+class NotificationItem {
+  const NotificationItem({
+    required this.id,
+    required this.category,
+    required this.title,
+    required this.body,
+    required this.createdAt,
+    this.isRead = false,
+    this.destinationType,
+    this.destinationId,
+  });
+
+  final String id;
+  final NotificationCategory category;
+  final String title;
+  final String body;
+  final DateTime createdAt;
+  final bool isRead;
+  final String? destinationType;
+  final String? destinationId;
+
+  NotificationItem copyWith({
+    String? id,
+    NotificationCategory? category,
+    String? title,
+    String? body,
+    DateTime? createdAt,
+    bool? isRead,
+    String? destinationType,
+    String? destinationId,
+  }) {
+    return NotificationItem(
+      id: id ?? this.id,
+      category: category ?? this.category,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      createdAt: createdAt ?? this.createdAt,
+      isRead: isRead ?? this.isRead,
+      destinationType: destinationType ?? this.destinationType,
+      destinationId: destinationId ?? this.destinationId,
+    );
+  }
+}
+
 class LawyerProfile {
   const LawyerProfile({
     required this.id,
@@ -209,12 +311,18 @@ class AddCaseInput {
     required this.clientName,
     required this.court,
     required this.caseType,
+    this.facts = '',
+    this.adversary = '',
+    this.legalClaims = '',
   });
 
   final String caseNumber;
   final String clientName;
   final String court;
   final String caseType;
+  final String facts;
+  final String adversary;
+  final String legalClaims;
 }
 
 class InternalRegulation {
@@ -300,4 +408,3 @@ class PowerOfAttorney {
     );
   }
 }
-

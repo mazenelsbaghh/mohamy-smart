@@ -25,8 +25,11 @@ class AppShell extends StatelessWidget {
     ];
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final navBgColor = (isDark ? AppColors.darkSurface : AppColors.lightSurface).withValues(alpha: 0.85);
-    final borderThemeColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final navBgColor = (isDark ? AppColors.darkSurface : AppColors.lightSurface)
+        .withValues(alpha: 0.85);
+    final borderThemeColor = isDark
+        ? AppColors.darkBorder
+        : AppColors.lightBorder;
 
     return Scaffold(
       extendBody: true,
@@ -47,10 +50,7 @@ class AppShell extends StatelessWidget {
                 topRight: Radius.circular(24),
               ),
               border: Border(
-                top: BorderSide(
-                  color: borderThemeColor,
-                  width: 1,
-                ),
+                top: BorderSide(color: borderThemeColor, width: 1),
               ),
             ),
             child: Row(
@@ -116,39 +116,49 @@ class AppShell extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final Color activeColor = AppColors.primary;
-    final Color inactiveColor = isDark ? AppColors.darkMuted : AppColors.lightMuted;
-    final Color activeBgColor = isDark ? AppColors.darkAccentSoft : AppColors.lightAccentSoft;
+    final Color inactiveColor = isDark
+        ? AppColors.darkMuted
+        : AppColors.lightMuted;
+    final Color activeBgColor = isDark
+        ? AppColors.darkAccentSoft
+        : AppColors.lightAccentSoft;
 
-    return InkWell(
-      key: key,
-      onTap: () => appState.setSelectedTab(index),
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? activeBgColor : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              isSelected ? selectedIcon : icon,
-              color: isSelected ? activeColor : inactiveColor,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Tajawal',
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+    return Expanded(
+      child: InkWell(
+        key: key,
+        onTap: () => appState.setSelectedTab(index),
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? activeBgColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                isSelected ? selectedIcon : icon,
                 color: isSelected ? activeColor : inactiveColor,
+                size: 24,
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? activeColor : inactiveColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

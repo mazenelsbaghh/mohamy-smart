@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:ui';
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -10,11 +9,7 @@ import '../../app/app_state.dart';
 import '../../core/models/legal_models.dart';
 import '../../core/models/workflow_snapshot_model.dart';
 import '../../core/data/demo_legal_repository.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/app_card.dart';
-import '../../core/widgets/legal_cards.dart';
-import '../../core/widgets/user_tie_avatar.dart';
 import '../subscription/subscription_screen.dart';
 
 class AiWorkflowHubScreen extends StatelessWidget {
@@ -36,9 +31,14 @@ class AiWorkflowHubScreen extends StatelessWidget {
         final scaffoldBg = isDark ? AppColors.darkBg : const Color(0xFFF0EEE7);
         final workflows = appState.workflowsForCase(legalCase.id);
         final points = appState.subscription.aiPoints;
+        final documents = appState.documentsForCase(legalCase.id);
 
-        final contextCardBg = isDark ? const Color(0xFF1E1D13) : const Color(0xFFFBFAE8);
-        final contextCardBorder = isDark ? AppColors.darkBorder : AppColors.primary.withValues(alpha: 0.15);
+        final contextCardBg = isDark
+            ? const Color(0xFF1E1D13)
+            : const Color(0xFFFBFAE8);
+        final contextCardBorder = isDark
+            ? AppColors.darkBorder
+            : AppColors.primary.withValues(alpha: 0.15);
         final textMuted = isDark ? AppColors.darkMuted : AppColors.lightMuted;
         final textColor = isDark ? Colors.white : AppColors.lightTitle;
 
@@ -70,7 +70,9 @@ class AiWorkflowHubScreen extends StatelessWidget {
                   child: Text(
                     'Mohamy Smart',
                     style: TextStyle(
-                      color: isDark ? AppColors.primary : const Color(0xFF885200),
+                      color: isDark
+                          ? AppColors.primary
+                          : const Color(0xFF885200),
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -90,7 +92,9 @@ class AiWorkflowHubScreen extends StatelessWidget {
                   border: Border.all(color: contextCardBorder, width: 1),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.01 : 0.02),
+                      color: Colors.black.withValues(
+                        alpha: isDark ? 0.01 : 0.02,
+                      ),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -117,7 +121,9 @@ class AiWorkflowHubScreen extends StatelessWidget {
                           Text(
                             legalCase.title,
                             style: TextStyle(
-                              color: isDark ? Colors.white : const Color(0xFF885200),
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF885200),
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               fontFamily: 'Tajawal',
@@ -130,10 +136,15 @@ class AiWorkflowHubScreen extends StatelessWidget {
                     // Facts count badge
                     Container(
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.green.withValues(alpha: 0.15) : const Color(0xFFE8F5E9),
+                        color: isDark
+                            ? Colors.green.withValues(alpha: 0.15)
+                            : const Color(0xFFE8F5E9),
                         borderRadius: BorderRadius.circular(99),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: <Widget>[
@@ -159,6 +170,17 @@ class AiWorkflowHubScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 28),
+              WorkflowReadinessBanner(
+                legalCase: legalCase,
+                documents: documents,
+                availablePoints: points,
+                pointCost: workflows.isEmpty
+                    ? 0
+                    : workflows
+                          .map((workflow) => workflow.pointCost)
+                          .reduce((a, b) => a < b ? a : b),
+              ),
+              const SizedBox(height: 24),
               // Section Title
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -216,6 +238,160 @@ class AiWorkflowHubScreen extends StatelessWidget {
   }
 }
 
+class WorkflowReadinessBanner extends StatelessWidget {
+  const WorkflowReadinessBanner({
+    required this.legalCase,
+    required this.documents,
+    required this.availablePoints,
+    required this.pointCost,
+    super.key,
+    this.compact = false,
+  });
+
+  final LegalCase legalCase;
+  final List<LegalDocument> documents;
+  final int availablePoints;
+  final int pointCost;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<MohamyThemeTokens>()!;
+    final hasFacts = legalCase.facts.isNotEmpty;
+    final hasEnoughPoints = pointCost == 0 || availablePoints >= pointCost;
+    final statusLabel = hasEnoughPoints ? 'جاهز للتشغيل' : 'النقاط غير كافية';
+    final statusColor = hasEnoughPoints ? AppColors.success : AppColors.danger;
+
+    return Container(
+      key: const Key('workflow_readiness_banner'),
+      width: double.infinity,
+      padding: EdgeInsets.all(compact ? 14 : 16),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(compact ? 18 : 22),
+        border: Border.all(
+          color: statusColor.withValues(alpha: hasEnoughPoints ? 0.22 : 0.34),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  hasEnoughPoints
+                      ? Icons.verified_outlined
+                      : Icons.workspace_premium_outlined,
+                  color: statusColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.w900,
+                    fontSize: compact ? 13 : 15,
+                  ),
+                ),
+              ),
+              Text(
+                '$availablePoints / $pointCost نقطة',
+                key: const Key('workflow_points_status'),
+                style: TextStyle(
+                  color: tokens.muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              _ReadinessPill(
+                icon: Icons.fact_check_outlined,
+                label: '${legalCase.facts.length} وقائع',
+                isReady: hasFacts,
+              ),
+              _ReadinessPill(
+                icon: Icons.attach_file_rounded,
+                label: '${documents.length} مستندات',
+                isReady: documents.isNotEmpty,
+              ),
+              _ReadinessPill(
+                icon: Icons.account_balance_wallet_outlined,
+                label: pointCost == 0 ? 'بدون تكلفة محددة' : '$pointCost نقطة',
+                isReady: hasEnoughPoints,
+              ),
+            ],
+          ),
+          if (!hasFacts || !hasEnoughPoints) ...<Widget>[
+            const SizedBox(height: 10),
+            Text(
+              !hasEnoughPoints
+                  ? 'اشحن النقاط قبل تشغيل المسار حتى لا يتوقف التنفيذ في منتصف العمل.'
+                  : 'أضف وقائع أكثر للقضية للحصول على مخرجات قانونية أدق.',
+              style: TextStyle(color: tokens.muted, fontSize: 12, height: 1.4),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ReadinessPill extends StatelessWidget {
+  const _ReadinessPill({
+    required this.icon,
+    required this.label,
+    required this.isReady,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isReady;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<MohamyThemeTokens>()!;
+    final color = isReady ? AppColors.success : AppColors.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: tokens.muted,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class WorkflowItemCard extends StatelessWidget {
   const WorkflowItemCard({
     required this.appState,
@@ -232,13 +408,36 @@ class WorkflowItemCard extends StatelessWidget {
 
   String _getWorkflowType(String workflowId) {
     if (workflowId.startsWith('workflow-defense-')) return 'defense-memo';
-    if (workflowId.startsWith('workflow-claim-')) return 'preparing-statement-of-claims';
+    if (workflowId.startsWith('workflow-claim-')) {
+      return 'preparing-statement-of-claims';
+    }
     if (workflowId.startsWith('workflow-appeal-')) return 'appeal-brief';
     if (workflowId.startsWith('workflow-complaint-')) return 'admin-complaint';
     if (workflowId.startsWith('workflow-ruling-')) return 'ruling-analysis';
     if (workflowId.startsWith('workflow-warning-')) return 'legal-warning';
     if (workflowId.startsWith('workflow-execution-')) return 'exec-request';
     return 'defense-memo';
+  }
+
+  void _openSubscription(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SubscriptionScreen(appState: appState),
+      ),
+    );
+  }
+
+  void _openRunner(BuildContext context, String type) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AiWorkflowRunnerScreen(
+          appState: appState,
+          workflow: workflow,
+          legalCase: legalCase,
+          workflowType: type,
+        ),
+      ),
+    );
   }
 
   @override
@@ -255,14 +454,29 @@ class WorkflowItemCard extends StatelessWidget {
 
     IconData icon;
     switch (workflow.iconName) {
-      case 'bolt': icon = Icons.bolt; break;
-      case 'description': icon = Icons.description; break;
-      case 'gavel': icon = Icons.gavel; break;
-      case 'warning': icon = Icons.warning_amber_rounded; break;
-      case 'analytics': icon = Icons.analytics_outlined; break;
-      case 'fact_check': icon = Icons.fact_check_outlined; break;
-      case 'task': icon = Icons.task_outlined; break;
-      default: icon = Icons.bolt;
+      case 'bolt':
+        icon = Icons.bolt;
+        break;
+      case 'description':
+        icon = Icons.description;
+        break;
+      case 'gavel':
+        icon = Icons.gavel;
+        break;
+      case 'warning':
+        icon = Icons.warning_amber_rounded;
+        break;
+      case 'analytics':
+        icon = Icons.analytics_outlined;
+        break;
+      case 'fact_check':
+        icon = Icons.fact_check_outlined;
+        break;
+      case 'task':
+        icon = Icons.task_outlined;
+        break;
+      default:
+        icon = Icons.bolt;
     }
 
     // Determine status badge
@@ -336,7 +550,10 @@ class WorkflowItemCard extends StatelessWidget {
                             color: statusBg,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           child: Text(
                             statusText,
                             style: TextStyle(
@@ -354,7 +571,11 @@ class WorkflowItemCard extends StatelessWidget {
                     if (snapshots.isNotEmpty) ...[
                       Row(
                         children: [
-                          const Icon(Icons.history, size: 12, color: AppColors.primary),
+                          const Icon(
+                            Icons.history,
+                            size: 12,
+                            color: AppColors.primary,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '${snapshots.length} نسخ سابقة',
@@ -410,11 +631,18 @@ class WorkflowItemCard extends StatelessWidget {
                   icon: const Icon(Icons.history, size: 14),
                   label: const Text(
                     'النسخ السابقة',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Tajawal'),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Tajawal',
+                    ),
                   ),
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                   ),
                 )
               else
@@ -427,11 +655,21 @@ class WorkflowItemCard extends StatelessWidget {
                   if (draft.currentStep > 0) ...[
                     OutlinedButton(
                       onPressed: () {
+                        if (!canRun) {
+                          _openSubscription(context);
+                          return;
+                        }
                         // Confirm starting new run
                         showDialog<void>(
                           context: context,
                           builder: (dialogCtx) => AlertDialog(
-                            title: const Text('بدء مسار جديد', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                            title: const Text(
+                              'بدء مسار جديد',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             content: const Text(
                               'هل تريد بدء مسار جديد؟ سيتم حفظ مسودتك الحالية تلقائياً في سجل النسخ السابقة.',
                               style: TextStyle(fontFamily: 'Tajawal'),
@@ -439,25 +677,30 @@ class WorkflowItemCard extends StatelessWidget {
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.of(dialogCtx).pop(),
-                                child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal')),
+                                child: const Text(
+                                  'إلغاء',
+                                  style: TextStyle(fontFamily: 'Tajawal'),
+                                ),
                               ),
                               ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                ),
                                 onPressed: () {
                                   Navigator.of(dialogCtx).pop();
-                                  appState.startNewWorkflowRun(legalCase.id, type);
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => AiWorkflowRunnerScreen(
-                                        appState: appState,
-                                        workflow: workflow,
-                                        legalCase: legalCase,
-                                        workflowType: type,
-                                      ),
-                                    ),
+                                  appState.startNewWorkflowRun(
+                                    legalCase.id,
+                                    type,
                                   );
+                                  _openRunner(context, type);
                                 },
-                                child: const Text('بدء جديد', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
+                                child: const Text(
+                                  'بدء جديد',
+                                  style: TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -466,58 +709,81 @@ class WorkflowItemCard extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,
                         side: const BorderSide(color: AppColors.primary),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                       ),
-                      child: const Text('بدء جديد', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Tajawal')),
+                      child: const Text(
+                        'بدء جديد',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Tajawal',
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => AiWorkflowRunnerScreen(
-                              appState: appState,
-                              workflow: workflow,
-                              legalCase: legalCase,
-                              workflowType: type,
-                            ),
-                          ),
-                        );
+                        _openRunner(context, type);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                       ),
                       child: Text(
-                        draft.status == 'Completed' ? 'مراجعة النتائج' : 'استكمال المسار',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Tajawal'),
+                        draft.status == 'Completed'
+                            ? 'مراجعة النتائج'
+                            : 'استكمال المسار',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Tajawal',
+                        ),
                       ),
                     ),
                   ] else ...[
                     // Not started yet
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => AiWorkflowRunnerScreen(
-                              appState: appState,
-                              workflow: workflow,
-                              legalCase: legalCase,
-                              workflowType: type,
-                            ),
-                          ),
-                        );
+                        if (!canRun) {
+                          _openSubscription(context);
+                          return;
+                        }
+                        _openRunner(context, type);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: canRun
+                            ? AppColors.primary
+                            : AppColors.danger,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                       ),
-                      child: const Text('بدء', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Tajawal')),
+                      child: Text(
+                        canRun ? 'بدء' : 'اشحن النقاط',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Tajawal',
+                        ),
+                      ),
                     ),
                   ],
                 ],
@@ -529,7 +795,8 @@ class WorkflowItemCard extends StatelessWidget {
     );
   }
 }
-                      class AiWorkflowRunnerScreen extends StatefulWidget {
+
+class AiWorkflowRunnerScreen extends StatefulWidget {
   const AiWorkflowRunnerScreen({
     required this.appState,
     required this.workflow,
@@ -569,7 +836,10 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
   @override
   void initState() {
     super.initState();
-    final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+    final draft = widget.appState.getOrCreateDraft(
+      widget.legalCase.id,
+      widget.workflowType,
+    );
     _step = draft.currentStep;
     _lastSavedAt = draft.lastSavedAt;
     widget.appState.addListener(_onAppStateChanged);
@@ -620,11 +890,17 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
     if (mounted) {
       if (_ignoreNextListener) {
         _ignoreNextListener = false;
-        final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+        final draft = widget.appState.getOrCreateDraft(
+          widget.legalCase.id,
+          widget.workflowType,
+        );
         _lastSavedAt = draft.lastSavedAt;
         return;
       }
-      final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+      final draft = widget.appState.getOrCreateDraft(
+        widget.legalCase.id,
+        widget.workflowType,
+      );
 
       // If we are currently processing a backend/SignalR job, and the output is updated:
       if (_isProcessing) {
@@ -642,7 +918,10 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
             const SnackBar(
               content: Text(
                 'تم التحليل الذكي للخطوة بنجاح! ✓ (تحديث فوري)',
-                style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               backgroundColor: Color(0xFF007AFF),
               duration: Duration(seconds: 1),
@@ -664,7 +943,10 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
 
   void _initializeControllers() {
     _disposeControllers();
-    final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+    final draft = widget.appState.getOrCreateDraft(
+      widget.legalCase.id,
+      widget.workflowType,
+    );
     final stepOutput = draft.outputs[_step];
     if (stepOutput == null) return;
 
@@ -676,7 +958,9 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
           _saveCurrentFieldState(key, c.text);
         });
       } else if (value is List && value.every((e) => e is String)) {
-        final controllers = value.map((item) => TextEditingController(text: item.toString())).toList();
+        final controllers = value
+            .map((item) => TextEditingController(text: item.toString()))
+            .toList();
         _textControllers[key] = controllers;
         for (int i = 0; i < controllers.length; i++) {
           controllers[i].addListener(() {
@@ -737,103 +1021,193 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
   }
 
   void _saveCurrentFieldState(String key, String text) {
-    final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+    final draft = widget.appState.getOrCreateDraft(
+      widget.legalCase.id,
+      widget.workflowType,
+    );
     final stepOutput = Map<String, dynamic>.from(draft.outputs[_step] ?? {});
     stepOutput[key] = text;
     _ignoreNextListener = true;
-    widget.appState.saveDraftStep(widget.legalCase.id, widget.workflowType, _step, stepOutput);
+    widget.appState.saveDraftStep(
+      widget.legalCase.id,
+      widget.workflowType,
+      _step,
+      stepOutput,
+    );
   }
 
   void _saveListFieldState(String key) {
     final controllers = _textControllers[key] as List<TextEditingController>;
     final newList = controllers.map((c) => c.text).toList();
-    final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+    final draft = widget.appState.getOrCreateDraft(
+      widget.legalCase.id,
+      widget.workflowType,
+    );
     final stepOutput = Map<String, dynamic>.from(draft.outputs[_step] ?? {});
     stepOutput[key] = newList;
     _ignoreNextListener = true;
-    widget.appState.saveDraftStep(widget.legalCase.id, widget.workflowType, _step, stepOutput);
+    widget.appState.saveDraftStep(
+      widget.legalCase.id,
+      widget.workflowType,
+      _step,
+      stepOutput,
+    );
   }
 
   void _saveMapListFieldState(String key) {
-    final listMapControllers = _textControllers[key] as List<Map<String, TextEditingController>>;
+    final listMapControllers =
+        _textControllers[key] as List<Map<String, TextEditingController>>;
     final newList = listMapControllers.map((mapControllers) {
       return mapControllers.map((k, c) => MapEntry(k, c.text));
     }).toList();
-    final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+    final draft = widget.appState.getOrCreateDraft(
+      widget.legalCase.id,
+      widget.workflowType,
+    );
     final stepOutput = Map<String, dynamic>.from(draft.outputs[_step] ?? {});
     stepOutput[key] = newList;
     _ignoreNextListener = true;
-    widget.appState.saveDraftStep(widget.legalCase.id, widget.workflowType, _step, stepOutput);
+    widget.appState.saveDraftStep(
+      widget.legalCase.id,
+      widget.workflowType,
+      _step,
+      stepOutput,
+    );
   }
 
   void _saveMapFieldState(String key) {
-    final mapControllers = _textControllers[key] as Map<String, TextEditingController>;
+    final mapControllers =
+        _textControllers[key] as Map<String, TextEditingController>;
     final newMap = mapControllers.map((k, c) => MapEntry(k, c.text));
-    final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+    final draft = widget.appState.getOrCreateDraft(
+      widget.legalCase.id,
+      widget.workflowType,
+    );
     final stepOutput = Map<String, dynamic>.from(draft.outputs[_step] ?? {});
     stepOutput[key] = newMap;
     _ignoreNextListener = true;
-    widget.appState.saveDraftStep(widget.legalCase.id, widget.workflowType, _step, stepOutput);
+    widget.appState.saveDraftStep(
+      widget.legalCase.id,
+      widget.workflowType,
+      _step,
+      stepOutput,
+    );
   }
 
   void _saveBoolFieldState(String key, bool value) {
-    final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+    final draft = widget.appState.getOrCreateDraft(
+      widget.legalCase.id,
+      widget.workflowType,
+    );
     final stepOutput = Map<String, dynamic>.from(draft.outputs[_step] ?? {});
     stepOutput[key] = value;
     _ignoreNextListener = true;
-    widget.appState.saveDraftStep(widget.legalCase.id, widget.workflowType, _step, stepOutput);
+    widget.appState.saveDraftStep(
+      widget.legalCase.id,
+      widget.workflowType,
+      _step,
+      stepOutput,
+    );
     setState(() {});
   }
 
   void _addListItem(String key) {
-    final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+    final draft = widget.appState.getOrCreateDraft(
+      widget.legalCase.id,
+      widget.workflowType,
+    );
     final stepOutput = Map<String, dynamic>.from(draft.outputs[_step] ?? {});
     final list = List<dynamic>.from(stepOutput[key] ?? []);
     list.add('');
     stepOutput[key] = list;
-    widget.appState.saveDraftStep(widget.legalCase.id, widget.workflowType, _step, stepOutput);
+    widget.appState.saveDraftStep(
+      widget.legalCase.id,
+      widget.workflowType,
+      _step,
+      stepOutput,
+    );
     _initializeControllers();
     setState(() {});
   }
 
   void _deleteListItem(String key, int index) {
-    final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+    final draft = widget.appState.getOrCreateDraft(
+      widget.legalCase.id,
+      widget.workflowType,
+    );
     final stepOutput = Map<String, dynamic>.from(draft.outputs[_step] ?? {});
     final list = List<dynamic>.from(stepOutput[key] ?? []);
     if (index >= 0 && index < list.length) {
       list.removeAt(index);
     }
     stepOutput[key] = list;
-    widget.appState.saveDraftStep(widget.legalCase.id, widget.workflowType, _step, stepOutput);
+    widget.appState.saveDraftStep(
+      widget.legalCase.id,
+      widget.workflowType,
+      _step,
+      stepOutput,
+    );
     _initializeControllers();
     setState(() {});
   }
 
   void _addMapListItem(String key, Map<String, String> template) {
-    final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+    final draft = widget.appState.getOrCreateDraft(
+      widget.legalCase.id,
+      widget.workflowType,
+    );
     final stepOutput = Map<String, dynamic>.from(draft.outputs[_step] ?? {});
     final list = List<dynamic>.from(stepOutput[key] ?? []);
     list.add(Map<String, String>.from(template));
     stepOutput[key] = list;
-    widget.appState.saveDraftStep(widget.legalCase.id, widget.workflowType, _step, stepOutput);
+    widget.appState.saveDraftStep(
+      widget.legalCase.id,
+      widget.workflowType,
+      _step,
+      stepOutput,
+    );
     _initializeControllers();
     setState(() {});
   }
 
   void _deleteMapListItem(String key, int index) {
-    final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+    final draft = widget.appState.getOrCreateDraft(
+      widget.legalCase.id,
+      widget.workflowType,
+    );
     final stepOutput = Map<String, dynamic>.from(draft.outputs[_step] ?? {});
     final list = List<dynamic>.from(stepOutput[key] ?? []);
     if (index >= 0 && index < list.length) {
       list.removeAt(index);
     }
     stepOutput[key] = list;
-    widget.appState.saveDraftStep(widget.legalCase.id, widget.workflowType, _step, stepOutput);
+    widget.appState.saveDraftStep(
+      widget.legalCase.id,
+      widget.workflowType,
+      _step,
+      stepOutput,
+    );
     _initializeControllers();
     setState(() {});
   }
 
   void _runStepAiAnalysis(int targetStep) {
+    if (!widget.appState.isSignalRConnected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'يجب الاتصال بالخادم لبدء التحليل الذكي. الرجاء التحقق من الاتصال بالخادم والمحاولة مرة أخرى.',
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isProcessing = true;
       _processingPhase = 0;
@@ -849,117 +1223,211 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
       }
     });
 
-    // Fire off backend trigger in the background if SignalR is active
-    if (widget.appState.isSignalRConnected) {
-      _triggerBackendJob(targetStep);
-    }
+    // Fire off backend trigger in the background
+    _triggerBackendJob(targetStep);
 
-    // Processing timer acts as a safety timeout. If connected to SignalR, we wait longer
-    // for a backend response before falling back to local mock data.
-    final duration = widget.appState.isSignalRConnected
-        ? const Duration(seconds: 8)
-        : const Duration(milliseconds: 2500);
-
+    // 30-second connection timeout timer
     _processingTimer?.cancel();
-    _processingTimer = Timer(duration, () {
+    _processingTimer = Timer(const Duration(seconds: 30), () {
       if (mounted) {
-        final allMockOutputs = DemoLegalRepository.getMockOutputs(
-          widget.legalCase.title,
-          widget.legalCase.caseNumber,
-          widget.legalCase.court,
-        );
-        final workflowMock = allMockOutputs[widget.workflowType] ?? {};
-        final stepMock = workflowMock[targetStep] ?? {};
-
-        widget.appState.saveDraftStep(
-          widget.legalCase.id,
-          widget.workflowType,
-          targetStep,
-          stepMock,
-        );
-
         setState(() {
           _isProcessing = false;
         });
-
-        _initializeControllers();
-
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text(
-              widget.appState.isSignalRConnected
-                  ? 'تم التحليل الذكي للخطوة بنجاح! ✓ (محاكاة احتياطية)'
-                  : 'تم التحليل الذكي للخطوة بنجاح! ✓',
-              style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+              'انتهت مهلة الاتصال بالخادم. استغرق الخادم وقتاً طويلاً للاستجابة. الرجاء المحاولة مرة أخرى.',
+              style: TextStyle(
+                fontFamily: 'Tajawal',
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            backgroundColor: const Color(0xFF34BF49),
-            duration: const Duration(seconds: 1),
+            backgroundColor: AppColors.danger,
+            duration: Duration(seconds: 3),
           ),
         );
       }
     });
   }
 
+  Future<bool> _confirmWorkflowCost() async {
+    final availablePoints = widget.appState.subscription.aiPoints;
+    final cost = widget.workflow.pointCost;
+    final documents = widget.appState.documentsForCase(widget.legalCase.id);
+
+    if (availablePoints < cost) {
+      final goToSubscription = await showDialog<bool>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          title: const Text(
+            'النقاط غير كافية',
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'رصيدك الحالي $availablePoints نقطة، وتكلفة هذا المسار $cost نقطة. اشحن النقاط قبل التشغيل.',
+            style: const TextStyle(fontFamily: 'Tajawal'),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(false),
+              child: const Text(
+                'إلغاء',
+                style: TextStyle(fontFamily: 'Tajawal'),
+              ),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(true),
+              child: const Text('فتح الاشتراك'),
+            ),
+          ],
+        ),
+      );
+
+      if (goToSubscription == true && mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => SubscriptionScreen(appState: widget.appState),
+          ),
+        );
+      }
+      return false;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        key: const Key('workflow_cost_confirmation'),
+        title: const Text(
+          'تأكيد تشغيل المسار',
+          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'سيتم تشغيل "${widget.workflow.title}" بتكلفة $cost نقطة.',
+              style: const TextStyle(fontFamily: 'Tajawal', height: 1.4),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'السياق المستخدم: ${widget.legalCase.facts.length} وقائع، ${documents.length} مستندات.',
+              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12),
+            ),
+          ],
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal')),
+          ),
+          FilledButton(
+            key: const Key('confirm_workflow_cost_button'),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: const Text('تأكيد التشغيل'),
+          ),
+        ],
+      ),
+    );
+
+    return confirmed == true;
+  }
+
   String? _getStepTypeForWorkflowStep(String workflowType, int stepIndex) {
     switch (workflowType) {
       case 'defense-memo':
         switch (stepIndex) {
-          case 1: return 'FactAnalysis';
-          case 2: return 'GenerateDefenses';
-          case 3: return 'FinalRequirements';
-          case 4: return 'DefenseMemoDraft';
+          case 1:
+            return 'FactAnalysis';
+          case 2:
+            return 'GenerateDefenses';
+          case 3:
+            return 'FinalRequirements';
+          case 4:
+            return 'DefenseMemoDraft';
         }
         break;
       case 'preparing-statement-of-claims':
         switch (stepIndex) {
-          case 1: return 'LawsuitCaseType';
-          case 2: return 'LawsuitParties';
-          case 3: return 'LawsuitSubjects';
-          case 4: return 'LawsuitFacts';
-          case 5: return 'LawsuitLegalBasis';
-          case 6: return 'LawsuitRequests';
-          case 7: return 'StatementOfClaimsDraft';
+          case 1:
+            return 'LawsuitCaseType';
+          case 2:
+            return 'LawsuitParties';
+          case 3:
+            return 'LawsuitSubjects';
+          case 4:
+            return 'LawsuitFacts';
+          case 5:
+            return 'LawsuitLegalBasis';
+          case 6:
+            return 'LawsuitRequests';
+          case 7:
+            return 'StatementOfClaimsDraft';
         }
         break;
       case 'appeal-brief':
         switch (stepIndex) {
-          case 1: return 'AppealBriefJudgmentData';
-          case 2: return 'AppealBriefReasoningAnalysis';
-          case 3: return 'AppealBriefGrounds';
-          case 4: return 'AppealBriefRequests';
-          case 5: return 'AppealBriefLegalBasis';
-          case 6: return 'AppealBriefAssembly';
+          case 1:
+            return 'AppealBriefJudgmentData';
+          case 2:
+            return 'AppealBriefReasoningAnalysis';
+          case 3:
+            return 'AppealBriefGrounds';
+          case 4:
+            return 'AppealBriefRequests';
+          case 5:
+            return 'AppealBriefLegalBasis';
+          case 6:
+            return 'AppealBriefAssembly';
         }
         break;
       case 'admin-complaint':
         switch (stepIndex) {
-          case 1: return 'AdminComplaintClassification';
-          case 2: return 'AdminComplaintFacts';
-          case 3: return 'AdminComplaintViolation';
-          case 4: return 'AdminComplaintRequests';
-          case 5: return 'AdminComplaintAssembly';
+          case 1:
+            return 'AdminComplaintClassification';
+          case 2:
+            return 'AdminComplaintFacts';
+          case 3:
+            return 'AdminComplaintViolation';
+          case 4:
+            return 'AdminComplaintRequests';
+          case 5:
+            return 'AdminComplaintAssembly';
         }
         break;
       case 'ruling-analysis':
         switch (stepIndex) {
-          case 1: return 'RulingAnalysisOperative';
-          case 2: return 'RulingAnalysisReasoning';
-          case 3: return 'RulingAnalysisDefectEvaluation';
-          case 4: return 'RulingAnalysisFeasibilityReport';
+          case 1:
+            return 'RulingAnalysisOperative';
+          case 2:
+            return 'RulingAnalysisReasoning';
+          case 3:
+            return 'RulingAnalysisDefectEvaluation';
+          case 4:
+            return 'RulingAnalysisFeasibilityReport';
         }
         break;
       case 'legal-warning':
         switch (stepIndex) {
-          case 1: return 'LegalWarningClassification';
-          case 2: return 'LegalWarningBodyDraft';
-          case 3: return 'LegalWarningAssembly';
+          case 1:
+            return 'LegalWarningClassification';
+          case 2:
+            return 'LegalWarningBodyDraft';
+          case 3:
+            return 'LegalWarningAssembly';
         }
         break;
       case 'exec-request':
         switch (stepIndex) {
-          case 1: return 'ExecRequestClassification';
-          case 2: return 'ExecRequestDrafting';
-          case 3: return 'ExecRequestAssembly';
+          case 1:
+            return 'ExecRequestClassification';
+          case 2:
+            return 'ExecRequestDrafting';
+          case 3:
+            return 'ExecRequestAssembly';
         }
         break;
     }
@@ -967,13 +1435,35 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
   }
 
   Future<void> _triggerBackendJob(int targetStep) async {
-    final stepType = _getStepTypeForWorkflowStep(widget.workflowType, targetStep);
+    final stepType = _getStepTypeForWorkflowStep(
+      widget.workflowType,
+      targetStep,
+    );
     if (stepType == null) return;
 
     try {
+      final documents = widget.appState.documentsForCase(widget.legalCase.id);
       final inputJson = jsonEncode({
         'caseId': widget.legalCase.id,
+        'caseNumber': widget.legalCase.caseNumber,
+        'caseTitle': widget.legalCase.title,
+        'caseType': widget.legalCase.caseType,
+        'court': widget.legalCase.court,
+        'adversary': widget.legalCase.adversary,
         'caseFacts': widget.legalCase.facts.join('\n'),
+        'selectedFacts': widget.legalCase.facts,
+        'attachedDocuments': documents
+            .map(
+              (document) => {
+                'id': document.id,
+                'title': document.title,
+                'type': document.type,
+                'status': document.status.name,
+                'isAiReady': document.isAiReady,
+              },
+            )
+            .toList(),
+        'pointCost': widget.workflow.pointCost,
       });
 
       final response = await widget.appState.apiService.triggerAiJob(
@@ -996,66 +1486,126 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
 
   String _getFieldLabel(String key) {
     switch (key) {
-      case 'legalFactsSummary': return 'خلاصة الوقائع القانونية المستخلصة';
-      case 'caseType': return 'تصنيف الدعوى';
-      case 'defensesFormal': return 'الدفوع الشكلية والإجرائية';
-      case 'defensesSubstantive': return 'الدفوع الموضوعية';
-      case 'defensesEvidentiary': return 'الدفوع المستندية والأدلة';
-      case 'finalPrayers': return 'الطلب الختامي الموجه للمحكمة';
-      case 'introduction': return 'ديباجة ومقدمة المذكرة';
-      case 'documentText': return 'النص النهائي المنسق بالكامل';
-      case 'caseMainType': return 'نوع الدعوى الرئيسي';
-      case 'caseSubType': return 'تصنيف الدعوى الفرعي';
-      case 'parties': return 'أطراف الخصومة والصفات';
-      case 'subjectTitle': return 'موضوع النزاع الرئيسي';
-      case 'factsNarrative': return 'سرد وقائع النزاع التفصيلية';
-      case 'legalTexts': return 'الأسانيد والمواد القانونية المؤيدة';
-      case 'principalRequests': return 'الطلبات الرئيسية والفرعية المدعى بها';
-      case 'judgmentData': return 'بيانات الحكم الابتدائي المعترض عليه';
-      case 'courtInformation': return 'معلومات محكمة الإصدار وتاريخه';
-      case 'analysis': return 'تحليل تسبيب الحكم وأوجه العوار';
-      case 'grounds': return 'أسباب الطعن القانونية بالنقض/الاستئناف';
-      case 'requests': return 'طلبات الطعن الختامية المرجوة';
-      case 'laws': return 'المواد القانونية المستند إليها في الطعن';
-      case 'fullAppealText': return 'النص الكامل لصحيفة الطعن بالنقض';
-      case 'complaintType': return 'تصنيف الشكوى الإدارية';
-      case 'targetAuthority': return 'الجهة الإدارية المشكو في حقها';
-      case 'factsSummary': return 'سرد الوقائع والأضرار المادية';
-      case 'violations': return 'أوجه القصور والمخالفات الإدارية المنسوبة للقرار';
-      case 'verdictPoints': return 'منطوق الحكم الصادر';
-      case 'verdictSummary': return 'خلاصة منطوق الحكم وعقوبته';
-      case 'reasoningPoints': return 'أسباب الحكم وأسانيده';
-      case 'defects': return 'عيوب التسبيب والثغرات المرصودة بالحكم';
-      case 'isAppealViable': return 'هل تقديم الطعن ذو جدوى وقبول قانوني؟';
-      case 'conclusion': return 'التوصية القانونية النهائية وخلاصة الجدوى';
-      case 'warningType': return 'تصنيف الإنذار الرسمي';
-      case 'legalBasis': return 'الأساس القانوني والتعاقدي للإنذار';
-      case 'warningBody': return 'موضوع الإنذار والمهلة الممنوحة للرد';
-      case 'requestType': return 'تصنيف الطلب التنفيذي';
-      case 'executionGrounds': return 'السند التنفيذي المستند إليه';
-      case 'requestBody': return 'مضمون الطلب التنفيذي والإجراءات المطلوبة';
-      case 'keyArguments': return 'الأسانيد والدفوع المؤيدة للتنفيذ';
-      case 'keyPoints': return 'النقاط الجوهرية والمدد الزمنية للإنذار';
-      case 'name': return 'الاسم';
-      case 'role': return 'الصفة/الدور';
-      case 'lawName': return 'اسم القانون';
-      case 'articleNumber': return 'رقم المادة';
-      case 'requestText': return 'نص الطلب';
-      case 'description': return 'البيان/الوصف';
-      case 'courtName': return 'اسم المحكمة';
-      case 'caseNumber': return 'رقم القضية';
-      case 'subjectFullText': return 'تفاصيل موضوع النزاع';
-      case 'severity': return 'مدى جسامة العيب/الثغرة';
-      case 'appealStrength': return 'قوة فرصة قبول الطعن';
-      case 'recommendedGrounds': return 'أوجه الطعن الموصى بها';
-      case 'urgencyLevel': return 'درجة استعجال الطلب';
-      case 'type': return 'نوع السند/الأساس';
-      case 'obligationDetails': return 'تفاصيل الالتزام المطلوبة';
-      case 'recommendedAction': return 'الإجراء القانوني الموصى به';
-      case 'legalRef': return 'السند القانوني للمخالفة';
-      case 'keyFacts': return 'الوقائع المحورية';
+      case 'legalFactsSummary':
+        return 'خلاصة الوقائع القانونية المستخلصة';
+      case 'caseType':
+        return 'تصنيف الدعوى';
+      case 'defensesFormal':
+        return 'الدفوع الشكلية والإجرائية';
+      case 'defensesSubstantive':
+        return 'الدفوع الموضوعية';
+      case 'defensesEvidentiary':
+        return 'الدفوع المستندية والأدلة';
+      case 'finalPrayers':
+        return 'الطلب الختامي الموجه للمحكمة';
+      case 'introduction':
+        return 'ديباجة ومقدمة المذكرة';
+      case 'documentText':
+        return 'النص النهائي المنسق بالكامل';
+      case 'caseMainType':
+        return 'نوع الدعوى الرئيسي';
+      case 'caseSubType':
+        return 'تصنيف الدعوى الفرعي';
+      case 'parties':
+        return 'أطراف الخصومة والصفات';
+      case 'subjectTitle':
+        return 'موضوع النزاع الرئيسي';
+      case 'factsNarrative':
+        return 'سرد وقائع النزاع التفصيلية';
+      case 'legalTexts':
+        return 'الأسانيد والمواد القانونية المؤيدة';
+      case 'principalRequests':
+        return 'الطلبات الرئيسية والفرعية المدعى بها';
+      case 'judgmentData':
+        return 'بيانات الحكم الابتدائي المعترض عليه';
+      case 'courtInformation':
+        return 'معلومات محكمة الإصدار وتاريخه';
+      case 'analysis':
+        return 'تحليل تسبيب الحكم وأوجه العوار';
+      case 'grounds':
+        return 'أسباب الطعن القانونية بالنقض/الاستئناف';
+      case 'requests':
+        return 'طلبات الطعن الختامية المرجوة';
+      case 'laws':
+        return 'المواد القانونية المستند إليها في الطعن';
+      case 'fullAppealText':
+        return 'النص الكامل لصحيفة الطعن بالنقض';
+      case 'complaintType':
+        return 'تصنيف الشكوى الإدارية';
+      case 'targetAuthority':
+        return 'الجهة الإدارية المشكو في حقها';
+      case 'factsSummary':
+        return 'سرد الوقائع والأضرار المادية';
+      case 'violations':
+        return 'أوجه القصور والمخالفات الإدارية المنسوبة للقرار';
+      case 'verdictPoints':
+        return 'منطوق الحكم الصادر';
+      case 'verdictSummary':
+        return 'خلاصة منطوق الحكم وعقوبته';
+      case 'reasoningPoints':
+        return 'أسباب الحكم وأسانيده';
+      case 'defects':
+        return 'عيوب التسبيب والثغرات المرصودة بالحكم';
+      case 'isAppealViable':
+        return 'هل تقديم الطعن ذو جدوى وقبول قانوني؟';
+      case 'conclusion':
+        return 'التوصية القانونية النهائية وخلاصة الجدوى';
+      case 'warningType':
+        return 'تصنيف الإنذار الرسمي';
+      case 'legalBasis':
+        return 'الأساس القانوني والتعاقدي للإنذار';
+      case 'warningBody':
+        return 'موضوع الإنذار والمهلة الممنوحة للرد';
+      case 'requestType':
+        return 'تصنيف الطلب التنفيذي';
+      case 'executionGrounds':
+        return 'السند التنفيذي المستند إليه';
+      case 'requestBody':
+        return 'مضمون الطلب التنفيذي والإجراءات المطلوبة';
+      case 'keyArguments':
+        return 'الأسانيد والدفوع المؤيدة للتنفيذ';
+      case 'keyPoints':
+        return 'النقاط الجوهرية والمدد الزمنية للإنذار';
+      case 'name':
+        return 'الاسم';
+      case 'role':
+        return 'الصفة/الدور';
+      case 'lawName':
+        return 'اسم القانون';
+      case 'articleNumber':
+        return 'رقم المادة';
+      case 'requestText':
+        return 'نص الطلب';
+      case 'description':
+        return 'البيان/الوصف';
+      case 'courtName':
+        return 'اسم المحكمة';
+      case 'caseNumber':
+        return 'رقم القضية';
+      case 'subjectFullText':
+        return 'تفاصيل موضوع النزاع';
+      case 'severity':
+        return 'مدى جسامة العيب/الثغرة';
+      case 'appealStrength':
+        return 'قوة فرصة قبول الطعن';
+      case 'recommendedGrounds':
+        return 'أوجه الطعن الموصى بها';
+      case 'urgencyLevel':
+        return 'درجة استعجال الطلب';
+      case 'type':
+        return 'نوع السند/الأساس';
+      case 'obligationDetails':
+        return 'تفاصيل الالتزام المطلوبة';
+      case 'recommendedAction':
+        return 'الإجراء القانوني الموصى به';
+      case 'legalRef':
+        return 'السند القانوني للمخالفة';
+      case 'keyFacts':
+        return 'الوقائع المحورية';
       default:
-        return key.replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m[1]}').trim();
+        return key
+            .replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m[1]}')
+            .trim();
     }
   }
 
@@ -1064,7 +1614,8 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final scaffoldBg = isDark ? AppColors.darkBg : const Color(0xFFF0EEE7);
 
-    final stepDefs = DemoLegalRepository.workflowSteps[widget.workflowType] ?? [];
+    final stepDefs =
+        DemoLegalRepository.workflowSteps[widget.workflowType] ?? [];
     final totalSteps = 1 + stepDefs.length;
 
     return Scaffold(
@@ -1117,14 +1668,15 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                   decoration: BoxDecoration(
                     color: widget.appState.isSignalRConnected
                         ? const Color(0xFF34BF49) // vibrant green
-                        : Colors.orange,          // amber/orange for simulated
+                        : Colors.orange, // amber/orange for simulated
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: (widget.appState.isSignalRConnected
-                                ? const Color(0xFF34BF49)
-                                : Colors.orange)
-                            .withOpacity(0.4),
+                        color:
+                            (widget.appState.isSignalRConnected
+                                    ? const Color(0xFF34BF49)
+                                    : Colors.orange)
+                                .withValues(alpha: 0.4),
                         blurRadius: 6,
                         spreadRadius: 2,
                       ),
@@ -1194,13 +1746,21 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
               children: <Widget>[
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0,
+                    vertical: 12.0,
+                  ),
                   child: _buildStepper(context, totalSteps, stepDefs),
                 ),
                 const Divider(height: 1),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 120),
+                    padding: const EdgeInsets.only(
+                      left: 20,
+                      right: 20,
+                      top: 20,
+                      bottom: 120,
+                    ),
                     child: _isProcessing
                         ? _buildProcessingState(context)
                         : _buildStepContent(context, stepDefs),
@@ -1215,11 +1775,17 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
     );
   }
 
-  Widget _buildStepper(BuildContext context, int totalSteps, List<WorkflowStepDef> stepDefs) {
+  Widget _buildStepper(
+    BuildContext context,
+    int totalSteps,
+    List<WorkflowStepDef> stepDefs,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeColor = AppColors.primary;
     final completedColor = const Color(0xFF34BF49);
-    final pendingBgColor = isDark ? const Color(0xFF242424) : const Color(0xFFE4E2DC);
+    final pendingBgColor = isDark
+        ? const Color(0xFF242424)
+        : const Color(0xFFE4E2DC);
     final pendingTextColor = isDark ? Colors.white30 : const Color(0xA6141414);
     final lineColor = isDark ? Colors.white24 : const Color(0x1A1B1B1B);
 
@@ -1240,7 +1806,11 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
           final isActive = _step == stepIndex;
           final isCompleted = _step > stepIndex;
 
-          String title = stepIndex == 0 ? 'البيانات' : (stepDefs.length >= stepIndex ? stepDefs[stepIndex - 1].title : 'خطوة $stepIndex');
+          String title = stepIndex == 0
+              ? 'البيانات'
+              : (stepDefs.length >= stepIndex
+                    ? stepDefs[stepIndex - 1].title
+                    : 'خطوة $stepIndex');
 
           Color circleBg;
           Widget circleChild;
@@ -1248,7 +1818,11 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
 
           if (isCompleted) {
             circleBg = completedColor;
-            circleChild = const Icon(Icons.check, color: Colors.white, size: 12);
+            circleChild = const Icon(
+              Icons.check,
+              color: Colors.white,
+              size: 12,
+            );
             textStyle = TextStyle(
               color: isDark ? AppColors.darkMuted : AppColors.lightMuted,
               fontSize: 10,
@@ -1308,7 +1882,7 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                               color: AppColors.primary.withValues(alpha: 0.2),
                               blurRadius: 6,
                               spreadRadius: 1,
-                            )
+                            ),
                           ]
                         : null,
                   ),
@@ -1340,8 +1914,16 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
       animation: _pulseController,
       builder: (context, child) {
         final shimmerColor = isDark
-            ? Color.lerp(const Color(0xFF1E1D13), const Color(0xFF26251A), _skeletonOpacityAnimation.value)!
-            : Color.lerp(const Color(0xFFFBFBF4), const Color(0xFFF3F1E8), _skeletonOpacityAnimation.value)!;
+            ? Color.lerp(
+                const Color(0xFF1E1D13),
+                const Color(0xFF26251A),
+                _skeletonOpacityAnimation.value,
+              )!
+            : Color.lerp(
+                const Color(0xFFFBFBF4),
+                const Color(0xFFF3F1E8),
+                _skeletonOpacityAnimation.value,
+              )!;
 
         return Column(
           children: [
@@ -1350,7 +1932,9 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                 color: cardBgColor,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isDark ? AppColors.darkBorder : Colors.white.withValues(alpha: 0.6),
+                  color: isDark
+                      ? AppColors.darkBorder
+                      : Colors.white.withValues(alpha: 0.6),
                   width: 1.5,
                 ),
                 boxShadow: [
@@ -1380,7 +1964,9 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: AppColors.primary.withValues(alpha: 0.2),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.2,
+                                  ),
                                   width: 2,
                                 ),
                               ),
@@ -1392,7 +1978,9 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: AppColors.primary.withValues(alpha: 0.08),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.08,
+                                ),
                                 width: 1.5,
                               ),
                             ),
@@ -1407,7 +1995,9 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                                 gradient: AppColors.mainGradient,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.25),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.25,
+                                    ),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
                                   ),
@@ -1427,7 +2017,9 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    _processingPhase == 0 ? 'جاري فحص المستندات والبيانات... 🔍' : 'جاري صياغة الاستنتاجات القانونية... ✍️',
+                    _processingPhase == 0
+                        ? 'جاري فحص المستندات والبيانات... 🔍'
+                        : 'جاري صياغة الاستنتاجات القانونية... ✍️',
                     style: TextStyle(
                       color: textColor,
                       fontSize: 15,
@@ -1454,7 +2046,11 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                         skeletonWidth: 120,
                         isActive: _processingPhase == 0,
                         isCompleted: _processingPhase > 0,
-                        shimmerColor: _processingPhase == 0 ? shimmerColor : (isDark ? const Color(0xFF1E1D13) : const Color(0xFFFBFBF4)),
+                        shimmerColor: _processingPhase == 0
+                            ? shimmerColor
+                            : (isDark
+                                  ? const Color(0xFF1E1D13)
+                                  : const Color(0xFFFBFBF4)),
                       ),
                       const SizedBox(height: 12),
                       Opacity(
@@ -1465,7 +2061,11 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                           skeletonWidth: 150,
                           isActive: _processingPhase == 1,
                           isCompleted: false,
-                          shimmerColor: _processingPhase == 1 ? shimmerColor : (isDark ? const Color(0xFF1E1D13) : const Color(0xFFFBFBF4)),
+                          shimmerColor: _processingPhase == 1
+                              ? shimmerColor
+                              : (isDark
+                                    ? const Color(0xFF1E1D13)
+                                    : const Color(0xFFFBFBF4)),
                         ),
                       ),
                     ],
@@ -1488,7 +2088,9 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
     required Color shimmerColor,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0x1F1B1B1B);
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.05)
+        : const Color(0x1F1B1B1B);
 
     return Container(
       height: 56,
@@ -1507,7 +2109,9 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                 icon,
                 color: isCompleted
                     ? const Color(0xFF34BF49)
-                    : (isActive ? AppColors.primary : Colors.grey.withValues(alpha: 0.5)),
+                    : (isActive
+                          ? AppColors.primary
+                          : Colors.grey.withValues(alpha: 0.5)),
                 size: 20,
               ),
               const SizedBox(width: 12),
@@ -1524,29 +2128,27 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
           if (isActive)
             RotationTransition(
               turns: _rotationController,
-              child: const Icon(
-                Icons.sync,
-                color: AppColors.primary,
-                size: 18,
-              ),
+              child: const Icon(Icons.sync, color: AppColors.primary, size: 18),
             )
           else if (isCompleted)
-            const Icon(
-              Icons.check_circle,
-              color: Color(0xFF34BF49),
-              size: 18,
-            ),
+            const Icon(Icons.check_circle, color: Color(0xFF34BF49), size: 18),
         ],
       ),
     );
   }
 
-  Widget _buildStepContent(BuildContext context, List<WorkflowStepDef> stepDefs) {
+  Widget _buildStepContent(
+    BuildContext context,
+    List<WorkflowStepDef> stepDefs,
+  ) {
     if (_step == 0) {
       return _buildStep1BasicDetails(context);
     }
 
-    final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+    final draft = widget.appState.getOrCreateDraft(
+      widget.legalCase.id,
+      widget.workflowType,
+    );
     final stepOutput = draft.outputs[_step];
     if (stepOutput == null || stepOutput.isEmpty) {
       return const Center(
@@ -1559,13 +2161,19 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
 
     final stepDef = stepDefs.firstWhere(
       (s) => s.index == _step,
-      orElse: () => WorkflowStepDef(index: _step, title: 'الخطوة $_step', description: ''),
+      orElse: () => WorkflowStepDef(
+        index: _step,
+        title: 'الخطوة $_step',
+        description: '',
+      ),
     );
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? AppColors.darkSurface : Colors.white;
     final textMuted = isDark ? AppColors.darkMuted : AppColors.lightMuted;
-    final borderThemeColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final borderThemeColor = isDark
+        ? AppColors.darkBorder
+        : AppColors.lightBorder;
 
     return Container(
       decoration: BoxDecoration(
@@ -1594,18 +2202,30 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                     Expanded(
                       child: Text(
                         stepDef.title,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Tajawal'),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Tajawal',
+                        ),
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         'خطوة $_step من ${stepDefs.length}',
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary, fontFamily: 'Tajawal'),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                          fontFamily: 'Tajawal',
+                        ),
                       ),
                     ),
                   ],
@@ -1613,7 +2233,11 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                 const SizedBox(height: 4),
                 Text(
                   stepDef.description,
-                  style: TextStyle(fontSize: 11, color: textMuted, fontFamily: 'Tajawal'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: textMuted,
+                    fontFamily: 'Tajawal',
+                  ),
                 ),
               ],
             ),
@@ -1626,7 +2250,9 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
               children: <Widget>[
                 Container(
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E1D13) : const Color(0xFFFBFAE8),
+                    color: isDark
+                        ? const Color(0xFF1E1D13)
+                        : const Color(0xFFFBFAE8),
                     borderRadius: BorderRadius.circular(12),
                     border: Border(
                       right: BorderSide(color: AppColors.primary, width: 4),
@@ -1636,7 +2262,11 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      const Icon(Icons.auto_awesome, color: AppColors.primary, size: 18),
+                      const Icon(
+                        Icons.auto_awesome,
+                        color: AppColors.primary,
+                        size: 18,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -1645,7 +2275,9 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                             fontSize: 12,
                             height: 1.5,
                             fontFamily: 'Tajawal',
-                            color: isDark ? Colors.white70 : AppColors.lightText,
+                            color: isDark
+                                ? Colors.white70
+                                : AppColors.lightText,
                           ),
                         ),
                       ),
@@ -1662,7 +2294,11 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                   const SizedBox(height: 16),
                   const Text(
                     'الإجراءات النهائية للمسودة المنجزة',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'Tajawal'),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Tajawal',
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -1672,23 +2308,34 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                           onPressed: () {
                             String copyText = '';
                             stepOutput.forEach((key, val) {
-                              if (key.toLowerCase().contains('text') && val is String) {
+                              if (key.toLowerCase().contains('text') &&
+                                  val is String) {
                                 copyText = val;
                               }
                             });
-                            if (copyText.isEmpty && stepOutput.values.first is String) {
+                            if (copyText.isEmpty &&
+                                stepOutput.values.first is String) {
                               copyText = stepOutput.values.first as String;
                             }
                             Clipboard.setData(ClipboardData(text: copyText));
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('تم نسخ النص النهائي بنجاح! ✓', style: TextStyle(fontFamily: 'Tajawal')),
+                                content: Text(
+                                  'تم نسخ النص النهائي بنجاح! ✓',
+                                  style: TextStyle(fontFamily: 'Tajawal'),
+                                ),
                                 backgroundColor: Color(0xFF34BF49),
                               ),
                             );
                           },
                           icon: const Icon(Icons.copy, size: 16),
-                          label: const Text('نسخ المسودة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                          label: const Text(
+                            'نسخ المسودة',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 12,
+                            ),
+                          ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.primary,
                             side: const BorderSide(color: AppColors.primary),
@@ -1707,13 +2354,23 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                             onPressed: () {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('تم محاكاة تصدير الملف بصيغة PDF وجاري تنزيله... 📄', style: TextStyle(fontFamily: 'Tajawal')),
+                                  content: Text(
+                                    'تم محاكاة تصدير الملف بصيغة PDF وجاري تنزيله... 📄',
+                                    style: TextStyle(fontFamily: 'Tajawal'),
+                                  ),
                                   backgroundColor: AppColors.primary,
                                 ),
                               );
                             },
                             icon: const Icon(Icons.picture_as_pdf, size: 16),
-                            label: const Text('تصدير PDF', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white)),
+                            label: const Text(
+                              'تصدير PDF',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 12,
+                                color: Colors.white,
+                              ),
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,
@@ -1735,14 +2392,21 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
 
   Widget _buildFieldEditor(String key, dynamic value) {
     final label = _getFieldLabel(key);
-    
+
     if (value is bool) {
       return Padding(
         padding: const EdgeInsets.only(bottom: 16.0),
         child: SwitchListTile(
-          title: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'Tajawal')),
+          title: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Tajawal',
+            ),
+          ),
           value: value,
-          activeColor: AppColors.primary,
+          activeThumbColor: AppColors.primary,
           onChanged: (val) => _saveBoolFieldState(key, val),
           contentPadding: EdgeInsets.zero,
         ),
@@ -1753,21 +2417,38 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
     if (controllerVal == null) return const SizedBox.shrink();
 
     if (value is String) {
-      final isLongText = key.toLowerCase().contains('text') || key.toLowerCase().contains('narrative') || key.toLowerCase().contains('analysis') || key.toLowerCase().contains('body');
+      final isLongText =
+          key.toLowerCase().contains('text') ||
+          key.toLowerCase().contains('narrative') ||
+          key.toLowerCase().contains('analysis') ||
+          key.toLowerCase().contains('body');
       return Padding(
         padding: const EdgeInsets.only(bottom: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Tajawal')),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Tajawal',
+              ),
+            ),
             const SizedBox(height: 6),
             TextFormField(
               controller: controllerVal as TextEditingController,
               maxLines: isLongText ? 12 : 4,
               minLines: isLongText ? 6 : 1,
-              style: const TextStyle(fontSize: 13, fontFamily: 'Tajawal', height: 1.4),
+              style: const TextStyle(
+                fontSize: 13,
+                fontFamily: 'Tajawal',
+                height: 1.4,
+              ),
               decoration: InputDecoration(
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 contentPadding: const EdgeInsets.all(12),
               ),
             ),
@@ -1785,9 +2466,20 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Tajawal')),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Tajawal',
+                  ),
+                ),
                 IconButton(
-                  icon: const Icon(Icons.add_circle_outline, color: AppColors.primary, size: 18),
+                  icon: const Icon(
+                    Icons.add_circle_outline,
+                    color: AppColors.primary,
+                    size: 18,
+                  ),
                   onPressed: () => _addListItem(key),
                   tooltip: 'إضافة عنصر جديد',
                 ),
@@ -1804,15 +2496,24 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                         controller: controllerVal[idx],
                         maxLines: 2,
                         minLines: 1,
-                        style: const TextStyle(fontSize: 12, fontFamily: 'Tajawal'),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'Tajawal',
+                        ),
                         decoration: InputDecoration(
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                           contentPadding: const EdgeInsets.all(10),
                         ),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, color: Colors.red, size: 18),
+                      icon: const Icon(
+                        Icons.remove_circle_outline,
+                        color: Colors.red,
+                        size: 18,
+                      ),
                       onPressed: () => _deleteListItem(key, idx),
                     ),
                   ],
@@ -1824,7 +2525,8 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
       );
     }
 
-    if (value is List && controllerVal is List<Map<String, TextEditingController>>) {
+    if (value is List &&
+        controllerVal is List<Map<String, TextEditingController>>) {
       Map<String, String> defaultMapTemplate = {};
       if (value.isNotEmpty && value.first is Map) {
         (value.first as Map).forEach((k, v) {
@@ -1842,9 +2544,20 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Tajawal')),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Tajawal',
+                  ),
+                ),
                 IconButton(
-                  icon: const Icon(Icons.add_circle_outline, color: AppColors.primary, size: 18),
+                  icon: const Icon(
+                    Icons.add_circle_outline,
+                    color: AppColors.primary,
+                    size: 18,
+                  ),
                   onPressed: () => _addMapListItem(key, defaultMapTemplate),
                   tooltip: 'إضافة جديد',
                 ),
@@ -1868,7 +2581,11 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.red, size: 16),
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                              size: 16,
+                            ),
                             onPressed: () => _deleteMapListItem(key, idx),
                           ),
                         ],
@@ -1882,16 +2599,27 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                                 width: 80,
                                 child: Text(
                                   _getFieldLabel(e.key),
-                                  style: const TextStyle(fontSize: 11, fontFamily: 'Tajawal'),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontFamily: 'Tajawal',
+                                  ),
                                 ),
                               ),
                               Expanded(
                                 child: TextFormField(
                                   controller: e.value,
-                                  style: const TextStyle(fontSize: 12, fontFamily: 'Tajawal'),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Tajawal',
+                                  ),
                                   decoration: InputDecoration(
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 6,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1915,7 +2643,14 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Tajawal')),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Tajawal',
+              ),
+            ),
             const SizedBox(height: 6),
             Card(
               elevation: 0,
@@ -1935,16 +2670,27 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                             width: 90,
                             child: Text(
                               _getFieldLabel(e.key),
-                              style: const TextStyle(fontSize: 11, fontFamily: 'Tajawal'),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontFamily: 'Tajawal',
+                              ),
                             ),
                           ),
                           Expanded(
                             child: TextFormField(
                               controller: e.value,
-                              style: const TextStyle(fontSize: 12, fontFamily: 'Tajawal'),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Tajawal',
+                              ),
                               decoration: InputDecoration(
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 6,
+                                ),
                               ),
                             ),
                           ),
@@ -1966,11 +2712,22 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
   Widget _buildStep1BasicDetails(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? AppColors.darkSurface : Colors.white;
-    final borderThemeColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final borderThemeColor = isDark
+        ? AppColors.darkBorder
+        : AppColors.lightBorder;
+    final documents = widget.appState.documentsForCase(widget.legalCase.id);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
+        WorkflowReadinessBanner(
+          legalCase: widget.legalCase,
+          documents: documents,
+          availablePoints: widget.appState.subscription.aiPoints,
+          pointCost: widget.workflow.pointCost,
+          compact: true,
+        ),
+        const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
             color: cardBg,
@@ -1999,10 +2756,22 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
               ),
               const SizedBox(height: 16),
               _buildSummaryField('اسم القضية', widget.legalCase.title, context),
-              _buildSummaryField('رقم القضية', widget.legalCase.caseNumber, context),
-              _buildSummaryField('المحكمة المختصة', widget.legalCase.court, context),
-              if (widget.legalCase.adversary != null)
-                _buildSummaryField('الخصم/المدعى عليه', widget.legalCase.adversary!, context),
+              _buildSummaryField(
+                'رقم القضية',
+                widget.legalCase.caseNumber,
+                context,
+              ),
+              _buildSummaryField(
+                'المحكمة المختصة',
+                widget.legalCase.court,
+                context,
+              ),
+              if (widget.legalCase.adversary.isNotEmpty)
+                _buildSummaryField(
+                  'الخصم/المدعى عليه',
+                  widget.legalCase.adversary,
+                  context,
+                ),
             ],
           ),
         ),
@@ -2035,9 +2804,13 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                     const Center(
                       child: Text(
                         'لا توجد وقائع مسجلة لهذه القضية حالياً.',
-                        style: TextStyle(fontSize: 12, fontFamily: 'Tajawal', color: Colors.grey),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'Tajawal',
+                          color: Colors.grey,
+                        ),
                       ),
-                    )
+                    ),
                   ]
                 : widget.legalCase.facts.map((fact) {
                     return Padding(
@@ -2045,7 +2818,11 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          const Icon(Icons.check_circle, color: Color(0xFF34BF49), size: 14),
+                          const Icon(
+                            Icons.check_circle,
+                            color: Color(0xFF34BF49),
+                            size: 14,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -2053,7 +2830,9 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                               style: TextStyle(
                                 fontSize: 12.5,
                                 height: 1.5,
-                                color: isDark ? Colors.white70 : AppColors.lightText,
+                                color: isDark
+                                    ? Colors.white70
+                                    : AppColors.lightText,
                                 fontFamily: 'Tajawal',
                               ),
                             ),
@@ -2088,51 +2867,58 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  const Icon(Icons.insert_drive_file, color: AppColors.primary, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'تقرير الطب الشرعي الفني المعتمد.pdf',
+            children: documents.isEmpty
+                ? <Widget>[
+                    const Text(
+                      'لا توجد مستندات مرتبطة بهذه القضية حالياً.',
                       style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
                         fontFamily: 'Tajawal',
-                        color: isDark ? Colors.white : AppColors.lightTitle,
+                        color: Colors.grey,
                       ),
                     ),
-                  ),
-                  const Text(
-                    'جاهز للقراءة',
-                    style: TextStyle(fontSize: 11, color: Colors.green, fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: <Widget>[
-                  const Icon(Icons.insert_drive_file, color: AppColors.primary, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'عقد التوريد الموقع وملاحق الأسعار.pdf',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Tajawal',
-                        color: isDark ? Colors.white : AppColors.lightTitle,
+                  ]
+                : documents.map((document) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        children: <Widget>[
+                          const Icon(
+                            Icons.insert_drive_file,
+                            color: AppColors.primary,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              document.title,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Tajawal',
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.lightTitle,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            document.isAiReady
+                                ? 'جاهز للقراءة'
+                                : document.status.label,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: document.isAiReady
+                                  ? Colors.green
+                                  : AppColors.primary,
+                              fontFamily: 'Tajawal',
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                  const Text(
-                    'جاهز للقراءة',
-                    style: TextStyle(fontSize: 11, color: Colors.green, fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ],
+                    );
+                  }).toList(),
           ),
         ),
       ],
@@ -2175,8 +2961,12 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
 
   Widget _buildBottomActionBar(BuildContext context, int totalSteps) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final footerBg = isDark ? AppColors.darkSurface.withValues(alpha: 0.9) : Colors.white.withValues(alpha: 0.95);
-    final borderThemeColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final footerBg = isDark
+        ? AppColors.darkSurface.withValues(alpha: 0.9)
+        : Colors.white.withValues(alpha: 0.95);
+    final borderThemeColor = isDark
+        ? AppColors.darkBorder
+        : AppColors.lightBorder;
 
     return Container(
       height: 80,
@@ -2215,7 +3005,9 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                     : AppColors.primary.withValues(alpha: 0.5),
                 width: 1.5,
               ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             ),
             child: const Row(
@@ -2225,7 +3017,11 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                 SizedBox(width: 6),
                 Text(
                   'السابق',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Tajawal'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Tajawal',
+                  ),
                 ),
               ],
             ),
@@ -2233,13 +3029,21 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
           InkWell(
             onTap: _isProcessing
                 ? null
-                : () {
+                : () async {
                     if (_step == 0) {
+                      final confirmed = await _confirmWorkflowCost();
+                      if (!confirmed || !mounted) {
+                        return;
+                      }
                       _runStepAiAnalysis(1);
                     } else if (_step < totalSteps - 1) {
                       final next = _step + 1;
-                      final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
-                      if (draft.outputs[next] == null || draft.outputs[next]!.isEmpty) {
+                      final draft = widget.appState.getOrCreateDraft(
+                        widget.legalCase.id,
+                        widget.workflowType,
+                      );
+                      if (draft.outputs[next] == null ||
+                          draft.outputs[next]!.isEmpty) {
                         _runStepAiAnalysis(next);
                       } else {
                         setState(() {
@@ -2248,12 +3052,28 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                         _initializeControllers();
                       }
                     } else {
-                      widget.appState.saveDraftStep(widget.legalCase.id, widget.workflowType, _step, 
-                        widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType).outputs[_step] ?? {});
-                      
+                      widget.appState.saveDraftStep(
+                        widget.legalCase.id,
+                        widget.workflowType,
+                        _step,
+                        widget.appState
+                                .getOrCreateDraft(
+                                  widget.legalCase.id,
+                                  widget.workflowType,
+                                )
+                                .outputs[_step] ??
+                            {},
+                      );
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('تم الانتهاء وحفظ مسودة العمل بنجاح! ✓', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                          content: Text(
+                            'تم الانتهاء وحفظ مسودة العمل بنجاح! ✓',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           backgroundColor: Color(0xFF34BF49),
                         ),
                       );
@@ -2274,23 +3094,38 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                     const SizedBox(
                       width: 14,
                       height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     const Text(
                       'جاري التحليل...',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'Tajawal'),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        fontFamily: 'Tajawal',
+                      ),
                     ),
                   ] else ...[
                     Text(
                       _step == 0
                           ? 'بدء التحليل'
                           : (_step == totalSteps - 1 ? 'إنهاء وحفظ' : 'التالي'),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'Tajawal'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        fontFamily: 'Tajawal',
+                      ),
                     ),
                     const SizedBox(width: 6),
                     Icon(
-                      _step == totalSteps - 1 ? Icons.check_circle_outline : Icons.arrow_forward,
+                      _step == totalSteps - 1
+                          ? Icons.check_circle_outline
+                          : Icons.arrow_forward,
                       color: Colors.white,
                       size: 14,
                     ),
@@ -2309,7 +3144,10 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
     showDialog<void>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: const Text('حفظ نسخة كإصدار سابق', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+        title: const Text(
+          'حفظ نسخة كإصدار سابق',
+          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2339,16 +3177,26 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             onPressed: () {
               final label = txtController.text.trim();
-              widget.appState.saveDraftAsSnapshot(widget.legalCase.id, widget.workflowType, label);
+              widget.appState.saveDraftAsSnapshot(
+                widget.legalCase.id,
+                widget.workflowType,
+                label,
+              );
               Navigator.of(dialogCtx).pop();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('تم حفظ النسخة بنجاح في سجل المحفوظات! ✓', style: TextStyle(fontFamily: 'Tajawal')),
+                  content: Text(
+                    'تم حفظ النسخة بنجاح في سجل المحفوظات! ✓',
+                    style: TextStyle(fontFamily: 'Tajawal'),
+                  ),
                   backgroundColor: Color(0xFF34BF49),
                 ),
               );
             },
-            child: const Text('حفظ النسخة', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
+            child: const Text(
+              'حفظ النسخة',
+              style: TextStyle(fontFamily: 'Tajawal', color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -2378,10 +3226,15 @@ class WorkflowHistoryScreen extends StatelessWidget {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final scaffoldBg = isDark ? AppColors.darkBg : const Color(0xFFF0EEE7);
         final listBg = isDark ? AppColors.darkSurface : Colors.white;
-        final borderThemeColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+        final borderThemeColor = isDark
+            ? AppColors.darkBorder
+            : AppColors.lightBorder;
         final textColor = isDark ? Colors.white : AppColors.lightTitle;
 
-        final snapshots = appState.snapshotsForCaseAndWorkflow(caseId, workflowType);
+        final snapshots = appState.snapshotsForCaseAndWorkflow(
+          caseId,
+          workflowType,
+        );
 
         return Scaffold(
           backgroundColor: scaffoldBg,
@@ -2399,11 +3252,20 @@ class WorkflowHistoryScreen extends StatelessWidget {
               children: [
                 const Text(
                   'سجل النسخ السابقة (المحفوظات)',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Tajawal', color: AppColors.primary),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Tajawal',
+                    color: AppColors.primary,
+                  ),
                 ),
                 Text(
                   workflowTitle,
-                  style: TextStyle(fontSize: 10, fontFamily: 'Tajawal', color: isDark ? Colors.white60 : Colors.grey),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontFamily: 'Tajawal',
+                    color: isDark ? Colors.white60 : Colors.grey,
+                  ),
                 ),
               ],
             ),
@@ -2413,31 +3275,51 @@ class WorkflowHistoryScreen extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
-                      const Icon(Icons.history_toggle_off, size: 64, color: Colors.grey),
+                      const Icon(
+                        Icons.history_toggle_off,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'لا توجد نسخ سابقة محفوظة حالياً.',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Tajawal', color: textColor),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Tajawal',
+                          color: textColor,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       const Text(
                         'اضغط على زر الحفظ أثناء تعديل المسودة لأخذ نسخة احتياطية.',
-                        style: TextStyle(fontSize: 12, fontFamily: 'Tajawal', color: Colors.grey),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'Tajawal',
+                          color: Colors.grey,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 24,
+                  ),
                   itemCount: snapshots.length,
                   itemBuilder: (context, index) {
                     final s = snapshots[index];
-                    final dateStr = '${s.createdAt.year}/${s.createdAt.month.toString().padLeft(2, '0')}/${s.createdAt.day.toString().padLeft(2, '0')} - ${s.createdAt.hour.toString().padLeft(2, '0')}:${s.createdAt.minute.toString().padLeft(2, '0')}';
-                    final stepDefs = DemoLegalRepository.workflowSteps[workflowType] ?? [];
+                    final dateStr =
+                        '${s.createdAt.year}/${s.createdAt.month.toString().padLeft(2, '0')}/${s.createdAt.day.toString().padLeft(2, '0')} - ${s.createdAt.hour.toString().padLeft(2, '0')}:${s.createdAt.minute.toString().padLeft(2, '0')}';
+                    final stepDefs =
+                        DemoLegalRepository.workflowSteps[workflowType] ?? [];
                     final stepTitle = s.currentStep == 0
                         ? 'البيانات الأساسية'
-                        : (stepDefs.length >= s.currentStep ? stepDefs[s.currentStep - 1].title : 'الخطوة ${s.currentStep}');
+                        : (stepDefs.length >= s.currentStep
+                              ? stepDefs[s.currentStep - 1].title
+                              : 'الخطوة ${s.currentStep}');
 
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2450,10 +3332,15 @@ class WorkflowHistoryScreen extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: isDark ? Colors.black : Colors.white, width: 2),
+                                border: Border.all(
+                                  color: isDark ? Colors.black : Colors.white,
+                                  width: 2,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.3),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.3,
+                                    ),
                                     blurRadius: 4,
                                     spreadRadius: 1,
                                   ),
@@ -2482,7 +3369,8 @@ class WorkflowHistoryScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
                                       child: Text(
@@ -2496,8 +3384,16 @@ class WorkflowHistoryScreen extends StatelessWidget {
                                       ),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.primary),
-                                      onPressed: () => _showRenameDialog(context, s.id, s.label ?? ''),
+                                      icon: const Icon(
+                                        Icons.edit_outlined,
+                                        size: 16,
+                                        color: AppColors.primary,
+                                      ),
+                                      onPressed: () => _showRenameDialog(
+                                        context,
+                                        s.id,
+                                        s.label ?? '',
+                                      ),
                                       tooltip: 'تعديل التسمية',
                                       constraints: const BoxConstraints(),
                                       padding: EdgeInsets.zero,
@@ -2507,69 +3403,145 @@ class WorkflowHistoryScreen extends StatelessWidget {
                                 const SizedBox(height: 6),
                                 Row(
                                   children: [
-                                    const Icon(Icons.calendar_today_outlined, size: 11, color: Colors.grey),
+                                    const Icon(
+                                      Icons.calendar_today_outlined,
+                                      size: 11,
+                                      color: Colors.grey,
+                                    ),
                                     const SizedBox(width: 6),
                                     Text(
                                       dateStr,
-                                      style: const TextStyle(fontSize: 11, color: Colors.grey, fontFamily: 'Tajawal'),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey,
+                                        fontFamily: 'Tajawal',
+                                      ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.08),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.08,
+                                    ),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
                                     'محفوظ عند: $stepTitle',
-                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary, fontFamily: 'Tajawal'),
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                      fontFamily: 'Tajawal',
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 14),
                                 const Divider(height: 1),
                                 const SizedBox(height: 12),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Row(
                                       children: [
                                         TextButton.icon(
-                                          onPressed: () => _previewSnapshotDocument(context, s, stepTitle),
-                                          icon: const Icon(Icons.remove_red_eye_outlined, size: 14),
-                                          label: const Text('معاينة المستند', style: TextStyle(fontSize: 11, fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                                          onPressed: () =>
+                                              _previewSnapshotDocument(
+                                                context,
+                                                s,
+                                                stepTitle,
+                                              ),
+                                          icon: const Icon(
+                                            Icons.remove_red_eye_outlined,
+                                            size: 14,
+                                          ),
+                                          label: const Text(
+                                            'معاينة المستند',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontFamily: 'Tajawal',
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
                                           style: TextButton.styleFrom(
                                             foregroundColor: AppColors.primary,
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
                                             minimumSize: Size.zero,
-                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                            tapTargetSize: MaterialTapTargetSize
+                                                .shrinkWrap,
                                           ),
                                         ),
                                         const SizedBox(width: 8),
                                         TextButton.icon(
-                                          onPressed: () => _showDeleteConfirmation(context, s.id),
-                                          icon: const Icon(Icons.delete_outline, size: 14, color: Colors.red),
-                                          label: const Text('حذف', style: TextStyle(fontSize: 11, fontFamily: 'Tajawal', color: Colors.red, fontWeight: FontWeight.bold)),
+                                          onPressed: () =>
+                                              _showDeleteConfirmation(
+                                                context,
+                                                s.id,
+                                              ),
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                            size: 14,
+                                            color: Colors.red,
+                                          ),
+                                          label: const Text(
+                                            'حذف',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontFamily: 'Tajawal',
+                                              color: Colors.red,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
                                           style: TextButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
                                             minimumSize: Size.zero,
-                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                            tapTargetSize: MaterialTapTargetSize
+                                                .shrinkWrap,
                                           ),
                                         ),
                                       ],
                                     ),
                                     ElevatedButton(
-                                      onPressed: () => _showRestoreConfirmation(context, s.id),
+                                      onPressed: () => _showRestoreConfirmation(
+                                        context,
+                                        s.id,
+                                      ),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: AppColors.primary,
                                         foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
                                         minimumSize: Size.zero,
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
                                       ),
-                                      child: const Text('استعادة النسخة', style: TextStyle(fontSize: 11, fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                                      child: const Text(
+                                        'استعادة النسخة',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontFamily: 'Tajawal',
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -2586,12 +3558,19 @@ class WorkflowHistoryScreen extends StatelessWidget {
     );
   }
 
-  void _showRenameDialog(BuildContext context, String snapshotId, String currentLabel) {
+  void _showRenameDialog(
+    BuildContext context,
+    String snapshotId,
+    String currentLabel,
+  ) {
     final txtController = TextEditingController(text: currentLabel);
     showDialog<void>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: const Text('تعديل تسمية النسخة', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+        title: const Text(
+          'تعديل تسمية النسخة',
+          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: txtController,
           decoration: const InputDecoration(
@@ -2612,7 +3591,10 @@ class WorkflowHistoryScreen extends StatelessWidget {
               appState.renameSnapshot(snapshotId, newLabel);
               Navigator.of(dialogCtx).pop();
             },
-            child: const Text('حفظ', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
+            child: const Text(
+              'حفظ',
+              style: TextStyle(fontFamily: 'Tajawal', color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -2623,7 +3605,14 @@ class WorkflowHistoryScreen extends StatelessWidget {
     showDialog<void>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: const Text('حذف النسخة المحفوظة', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, color: Colors.red)),
+        title: const Text(
+          'حذف النسخة المحفوظة',
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontWeight: FontWeight.bold,
+            color: Colors.red,
+          ),
+        ),
         content: const Text(
           'هل أنت متأكد من رغبتك في حذف هذه النسخة نهائياً من المحفوظات؟ لا يمكن التراجع عن هذا الإجراء.',
           style: TextStyle(fontFamily: 'Tajawal', fontSize: 13),
@@ -2639,7 +3628,10 @@ class WorkflowHistoryScreen extends StatelessWidget {
               appState.deleteSnapshot(snapshotId);
               Navigator.of(dialogCtx).pop();
             },
-            child: const Text('حذف نهائي', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
+            child: const Text(
+              'حذف نهائي',
+              style: TextStyle(fontFamily: 'Tajawal', color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -2650,7 +3642,10 @@ class WorkflowHistoryScreen extends StatelessWidget {
     showDialog<void>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: const Text('استعادة هذه النسخة', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+        title: const Text(
+          'استعادة هذه النسخة',
+          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+        ),
         content: const Text(
           'هل تريد استعادة هذه النسخة؟ سيؤدي ذلك إلى استبدال مسودتك النشطة الحالية بمحتويات هذه النسخة للبدء منها.',
           style: TextStyle(fontFamily: 'Tajawal', fontSize: 13),
@@ -2665,28 +3660,42 @@ class WorkflowHistoryScreen extends StatelessWidget {
             onPressed: () {
               appState.restoreSnapshot(snapshotId);
               Navigator.of(dialogCtx).pop(); // close dialog
-              Navigator.of(context).pop(); // return to runner screen (which automatically hydrates)
+              Navigator.of(
+                context,
+              ).pop(); // return to runner screen (which automatically hydrates)
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('تم استعادة النسخة المحددة بنجاح ومتابعة العمل! ✓', style: TextStyle(fontFamily: 'Tajawal')),
+                  content: Text(
+                    'تم استعادة النسخة المحددة بنجاح ومتابعة العمل! ✓',
+                    style: TextStyle(fontFamily: 'Tajawal'),
+                  ),
                   backgroundColor: Color(0xFF34BF49),
                 ),
               );
             },
-            child: const Text('تأكيد الاستعادة', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
+            child: const Text(
+              'تأكيد الاستعادة',
+              style: TextStyle(fontFamily: 'Tajawal', color: Colors.white),
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _previewSnapshotDocument(BuildContext context, WorkflowSnapshot s, String stepTitle) {
+  void _previewSnapshotDocument(
+    BuildContext context,
+    WorkflowSnapshot s,
+    String stepTitle,
+  ) {
     String previewContent = '';
     for (int step = s.currentStep; step >= 0; step--) {
       final out = s.outputs[step];
       if (out != null) {
         out.forEach((key, val) {
-          if (key.toLowerCase().contains('text') && val is String && previewContent.isEmpty) {
+          if (key.toLowerCase().contains('text') &&
+              val is String &&
+              previewContent.isEmpty) {
             previewContent = val;
           }
         });
@@ -2713,7 +3722,11 @@ class WorkflowHistoryScreen extends StatelessWidget {
             Expanded(
               child: Text(
                 s.label ?? 'معاينة النسخة',
-                style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 14),
+                style: const TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ),
             IconButton(
@@ -2736,7 +3749,12 @@ class WorkflowHistoryScreen extends StatelessWidget {
               children: [
                 Text(
                   'المستوى المحفوظ عنده: $stepTitle',
-                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 11,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Container(
@@ -2747,7 +3765,11 @@ class WorkflowHistoryScreen extends StatelessWidget {
                   ),
                   child: Text(
                     previewContent,
-                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, height: 1.5),
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 12,
+                      height: 1.5,
+                    ),
                   ),
                 ),
               ],

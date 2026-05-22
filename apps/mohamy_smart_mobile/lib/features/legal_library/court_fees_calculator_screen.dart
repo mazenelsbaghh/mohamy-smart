@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_card.dart';
@@ -7,7 +9,8 @@ class CourtFeesCalculatorScreen extends StatefulWidget {
   const CourtFeesCalculatorScreen({super.key});
 
   @override
-  State<CourtFeesCalculatorScreen> createState() => _CourtFeesCalculatorScreenState();
+  State<CourtFeesCalculatorScreen> createState() =>
+      _CourtFeesCalculatorScreenState();
 }
 
 class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
@@ -31,7 +34,8 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
   // Treasury-specific inputs
   final _collectedAmountController = TextEditingController(text: '1200');
   final _principalAmountController = TextEditingController(text: '1000');
-  String _treasuryKind = 'family-same'; // 'family-same', 'partial', 'relative-services', 'accounting-money'
+  String _treasuryKind =
+      'family-same'; // 'family-same', 'partial', 'relative-services', 'accounting-money'
   final _treasuryExecutionCountController = TextEditingController(text: '1');
 
   // Maintenance-specific inputs
@@ -51,7 +55,8 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
   // Judgment announcement inputs
   final _judgmentRollsController = TextEditingController(text: '2');
   final _judgmentRecipientsController = TextEditingController(text: '2');
-  String _judgmentKind = 'partial'; // 'partial', 'civil-appeal', 'cassation-state'
+  String _judgmentKind =
+      'partial'; // 'partial', 'civil-appeal', 'cassation-state'
 
   // Certificate inputs
   final _certificateCountController = TextEditingController(text: '1');
@@ -67,7 +72,8 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
   bool _officialCopyStakeholder = true;
 
   // Civil Unknown inputs
-  String _civilUnknownKind = 'fixed-partial'; // 'fixed-partial', 'urgent-partial', 'fixed-total', 'appeal-urgent-partial', etc.
+  String _civilUnknownKind =
+      'fixed-partial'; // 'fixed-partial', 'urgent-partial', 'fixed-total', 'appeal-urgent-partial', etc.
 
   CourtFeesResult? _result;
 
@@ -98,7 +104,6 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
     setState(() {
       final amount = double.tryParse(_amountController.text) ?? 0.0;
       final years = double.tryParse(_yearsController.text) ?? 0.0;
-      final count = double.tryParse(_countController.text) ?? 0.0;
 
       switch (_selectedToolId) {
         case 'civil-known':
@@ -129,17 +134,21 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
           break;
         case 'treasury-supply':
           _result = CourtFeesEngine.calculateTreasurySupply(
-            treasuryCollectedAmount: double.tryParse(_collectedAmountController.text) ?? 0.0,
-            treasuryPrincipalAmount: double.tryParse(_principalAmountController.text) ?? 0.0,
+            treasuryCollectedAmount:
+                double.tryParse(_collectedAmountController.text) ?? 0.0,
+            treasuryPrincipalAmount:
+                double.tryParse(_principalAmountController.text) ?? 0.0,
             treasuryKind: _treasuryKind,
-            treasuryExecutionCount: double.tryParse(_treasuryExecutionCountController.text) ?? 0.0,
+            treasuryExecutionCount:
+                double.tryParse(_treasuryExecutionCountController.text) ?? 0.0,
           );
           break;
         case 'maintenance-arrears':
           _result = CourtFeesEngine.calculateMaintenanceArrears(
             maintenanceFrom: _maintenanceFromController.text,
             maintenanceTo: _maintenanceToController.text,
-            maintenanceMonthlyAmount: double.tryParse(_monthlyAmountController.text) ?? 0.0,
+            maintenanceMonthlyAmount:
+                double.tryParse(_monthlyAmountController.text) ?? 0.0,
             maintenanceMode: _maintenanceMode,
           );
           break;
@@ -151,31 +160,39 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
           break;
         case 'simple-warning':
           _result = CourtFeesEngine.calculateSimpleWarning(
-            warningDefendants: double.tryParse(_warningDefendantsController.text) ?? 0.0,
+            warningDefendants:
+                double.tryParse(_warningDefendantsController.text) ?? 0.0,
             warningRolls: double.tryParse(_warningRollsController.text) ?? 0.0,
             warningLinkedDefendants: _warningLinkedDefendants,
           );
           break;
         case 'judgment-announcement':
           _result = CourtFeesEngine.calculateJudgmentAnnouncement(
-            judgmentRolls: double.tryParse(_judgmentRollsController.text) ?? 0.0,
-            judgmentRecipients: double.tryParse(_judgmentRecipientsController.text) ?? 0.0,
+            judgmentRolls:
+                double.tryParse(_judgmentRollsController.text) ?? 0.0,
+            judgmentRecipients:
+                double.tryParse(_judgmentRecipientsController.text) ?? 0.0,
             judgmentKind: _judgmentKind,
           );
           break;
         case 'certificate':
           _result = CourtFeesEngine.calculateCertificate(
-            certificateCount: double.tryParse(_certificateCountController.text) ?? 0.0,
-            certificateYears: double.tryParse(_certificateYearsController.text) ?? 0.0,
-            certificatePersons: double.tryParse(_certificatePersonsController.text) ?? 0.0,
+            certificateCount:
+                double.tryParse(_certificateCountController.text) ?? 0.0,
+            certificateYears:
+                double.tryParse(_certificateYearsController.text) ?? 0.0,
+            certificatePersons:
+                double.tryParse(_certificatePersonsController.text) ?? 0.0,
             includeCertifiedPaper: _includeCertifiedPaper,
             certificateStakeholder: _certificateStakeholder,
           );
           break;
         case 'official-copy':
           _result = CourtFeesEngine.calculateOfficialCopy(
-            officialCopyPapers: double.tryParse(_officialCopyPapersController.text) ?? 0.0,
-            officialCopyCount: double.tryParse(_officialCopyCountController.text) ?? 0.0,
+            officialCopyPapers:
+                double.tryParse(_officialCopyPapersController.text) ?? 0.0,
+            officialCopyCount:
+                double.tryParse(_officialCopyCountController.text) ?? 0.0,
             includeOfficialCertifiedPaper: _includeOfficialCertifiedPaper,
             officialCopyStakeholder: _officialCopyStakeholder,
           );
@@ -187,7 +204,6 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final themeTokens = Theme.of(context).extension<MohamyThemeTokens>()!;
 
     final toolsList = [
       {'id': 'civil-known', 'title': 'دعوى مدني معلومة القيمة'},
@@ -222,14 +238,16 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
                   Text(
                     'نوع الرسم القضائي',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.primaryBronze,
-                        ),
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primaryBronze,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     value: _selectedToolId,
-                    dropdownColor: isDark ? AppColors.darkSurface : Colors.white,
+                    dropdownColor: isDark
+                        ? AppColors.darkSurface
+                        : Colors.white,
                     decoration: const InputDecoration(
                       labelText: 'اختر نوع الرسم لإجراء الحساب',
                     ),
@@ -261,9 +279,9 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
                   Text(
                     'معطيات الحساب',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.primaryBronze,
-                        ),
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primaryBronze,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   ..._buildDynamicFormFields(isDark),
@@ -296,14 +314,17 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.receipt_long_outlined, color: AppColors.primary, size: 28),
+                        const Icon(
+                          Icons.receipt_long_outlined,
+                          color: AppColors.primary,
+                          size: 28,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _result!.title,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w900),
                           ),
                         ),
                       ],
@@ -322,12 +343,17 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.gavel_outlined, color: AppColors.primary),
+                            const Icon(
+                              Icons.gavel_outlined,
+                              color: AppColors.primary,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'الاختصاص القضائي: ${_result!.jurisdiction}',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ],
@@ -338,9 +364,14 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
                     // Total Paid highlight
                     if (_result!.totalPaid != null) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 12,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryBronze.withValues(alpha: 0.08),
+                          color: AppColors.primaryBronze.withValues(
+                            alpha: 0.08,
+                          ),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
@@ -348,7 +379,10 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
                           children: [
                             const Text(
                               'إجمالي المبلغ المطلوب دفعه:',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                             Text(
                               '${_result!.totalPaid!.toStringAsFixed(2)} ج.م',
@@ -367,8 +401,8 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
                     Text(
                       'تفاصيل الرسوم والضرائب:',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
 
@@ -383,7 +417,9 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
                               fee.label,
                               style: TextStyle(
                                 color: fee.tone == 'muted' ? Colors.grey : null,
-                                fontWeight: fee.tone == 'muted' ? null : FontWeight.bold,
+                                fontWeight: fee.tone == 'muted'
+                                    ? null
+                                    : FontWeight.bold,
                               ),
                             ),
                             Text(
@@ -405,8 +441,8 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
                       Text(
                         'ملخصات الحساب:',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       ..._result!.summaries.map((sum) {
@@ -415,12 +451,17 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(sum.label, style: const TextStyle(color: Colors.grey)),
+                              Text(
+                                sum.label,
+                                style: const TextStyle(color: Colors.grey),
+                              ),
                               Text(
                                 sum.value,
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: sum.tone == 'success' ? AppColors.success : null,
+                                  color: sum.tone == 'success'
+                                      ? AppColors.success
+                                      : null,
                                 ),
                               ),
                             ],
@@ -437,12 +478,19 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.info_outline, size: 16, color: Colors.grey),
+                            const Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 note,
-                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ),
                           ],
@@ -488,7 +536,9 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
           DropdownButtonFormField<String>(
             value: _civilUnknownKind,
             dropdownColor: isDark ? AppColors.darkSurface : Colors.white,
-            decoration: const InputDecoration(labelText: 'نوع الدعوى مجهولة القيمة'),
+            decoration: const InputDecoration(
+              labelText: 'نوع الدعوى مجهولة القيمة',
+            ),
             items: unknownOptions.map((opt) {
               return DropdownMenuItem<String>(
                 value: opt['id'],
@@ -517,11 +567,16 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
           DropdownButtonFormField<String>(
             value: _executionScope,
             dropdownColor: isDark ? AppColors.darkSurface : Colors.white,
-            decoration: const InputDecoration(labelText: 'جهة التنفيذ / الاختصاص'),
+            decoration: const InputDecoration(
+              labelText: 'جهة التنفيذ / الاختصاص',
+            ),
             items: const [
               DropdownMenuItem(value: 'partial', child: Text('تنفيذ جزئي')),
               DropdownMenuItem(value: 'total', child: Text('تنفيذ كلي')),
-              DropdownMenuItem(value: 'sharia', child: Text('تنفيذ شرعي / أسرة')),
+              DropdownMenuItem(
+                value: 'sharia',
+                child: Text('تنفيذ شرعي / أسرة'),
+              ),
             ],
             onChanged: (val) {
               if (val != null) setState(() => _executionScope = val);
@@ -553,14 +608,16 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
             value: _includeExecutionPowerOfAttorney,
             activeColor: AppColors.primary,
             contentPadding: EdgeInsets.zero,
-            onChanged: (val) => setState(() => _includeExecutionPowerOfAttorney = val),
+            onChanged: (val) =>
+                setState(() => _includeExecutionPowerOfAttorney = val),
           ),
           SwitchListTile(
             title: const Text('تشمل دمغة الشهيد'),
             value: _includeExecutionMartyrStamp,
             activeColor: AppColors.primary,
             contentPadding: EdgeInsets.zero,
-            onChanged: (val) => setState(() => _includeExecutionMartyrStamp = val),
+            onChanged: (val) =>
+                setState(() => _includeExecutionMartyrStamp = val),
           ),
         ];
 
@@ -587,10 +644,18 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
           DropdownButtonFormField<String>(
             value: _interestNature,
             dropdownColor: isDark ? AppColors.darkSurface : Colors.white,
-            decoration: const InputDecoration(labelText: 'طبيعة الفائدة القانونية'),
+            decoration: const InputDecoration(
+              labelText: 'طبيعة الفائدة القانونية',
+            ),
             items: const [
-              DropdownMenuItem(value: 'civil', child: Text('مدنية (بواقع 4% سنوياً)')),
-              DropdownMenuItem(value: 'sharia', child: Text('شرعية / أسرة (بدون فوائد)')),
+              DropdownMenuItem(
+                value: 'civil',
+                child: Text('مدنية (بواقع 4% سنوياً)'),
+              ),
+              DropdownMenuItem(
+                value: 'sharia',
+                child: Text('شرعية / أسرة (بدون فوائد)'),
+              ),
             ],
             onChanged: (val) {
               if (val != null) setState(() => _interestNature = val);
@@ -706,8 +771,14 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
             dropdownColor: isDark ? AppColors.darkSurface : Colors.white,
             decoration: const InputDecoration(labelText: 'طريقة اقتطاع الرسوم'),
             items: const [
-              DropdownMenuItem(value: 'total', child: Text('مضافة على قيمة الوديعة')),
-              DropdownMenuItem(value: 'deducted', child: Text('مقتطعة من أصل الوديعة')),
+              DropdownMenuItem(
+                value: 'total',
+                child: Text('مضافة على قيمة الوديعة'),
+              ),
+              DropdownMenuItem(
+                value: 'deducted',
+                child: Text('مقتطعة من أصل الوديعة'),
+              ),
             ],
             onChanged: (val) {
               if (val != null) setState(() => _depositMode = val);
@@ -748,7 +819,10 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
         final judgmentOptions = [
           {'id': 'partial', 'label': 'حكم جزئي'},
           {'id': 'civil-appeal', 'label': 'حكم كلي أو مدني مستأنف'},
-          {'id': 'cassation-state', 'label': 'حكم استئناف أو نقض أو مجلس الدولة'},
+          {
+            'id': 'cassation-state',
+            'label': 'حكم استئناف أو نقض أو مجلس الدولة',
+          },
         ];
         return [
           TextField(
@@ -855,7 +929,8 @@ class _CourtFeesCalculatorScreenState extends State<CourtFeesCalculatorScreen> {
             value: _includeOfficialCertifiedPaper,
             activeColor: AppColors.primary,
             contentPadding: EdgeInsets.zero,
-            onChanged: (val) => setState(() => _includeOfficialCertifiedPaper = val),
+            onChanged: (val) =>
+                setState(() => _includeOfficialCertifiedPaper = val),
           ),
           SwitchListTile(
             title: const Text('النسخة لصاحب شأن مباشر'),

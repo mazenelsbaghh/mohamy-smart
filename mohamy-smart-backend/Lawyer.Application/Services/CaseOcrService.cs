@@ -40,7 +40,7 @@ namespace Lawyer.Application.Services
         private readonly IAiPointAccountingService _pointAccounting;
         private readonly PromptTemplateCache _promptCache;
         private readonly IVirusScannerService? _virusScanner;
-        private const int GenerateCasePointCost = 1;
+
 
         // Upload constraints (defense in depth alongside controller-level checks)
         private const int MaxFileCount = 200;
@@ -378,13 +378,14 @@ namespace Lawyer.Application.Services
 				return ApiExceptionResponse.Unauthorized<CaseExtractionResultDto>("تعذر تحديد حساب المحامي لاستخدام الذكاء الاصطناعي.");
 			}
 
+			var cost = _pointAccounting.ResolvePointCost(AiStepType.Ocr);
 			var balanceResult = await _pointAccounting.GetCurrentBalanceAsync(chargeLawyerId.Value, cancellationToken);
 			if (!balanceResult.Succeeded || balanceResult.Data == null)
 			{
 				return Result<CaseExtractionResultDto>.Error(balanceResult.StatusCode, balanceResult.Message);
 			}
 
-			if (balanceResult.Data.Available < GenerateCasePointCost)
+			if (cost > 0 && balanceResult.Data.Available < cost)
 			{
 				return Result<CaseExtractionResultDto>.Error(
 					HttpStatusCode.PaymentRequired,
@@ -458,7 +459,7 @@ namespace Lawyer.Application.Services
 						Type = typeNames?.FirstOrDefault() ?? string.Empty,
 					};
 
-					var fallbackChargeResult = await ChargeGenerateCasePointAsync(chargeLawyerId.Value, cancellationToken);
+					var fallbackChargeResult = await ChargeGenerateCasePointAsync(chargeLawyerId.Value, cost, cancellationToken);
 					if (!fallbackChargeResult.Succeeded)
 					{
 						return Result<CaseExtractionResultDto>.Error(fallbackChargeResult.StatusCode, fallbackChargeResult.Message);
@@ -473,7 +474,7 @@ namespace Lawyer.Application.Services
 
 				_logger.LogInformation("Case JSON generated successfully");
 
-				var caseChargeResult = await ChargeGenerateCasePointAsync(chargeLawyerId.Value, cancellationToken);
+				var caseChargeResult = await ChargeGenerateCasePointAsync(chargeLawyerId.Value, cost, cancellationToken);
 				if (!caseChargeResult.Succeeded)
 				{
 					return Result<CaseExtractionResultDto>.Error(caseChargeResult.StatusCode, caseChargeResult.Message);
@@ -499,16 +500,20 @@ namespace Lawyer.Application.Services
 			return lawyer?.Id;
 		}
 
-		private Task<Result<AiPointBalanceDto>> ChargeGenerateCasePointAsync(Guid lawyerId, CancellationToken cancellationToken)
+		private Task<Result<AiPointBalanceDto>> ChargeGenerateCasePointAsync(Guid lawyerId, int cost, CancellationToken cancellationToken)
 		{
+			var message = cost == 0
+				? "تم تحليل المستند وإنشاء بيانات القضية بنجاح دون خصم أي نقاط."
+				: $"تم خصم {cost} نقاط بعد تحليل المستند وإنشاء بيانات القضية بنجاح.";
+
 			return _pointAccounting.ChargeSuccessfulDirectActionAsync(
 				lawyerId,
 				AiStepType.Ocr,
-				GenerateCasePointCost,
+				cost,
 				null,
 				"ocr-generate-case",
 				null,
-				"تم خصم نقطة واحدة بعد تحليل المستند وإنشاء بيانات القضية بنجاح.",
+				message,
 				cancellationToken);
 		}
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../app/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/models/legal_models.dart';
+import '../../core/widgets/state_view.dart';
 import 'ocr_review_screen.dart';
 
 class DocumentsScreen extends StatefulWidget {
@@ -16,109 +18,141 @@ class DocumentsScreen extends StatefulWidget {
 
 class _DocumentsScreenState extends State<DocumentsScreen> {
   String _searchQuery = '';
+  ScreenStateInfo? _uploadState;
 
-  Future<void> _handleUpload(BuildContext context) async {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Center(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            margin: const EdgeInsets.symmetric(horizontal: 40),
-            decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFF242424)
-                  : Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: (Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : const Color(0xFFD9C3AE))
-                    .withValues(alpha: 0.15),
-              ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x1A000000),
-                  blurRadius: 24,
-                  offset: Offset(0, 12),
-                ),
-              ],
-            ),
-            child: const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(color: AppColors.primary),
-                SizedBox(height: 20),
-                Text(
-                  'جاري رفع المستند واستخراج النصوص بالذكاء الاصطناعي...',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Tajawal',
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+  Future<void> _handleUpload() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf', 'png', 'jpg', 'jpeg'],
+      withData: true,
     );
 
-    // Dummy 1x1 transparent PNG bytes
-    final List<int> dummyPngBytes = [
-      137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1,
-      0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196, 137, 0, 0, 0, 13, 73, 68, 65, 84,
-      120, 94, 99, 96, 0, 0, 0, 2, 0, 1, 73, 175, 168, 142, 0, 0, 0, 0, 73, 69,
-      78, 68, 174, 66, 96, 130
-    ];
-    final String filename = 'document_scan.png';
+    if (!mounted) {
+      return;
+    }
 
-    String extractedText =
-        'المستند المرفق هو عقد توريد وتركيب مواد كهربائية وانشائية مؤرخ في ٢٠ مايو ٢٠٢٦م، محرر بين شركة النور للتجارة والتوريدات (طرف أول) ومؤسسة العمار للمقاولات (طرف ثاني)، بقيمة إجمالية قدرها ١٥٠,٠٠٠ ريال سعودي. المحكمة التجارية بالرياض هي الجهة القضائية المتفق عليها لتسوية النزاعات.';
+    if (result == null || result.files.isEmpty) {
+      setState(() {
+        _uploadState = const ScreenStateInfo(
+          status: ScreenLoadStatus.idle,
+          message: 'تم إلغاء اختيار الملف. يمكنك اختيار مستند عند الحاجة.',
+        );
+      });
+      return;
+    }
+
+    final file = result.files.single;
+    final extension = (file.extension ?? file.name.split('.').last)
+        .toLowerCase();
+    const allowedExtensions = {'pdf', 'png', 'jpg', 'jpeg'};
+    if (!allowedExtensions.contains(extension)) {
+      setState(() {
+        _uploadState = const ScreenStateInfo(
+          status: ScreenLoadStatus.error,
+          message: 'نوع الملف غير مدعوم. استخدم PDF أو PNG أو JPG.',
+          retryLabel: 'اختيار ملف آخر',
+        );
+      });
+      return;
+    }
+
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      setState(() {
+        _uploadState = const ScreenStateInfo(
+          status: ScreenLoadStatus.error,
+          message: 'تعذر قراءة الملف المحدد من الجهاز.',
+          retryLabel: 'اختيار ملف آخر',
+        );
+      });
+      return;
+    }
+
+    setState(() {
+      _uploadState = ScreenStateInfo(
+        status: ScreenLoadStatus.loading,
+        message: 'جار رفع ${file.name} واستخراج النصوص',
+      );
+    });
+
+    String? extractedText;
+    bool success = false;
 
     try {
       final response = await widget.appState.apiService.uploadOcrImage(
-        dummyPngBytes,
-        filename,
+        bytes,
+        file.name,
       );
-      final List<dynamic>? dataList = response['data'] as List<dynamic>?;
-      if (dataList != null && dataList.isNotEmpty) {
-        extractedText = dataList[0].toString();
+      if (response['succeeded'] == true) {
+        extractedText = _extractOcrText(response['data']);
+        if (extractedText != null && extractedText.trim().isNotEmpty) {
+          success = true;
+        }
       }
     } catch (e) {
       debugPrint('Error uploading OCR image: $e');
-      // Fallback is already initialized to the defaults
-    } finally {
+    }
+
+    if (!success || extractedText == null || extractedText.isEmpty) {
       if (mounted) {
-        Navigator.of(context).pop(); // dismiss loading dialog
+        setState(() {
+          _uploadState = const ScreenStateInfo(
+            status: ScreenLoadStatus.error,
+            message:
+                'فشل رفع المستند أو استخراج النص. تحقق من الاتصال وحاول مرة أخرى.',
+            retryLabel: 'إعادة المحاولة',
+          );
+        });
       }
+      return;
     }
 
     if (mounted) {
-      // Create a temporary LegalDocument
+      setState(() {
+        _uploadState = const ScreenStateInfo(
+          status: ScreenLoadStatus.ready,
+          message: 'تم استخراج النص بنجاح. راجع المستند قبل استخدامه في قضية.',
+        );
+      });
+
+      final now = DateTime.now();
       final newDoc = LegalDocument(
         id: 'doc_${DateTime.now().millisecondsSinceEpoch}',
-        title: 'مستند ممسوح ضوئياً ${DateTime.now().hour}:${DateTime.now().minute}',
-        type: 'عقد توريد',
-        dateLabel: '٢١ مايو ٢٠٢٦',
+        title: file.name,
+        type: extension.toUpperCase(),
+        dateLabel:
+            '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
         status: DocumentStatus.ready,
         isAiReady: true,
       );
 
-      // Navigate to OcrReviewScreen
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => OcrReviewScreen(
             document: newDoc,
             appState: widget.appState,
             extractedText: extractedText,
+            imageBytes: bytes,
+            fileType: extension,
           ),
         ),
       );
     }
+  }
+
+  String? _extractOcrText(dynamic data) {
+    if (data is String) {
+      return data;
+    }
+    if (data is List && data.isNotEmpty) {
+      return data.first?.toString();
+    }
+    if (data is Map<String, dynamic>) {
+      return data['text']?.toString() ??
+          data['content']?.toString() ??
+          data['extractedText']?.toString();
+    }
+    return null;
   }
 
   Widget _buildDocThumbnail(String type, bool isDark) {
@@ -130,7 +164,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         color: isDark ? const Color(0xFF242424) : const Color(0xFFF5F3EB),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.15),
+          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(
+            alpha: 0.15,
+          ),
         ),
       ),
       child: Stack(
@@ -142,13 +178,29 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(width: 32, height: 3, color: isDark ? Colors.white30 : Colors.black26),
+                Container(
+                  width: 32,
+                  height: 3,
+                  color: isDark ? Colors.white30 : Colors.black26,
+                ),
                 const SizedBox(height: 5),
-                Container(width: 44, height: 3, color: isDark ? Colors.white12 : Colors.black12),
+                Container(
+                  width: 44,
+                  height: 3,
+                  color: isDark ? Colors.white12 : Colors.black12,
+                ),
                 const SizedBox(height: 5),
-                Container(width: 40, height: 3, color: isDark ? Colors.white12 : Colors.black12),
+                Container(
+                  width: 40,
+                  height: 3,
+                  color: isDark ? Colors.white12 : Colors.black12,
+                ),
                 const SizedBox(height: 5),
-                Container(width: 24, height: 3, color: isDark ? Colors.white12 : Colors.black12),
+                Container(
+                  width: 24,
+                  height: 3,
+                  color: isDark ? Colors.white12 : Colors.black12,
+                ),
               ],
             ),
           ),
@@ -183,8 +235,14 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                   bottomRight: Radius.circular(4),
                 ),
                 border: Border(
-                  bottom: BorderSide(color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.15)),
-                  right: BorderSide(color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.15)),
+                  bottom: BorderSide(
+                    color: (isDark ? Colors.white : const Color(0xFFD9C3AE))
+                        .withValues(alpha: 0.15),
+                  ),
+                  right: BorderSide(
+                    color: (isDark ? Colors.white : const Color(0xFFD9C3AE))
+                        .withValues(alpha: 0.15),
+                  ),
                 ),
               ),
             ),
@@ -209,7 +267,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           color: isDark ? const Color(0xFF242424) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: (isDark ? Colors.white24 : const Color(0xFFD9C3AE)).withValues(alpha: 0.3),
+            color: (isDark ? Colors.white24 : const Color(0xFFD9C3AE))
+                .withValues(alpha: 0.3),
           ),
           boxShadow: const [
             BoxShadow(
@@ -226,10 +285,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -242,7 +298,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF0EEE7),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : const Color(0xFFF0EEE7),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -269,16 +327,22 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
 
     switch (document.status) {
       case DocumentStatus.ready:
-        statusBgColor = isDark ? const Color(0x2934BF49) : const Color(0x1F34BF49);
+        statusBgColor = isDark
+            ? const Color(0x2934BF49)
+            : const Color(0x1F34BF49);
         statusTextColor = AppColors.success;
         break;
       case DocumentStatus.processing:
       case DocumentStatus.uploading:
-        statusBgColor = isDark ? const Color(0x29EF950A) : const Color(0x1FEF950A);
+        statusBgColor = isDark
+            ? const Color(0x29EF950A)
+            : const Color(0x1FEF950A);
         statusTextColor = AppColors.primary;
         break;
       case DocumentStatus.failed:
-        statusBgColor = isDark ? const Color(0x29CA0000) : const Color(0x1ACA0000);
+        statusBgColor = isDark
+            ? const Color(0x29CA0000)
+            : const Color(0x1ACA0000);
         statusTextColor = AppColors.danger;
         break;
     }
@@ -287,10 +351,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => OcrReviewScreen(
-              document: document,
-              appState: widget.appState,
-            ),
+            builder: (_) =>
+                OcrReviewScreen(document: document, appState: widget.appState),
           ),
         );
       },
@@ -301,11 +363,15 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           color: cardBg,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.1),
+            color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(
+              alpha: 0.1,
+            ),
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF885200).withValues(alpha: isDark ? 0.01 : 0.03),
+              color: const Color(
+                0xFF885200,
+              ).withValues(alpha: isDark ? 0.01 : 0.03),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),
@@ -331,14 +397,14 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                   const SizedBox(height: 6),
                   Text(
                     'تاريخ الإضافة: ${document.dateLabel}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: mutedText,
-                    ),
+                    style: TextStyle(fontSize: 11, color: mutedText),
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: statusBgColor,
                       borderRadius: BorderRadius.circular(8),
@@ -360,7 +426,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF242424) : const Color(0xFFF0EEE7),
+                color: isDark
+                    ? const Color(0xFF242424)
+                    : const Color(0xFFF0EEE7),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -396,9 +464,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         .where((d) => d.status == DocumentStatus.ready)
         .length;
     final processingCount = widget.appState.documents
-        .where((d) =>
-            d.status == DocumentStatus.processing ||
-            d.status == DocumentStatus.uploading)
+        .where(
+          (d) =>
+              d.status == DocumentStatus.processing ||
+              d.status == DocumentStatus.uploading,
+        )
         .length;
 
     return Scaffold(
@@ -410,7 +480,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       ),
       floatingActionButtonLocation: const OffsetStartFloatLocation(),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _handleUpload(context),
+        onPressed: _handleUpload,
         shape: const CircleBorder(),
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -428,7 +498,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               ),
             ],
           ),
-          child: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 28),
+          child: const Icon(
+            Icons.qr_code_scanner,
+            color: Colors.white,
+            size: 28,
+          ),
         ),
       ),
       body: ListView(
@@ -449,12 +523,16 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             children: [
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: cardBg,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.1),
+                      color: (isDark ? Colors.white : const Color(0xFFD9C3AE))
+                          .withValues(alpha: 0.1),
                     ),
                   ),
                   child: Row(
@@ -465,7 +543,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                           color: AppColors.success.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.check_circle_outline, color: AppColors.success, size: 20),
+                        child: const Icon(
+                          Icons.check_circle_outline,
+                          color: AppColors.success,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Column(
@@ -495,12 +577,16 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: cardBg,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.1),
+                      color: (isDark ? Colors.white : const Color(0xFFD9C3AE))
+                          .withValues(alpha: 0.1),
                     ),
                   ),
                   child: Row(
@@ -511,7 +597,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                           color: AppColors.primary.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.settings_backup_restore, color: AppColors.primary, size: 20),
+                        child: const Icon(
+                          Icons.settings_backup_restore,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Column(
@@ -551,15 +641,18 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
               decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.white.withValues(alpha: 0.5),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.02)
+                    : Colors.white.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Column(
                 children: [
                   ShaderMask(
-                    shaderCallback: (bounds) => AppColors.goldGradient.createShader(
-                      Rect.fromLTWH(0, 0, bounds.width, bounds.height),
-                    ),
+                    shaderCallback: (bounds) =>
+                        AppColors.goldGradient.createShader(
+                          Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+                        ),
                     child: const Icon(
                       Icons.cloud_upload_outlined,
                       size: 40,
@@ -569,18 +662,12 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                   const SizedBox(height: 12),
                   const Text(
                     'ارفع مستنداً جديداً للتحليل الفوري',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'تصوير المستندات بكاميرا الهاتف أو اختيار ملف من جهازك',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: mutedText,
-                    ),
+                    style: TextStyle(fontSize: 11, color: mutedText),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -589,14 +676,14 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                     children: [
                       _buildUploadActionChip(
                         icon: Icons.camera_alt_outlined,
-                        label: 'تصوير مستند 📸',
-                        onTap: () => _handleUpload(context),
+                        label: 'تصوير مستند',
+                        onTap: _handleUpload,
                       ),
                       const SizedBox(width: 12),
                       _buildUploadActionChip(
                         icon: Icons.upload_file_outlined,
                         label: 'رفع ملف',
-                        onTap: () => _handleUpload(context),
+                        onTap: _handleUpload,
                       ),
                     ],
                   ),
@@ -615,6 +702,16 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               ),
             ),
           ),
+          if (_uploadState != null) ...<Widget>[
+            const SizedBox(height: 14),
+            MohamyStateView(
+              compact: true,
+              state: _uploadState!,
+              onAction: _uploadState!.status == ScreenLoadStatus.error
+                  ? _handleUpload
+                  : null,
+            ),
+          ],
           const SizedBox(height: 24),
 
           // Search Field
@@ -633,10 +730,15 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                   color: isDark ? const Color(0xFF242424) : Colors.white,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.2),
+                    color: (isDark ? Colors.white : const Color(0xFFD9C3AE))
+                        .withValues(alpha: 0.2),
                   ),
                 ),
-                child: const Icon(Icons.tune, color: AppColors.primary, size: 18),
+                child: const Icon(
+                  Icons.tune,
+                  color: AppColors.primary,
+                  size: 18,
+                ),
               ),
             ),
           ),
@@ -667,7 +769,13 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             ...filteredDocuments.map(
               (document) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _buildDocumentCard(context, document, isDark, cardBg, mutedText),
+                child: _buildDocumentCard(
+                  context,
+                  document,
+                  isDark,
+                  cardBg,
+                  mutedText,
+                ),
               ),
             ),
         ],
@@ -677,18 +785,12 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
 }
 
 class _DashedRectPainter extends CustomPainter {
-  _DashedRectPainter({
-    required this.color,
-    this.strokeWidth = 1.4,
-    this.gap = 6.0,
-    this.dashLength = 6.0,
-    this.borderRadius = 20.0,
-  });
+  _DashedRectPainter({required this.color, this.borderRadius = 20.0});
 
   final Color color;
-  final double strokeWidth;
-  final double gap;
-  final double dashLength;
+  final double strokeWidth = 1.4;
+  final double gap = 6.0;
+  final double dashLength = 6.0;
   final double borderRadius;
 
   @override
@@ -699,10 +801,12 @@ class _DashedRectPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Radius.circular(borderRadius),
-      ));
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+          Radius.circular(borderRadius),
+        ),
+      );
 
     final pathMetrics = path.computeMetrics();
     for (final metric in pathMetrics) {
@@ -714,10 +818,7 @@ class _DashedRectPainter extends CustomPainter {
             ? distance + length
             : metric.length;
 
-        canvas.drawPath(
-          metric.extractPath(start, end),
-          paint,
-        );
+        canvas.drawPath(metric.extractPath(start, end), paint);
         distance += length + gap;
       }
     }

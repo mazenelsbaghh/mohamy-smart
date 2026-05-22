@@ -5,7 +5,9 @@ import '../../core/models/legal_models.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/legal_cards.dart';
+import '../../core/widgets/state_view.dart';
 import '../ai_workflows/ai_workflow_screens.dart';
+import '../documents/documents_screen.dart';
 import '../subscription/subscription_screen.dart';
 
 class CaseDetailsScreen extends StatelessWidget {
@@ -28,7 +30,9 @@ class CaseDetailsScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: scaffoldBg,
         appBar: AppBar(
-          backgroundColor: isDark ? AppColors.darkSurface.withValues(alpha: 0.8) : AppColors.lightSurfaceMuted.withValues(alpha: 0.8),
+          backgroundColor: isDark
+              ? AppColors.darkSurface.withValues(alpha: 0.8)
+              : AppColors.lightSurfaceMuted.withValues(alpha: 0.8),
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_forward), // RTL Back button
@@ -66,7 +70,9 @@ class CaseDetailsScreen extends StatelessWidget {
                   insets: EdgeInsets.symmetric(horizontal: 48),
                 ),
                 labelColor: AppColors.primary,
-                unselectedLabelColor: isDark ? AppColors.darkMuted : AppColors.lightMuted,
+                unselectedLabelColor: isDark
+                    ? AppColors.darkMuted
+                    : AppColors.lightMuted,
                 labelStyle: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -117,7 +123,9 @@ class CaseDetailsScreen extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : Colors.white.withValues(alpha: 0.6),
+          color: isDark
+              ? AppColors.darkBorder
+              : Colors.white.withValues(alpha: 0.6),
           width: 1.5,
         ),
         boxShadow: [
@@ -152,7 +160,10 @@ class CaseDetailsScreen extends StatelessWidget {
                     color: AppColors.primary.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(99),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
@@ -220,7 +231,10 @@ class CaseDetailsScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
@@ -233,11 +247,7 @@ class CaseDetailsScreen extends StatelessWidget {
                               ),
                             ),
                             SizedBox(width: 6),
-                            Icon(
-                              Icons.bolt,
-                              color: Colors.white,
-                              size: 16,
-                            ),
+                            Icon(Icons.bolt, color: Colors.white, size: 16),
                           ],
                         ),
                       ),
@@ -248,7 +258,9 @@ class CaseDetailsScreen extends StatelessWidget {
                         Icon(
                           Icons.schedule,
                           size: 13,
-                          color: isDark ? AppColors.darkMuted : AppColors.lightMuted,
+                          color: isDark
+                              ? AppColors.darkMuted
+                              : AppColors.lightMuted,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -257,7 +269,9 @@ class CaseDetailsScreen extends StatelessWidget {
                               : 'آخر تحديث: مؤخراً',
                           style: TextStyle(
                             fontSize: 10,
-                            color: isDark ? AppColors.darkMuted : AppColors.lightMuted,
+                            color: isDark
+                                ? AppColors.darkMuted
+                                : AppColors.lightMuted,
                           ),
                         ),
                       ],
@@ -308,7 +322,9 @@ class CaseDetailsScreen extends StatelessWidget {
 
   Widget _buildInfoGridItem(BuildContext context, String label, String value) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final containerBg = isDark ? AppColors.darkSurfaceSoft : const Color(0xFFF6F4EC);
+    final containerBg = isDark
+        ? AppColors.darkSurfaceSoft
+        : const Color(0xFFF6F4EC);
     final textColor = isDark ? Colors.white : AppColors.lightTitle;
     final mutedColor = isDark ? AppColors.darkMuted : AppColors.lightMuted;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
@@ -380,11 +396,7 @@ class CaseDetailsScreen extends StatelessWidget {
             children: <Widget>[
               const Row(
                 children: <Widget>[
-                  Icon(
-                    Icons.menu_book,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
+                  Icon(Icons.menu_book, color: AppColors.primary, size: 20),
                   SizedBox(width: 8),
                   Text(
                     'وقائع القضية',
@@ -397,7 +409,11 @@ class CaseDetailsScreen extends StatelessWidget {
                 ],
               ),
               IconButton(
-                icon: const Icon(Icons.edit, color: AppColors.primary, size: 18),
+                icon: const Icon(
+                  Icons.edit,
+                  color: AppColors.primary,
+                  size: 18,
+                ),
                 onPressed: () {},
                 style: IconButton.styleFrom(
                   backgroundColor: AppColors.primary.withValues(alpha: 0.08),
@@ -415,11 +431,7 @@ class CaseDetailsScreen extends StatelessWidget {
             child: SingleChildScrollView(
               child: Text(
                 legalCase.facts.join('\n\n'),
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 15,
-                  height: 1.8,
-                ),
+                style: TextStyle(color: textColor, fontSize: 15, height: 1.8),
               ),
             ),
           ),
@@ -437,15 +449,20 @@ class CaseDetailsScreen extends StatelessWidget {
     // Custom recommendations based on case
     String recommendation;
     if (legalCase.id == 'case-4') {
-      recommendation = 'يُفضل إرفاق شهادة من مصلحة الضرائب العقارية لتعزيز دفع انتفاء الحيازة الهادئة.';
+      recommendation =
+          'يُفضل إرفاق شهادة من مصلحة الضرائب العقارية لتعزيز دفع انتفاء الحيازة الهادئة.';
     } else if (legalCase.id == 'case-1') {
-      recommendation = 'يُنصح بتقديم إثبات الدفع للدفعة المقدمة لتقوية موقفك ضد المورد.';
+      recommendation =
+          'يُنصح بتقديم إثبات الدفع للدفعة المقدمة لتقوية موقفك ضد المورد.';
     } else if (legalCase.id == 'case-2') {
-      recommendation = 'يُنصح بطلب ندب خبير فني لمراجعة شروط عقد الوكالة الحصري.';
+      recommendation =
+          'يُنصح بطلب ندب خبير فني لمراجعة شروط عقد الوكالة الحصري.';
     } else if (legalCase.id == 'case-3') {
-      recommendation = 'يُفضل التحقق من صحة الرقم الموحد للسند قبل التقديم لمحكمة التنفيذ.';
+      recommendation =
+          'يُفضل التحقق من صحة الرقم الموحد للسند قبل التقديم لمحكمة التنفيذ.';
     } else {
-      recommendation = 'يُنصح بمراجعة المستندات المرفقة وتحديث وقائع القضية لتقديم تحليل أدق.';
+      recommendation =
+          'يُنصح بمراجعة المستندات المرفقة وتحديث وقائع القضية لتقديم تحليل أدق.';
     }
 
     return Container(
@@ -458,11 +475,7 @@ class CaseDetailsScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Icon(
-            Icons.auto_awesome,
-            color: AppColors.primary,
-            size: 20,
-          ),
+          const Icon(Icons.auto_awesome, color: AppColors.primary, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -502,13 +515,21 @@ class CaseDetailsScreen extends StatelessWidget {
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final workflow = workflows[index];
-        final type = workflow.id.startsWith('workflow-defense-') ? 'defense-memo' :
-                     workflow.id.startsWith('workflow-claim-') ? 'preparing-statement-of-claims' :
-                     workflow.id.startsWith('workflow-appeal-') ? 'appeal-brief' :
-                     workflow.id.startsWith('workflow-complaint-') ? 'admin-complaint' :
-                     workflow.id.startsWith('workflow-ruling-') ? 'ruling-analysis' :
-                     workflow.id.startsWith('workflow-warning-') ? 'legal-warning' :
-                     workflow.id.startsWith('workflow-execution-') ? 'exec-request' : 'defense-memo';
+        final type = workflow.id.startsWith('workflow-defense-')
+            ? 'defense-memo'
+            : workflow.id.startsWith('workflow-claim-')
+            ? 'preparing-statement-of-claims'
+            : workflow.id.startsWith('workflow-appeal-')
+            ? 'appeal-brief'
+            : workflow.id.startsWith('workflow-complaint-')
+            ? 'admin-complaint'
+            : workflow.id.startsWith('workflow-ruling-')
+            ? 'ruling-analysis'
+            : workflow.id.startsWith('workflow-warning-')
+            ? 'legal-warning'
+            : workflow.id.startsWith('workflow-execution-')
+            ? 'exec-request'
+            : 'defense-memo';
         return WorkflowCard(
           workflow: workflow,
           canRun: points >= workflow.pointCost,
@@ -537,12 +558,10 @@ class CaseDetailsScreen extends StatelessWidget {
     );
   }
 
-
   // 4. Summary Tab (Packaging Sessions, Documents, and Readiness)
   Widget _buildSummaryTab(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : AppColors.lightTitle;
-    final mutedTextColor = isDark ? AppColors.darkMuted : AppColors.lightMuted;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
     final points = appState.subscription.aiPoints;
 
@@ -603,21 +622,28 @@ class CaseDetailsScreen extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            TextButton(
-              onPressed: () {},
-              child: const Text('إضافة مستند'),
-            ),
+            TextButton(onPressed: () {}, child: const Text('إضافة مستند')),
           ],
         ),
         const SizedBox(height: 8),
         if (documents.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text(
-              'لا توجد مستندات مرفقة حالياً.',
-              style: TextStyle(color: mutedTextColor, fontSize: 13),
-              textAlign: CenterPlayable.center,
+          MohamyStateView(
+            compact: true,
+            icon: Icons.description_outlined,
+            title: 'لا توجد مستندات مرفقة',
+            state: const ScreenStateInfo(
+              status: ScreenLoadStatus.empty,
+              message:
+                  'ارفع العقد، الحكم، أو أي مرفق مرتبط بالقضية حتى يظهر في سياق التحليل الذكي.',
+              retryLabel: 'رفع مستند',
             ),
+            onAction: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => DocumentsScreen(appState: appState),
+                ),
+              );
+            },
           )
         else
           ...documents.map(
@@ -639,20 +665,25 @@ class CaseDetailsScreen extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            TextButton(
-              onPressed: () {},
-              child: const Text('إضافة موعد'),
-            ),
+            TextButton(onPressed: () {}, child: const Text('إضافة موعد')),
           ],
         ),
         const SizedBox(height: 8),
         if (agenda.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text(
-              'لا توجد جلسات مجدولة.',
-              style: TextStyle(color: mutedTextColor, fontSize: 13),
+          MohamyStateView(
+            compact: true,
+            icon: Icons.event_note_outlined,
+            title: 'لا توجد جلسات مجدولة',
+            state: const ScreenStateInfo(
+              status: ScreenLoadStatus.empty,
+              message:
+                  'أضف جلسة أو موعد متابعة حتى تظهر التزامات القضية في ملخص الملف.',
+              retryLabel: 'فتح الأجندة',
             ),
+            onAction: () {
+              appState.setSelectedTab(3);
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
           )
         else
           ...agenda.map(
@@ -665,7 +696,11 @@ class CaseDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReadinessRow(BuildContext context, {required String label, required bool ready}) {
+  Widget _buildReadinessRow(
+    BuildContext context, {
+    required String label,
+    required bool ready,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -678,18 +713,10 @@ class CaseDetailsScreen extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
           ),
         ],
       ),
     );
   }
-}
-
-// Helper alignment wrapper to avoid external dependencies
-class CenterPlayable {
-  static const TextAlign center = TextAlign.center;
 }

@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 import 'dart:math';
 
 enum HeirType {
@@ -139,8 +141,14 @@ class InheritanceEngine {
     HeirType.SON: [HeirType.SON_OF_SON, HeirType.DAUGHTER_OF_SON],
     HeirType.SON_OF_SON: [HeirType.DAUGHTER_OF_SON],
     HeirType.FATHER: [HeirType.GRANDFATHER_PATERNAL],
-    HeirType.MOTHER: [HeirType.GRANDMOTHER_PATERNAL, HeirType.GRANDMOTHER_MATERNAL],
-    HeirType.FULL_BROTHER: [HeirType.PATERNAL_HALF_BROTHER, HeirType.PATERNAL_HALF_SISTER],
+    HeirType.MOTHER: [
+      HeirType.GRANDMOTHER_PATERNAL,
+      HeirType.GRANDMOTHER_MATERNAL,
+    ],
+    HeirType.FULL_BROTHER: [
+      HeirType.PATERNAL_HALF_BROTHER,
+      HeirType.PATERNAL_HALF_SISTER,
+    ],
     HeirType.FULL_SISTER: [HeirType.PATERNAL_HALF_SISTER],
     HeirType.PATERNAL_HALF_BROTHER: [HeirType.PATERNAL_HALF_SISTER],
   };
@@ -186,7 +194,8 @@ class InheritanceEngine {
   }
 
   static bool _hasMaleDescendants(List<HeirInput> heirs) {
-    return _hasHeirType(heirs, HeirType.SON) || _hasHeirType(heirs, HeirType.SON_OF_SON);
+    return _hasHeirType(heirs, HeirType.SON) ||
+        _hasHeirType(heirs, HeirType.SON_OF_SON);
   }
 
   static int _countSiblings(List<HeirInput> heirs) {
@@ -274,10 +283,7 @@ class InheritanceEngine {
           HeirType.NEPHEW_PATERNAL,
         ]);
       } else if (_hasHeirType(heirs, HeirType.PATERNAL_HALF_SISTER)) {
-        blocked.addAll([
-          HeirType.UNCLE_PATERNAL,
-          HeirType.NEPHEW_PATERNAL,
-        ]);
+        blocked.addAll([HeirType.UNCLE_PATERNAL, HeirType.NEPHEW_PATERNAL]);
       }
     }
 
@@ -301,14 +307,16 @@ class InheritanceEngine {
       final basis = desc
           ? 'الربع لوجود الفرع الوارث — النساء: ١٢'
           : 'النصف لعدم وجود الفرع الوارث — النساء: ١٢';
-      shares.add(_FractionalShare(
-        heirType: HeirType.HUSBAND,
-        count: 1,
-        fraction: fraction,
-        fractionLabel: label,
-        shareType: 'fard',
-        legalBasis: basis,
-      ));
+      shares.add(
+        _FractionalShare(
+          heirType: HeirType.HUSBAND,
+          count: 1,
+          fraction: fraction,
+          fractionLabel: label,
+          shareType: 'fard',
+          legalBasis: basis,
+        ),
+      );
     }
 
     if (hasWife) {
@@ -318,39 +326,46 @@ class InheritanceEngine {
       final basis = desc
           ? 'الثمن لوجود الفرع الوارث — النساء: ١٢'
           : 'الربع لعدم وجود الفرع الوارث — النساء: ١١';
-      shares.add(_FractionalShare(
-        heirType: HeirType.WIFE,
-        count: wifeCount,
-        fraction: fraction,
-        fractionLabel: label,
-        shareType: 'fard',
-        legalBasis: basis,
-      ));
+      shares.add(
+        _FractionalShare(
+          heirType: HeirType.WIFE,
+          count: wifeCount,
+          fraction: fraction,
+          fractionLabel: label,
+          shareType: 'fard',
+          legalBasis: basis,
+        ),
+      );
     }
 
     if (hasFather) {
       if (desc) {
-        shares.add(_FractionalShare(
-          heirType: HeirType.FATHER,
-          count: 1,
-          fraction: 1 / 6,
-          fractionLabel: '1/6',
-          shareType: 'fard',
-          legalBasis: 'السدس مع الفرع الوارث — النساء: ١١',
-        ));
+        shares.add(
+          _FractionalShare(
+            heirType: HeirType.FATHER,
+            count: 1,
+            fraction: 1 / 6,
+            fractionLabel: '1/6',
+            shareType: 'fard',
+            legalBasis: 'السدس مع الفرع الوارث — النساء: ١١',
+          ),
+        );
       }
     }
 
-    if (!hasFather && _hasHeirType(activeHeirs, HeirType.GRANDFATHER_PATERNAL)) {
+    if (!hasFather &&
+        _hasHeirType(activeHeirs, HeirType.GRANDFATHER_PATERNAL)) {
       if (desc) {
-        shares.add(_FractionalShare(
-          heirType: HeirType.GRANDFATHER_PATERNAL,
-          count: 1,
-          fraction: 1 / 6,
-          fractionLabel: '1/6',
-          shareType: 'fard',
-          legalBasis: 'السدس مع الفرع الوارث (يقوم مقام الأب) — النساء: ١١',
-        ));
+        shares.add(
+          _FractionalShare(
+            heirType: HeirType.GRANDFATHER_PATERNAL,
+            count: 1,
+            fraction: 1 / 6,
+            fractionLabel: '1/6',
+            shareType: 'fard',
+            legalBasis: 'السدس مع الفرع الوارث (يقوم مقام الأب) — النساء: ١١',
+          ),
+        );
       }
     }
 
@@ -361,7 +376,8 @@ class InheritanceEngine {
 
       // Umariyyatain check: (Husband or Wife) + Mother + Father and no other heirs
       // Note: activeHeirs.length == 3 is a simplified check that matches the TS implementation
-      final umariyyatain = (hasHusband || hasWife) && hasFather && activeHeirs.length == 3;
+      final umariyyatain =
+          (hasHusband || hasWife) && hasFather && activeHeirs.length == 3;
 
       if (umariyyatain) {
         motherFraction = 1 / 3;
@@ -378,14 +394,16 @@ class InheritanceEngine {
         motherBasis = 'الثلث لعدم وجود الفرع أو الإخوة — النساء: ١١';
       }
 
-      shares.add(_FractionalShare(
-        heirType: HeirType.MOTHER,
-        count: 1,
-        fraction: motherFraction,
-        fractionLabel: motherLabel,
-        shareType: 'fard',
-        legalBasis: motherBasis,
-      ));
+      shares.add(
+        _FractionalShare(
+          heirType: HeirType.MOTHER,
+          count: 1,
+          fraction: motherFraction,
+          fractionLabel: motherLabel,
+          shareType: 'fard',
+          legalBasis: motherBasis,
+        ),
+      );
     }
 
     final List<HeirType> grandmothers = [];
@@ -399,14 +417,16 @@ class InheritanceEngine {
     if (grandmothers.isNotEmpty && !hasMother) {
       for (final gm in grandmothers) {
         final cnt = _getHeirCount(activeHeirs, gm);
-        shares.add(_FractionalShare(
-          heirType: gm,
-          count: cnt,
-          fraction: 1 / 6,
-          fractionLabel: '1/6',
-          shareType: 'fard',
-          legalBasis: 'السدس للجدة في عدم الأم — النساء: ١١',
-        ));
+        shares.add(
+          _FractionalShare(
+            heirType: gm,
+            count: cnt,
+            fraction: 1 / 6,
+            fractionLabel: '1/6',
+            shareType: 'fard',
+            legalBasis: 'السدس للجدة في عدم الأم — النساء: ١١',
+          ),
+        );
       }
     }
 
@@ -414,23 +434,27 @@ class InheritanceEngine {
         !_hasHeirType(activeHeirs, HeirType.SON)) {
       final daughterCount = _getHeirCount(activeHeirs, HeirType.DAUGHTER);
       if (daughterCount == 1) {
-        shares.add(_FractionalShare(
-          heirType: HeirType.DAUGHTER,
-          count: 1,
-          fraction: 1 / 2,
-          fractionLabel: '1/2',
-          shareType: 'fard',
-          legalBasis: 'النصف للبنت الواحدة — النساء: ١١',
-        ));
+        shares.add(
+          _FractionalShare(
+            heirType: HeirType.DAUGHTER,
+            count: 1,
+            fraction: 1 / 2,
+            fractionLabel: '1/2',
+            shareType: 'fard',
+            legalBasis: 'النصف للبنت الواحدة — النساء: ١١',
+          ),
+        );
       } else if (daughterCount >= 2) {
-        shares.add(_FractionalShare(
-          heirType: HeirType.DAUGHTER,
-          count: daughterCount,
-          fraction: 2 / 3,
-          fractionLabel: '2/3',
-          shareType: 'fard',
-          legalBasis: 'الثلثان للبنتين فأكثر — النساء: ١١',
-        ));
+        shares.add(
+          _FractionalShare(
+            heirType: HeirType.DAUGHTER,
+            count: daughterCount,
+            fraction: 2 / 3,
+            fractionLabel: '2/3',
+            shareType: 'fard',
+            legalBasis: 'الثلثان للبنتين فأكثر — النساء: ١١',
+          ),
+        );
       }
     }
 
@@ -442,35 +466,41 @@ class InheritanceEngine {
 
       if (!hasDaughter) {
         if (dosCount == 1) {
-          shares.add(_FractionalShare(
-            heirType: HeirType.DAUGHTER_OF_SON,
-            count: 1,
-            fraction: 1 / 2,
-            fractionLabel: '1/2',
-            shareType: 'fard',
-            legalBasis: 'النصف لبنت الابن مع عدم وجود بنت — النساء: ١١',
-          ));
+          shares.add(
+            _FractionalShare(
+              heirType: HeirType.DAUGHTER_OF_SON,
+              count: 1,
+              fraction: 1 / 2,
+              fractionLabel: '1/2',
+              shareType: 'fard',
+              legalBasis: 'النصف لبنت الابن مع عدم وجود بنت — النساء: ١١',
+            ),
+          );
         } else if (dosCount >= 2) {
-          shares.add(_FractionalShare(
-            heirType: HeirType.DAUGHTER_OF_SON,
-            count: dosCount,
-            fraction: 2 / 3,
-            fractionLabel: '2/3',
-            shareType: 'fard',
-            legalBasis: 'الثلثان لبنتي الابن فأكثر — النساء: ١١',
-          ));
+          shares.add(
+            _FractionalShare(
+              heirType: HeirType.DAUGHTER_OF_SON,
+              count: dosCount,
+              fraction: 2 / 3,
+              fractionLabel: '2/3',
+              shareType: 'fard',
+              legalBasis: 'الثلثان لبنتي الابن فأكثر — النساء: ١١',
+            ),
+          );
         }
       } else {
         final daughterCount = _getHeirCount(activeHeirs, HeirType.DAUGHTER);
         if (daughterCount == 1) {
-          shares.add(_FractionalShare(
-            heirType: HeirType.DAUGHTER_OF_SON,
-            count: dosCount,
-            fraction: 1 / 6,
-            fractionLabel: '1/6',
-            shareType: 'fard',
-            legalBasis: 'السدس تكملة الثلثين مع البنت — النساء: ١١',
-          ));
+          shares.add(
+            _FractionalShare(
+              heirType: HeirType.DAUGHTER_OF_SON,
+              count: dosCount,
+              fraction: 1 / 6,
+              fractionLabel: '1/6',
+              shareType: 'fard',
+              legalBasis: 'السدس تكملة الثلثين مع البنت — النساء: ١١',
+            ),
+          );
         }
       }
     }
@@ -482,69 +512,91 @@ class InheritanceEngine {
           !_hasHeirType(activeHeirs, HeirType.FULL_BROTHER)) {
         final fsCount = _getHeirCount(activeHeirs, HeirType.FULL_SISTER);
         if (fsCount == 1) {
-          shares.add(_FractionalShare(
-            heirType: HeirType.FULL_SISTER,
-            count: 1,
-            fraction: 1 / 2,
-            fractionLabel: '1/2',
-            shareType: 'fard',
-            legalBasis: 'النصف للأخت الشقيقة — النساء: ١١',
-          ));
+          shares.add(
+            _FractionalShare(
+              heirType: HeirType.FULL_SISTER,
+              count: 1,
+              fraction: 1 / 2,
+              fractionLabel: '1/2',
+              shareType: 'fard',
+              legalBasis: 'النصف للأخت الشقيقة — النساء: ١١',
+            ),
+          );
         } else if (fsCount >= 2) {
-          shares.add(_FractionalShare(
-            heirType: HeirType.FULL_SISTER,
-            count: fsCount,
-            fraction: 2 / 3,
-            fractionLabel: '2/3',
-            shareType: 'fard',
-            legalBasis: 'الثلثان للأختين الشقيقتين فأكثر — النساء: ١١',
-          ));
+          shares.add(
+            _FractionalShare(
+              heirType: HeirType.FULL_SISTER,
+              count: fsCount,
+              fraction: 2 / 3,
+              fractionLabel: '2/3',
+              shareType: 'fard',
+              legalBasis: 'الثلثان للأختين الشقيقتين فأكثر — النساء: ١١',
+            ),
+          );
         }
       }
 
       if (_hasHeirType(activeHeirs, HeirType.PATERNAL_HALF_SISTER) &&
           !_hasHeirType(activeHeirs, HeirType.PATERNAL_HALF_BROTHER)) {
-        final phsCount = _getHeirCount(activeHeirs, HeirType.PATERNAL_HALF_SISTER);
+        final phsCount = _getHeirCount(
+          activeHeirs,
+          HeirType.PATERNAL_HALF_SISTER,
+        );
         final hasFullSister = _hasHeirType(activeHeirs, HeirType.FULL_SISTER);
-        final fullSisterCount = _getHeirCount(activeHeirs, HeirType.FULL_SISTER);
+        final fullSisterCount = _getHeirCount(
+          activeHeirs,
+          HeirType.FULL_SISTER,
+        );
 
         if (!hasFullSister) {
           if (phsCount == 1) {
-            shares.add(_FractionalShare(
-              heirType: HeirType.PATERNAL_HALF_SISTER,
-              count: 1,
-              fraction: 1 / 2,
-              fractionLabel: '1/2',
-              shareType: 'fard',
-              legalBasis: 'النصف للأخت لأب — النساء: ١١',
-            ));
+            shares.add(
+              _FractionalShare(
+                heirType: HeirType.PATERNAL_HALF_SISTER,
+                count: 1,
+                fraction: 1 / 2,
+                fractionLabel: '1/2',
+                shareType: 'fard',
+                legalBasis: 'النصف للأخت لأب — النساء: ١١',
+              ),
+            );
           } else if (phsCount >= 2) {
-            shares.add(_FractionalShare(
-              heirType: HeirType.PATERNAL_HALF_SISTER,
-              count: phsCount,
-              fraction: 2 / 3,
-              fractionLabel: '2/3',
-              shareType: 'fard',
-              legalBasis: 'الثلثان للأختين لأب فأكثر — النساء: ١١',
-            ));
+            shares.add(
+              _FractionalShare(
+                heirType: HeirType.PATERNAL_HALF_SISTER,
+                count: phsCount,
+                fraction: 2 / 3,
+                fractionLabel: '2/3',
+                shareType: 'fard',
+                legalBasis: 'الثلثان للأختين لأب فأكثر — النساء: ١١',
+              ),
+            );
           }
         } else if (fullSisterCount == 1) {
-          shares.add(_FractionalShare(
-            heirType: HeirType.PATERNAL_HALF_SISTER,
-            count: phsCount,
-            fraction: 1 / 6,
-            fractionLabel: '1/6',
-            shareType: 'fard',
-            legalBasis: 'السدس تكملة الثلثين مع الأخت الشقيقة — النساء: ١١',
-          ));
+          shares.add(
+            _FractionalShare(
+              heirType: HeirType.PATERNAL_HALF_SISTER,
+              count: phsCount,
+              fraction: 1 / 6,
+              fractionLabel: '1/6',
+              shareType: 'fard',
+              legalBasis: 'السدس تكملة الثلثين مع الأخت الشقيقة — النساء: ١١',
+            ),
+          );
         }
       }
     }
 
     if (_hasHeirType(activeHeirs, HeirType.MATERNAL_HALF_BROTHER) ||
         _hasHeirType(activeHeirs, HeirType.MATERNAL_HALF_SISTER)) {
-      final mhbCount = _getHeirCount(activeHeirs, HeirType.MATERNAL_HALF_BROTHER);
-      final mhsCount = _getHeirCount(activeHeirs, HeirType.MATERNAL_HALF_SISTER);
+      final mhbCount = _getHeirCount(
+        activeHeirs,
+        HeirType.MATERNAL_HALF_BROTHER,
+      );
+      final mhsCount = _getHeirCount(
+        activeHeirs,
+        HeirType.MATERNAL_HALF_SISTER,
+      );
       final totalMaternal = mhbCount + mhsCount;
       if (totalMaternal > 0) {
         final double fraction = totalMaternal == 1 ? 1 / 6 : 1 / 3;
@@ -553,24 +605,28 @@ class InheritanceEngine {
             ? 'السدس للواحد من الإخوة لأم — النساء: ١٢'
             : 'الثلث للاثنين فأكثر من الإخوة لأم — النساء: ١٢';
         if (mhbCount > 0) {
-          shares.add(_FractionalShare(
-            heirType: HeirType.MATERNAL_HALF_BROTHER,
-            count: mhbCount,
-            fraction: fraction,
-            fractionLabel: label,
-            shareType: 'fard',
-            legalBasis: basis,
-          ));
+          shares.add(
+            _FractionalShare(
+              heirType: HeirType.MATERNAL_HALF_BROTHER,
+              count: mhbCount,
+              fraction: fraction,
+              fractionLabel: label,
+              shareType: 'fard',
+              legalBasis: basis,
+            ),
+          );
         }
         if (mhsCount > 0) {
-          shares.add(_FractionalShare(
-            heirType: HeirType.MATERNAL_HALF_SISTER,
-            count: mhsCount,
-            fraction: fraction,
-            fractionLabel: label,
-            shareType: 'fard',
-            legalBasis: basis,
-          ));
+          shares.add(
+            _FractionalShare(
+              heirType: HeirType.MATERNAL_HALF_SISTER,
+              count: mhsCount,
+              fraction: fraction,
+              fractionLabel: label,
+              shareType: 'fard',
+              legalBasis: basis,
+            ),
+          );
         }
       }
     }
@@ -598,129 +654,155 @@ class InheritanceEngine {
           final totalUnits = sonCount * 2 + daughterCount;
           final perUnit = remainder / totalUnits;
 
-          results.add(HeirShare(
-            heirType: HeirType.SON,
-            count: sonCount,
-            shareType: "ta'sib",
-            fraction: null,
-            totalAmount: 0,
-            perPersonAmount: 0,
-            percentage: perUnit * 2 * 100,
-            legalBasis: 'التعصيب بالغير للابن — يأخذ ضعف الأنثى',
-          ));
-
-          if (daughterCount > 0 && !fixedShares.any((s) => s.heirType == HeirType.DAUGHTER)) {
-            results.add(HeirShare(
-              heirType: HeirType.DAUGHTER,
-              count: daughterCount,
+          results.add(
+            HeirShare(
+              heirType: HeirType.SON,
+              count: sonCount,
               shareType: "ta'sib",
               fraction: null,
               totalAmount: 0,
               perPersonAmount: 0,
-              percentage: perUnit * 100,
-              legalBasis: 'التعصيب بالغير للبنت مع الابن — تأخذ نصف نصيب الابن',
-            ));
+              percentage: perUnit * 2 * 100,
+              legalBasis: 'التعصيب بالغير للابن — يأخذ ضعف الأنثى',
+            ),
+          );
+
+          if (daughterCount > 0 &&
+              !fixedShares.any((s) => s.heirType == HeirType.DAUGHTER)) {
+            results.add(
+              HeirShare(
+                heirType: HeirType.DAUGHTER,
+                count: daughterCount,
+                shareType: "ta'sib",
+                fraction: null,
+                totalAmount: 0,
+                perPersonAmount: 0,
+                percentage: perUnit * 100,
+                legalBasis:
+                    'التعصيب بالغير للبنت مع الابن — تأخذ نصف نصيب الابن',
+              ),
+            );
           }
           break;
         }
       }
 
-      if (heirType == HeirType.SON_OF_SON && !_hasHeirType(activeHeirs, HeirType.SON)) {
+      if (heirType == HeirType.SON_OF_SON &&
+          !_hasHeirType(activeHeirs, HeirType.SON)) {
         final sosCount = _getHeirCount(activeHeirs, HeirType.SON_OF_SON);
         final dosCount = _getHeirCount(activeHeirs, HeirType.DAUGHTER_OF_SON);
         if (sosCount > 0) {
           final totalShares = sosCount + dosCount * 2;
           final sharePerUnit = remainder / totalShares;
 
-          results.add(HeirShare(
-            heirType: HeirType.SON_OF_SON,
-            count: sosCount,
-            shareType: "ta'sib",
-            fraction: null,
-            totalAmount: 0,
-            perPersonAmount: 0,
-            percentage: sharePerUnit * 100,
-            legalBasis: 'التعصيب بالغير لابن الابن',
-          ));
-
-          if (dosCount > 0 && !fixedShares.any((s) => s.heirType == HeirType.DAUGHTER_OF_SON)) {
-            results.add(HeirShare(
-              heirType: HeirType.DAUGHTER_OF_SON,
-              count: dosCount,
+          results.add(
+            HeirShare(
+              heirType: HeirType.SON_OF_SON,
+              count: sosCount,
               shareType: "ta'sib",
               fraction: null,
               totalAmount: 0,
               perPersonAmount: 0,
-              percentage: (sharePerUnit / 2) * 100,
-              legalBasis: 'التعصيب بالغير لبنت الابن مع ابن الابن',
-            ));
+              percentage: sharePerUnit * 100,
+              legalBasis: 'التعصيب بالغير لابن الابن',
+            ),
+          );
+
+          if (dosCount > 0 &&
+              !fixedShares.any((s) => s.heirType == HeirType.DAUGHTER_OF_SON)) {
+            results.add(
+              HeirShare(
+                heirType: HeirType.DAUGHTER_OF_SON,
+                count: dosCount,
+                shareType: "ta'sib",
+                fraction: null,
+                totalAmount: 0,
+                perPersonAmount: 0,
+                percentage: (sharePerUnit / 2) * 100,
+                legalBasis: 'التعصيب بالغير لبنت الابن مع ابن الابن',
+              ),
+            );
           }
           break;
         }
       }
 
-      if (heirType == HeirType.FATHER && _hasHeirType(activeHeirs, HeirType.FATHER)) {
-        results.add(HeirShare(
-          heirType: HeirType.FATHER,
-          count: 1,
-          shareType: "ta'sib",
-          fraction: null,
-          totalAmount: 0,
-          perPersonAmount: 0,
-          percentage: remainder * 100,
-          legalBasis: existingFixed
-              ? 'السدس + التعصيب للأب مع الفرع الوارث — النساء: ١١'
-              : 'التعصيب للأب عند عدم الفرع الوارث',
-        ));
+      if (heirType == HeirType.FATHER &&
+          _hasHeirType(activeHeirs, HeirType.FATHER)) {
+        results.add(
+          HeirShare(
+            heirType: HeirType.FATHER,
+            count: 1,
+            shareType: "ta'sib",
+            fraction: null,
+            totalAmount: 0,
+            perPersonAmount: 0,
+            percentage: remainder * 100,
+            legalBasis: existingFixed
+                ? 'السدس + التعصيب للأب مع الفرع الوارث — النساء: ١١'
+                : 'التعصيب للأب عند عدم الفرع الوارث',
+          ),
+        );
         break;
       }
 
       if (heirType == HeirType.GRANDFATHER_PATERNAL &&
           _hasHeirType(activeHeirs, HeirType.GRANDFATHER_PATERNAL) &&
           !_hasHeirType(activeHeirs, HeirType.FATHER)) {
-        results.add(HeirShare(
-          heirType: HeirType.GRANDFATHER_PATERNAL,
-          count: 1,
-          shareType: "ta'sib",
-          fraction: null,
-          totalAmount: 0,
-          perPersonAmount: 0,
-          percentage: remainder * 100,
-          legalBasis: existingFixed
-              ? 'السدس + التعصيب للجد (يقوم مقام الأب)'
-              : 'التعصيب للجد عند عدم الأب والفرع',
-        ));
-        break;
-      }
-
-      if (heirType == HeirType.FULL_BROTHER && _hasHeirType(activeHeirs, HeirType.FULL_BROTHER)) {
-        final count = _getHeirCount(activeHeirs, HeirType.FULL_BROTHER);
-        final fullSisterCount = _getHeirCount(activeHeirs, HeirType.FULL_SISTER);
-        final totalShares = count + fullSisterCount * 2;
-        final sharePerUnit = remainder / totalShares;
-
-        results.add(HeirShare(
-          heirType: HeirType.FULL_BROTHER,
-          count: count,
-          shareType: "ta'sib",
-          fraction: null,
-          totalAmount: 0,
-          perPersonAmount: 0,
-          percentage: sharePerUnit * 100,
-          legalBasis: 'التعصيب بالغير للأخ الشقيق',
-        ));
-
-        if (fullSisterCount > 0 && !fixedShares.any((s) => s.heirType == HeirType.FULL_SISTER)) {
-          results.add(HeirShare(
-            heirType: HeirType.FULL_SISTER,
-            count: fullSisterCount,
+        results.add(
+          HeirShare(
+            heirType: HeirType.GRANDFATHER_PATERNAL,
+            count: 1,
             shareType: "ta'sib",
             fraction: null,
             totalAmount: 0,
             perPersonAmount: 0,
-            percentage: (sharePerUnit / 2) * 100,
-            legalBasis: 'التعصيب مع الغير للأخت الشقيقة مع الأخ',
-          ));
+            percentage: remainder * 100,
+            legalBasis: existingFixed
+                ? 'السدس + التعصيب للجد (يقوم مقام الأب)'
+                : 'التعصيب للجد عند عدم الأب والفرع',
+          ),
+        );
+        break;
+      }
+
+      if (heirType == HeirType.FULL_BROTHER &&
+          _hasHeirType(activeHeirs, HeirType.FULL_BROTHER)) {
+        final count = _getHeirCount(activeHeirs, HeirType.FULL_BROTHER);
+        final fullSisterCount = _getHeirCount(
+          activeHeirs,
+          HeirType.FULL_SISTER,
+        );
+        final totalShares = count + fullSisterCount * 2;
+        final sharePerUnit = remainder / totalShares;
+
+        results.add(
+          HeirShare(
+            heirType: HeirType.FULL_BROTHER,
+            count: count,
+            shareType: "ta'sib",
+            fraction: null,
+            totalAmount: 0,
+            perPersonAmount: 0,
+            percentage: sharePerUnit * 100,
+            legalBasis: 'التعصيب بالغير للأخ الشقيق',
+          ),
+        );
+
+        if (fullSisterCount > 0 &&
+            !fixedShares.any((s) => s.heirType == HeirType.FULL_SISTER)) {
+          results.add(
+            HeirShare(
+              heirType: HeirType.FULL_SISTER,
+              count: fullSisterCount,
+              shareType: "ta'sib",
+              fraction: null,
+              totalAmount: 0,
+              perPersonAmount: 0,
+              percentage: (sharePerUnit / 2) * 100,
+              legalBasis: 'التعصيب مع الغير للأخت الشقيقة مع الأخ',
+            ),
+          );
         }
         break;
       }
@@ -730,16 +812,18 @@ class InheritanceEngine {
           !_hasHeirType(activeHeirs, HeirType.FULL_BROTHER)) {
         if (_hasDescendants(activeHeirs) && !_hasMaleDescendants(activeHeirs)) {
           final count = _getHeirCount(activeHeirs, HeirType.FULL_SISTER);
-          results.add(HeirShare(
-            heirType: HeirType.FULL_SISTER,
-            count: count,
-            shareType: "ta'sib",
-            fraction: null,
-            totalAmount: 0,
-            perPersonAmount: 0,
-            percentage: (remainder / count) * 100,
-            legalBasis: 'التعصيب مع الغير للأخت الشقيقة (مع الفرع المؤنث)',
-          ));
+          results.add(
+            HeirShare(
+              heirType: HeirType.FULL_SISTER,
+              count: count,
+              shareType: "ta'sib",
+              fraction: null,
+              totalAmount: 0,
+              perPersonAmount: 0,
+              percentage: (remainder / count) * 100,
+              legalBasis: 'التعصيب مع الغير للأخت الشقيقة (مع الفرع المؤنث)',
+            ),
+          );
           break;
         }
       }
@@ -747,33 +831,46 @@ class InheritanceEngine {
       if (heirType == HeirType.PATERNAL_HALF_BROTHER &&
           _hasHeirType(activeHeirs, HeirType.PATERNAL_HALF_BROTHER) &&
           !_hasHeirType(activeHeirs, HeirType.FULL_BROTHER)) {
-        final count = _getHeirCount(activeHeirs, HeirType.PATERNAL_HALF_BROTHER);
-        final phsCount = _getHeirCount(activeHeirs, HeirType.PATERNAL_HALF_SISTER);
+        final count = _getHeirCount(
+          activeHeirs,
+          HeirType.PATERNAL_HALF_BROTHER,
+        );
+        final phsCount = _getHeirCount(
+          activeHeirs,
+          HeirType.PATERNAL_HALF_SISTER,
+        );
         final totalShares = count + phsCount * 2;
         final sharePerUnit = remainder / totalShares;
 
-        results.add(HeirShare(
-          heirType: HeirType.PATERNAL_HALF_BROTHER,
-          count: count,
-          shareType: "ta'sib",
-          fraction: null,
-          totalAmount: 0,
-          perPersonAmount: 0,
-          percentage: sharePerUnit * 100,
-          legalBasis: 'التعصيب بالغير للأخ لأب',
-        ));
-
-        if (phsCount > 0 && !fixedShares.any((s) => s.heirType == HeirType.PATERNAL_HALF_SISTER)) {
-          results.add(HeirShare(
-            heirType: HeirType.PATERNAL_HALF_SISTER,
-            count: phsCount,
+        results.add(
+          HeirShare(
+            heirType: HeirType.PATERNAL_HALF_BROTHER,
+            count: count,
             shareType: "ta'sib",
             fraction: null,
             totalAmount: 0,
             perPersonAmount: 0,
-            percentage: (sharePerUnit / 2) * 100,
-            legalBasis: 'التعصيب مع الغير للأخت لأب مع الأخ لأب',
-          ));
+            percentage: sharePerUnit * 100,
+            legalBasis: 'التعصيب بالغير للأخ لأب',
+          ),
+        );
+
+        if (phsCount > 0 &&
+            !fixedShares.any(
+              (s) => s.heirType == HeirType.PATERNAL_HALF_SISTER,
+            )) {
+          results.add(
+            HeirShare(
+              heirType: HeirType.PATERNAL_HALF_SISTER,
+              count: phsCount,
+              shareType: "ta'sib",
+              fraction: null,
+              totalAmount: 0,
+              perPersonAmount: 0,
+              percentage: (sharePerUnit / 2) * 100,
+              legalBasis: 'التعصيب مع الغير للأخت لأب مع الأخ لأب',
+            ),
+          );
         }
         break;
       }
@@ -784,48 +881,59 @@ class InheritanceEngine {
         if (_hasDescendants(activeHeirs) &&
             !_hasMaleDescendants(activeHeirs) &&
             !_hasHeirType(activeHeirs, HeirType.FULL_SISTER)) {
-          final count = _getHeirCount(activeHeirs, HeirType.PATERNAL_HALF_SISTER);
-          results.add(HeirShare(
-            heirType: HeirType.PATERNAL_HALF_SISTER,
+          final count = _getHeirCount(
+            activeHeirs,
+            HeirType.PATERNAL_HALF_SISTER,
+          );
+          results.add(
+            HeirShare(
+              heirType: HeirType.PATERNAL_HALF_SISTER,
+              count: count,
+              shareType: "ta'sib",
+              fraction: null,
+              totalAmount: 0,
+              perPersonAmount: 0,
+              percentage: (remainder / count) * 100,
+              legalBasis: 'التعصيب مع الغير للأخت لأب (مع الفرع المؤنث)',
+            ),
+          );
+          break;
+        }
+      }
+
+      if (heirType == HeirType.UNCLE_PATERNAL &&
+          _hasHeirType(activeHeirs, HeirType.UNCLE_PATERNAL)) {
+        final count = _getHeirCount(activeHeirs, HeirType.UNCLE_PATERNAL);
+        results.add(
+          HeirShare(
+            heirType: HeirType.UNCLE_PATERNAL,
             count: count,
             shareType: "ta'sib",
             fraction: null,
             totalAmount: 0,
             perPersonAmount: 0,
             percentage: (remainder / count) * 100,
-            legalBasis: 'التعصيب مع الغير للأخت لأب (مع الفرع المؤنث)',
-          ));
-          break;
-        }
-      }
-
-      if (heirType == HeirType.UNCLE_PATERNAL && _hasHeirType(activeHeirs, HeirType.UNCLE_PATERNAL)) {
-        final count = _getHeirCount(activeHeirs, HeirType.UNCLE_PATERNAL);
-        results.add(HeirShare(
-          heirType: HeirType.UNCLE_PATERNAL,
-          count: count,
-          shareType: "ta'sib",
-          fraction: null,
-          totalAmount: 0,
-          perPersonAmount: 0,
-          percentage: (remainder / count) * 100,
-          legalBasis: 'التعصيب للعم',
-        ));
+            legalBasis: 'التعصيب للعم',
+          ),
+        );
         break;
       }
 
-      if (heirType == HeirType.NEPHEW_PATERNAL && _hasHeirType(activeHeirs, HeirType.NEPHEW_PATERNAL)) {
+      if (heirType == HeirType.NEPHEW_PATERNAL &&
+          _hasHeirType(activeHeirs, HeirType.NEPHEW_PATERNAL)) {
         final count = _getHeirCount(activeHeirs, HeirType.NEPHEW_PATERNAL);
-        results.add(HeirShare(
-          heirType: HeirType.NEPHEW_PATERNAL,
-          count: count,
-          shareType: "ta'sib",
-          fraction: null,
-          totalAmount: 0,
-          perPersonAmount: 0,
-          percentage: (remainder / count) * 100,
-          legalBasis: 'التعصيب لابن الأخ',
-        ));
+        results.add(
+          HeirShare(
+            heirType: HeirType.NEPHEW_PATERNAL,
+            count: count,
+            shareType: "ta'sib",
+            fraction: null,
+            totalAmount: 0,
+            perPersonAmount: 0,
+            percentage: (remainder / count) * 100,
+            legalBasis: 'التعصيب لابن الأخ',
+          ),
+        );
         break;
       }
     }
@@ -870,7 +978,8 @@ class InheritanceEngine {
 
     if (bequests > maxBequest && bequests > 0) {
       warnings.add(
-          'الوصية لا تتجاوز ثلث التركة. تم تقليصها من ${bequests.round()} إلى ${maxBequest.round()}');
+        'الوصية لا تتجاوز ثلث التركة. تم تقليصها من ${bequests.round()} إلى ${maxBequest.round()}',
+      );
     }
 
     final activeHeirs = _applyBlocking(heirs);
@@ -890,7 +999,10 @@ class InheritanceEngine {
     warnings.addAll(fixedResult.warnings);
     final fixedShares = fixedResult.shares;
 
-    final totalFixedFraction = fixedShares.fold<double>(0, (sum, s) => sum + s.fraction);
+    final totalFixedFraction = fixedShares.fold<double>(
+      0,
+      (sum, s) => sum + s.fraction,
+    );
 
     final residuaryShares = totalFixedFraction < 1
         ? _distributeResiduary(activeHeirs, fixedShares, 1 - totalFixedFraction)
@@ -903,65 +1015,82 @@ class InheritanceEngine {
     if (totalFixedFraction > 1) {
       isOversubscribed = true;
       awlRate = 1 / totalFixedFraction;
-      warnings.add('حالة العول: إجمالي الفروض يتجاوز 1 — يتم تقليص جميع الأنصبة بنسبة متساوية');
+      warnings.add(
+        'حالة العول: إجمالي الفروض يتجاوز 1 — يتم تقليص جميع الأنصبة بنسبة متساوية',
+      );
 
       for (final fs in fixedShares) {
         final adjustedFraction = fs.fraction * awlRate;
         final totalAmount = adjustedFraction * distributable;
-        allShares.add(HeirShare(
-          heirType: fs.heirType,
-          count: fs.count,
-          shareType: fs.shareType,
-          fraction: fs.fractionLabel,
-          totalAmount: (totalAmount * 100).round() / 100,
-          perPersonAmount: ((totalAmount / fs.count) * 100).round() / 100,
-          percentage: (adjustedFraction * 10000).round() / 100,
-          legalBasis: fs.legalBasis,
-        ));
+        allShares.add(
+          HeirShare(
+            heirType: fs.heirType,
+            count: fs.count,
+            shareType: fs.shareType,
+            fraction: fs.fractionLabel,
+            totalAmount: (totalAmount * 100).round() / 100,
+            perPersonAmount: ((totalAmount / fs.count) * 100).round() / 100,
+            percentage: (adjustedFraction * 10000).round() / 100,
+            legalBasis: fs.legalBasis,
+          ),
+        );
       }
     } else {
       for (final fs in fixedShares) {
         final totalAmount = fs.fraction * distributable;
-        allShares.add(HeirShare(
-          heirType: fs.heirType,
-          count: fs.count,
-          shareType: fs.shareType,
-          fraction: fs.fractionLabel,
-          totalAmount: (totalAmount * 100).round() / 100,
-          perPersonAmount: ((totalAmount / fs.count) * 100).round() / 100,
-          percentage: (fs.fraction * 10000).round() / 100,
-          legalBasis: fs.legalBasis,
-        ));
+        allShares.add(
+          HeirShare(
+            heirType: fs.heirType,
+            count: fs.count,
+            shareType: fs.shareType,
+            fraction: fs.fractionLabel,
+            totalAmount: (totalAmount * 100).round() / 100,
+            perPersonAmount: ((totalAmount / fs.count) * 100).round() / 100,
+            percentage: (fs.fraction * 10000).round() / 100,
+            legalBasis: fs.legalBasis,
+          ),
+        );
       }
 
       for (final rs in residuaryShares) {
         final totalAmount = (rs.percentage / 100) * distributable;
-        allShares.add(HeirShare(
-          heirType: rs.heirType,
-          count: rs.count,
-          shareType: rs.shareType,
-          fraction: null,
-          totalAmount: (totalAmount * 100).round() / 100,
-          perPersonAmount: ((totalAmount / rs.count) * 100).round() / 100,
-          percentage: rs.percentage,
-          legalBasis: rs.legalBasis,
-        ));
+        allShares.add(
+          HeirShare(
+            heirType: rs.heirType,
+            count: rs.count,
+            shareType: rs.shareType,
+            fraction: null,
+            totalAmount: (totalAmount * 100).round() / 100,
+            perPersonAmount: ((totalAmount / rs.count) * 100).round() / 100,
+            percentage: rs.percentage,
+            legalBasis: rs.legalBasis,
+          ),
+        );
       }
     }
 
     // Apply Ar-Radd (if totalFixedFraction < 1 and no residuaries)
     if (totalFixedFraction < 1 && residuaryShares.isEmpty) {
       final remainingFraction = 1 - totalFixedFraction;
-      final raddEligibleShares =
-          allShares.where((s) => raddEligible.contains(s.heirType)).toList();
+      final raddEligibleShares = allShares
+          .where((s) => raddEligible.contains(s.heirType))
+          .toList();
 
       final effectiveRaddEligible = raddEligibleShares.isNotEmpty
           ? raddEligibleShares
-          : allShares.where((s) => s.heirType == HeirType.HUSBAND || s.heirType == HeirType.WIFE).toList();
+          : allShares
+                .where(
+                  (s) =>
+                      s.heirType == HeirType.HUSBAND ||
+                      s.heirType == HeirType.WIFE,
+                )
+                .toList();
 
       if (effectiveRaddEligible.isNotEmpty && remainingFraction > 0) {
-        final totalRaddSharesPercentage =
-            effectiveRaddEligible.fold<double>(0, (sum, s) => sum + s.percentage);
+        final totalRaddSharesPercentage = effectiveRaddEligible.fold<double>(
+          0,
+          (sum, s) => sum + s.percentage,
+        );
 
         if (totalRaddSharesPercentage > 0) {
           final remainingAmount = remainingFraction * distributable;
@@ -969,11 +1098,18 @@ class InheritanceEngine {
             if (effectiveRaddEligible.contains(share)) {
               final proportion = share.percentage / totalRaddSharesPercentage;
               final raddAmount = remainingAmount * proportion;
-              share.totalAmount = ((share.totalAmount + raddAmount) * 100).round() / 100;
-              share.perPersonAmount = ((share.totalAmount / share.count) * 100).round() / 100;
+              share.totalAmount =
+                  ((share.totalAmount + raddAmount) * 100).round() / 100;
+              share.perPersonAmount =
+                  ((share.totalAmount / share.count) * 100).round() / 100;
               share.percentage =
-                  ((share.percentage + (remainingFraction * proportion * 100)) * 100).round() / 100;
-              share.shareType = share.shareType == 'fard' ? 'fard_radd' : 'radd';
+                  ((share.percentage + (remainingFraction * proportion * 100)) *
+                          100)
+                      .round() /
+                  100;
+              share.shareType = share.shareType == 'fard'
+                  ? 'fard_radd'
+                  : 'radd';
               share.legalBasis += ' + رد';
             }
           }
@@ -982,8 +1118,14 @@ class InheritanceEngine {
       }
     }
 
-    final totalDistributed = allShares.fold<double>(0, (sum, s) => sum + s.totalAmount);
-    final remainingEstate = max(0.0, ((distributable - totalDistributed) * 100).round() / 100);
+    final totalDistributed = allShares.fold<double>(
+      0,
+      (sum, s) => sum + s.totalAmount,
+    );
+    final remainingEstate = max(
+      0.0,
+      ((distributable - totalDistributed) * 100).round() / 100,
+    );
 
     return InheritanceResult(
       shares: allShares,
@@ -1004,9 +1146,10 @@ class InheritanceEngine {
   ) {
     final activeHeirs = _applyBlocking(heirs);
     final hasBlockedGrandchildren =
-        (_hasHeirType(heirs, HeirType.SON_OF_SON) && !_hasHeirType(activeHeirs, HeirType.SON_OF_SON)) ||
-            (_hasHeirType(heirs, HeirType.DAUGHTER_OF_SON) &&
-                !_hasHeirType(activeHeirs, HeirType.DAUGHTER_OF_SON));
+        (_hasHeirType(heirs, HeirType.SON_OF_SON) &&
+            !_hasHeirType(activeHeirs, HeirType.SON_OF_SON)) ||
+        (_hasHeirType(heirs, HeirType.DAUGHTER_OF_SON) &&
+            !_hasHeirType(activeHeirs, HeirType.DAUGHTER_OF_SON));
 
     double wwAmount = 0;
     final List<HeirShare> wwShares = [];
@@ -1020,11 +1163,16 @@ class InheritanceEngine {
       } else {
         hypoHeirs.add(HeirInput(type: HeirType.SON, count: 1));
       }
-      hypoHeirs.removeWhere((h) => h.type == HeirType.SON_OF_SON || h.type == HeirType.DAUGHTER_OF_SON);
+      hypoHeirs.removeWhere(
+        (h) =>
+            h.type == HeirType.SON_OF_SON || h.type == HeirType.DAUGHTER_OF_SON,
+      );
 
       final hypoResult = _calculateFaraidBase(totalValue, debts, 0, hypoHeirs);
 
-      final sonShareMatch = hypoResult.shares.where((s) => s.heirType == HeirType.SON);
+      final sonShareMatch = hypoResult.shares.where(
+        (s) => s.heirType == HeirType.SON,
+      );
       if (sonShareMatch.isNotEmpty) {
         final sonShare = sonShareMatch.first;
         final oneSonAmount = sonShare.totalAmount / sonShare.count;
@@ -1039,28 +1187,37 @@ class InheritanceEngine {
         if (totalUnits > 0) {
           final perUnit = actualWw / totalUnits;
           if (sosCount > 0) {
-            wwShares.add(HeirShare(
-              heirType: HeirType.SON_OF_SON,
-              count: sosCount,
-              shareType: 'wasiyya_wajiba',
-              fraction: null,
-              totalAmount: (perUnit * 2 * sosCount * 100).round() / 100,
-              perPersonAmount: (perUnit * 2 * 100).round() / 100,
-              percentage: ((perUnit * 2 * sosCount / netEstate) * 10000).round() / 100,
-              legalBasis: 'الوصية الواجبة لابن الابن (بمقدار حصة والده أو الثلث أيهما أقل)',
-            ));
+            wwShares.add(
+              HeirShare(
+                heirType: HeirType.SON_OF_SON,
+                count: sosCount,
+                shareType: 'wasiyya_wajiba',
+                fraction: null,
+                totalAmount: (perUnit * 2 * sosCount * 100).round() / 100,
+                perPersonAmount: (perUnit * 2 * 100).round() / 100,
+                percentage:
+                    ((perUnit * 2 * sosCount / netEstate) * 10000).round() /
+                    100,
+                legalBasis:
+                    'الوصية الواجبة لابن الابن (بمقدار حصة والده أو الثلث أيهما أقل)',
+              ),
+            );
           }
           if (dosCount > 0) {
-            wwShares.add(HeirShare(
-              heirType: HeirType.DAUGHTER_OF_SON,
-              count: dosCount,
-              shareType: 'wasiyya_wajiba',
-              fraction: null,
-              totalAmount: (perUnit * dosCount * 100).round() / 100,
-              perPersonAmount: (perUnit * 100).round() / 100,
-              percentage: ((perUnit * dosCount / netEstate) * 10000).round() / 100,
-              legalBasis: 'الوصية الواجبة لبنت الابن (بمقدار حصة والدها أو الثلث أيهما أقل)',
-            ));
+            wwShares.add(
+              HeirShare(
+                heirType: HeirType.DAUGHTER_OF_SON,
+                count: dosCount,
+                shareType: 'wasiyya_wajiba',
+                fraction: null,
+                totalAmount: (perUnit * dosCount * 100).round() / 100,
+                perPersonAmount: (perUnit * 100).round() / 100,
+                percentage:
+                    ((perUnit * dosCount / netEstate) * 10000).round() / 100,
+                legalBasis:
+                    'الوصية الواجبة لبنت الابن (بمقدار حصة والدها أو الثلث أيهما أقل)',
+              ),
+            );
           }
           wwAmount = wwShares.fold<double>(0, (sum, s) => sum + s.totalAmount);
         }
@@ -1070,7 +1227,10 @@ class InheritanceEngine {
     final netEstateBeforeWw = max(0.0, totalValue - debts);
     final maxOptionalBequest = netEstateBeforeWw / 3;
     final allowedOptionalBequest = maxOptionalBequest - wwAmount;
-    final actualOptionalBequest = min(bequests, max(0.0, allowedOptionalBequest));
+    final actualOptionalBequest = min(
+      bequests,
+      max(0.0, allowedOptionalBequest),
+    );
 
     final realResult = _calculateFaraidBase(
       totalValue,
@@ -1080,8 +1240,11 @@ class InheritanceEngine {
     );
 
     if (wwShares.isNotEmpty) {
-      realResult.shares
-          .removeWhere((s) => s.heirType == HeirType.SON_OF_SON || s.heirType == HeirType.DAUGHTER_OF_SON);
+      realResult.shares.removeWhere(
+        (s) =>
+            s.heirType == HeirType.SON_OF_SON ||
+            s.heirType == HeirType.DAUGHTER_OF_SON,
+      );
       realResult.shares.insertAll(0, wwShares);
       final double newTotalDist = realResult.totalDistributed + wwAmount;
       // Constructing updated fields
@@ -1092,7 +1255,8 @@ class InheritanceEngine {
         isOversubscribed: realResult.isOversubscribed,
         awlRate: realResult.awlRate,
         warnings: [
-          if (wwAmount > 0) 'تم اقتطاع الوصية الواجبة للأحفاد بقيمة ${wwAmount.round()} جنيه قبل التقسيم الشرعي.',
+          if (wwAmount > 0)
+            'تم اقتطاع الوصية الواجبة للأحفاد بقيمة ${wwAmount.round()} جنيه قبل التقسيم الشرعي.',
           ...realResult.warnings,
         ],
       );
@@ -1100,7 +1264,8 @@ class InheritanceEngine {
       final originalNetEstate = max(0.0, totalValue - debts);
       for (final share in updatedResult.shares) {
         if (share.shareType != 'wasiyya_wajiba' && originalNetEstate > 0) {
-          share.percentage = (share.totalAmount / originalNetEstate * 10000).round() / 100;
+          share.percentage =
+              (share.totalAmount / originalNetEstate * 10000).round() / 100;
         }
       }
       return updatedResult;

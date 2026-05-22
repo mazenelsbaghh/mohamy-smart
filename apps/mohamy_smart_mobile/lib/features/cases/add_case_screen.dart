@@ -10,6 +10,9 @@ class AddCaseScreen extends StatefulWidget {
     this.initialClientName,
     this.initialCourt,
     this.initialCaseType,
+    this.initialFacts,
+    this.initialAdversary,
+    this.initialLegalClaims,
     super.key,
   });
 
@@ -18,6 +21,9 @@ class AddCaseScreen extends StatefulWidget {
   final String? initialClientName;
   final String? initialCourt;
   final String? initialCaseType;
+  final String? initialFacts;
+  final String? initialAdversary;
+  final String? initialLegalClaims;
 
   @override
   State<AddCaseScreen> createState() => _AddCaseScreenState();
@@ -29,6 +35,11 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
   late final TextEditingController _clientName;
   late final TextEditingController _court;
   late final TextEditingController _caseType;
+  late final TextEditingController _facts;
+  late final TextEditingController _adversary;
+  late final TextEditingController _legalClaims;
+  bool _isSaving = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -37,6 +48,9 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
     _clientName = TextEditingController(text: widget.initialClientName);
     _court = TextEditingController(text: widget.initialCourt);
     _caseType = TextEditingController(text: widget.initialCaseType);
+    _facts = TextEditingController(text: widget.initialFacts);
+    _adversary = TextEditingController(text: widget.initialAdversary);
+    _legalClaims = TextEditingController(text: widget.initialLegalClaims);
   }
 
   @override
@@ -45,6 +59,9 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
     _clientName.dispose();
     _court.dispose();
     _caseType.dispose();
+    _facts.dispose();
+    _adversary.dispose();
+    _legalClaims.dispose();
     super.dispose();
   }
 
@@ -94,11 +111,58 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
                 decoration: const InputDecoration(labelText: 'نوع القضية'),
                 validator: _required,
               ),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const Key('adversary_field'),
+                controller: _adversary,
+                decoration: const InputDecoration(
+                  labelText: 'اسم الخصم',
+                  hintText: 'المدعي أو المدعى عليه المقابل',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const Key('facts_field'),
+                controller: _facts,
+                decoration: const InputDecoration(
+                  labelText: 'وقائع القضية',
+                  hintText: 'اكتب الوقائع الأساسية أو راجع النص القادم من OCR',
+                ),
+                minLines: 4,
+                maxLines: 7,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const Key('legal_claims_field'),
+                controller: _legalClaims,
+                decoration: const InputDecoration(
+                  labelText: 'الطلبات والأساس القانوني',
+                  hintText: 'مثال: إلزام الخصم بالسداد، التعويض، المصروفات',
+                ),
+                minLines: 3,
+                maxLines: 6,
+              ),
+              if (_errorMessage != null) ...<Widget>[
+                const SizedBox(height: 12),
+                Text(
+                  _errorMessage!,
+                  style: const TextStyle(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               FilledButton(
                 key: const Key('save_case_button'),
-                onPressed: _save,
-                child: const Text('حفظ القضية'),
+                onPressed: _isSaving ? null : _save,
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2.4),
+                      )
+                    : const Text('حفظ القضية'),
               ),
               TextButton(onPressed: () {}, child: const Text('حفظ كمسودة')),
             ],
@@ -115,18 +179,39 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
     return null;
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    widget.appState.addCase(
-      AddCaseInput(
-        caseNumber: _caseNumber.text,
-        clientName: _clientName.text,
-        court: _court.text,
-        caseType: _caseType.text,
-      ),
-    );
-    Navigator.of(context).pop();
+
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await widget.appState.addCase(
+        AddCaseInput(
+          caseNumber: _caseNumber.text.trim(),
+          clientName: _clientName.text.trim(),
+          court: _court.text.trim(),
+          caseType: _caseType.text.trim(),
+          facts: _facts.text.trim(),
+          adversary: _adversary.text.trim(),
+          legalClaims: _legalClaims.text.trim(),
+        ),
+      );
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _errorMessage =
+              'تعذر حفظ القضية. راجع الاتصال أو البيانات ثم حاول مرة أخرى.';
+          _isSaving = false;
+        });
+      }
+    }
   }
 }

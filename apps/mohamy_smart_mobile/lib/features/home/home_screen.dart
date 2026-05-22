@@ -9,6 +9,7 @@ import '../../core/widgets/user_tie_avatar.dart';
 import '../cases/add_case_screen.dart';
 import '../cases/case_details_screen.dart';
 import '../documents/documents_screen.dart';
+import '../notifications/notifications_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({required this.appState, super.key});
@@ -18,9 +19,13 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final headerBgColor = isDark ? AppColors.darkSurface.withValues(alpha: 0.85) : AppColors.lightSurface.withValues(alpha: 0.85);
+    final headerBgColor = isDark
+        ? AppColors.darkSurface.withValues(alpha: 0.85)
+        : AppColors.lightSurface.withValues(alpha: 0.85);
     final textMuted = isDark ? AppColors.darkMuted : AppColors.lightMuted;
-    final borderThemeColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final borderThemeColor = isDark
+        ? AppColors.darkBorder
+        : AppColors.lightBorder;
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -62,192 +67,208 @@ class HomeScreen extends StatelessWidget {
                 bottom: 100,
               ),
               children: <Widget>[
-
-          // Quick Actions Row
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                _buildQuickAction(
-                  context,
-                  icon: Icons.gavel,
-                  label: 'قضية جديدة',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => AddCaseScreen(appState: appState),
+                // Quick Actions Row
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: <Widget>[
+                      _buildQuickAction(
+                        context,
+                        icon: Icons.gavel,
+                        label: 'قضية جديدة',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => AddCaseScreen(appState: appState),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-                _buildQuickAction(
-                  context,
-                  icon: Icons.person_add_alt_1_outlined,
-                  label: 'موكل جديد',
-                  onTap: () {
-                    appState.setSelectedTab(2);
-                  },
-                ),
-                _buildQuickAction(
-                  context,
-                  icon: Icons.upload_file_outlined,
-                  label: 'رفع مستند',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => DocumentsScreen(appState: appState),
+                      _buildQuickAction(
+                        context,
+                        icon: Icons.person_add_alt_1_outlined,
+                        label: 'موكل جديد',
+                        onTap: () {
+                          appState.setSelectedTab(2);
+                        },
                       ),
-                    );
-                  },
-                ),
-                _buildQuickAction(
-                  context,
-                  icon: Icons.calendar_today_outlined,
-                  label: 'الأجندة',
-                  onTap: () {
-                    appState.setSelectedTab(3);
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Stats Cards Section (Horizontal scroll)
-          SizedBox(
-            height: 125,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: <Widget>[
-                _buildStatCard(
-                  context,
-                  icon: Icons.balance,
-                  iconColor: const Color(0xFFD97706),
-                  iconBgColor: const Color(0x1AD97706),
-                  count: appState.cases.length.toString(),
-                  label: 'إجمالي القضايا',
-                ),
-                const SizedBox(width: 12),
-                _buildStatCard(
-                  context,
-                  icon: Icons.task_alt,
-                  iconColor: const Color(0xFF34BF49),
-                  iconBgColor: const Color(0x1A34BF49),
-                  count: appState.cases.where((c) => c.status == CaseStatus.active).length.toString(),
-                  label: 'القضايا النشطة',
-                ),
-                const SizedBox(width: 12),
-                _buildStatCard(
-                  context,
-                  icon: Icons.groups_outlined,
-                  iconColor: const Color(0xFF8B5CF6),
-                  iconBgColor: const Color(0x1A8B5CF6),
-                  count: appState.clients.length.toString(),
-                  label: 'الموكلين',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 28),
-
-          // Today's Appointments
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  'مواعيد اليوم',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
+                      _buildQuickAction(
+                        context,
+                        icon: Icons.upload_file_outlined,
+                        label: 'رفع مستند',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  DocumentsScreen(appState: appState),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildQuickAction(
+                        context,
+                        icon: Icons.calendar_today_outlined,
+                        label: 'الأجندة',
+                        onTap: () {
+                          appState.setSelectedTab(3);
+                        },
+                      ),
+                    ],
                   ),
                 ),
-                InkWell(
-                  onTap: () => appState.setSelectedTab(3),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Text(
-                      'عرض الكل',
-                      style: TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                const SizedBox(height: 24),
+
+                // Stats Cards Section (Horizontal scroll)
+                SizedBox(
+                  height: 125,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: <Widget>[
+                      _buildStatCard(
+                        context,
+                        icon: Icons.balance,
+                        iconColor: const Color(0xFFD97706),
+                        iconBgColor: const Color(0x1AD97706),
+                        count: appState.cases.length.toString(),
+                        label: 'إجمالي القضايا',
+                      ),
+                      const SizedBox(width: 12),
+                      _buildStatCard(
+                        context,
+                        icon: Icons.task_alt,
+                        iconColor: const Color(0xFF34BF49),
+                        iconBgColor: const Color(0x1A34BF49),
+                        count: appState.cases
+                            .where((c) => c.status == CaseStatus.active)
+                            .length
+                            .toString(),
+                        label: 'القضايا النشطة',
+                      ),
+                      const SizedBox(width: 12),
+                      _buildStatCard(
+                        context,
+                        icon: Icons.groups_outlined,
+                        iconColor: const Color(0xFF8B5CF6),
+                        iconBgColor: const Color(0x1A8B5CF6),
+                        count: appState.clients.length.toString(),
+                        label: 'الموكلين',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
+
+                // Today's Appointments
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Text(
+                        'مواعيد اليوم',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () => appState.setSelectedTab(3),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Text(
+                            'عرض الكل',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildTodayAppointment(context, isDark, textMuted),
+                ),
+                const SizedBox(height: 28),
+
+                // Recent Cases
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Text(
+                        'القضايا الأخيرة',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () => appState.setSelectedTab(1),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Text(
+                            'عرض الكل',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                ...appState.cases
+                    .take(2)
+                    .map(
+                      (caseItem) => Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
+                        ),
+                        child: CaseCard(
+                          legalCase: caseItem,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => CaseDetailsScreen(
+                                  appState: appState,
+                                  legalCase: caseItem,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildTodayAppointment(context, isDark, textMuted),
-          ),
-          const SizedBox(height: 28),
-
-          // Recent Cases
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  'القضايا الأخيرة',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                InkWell(
-                  onTap: () => appState.setSelectedTab(1),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Text(
-                      'عرض الكل',
-                      style: TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          ...appState.cases.take(2).map((caseItem) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: CaseCard(
-              legalCase: caseItem,
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => CaseDetailsScreen(
-                      appState: appState,
-                      legalCase: caseItem,
-                    ),
-                  ),
-                );
-              },
-            ),
-          )),
               ],
             ),
           ),
@@ -269,14 +290,13 @@ class HomeScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: headerBgColor,
                     border: Border(
-                      bottom: BorderSide(
-                        color: borderThemeColor,
-                        width: 1,
-                      ),
+                      bottom: BorderSide(color: borderThemeColor, width: 1),
                     ),
                     boxShadow: <BoxShadow>[
                       BoxShadow(
-                        color: const Color(0xFF885200).withValues(alpha: isDark ? 0.02 : 0.04),
+                        color: const Color(
+                          0xFF885200,
+                        ).withValues(alpha: isDark ? 0.02 : 0.04),
                         blurRadius: 32,
                         offset: const Offset(0, 12),
                       ),
@@ -302,39 +322,57 @@ class HomeScreen extends StatelessWidget {
                                       : AppColors.lightAccentSoft,
                                 ),
                                 child: IconButton(
+                                  key: const Key('home_notifications_button'),
                                   icon: const Icon(
                                     Icons.notifications_none_rounded,
                                     color: AppColors.primary,
                                     size: 20,
                                   ),
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (_) => NotificationsScreen(
+                                          appState: appState,
+                                        ),
+                                      ),
+                                    );
+                                  },
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
                                 ),
                               ),
-                              Positioned(
-                                top: 2,
-                                right: 2,
-                                child: Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.danger,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: isDark ? const Color(0xFF1D1D1D) : Colors.white,
-                                      width: 1.5,
+                              if (appState.unreadNotificationCount > 0)
+                                Positioned(
+                                  top: 2,
+                                  right: 2,
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.danger,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isDark
+                                            ? const Color(0xFF1D1D1D)
+                                            : Colors.white,
+                                        width: 1.5,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                           const SizedBox(width: 12),
                           ShaderMask(
-                            shaderCallback: (bounds) => AppColors.mainGradient.createShader(
-                              Rect.fromLTWH(0, 0, bounds.width, bounds.height),
-                            ),
+                            shaderCallback: (bounds) =>
+                                AppColors.mainGradient.createShader(
+                                  Rect.fromLTWH(
+                                    0,
+                                    0,
+                                    bounds.width,
+                                    bounds.height,
+                                  ),
+                                ),
                             child: const Text(
                               'محامي سمارت',
                               style: TextStyle(
@@ -376,7 +414,9 @@ class HomeScreen extends StatelessWidget {
                                   fontFamily: 'Tajawal',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
-                                  color: isDark ? Colors.white : AppColors.primary,
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.primary,
                                   height: 1.1,
                                 ),
                               ),
@@ -467,10 +507,13 @@ class HomeScreen extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: (isDark ? const Color(0xFF1D1D1D) : Colors.white).withValues(alpha: 0.7),
+              color: (isDark ? const Color(0xFF1D1D1D) : Colors.white)
+                  .withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFD9C3AE).withValues(alpha: 0.15),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : const Color(0xFFD9C3AE).withValues(alpha: 0.15),
                 width: 1,
               ),
             ),
@@ -514,7 +557,11 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTodayAppointment(BuildContext context, bool isDark, Color textMuted) {
+  Widget _buildTodayAppointment(
+    BuildContext context,
+    bool isDark,
+    Color textMuted,
+  ) {
     if (appState.agenda.isEmpty) {
       return Container(
         height: 90,
@@ -522,7 +569,9 @@ class HomeScreen extends StatelessWidget {
           color: isDark ? const Color(0xFF1D1D1D) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFD9C3AE).withValues(alpha: 0.1),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.1)
+                : const Color(0xFFD9C3AE).withValues(alpha: 0.1),
             width: 1,
           ),
           boxShadow: const <BoxShadow>[
@@ -536,10 +585,7 @@ class HomeScreen extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Row(
           children: <Widget>[
-            Container(
-              width: 6,
-              color: textMuted.withValues(alpha: 0.4),
-            ),
+            Container(width: 6, color: textMuted.withValues(alpha: 0.4)),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -552,7 +598,9 @@ class HomeScreen extends StatelessWidget {
                       fontFamily: 'Tajawal',
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1B1B1B), // Fallback, but text theme handles this mostly
+                      color: Color(
+                        0xFF1B1B1B,
+                      ), // Fallback, but text theme handles this mostly
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -586,14 +634,22 @@ class HomeScreen extends StatelessWidget {
         status: CaseStatus.active,
         facts: [],
         documentIds: [],
-        readiness: CaseReadiness(hasDocuments: false, hasFacts: false, hasEnoughPoints: false),
+        readiness: CaseReadiness(
+          hasDocuments: false,
+          hasFacts: false,
+          hasEnoughPoints: false,
+        ),
       ),
     );
-    final clientName = matchingCase.clientName.isNotEmpty ? matchingCase.clientName : 'غير محدد';
-    
+    final clientName = matchingCase.clientName.isNotEmpty
+        ? matchingCase.clientName
+        : 'غير محدد';
+
     // format time starting at startsAt
     final time = appointment.startsAt;
-    final hour = time.hour > 12 ? time.hour - 12 : (time.hour == 0 ? 12 : time.hour);
+    final hour = time.hour > 12
+        ? time.hour - 12
+        : (time.hour == 0 ? 12 : time.hour);
     final period = time.hour >= 12 ? 'PM' : 'AM';
     final minute = time.minute.toString().padLeft(2, '0');
     final timeStr = '${hour.toString().padLeft(2, '0')}:$minute $period';
@@ -604,7 +660,9 @@ class HomeScreen extends StatelessWidget {
         color: isDark ? const Color(0xFF1D1D1D) : Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFD9C3AE).withValues(alpha: 0.1),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.1)
+              : const Color(0xFFD9C3AE).withValues(alpha: 0.1),
           width: 1,
         ),
         boxShadow: const <BoxShadow>[
@@ -619,10 +677,7 @@ class HomeScreen extends StatelessWidget {
       child: Row(
         children: <Widget>[
           // Right strip of primary color
-          Container(
-            width: 6,
-            color: AppColors.primary,
-          ),
+          Container(width: 6, color: AppColors.primary),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -678,7 +733,11 @@ class HomeScreen extends StatelessWidget {
               onPressed: () {
                 appState.setSelectedTab(3);
               },
-              icon: const Icon(Icons.chevron_left, color: AppColors.primary, size: 20),
+              icon: const Icon(
+                Icons.chevron_left,
+                color: AppColors.primary,
+                size: 20,
+              ),
               padding: EdgeInsets.zero,
             ),
           ),

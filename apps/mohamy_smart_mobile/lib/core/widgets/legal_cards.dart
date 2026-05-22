@@ -99,12 +99,16 @@ class CaseCard extends StatelessWidget {
 
     switch (legalCase.status) {
       case CaseStatus.active:
-        statusBgColor = isDark ? AppColors.darkAccentSoft : AppColors.lightAccentSoft;
+        statusBgColor = isDark
+            ? AppColors.darkAccentSoft
+            : AppColors.lightAccentSoft;
         statusTextColor = AppColors.primary;
         statusLabel = 'قضية نشطة';
         break;
       case CaseStatus.pending:
-        statusBgColor = isDark ? AppColors.darkInfoSoft : AppColors.lightInfoSoft;
+        statusBgColor = isDark
+            ? AppColors.darkInfoSoft
+            : AppColors.lightInfoSoft;
         statusTextColor = AppColors.blue;
         statusLabel = 'قيد الانتظار';
         break;
@@ -158,7 +162,10 @@ class CaseCard extends StatelessWidget {
                     color: statusBgColor,
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   child: Text(
                     statusLabel,
                     style: TextStyle(
@@ -198,15 +205,16 @@ class CaseCard extends StatelessWidget {
                 Expanded(
                   child: Row(
                     children: <Widget>[
-                      Icon(Icons.account_balance, size: 14, color: mutedTextColor),
+                      Icon(
+                        Icons.account_balance,
+                        size: 14,
+                        color: mutedTextColor,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           legalCase.court,
-                          style: TextStyle(
-                            color: mutedTextColor,
-                            fontSize: 12,
-                          ),
+                          style: TextStyle(color: mutedTextColor, fontSize: 12),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -223,10 +231,7 @@ class CaseCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           legalCase.clientName,
-                          style: TextStyle(
-                            color: mutedTextColor,
-                            fontSize: 12,
-                          ),
+                          style: TextStyle(color: mutedTextColor, fontSize: 12),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -237,11 +242,16 @@ class CaseCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             // Custom Divider
-            Divider(color: isDark ? borderColor.withValues(alpha: 0.5) : const Color(0x1AD9C3AE), height: 1, thickness: 1),
+            Divider(
+              color: isDark
+                  ? borderColor.withValues(alpha: 0.5)
+                  : const Color(0x1AD9C3AE),
+              height: 1,
+              thickness: 1,
+            ),
             const SizedBox(height: 12),
             // Footer
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -262,11 +272,15 @@ class CaseCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                Text(
-                  updateLabel,
-                  style: TextStyle(
-                    color: mutedTextColor,
-                    fontSize: 10,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Text(
+                      updateLabel,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: mutedTextColor, fontSize: 10),
+                    ),
                   ),
                 ),
               ],
@@ -504,11 +518,7 @@ class WorkflowCard extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(
-                icon,
-                color: AppColors.primary,
-                size: 28,
-              ),
+              child: Icon(icon, color: AppColors.primary, size: 28),
             ),
             const SizedBox(width: 14),
             // Details
@@ -529,10 +539,15 @@ class WorkflowCard extends StatelessWidget {
                       ),
                       Container(
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                          color: isDark
+                              ? Colors.white10
+                              : Colors.black.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         child: Text(
                           '${workflow.stepCount} خطوات',
                           style: TextStyle(
@@ -571,40 +586,10 @@ class WorkflowCard extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             // Navigation arrow (RTL points left, which is arrow_back)
-            const Icon(
-              Icons.arrow_back,
-              color: AppColors.primary,
-              size: 18,
-            ),
+            const Icon(Icons.arrow_back, color: AppColors.primary, size: 18),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _Meta extends StatelessWidget {
-  const _Meta({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<MohamyThemeTokens>()!;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Icon(icon, size: 16, color: tokens.muted),
-        const SizedBox(width: 4),
-        Flexible(
-          child: Text(
-            label,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: tokens.muted, fontSize: 12),
-          ),
-        ),
-      ],
     );
   }
 }

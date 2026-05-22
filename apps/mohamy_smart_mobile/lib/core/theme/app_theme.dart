@@ -191,9 +191,12 @@ class OffsetStartFloatLocation extends FloatingActionButtonLocation {
 
   @override
   Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
-    final double fabX = FloatingActionButtonLocation.startFloat.getOffset(scaffoldGeometry).dx;
-    final double fabY = FloatingActionButtonLocation.startFloat.getOffset(scaffoldGeometry).dy - 90.0;
+    final double fabX = FloatingActionButtonLocation.startFloat
+        .getOffset(scaffoldGeometry)
+        .dx;
+    final double fabY =
+        FloatingActionButtonLocation.startFloat.getOffset(scaffoldGeometry).dy -
+        90.0;
     return Offset(fabX, fabY);
   }
 }
-

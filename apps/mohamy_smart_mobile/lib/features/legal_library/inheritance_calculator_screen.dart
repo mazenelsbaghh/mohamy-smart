@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_card.dart';
@@ -7,10 +9,12 @@ class InheritanceCalculatorScreen extends StatefulWidget {
   const InheritanceCalculatorScreen({super.key});
 
   @override
-  State<InheritanceCalculatorScreen> createState() => _InheritanceCalculatorScreenState();
+  State<InheritanceCalculatorScreen> createState() =>
+      _InheritanceCalculatorScreenState();
 }
 
-class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScreen> {
+class _InheritanceCalculatorScreenState
+    extends State<InheritanceCalculatorScreen> {
   final _estateController = TextEditingController(text: '1000000');
   final _debtsController = TextEditingController(text: '0');
   final _bequestsController = TextEditingController(text: '0');
@@ -36,7 +40,9 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
 
     setState(() {
       // Check if heir type already exists
-      final existingIndex = _heirs.indexWhere((h) => h.type == _selectedHeirType);
+      final existingIndex = _heirs.indexWhere(
+        (h) => h.type == _selectedHeirType,
+      );
       if (existingIndex >= 0) {
         _heirs[existingIndex].count += count;
       } else {
@@ -100,9 +106,9 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                   Text(
                     'بيانات التركة والالتزامات',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.primaryBronze,
-                        ),
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primaryBronze,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
@@ -133,7 +139,9 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
                             labelText: 'الوصايا الاختيارية',
-                            prefixIcon: Icon(Icons.assignment_turned_in_outlined),
+                            prefixIcon: Icon(
+                              Icons.assignment_turned_in_outlined,
+                            ),
                           ),
                         ),
                       ),
@@ -152,9 +160,9 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                   Text(
                     'إضافة الورثة المستحقين',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.primaryBronze,
-                        ),
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primaryBronze,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -166,7 +174,9 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                           decoration: const InputDecoration(
                             labelText: 'صلة القرابة',
                           ),
-                          dropdownColor: isDark ? AppColors.darkSurface : Colors.white,
+                          dropdownColor: isDark
+                              ? AppColors.darkSurface
+                              : Colors.white,
                           items: HeirType.values.map((type) {
                             return DropdownMenuItem<HeirType>(
                               value: type,
@@ -188,9 +198,7 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                         child: TextField(
                           controller: _heirCountController,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'العدد',
-                          ),
+                          decoration: const InputDecoration(labelText: 'العدد'),
                         ),
                       ),
                     ],
@@ -211,8 +219,8 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                     Text(
                       'الورثة المضافون:',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     ListView.builder(
@@ -223,9 +231,14 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                         final heir = _heirs[index];
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkSurfaceSoft : AppColors.lightSurfaceMuted,
+                            color: isDark
+                                ? AppColors.darkSurfaceSoft
+                                : AppColors.lightSurfaceMuted,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: themeTokens.border),
                           ),
@@ -234,10 +247,15 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                             children: [
                               Text(
                                 '${heir.type.arabicLabel} (العدد: ${heir.count})',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: AppColors.danger,
+                                ),
                                 onPressed: () => _removeHeir(index),
                               ),
                             ],
@@ -275,13 +293,16 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.analytics_outlined, color: AppColors.primary, size: 28),
+                        const Icon(
+                          Icons.analytics_outlined,
+                          color: AppColors.primary,
+                          size: 28,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'نتائج التوزيع الشرعي',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w900,
-                              ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w900),
                         ),
                       ],
                     ),
@@ -296,9 +317,15 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                       ),
                       child: Column(
                         children: [
-                          _buildSummaryRow('إجمالي التركة الموزعة:', '${_result!.totalDistributed.toStringAsFixed(2)} جنيه/ريال'),
+                          _buildSummaryRow(
+                            'إجمالي التركة الموزعة:',
+                            '${_result!.totalDistributed.toStringAsFixed(2)} جنيه/ريال',
+                          ),
                           if (_result!.remainingEstate > 0)
-                            _buildSummaryRow('المتبقي لبيت المال:', '${_result!.remainingEstate.toStringAsFixed(2)} جنيه/ريال'),
+                            _buildSummaryRow(
+                              'المتبقي لبيت المال:',
+                              '${_result!.remainingEstate.toStringAsFixed(2)} جنيه/ريال',
+                            ),
                         ],
                       ),
                     ),
@@ -311,7 +338,9 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                         decoration: BoxDecoration(
                           color: AppColors.danger.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.danger.withValues(alpha: 0.2)),
+                          border: Border.all(
+                            color: AppColors.danger.withValues(alpha: 0.2),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,7 +350,11 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 18),
+                                  const Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: AppColors.danger,
+                                    size: 18,
+                                  ),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
@@ -345,8 +378,8 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                     Text(
                       'أنصبة الورثة التفصيلية:',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 12),
 
@@ -361,7 +394,9 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkSurfaceSoft : AppColors.lightSurface,
+                            color: isDark
+                                ? AppColors.darkSurfaceSoft
+                                : AppColors.lightSurface,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: themeTokens.border),
                           ),
@@ -369,7 +404,8 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     '${share.heirType.arabicLabel} (العدد: ${share.count})',
@@ -379,9 +415,14 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(alpha: 0.12),
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.12,
+                                      ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
@@ -396,10 +437,19 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              _buildShareDetailRow('نصيب الفرد الواحد:', '${share.perPersonAmount.toStringAsFixed(2)} جنيه/ريال'),
-                              _buildShareDetailRow('إجمالي نصيب الفئة:', '${share.totalAmount.toStringAsFixed(2)} جنيه/ريال'),
+                              _buildShareDetailRow(
+                                'نصيب الفرد الواحد:',
+                                '${share.perPersonAmount.toStringAsFixed(2)} جنيه/ريال',
+                              ),
+                              _buildShareDetailRow(
+                                'إجمالي نصيب الفئة:',
+                                '${share.totalAmount.toStringAsFixed(2)} جنيه/ريال',
+                              ),
                               if (share.fraction != null)
-                                _buildShareDetailRow('الفرض الشرعي المقدر:', share.fraction!),
+                                _buildShareDetailRow(
+                                  'الفرض الشرعي المقدر:',
+                                  share.fraction!,
+                                ),
                               const SizedBox(height: 6),
                               Text(
                                 'السند الشرعي: ${share.legalBasis}',
@@ -448,10 +498,7 @@ class _InheritanceCalculatorScreenState extends State<InheritanceCalculatorScree
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-          ),
+          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
           const SizedBox(width: 8),
           Text(
             value,

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../app/app_state.dart';
 import '../../core/models/legal_models.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/app_card.dart';
 import '../../core/widgets/legal_cards.dart';
 import '../cases/case_details_screen.dart';
 
@@ -53,7 +52,6 @@ class _ClientsScreenState extends State<ClientsScreen> {
     return gradients[index % gradients.length];
   }
 
-
   void _showAddClientDialog(BuildContext context) {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
@@ -67,7 +65,6 @@ class _ClientsScreenState extends State<ClientsScreen> {
       builder: (dialogCtx) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final cardBg = isDark ? AppColors.darkSurface : Colors.white;
-        final titleColor = isDark ? Colors.white : AppColors.primaryBronze;
         final textColor = isDark ? Colors.white : Colors.black87;
 
         return StatefulBuilder(
@@ -107,17 +104,29 @@ class _ClientsScreenState extends State<ClientsScreen> {
                     children: [
                       TextFormField(
                         controller: nameController,
-                        style: TextStyle(fontFamily: 'Tajawal', color: textColor),
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          color: textColor,
+                        ),
                         decoration: InputDecoration(
                           labelText: 'الاسم الكامل *',
-                          labelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
-                          prefixIcon: const Icon(Icons.person_outline, color: AppColors.primary),
+                          labelStyle: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 13,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.person_outline,
+                            color: AppColors.primary,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                            borderSide: const BorderSide(
+                              color: AppColors.primary,
+                              width: 1.5,
+                            ),
                           ),
                         ),
                         validator: (value) {
@@ -131,17 +140,29 @@ class _ClientsScreenState extends State<ClientsScreen> {
                       TextFormField(
                         controller: phoneController,
                         keyboardType: TextInputType.phone,
-                        style: TextStyle(fontFamily: 'Tajawal', color: textColor),
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          color: textColor,
+                        ),
                         decoration: InputDecoration(
                           labelText: 'رقم الهاتف *',
-                          labelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
-                          prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.primary),
+                          labelStyle: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 13,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.phone_outlined,
+                            color: AppColors.primary,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                            borderSide: const BorderSide(
+                              color: AppColors.primary,
+                              width: 1.5,
+                            ),
                           ),
                         ),
                         validator: (value) {
@@ -155,17 +176,29 @@ class _ClientsScreenState extends State<ClientsScreen> {
                       TextFormField(
                         controller: emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: TextStyle(fontFamily: 'Tajawal', color: textColor),
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          color: textColor,
+                        ),
                         decoration: InputDecoration(
                           labelText: 'البريد الإلكتروني (اختياري)',
-                          labelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
-                          prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
+                          labelStyle: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 13,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.email_outlined,
+                            color: AppColors.primary,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                            borderSide: const BorderSide(
+                              color: AppColors.primary,
+                              width: 1.5,
+                            ),
                           ),
                         ),
                       ),
@@ -173,10 +206,15 @@ class _ClientsScreenState extends State<ClientsScreen> {
                   ),
                 ),
               ),
-              actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              actionsPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
               actions: [
                 TextButton(
-                  onPressed: isLoading ? null : () => Navigator.of(dialogCtx).pop(),
+                  onPressed: isLoading
+                      ? null
+                      : () => Navigator.of(dialogCtx).pop(),
                   child: const Text(
                     'إلغاء',
                     style: TextStyle(fontFamily: 'Tajawal', color: Colors.grey),
@@ -190,7 +228,9 @@ class _ClientsScreenState extends State<ClientsScreen> {
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.primary,
+                            ),
                           ),
                         ),
                       )
@@ -233,7 +273,9 @@ class _ClientsScreenState extends State<ClientsScreen> {
                                   SnackBar(
                                     content: Text(
                                       'خطأ أثناء الإضافة: $e',
-                                      style: const TextStyle(fontFamily: 'Tajawal'),
+                                      style: const TextStyle(
+                                        fontFamily: 'Tajawal',
+                                      ),
                                     ),
                                     backgroundColor: Colors.redAccent,
                                   ),
@@ -296,8 +338,9 @@ class _ClientsScreenState extends State<ClientsScreen> {
     final totalClients = widget.appState.clients.length;
     final activeClients = widget.appState.clients.where((client) {
       // Client is active if they have any active case in case state
-      return widget.appState.cases.any((c) =>
-          client.caseIds.contains(c.id) && c.status == CaseStatus.active);
+      return widget.appState.cases.any(
+        (c) => client.caseIds.contains(c.id) && c.status == CaseStatus.active,
+      );
     }).length;
 
     return Scaffold(
@@ -307,10 +350,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
         backgroundColor: canvasBg,
         elevation: 0,
         actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.menu),
-          ),
+          IconButton(onPressed: () {}, icon: const Icon(Icons.menu)),
           const SizedBox(width: 8),
         ],
       ),
@@ -358,7 +398,10 @@ class _ClientsScreenState extends State<ClientsScreen> {
             children: [
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: cardBg,
                     borderRadius: BorderRadius.circular(20),
@@ -368,8 +411,9 @@ class _ClientsScreenState extends State<ClientsScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF885200)
-                            .withValues(alpha: isDark ? 0.01 : 0.04),
+                        color: const Color(
+                          0xFF885200,
+                        ).withValues(alpha: isDark ? 0.01 : 0.04),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -391,7 +435,9 @@ class _ClientsScreenState extends State<ClientsScreen> {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : AppColors.primaryBronze,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.primaryBronze,
                         ),
                       ),
                     ],
@@ -401,7 +447,10 @@ class _ClientsScreenState extends State<ClientsScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: cardBg,
                     borderRadius: BorderRadius.circular(20),
@@ -411,8 +460,9 @@ class _ClientsScreenState extends State<ClientsScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF885200)
-                            .withValues(alpha: isDark ? 0.01 : 0.04),
+                        color: const Color(
+                          0xFF885200,
+                        ).withValues(alpha: isDark ? 0.01 : 0.04),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -473,7 +523,10 @@ class _ClientsScreenState extends State<ClientsScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: AppColors.primary, width: 1.2),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 1.2,
+                  ),
                 ),
               ),
               onChanged: (value) {
@@ -500,8 +553,11 @@ class _ClientsScreenState extends State<ClientsScreen> {
             ...filteredClients.asMap().entries.map((entry) {
               final index = entry.key;
               final client = entry.value;
-              final hasActiveCase = widget.appState.cases.any((c) =>
-                  client.caseIds.contains(c.id) && c.status == CaseStatus.active);
+              final hasActiveCase = widget.appState.cases.any(
+                (c) =>
+                    client.caseIds.contains(c.id) &&
+                    c.status == CaseStatus.active,
+              );
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -511,8 +567,9 @@ class _ClientsScreenState extends State<ClientsScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF885200)
-                            .withValues(alpha: isDark ? 0.01 : 0.03),
+                        color: const Color(
+                          0xFF885200,
+                        ).withValues(alpha: isDark ? 0.01 : 0.03),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -684,8 +741,9 @@ class ClientDetailsScreen extends StatelessWidget {
         .where((legalCase) => client.caseIds.contains(legalCase.id))
         .toList(growable: false);
 
-    final hasActiveCase = appState.cases.any((c) =>
-        client.caseIds.contains(c.id) && c.status == CaseStatus.active);
+    final hasActiveCase = appState.cases.any(
+      (c) => client.caseIds.contains(c.id) && c.status == CaseStatus.active,
+    );
 
     return DefaultTabController(
       length: 3,
@@ -700,10 +758,7 @@ class ClientDetailsScreen extends StatelessWidget {
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.more_vert),
-              onPressed: () {},
-            ),
+            IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
           ],
         ),
         body: ListView(
@@ -720,8 +775,9 @@ class ClientDetailsScreen extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF885200)
-                        .withValues(alpha: isDark ? 0.01 : 0.04),
+                    color: const Color(
+                      0xFF885200,
+                    ).withValues(alpha: isDark ? 0.01 : 0.04),
                     blurRadius: 32,
                     offset: const Offset(0, 12),
                   ),
@@ -780,10 +836,7 @@ class ClientDetailsScreen extends StatelessWidget {
                                       end: Alignment.bottomRight,
                                     ),
                                     shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: cardBg,
-                                      width: 2,
-                                    ),
+                                    border: Border.all(color: cardBg, width: 2),
                                     boxShadow: const [
                                       BoxShadow(
                                         color: Colors.black12,
@@ -901,7 +954,9 @@ class ClientDetailsScreen extends StatelessWidget {
             // Tabs Navigation Bar (matching surface-container-low style)
             Container(
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF141414) : const Color(0xFFF6F4EC),
+                color: isDark
+                    ? const Color(0xFF141414)
+                    : const Color(0xFFF6F4EC),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: (isDark ? Colors.white : const Color(0xFFD9C3AE))
@@ -954,7 +1009,10 @@ class ClientDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActionButton({required IconData icon, required Color bgColor}) {
+  Widget _buildQuickActionButton({
+    required IconData icon,
+    required Color bgColor,
+  }) {
     return Container(
       width: 48,
       height: 48,
@@ -962,11 +1020,7 @@ class ClientDetailsScreen extends StatelessWidget {
         color: bgColor,
         shape: BoxShape.circle,
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       child: IconButton(
@@ -989,10 +1043,7 @@ class ClientDetailsScreen extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           child: Text(
             'المعلومات الأساسية',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
         const SizedBox(height: 10),
@@ -1002,8 +1053,9 @@ class ClientDetailsScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF885200)
-                    .withValues(alpha: isDark ? 0.01 : 0.04),
+                color: const Color(
+                  0xFF885200,
+                ).withValues(alpha: isDark ? 0.01 : 0.04),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -1069,16 +1121,15 @@ class ClientDetailsScreen extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
           ],
         ),
         Icon(
           icon,
-          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.7),
+          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(
+            alpha: 0.7,
+          ),
           size: 20,
         ),
       ],
@@ -1087,9 +1138,7 @@ class ClientDetailsScreen extends StatelessWidget {
 
   Widget _buildCasesTab(BuildContext context, List<LegalCase> linkedCases) {
     if (linkedCases.isEmpty) {
-      return const Center(
-        child: Text('لا يوجد قضايا مرتبطة بهذا الموكل'),
-      );
+      return const Center(child: Text('لا يوجد قضايا مرتبطة بهذا الموكل'));
     }
 
     return ListView.builder(
@@ -1128,9 +1177,7 @@ class ClientDetailsScreen extends StatelessWidget {
         .toList();
 
     if (clientDocs.isEmpty) {
-      return const Center(
-        child: Text('لا يوجد مستندات مرفوعة لهذا الموكل'),
-      );
+      return const Center(child: Text('لا يوجد مستندات مرفوعة لهذا الموكل'));
     }
 
     return ListView(
@@ -1142,15 +1189,9 @@ class ClientDetailsScreen extends StatelessWidget {
           children: [
             const Text(
               'المستندات الأخيرة',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            TextButton(
-              onPressed: () {},
-              child: const Text('عرض الكل'),
-            ),
+            TextButton(onPressed: () {}, child: const Text('عرض الكل')),
           ],
         ),
         const SizedBox(height: 10),
@@ -1168,11 +1209,15 @@ class ClientDetailsScreen extends StatelessWidget {
           itemCount: clientDocs.length,
           itemBuilder: (context, index) {
             final doc = clientDocs[index];
-            final isPdf = doc.title.toLowerCase().contains('.pdf') || doc.type.contains('عقد');
+            final isPdf =
+                doc.title.toLowerCase().contains('.pdf') ||
+                doc.type.contains('عقد');
             return Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1D1D1D) : const Color(0xFFF7F3EA),
+                color: isDark
+                    ? const Color(0xFF1D1D1D)
+                    : const Color(0xFFF7F3EA),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: AppColors.primary.withValues(alpha: 0.2),
@@ -1184,7 +1229,9 @@ class ClientDetailsScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    isPdf ? Icons.picture_as_pdf_outlined : Icons.description_outlined,
+                    isPdf
+                        ? Icons.picture_as_pdf_outlined
+                        : Icons.description_outlined,
                     color: AppColors.primary,
                     size: 36,
                   ),
@@ -1202,10 +1249,7 @@ class ClientDetailsScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     doc.type,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: mutedText,
-                    ),
+                    style: TextStyle(fontSize: 11, color: mutedText),
                   ),
                 ],
               ),

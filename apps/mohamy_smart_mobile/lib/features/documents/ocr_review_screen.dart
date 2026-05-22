@@ -1,8 +1,8 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../app/app_state.dart';
 import '../../core/models/legal_models.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/app_card.dart';
 import '../cases/add_case_screen.dart';
 
 class OcrReviewScreen extends StatefulWidget {
@@ -10,51 +10,45 @@ class OcrReviewScreen extends StatefulWidget {
     required this.document,
     required this.appState,
     this.extractedText,
+    this.imageBytes,
+    this.fileType,
     super.key,
   });
 
   final LegalDocument document;
   final AppState appState;
   final String? extractedText;
+  final List<int>? imageBytes;
+  final String? fileType;
 
   @override
   State<OcrReviewScreen> createState() => _OcrReviewScreenState();
 }
 
-class _OcrReviewScreenState extends State<OcrReviewScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  late TextEditingController _titleController;
-  late TextEditingController _dateController;
-  late TextEditingController _caseController;
+class _OcrReviewScreenState extends State<OcrReviewScreen> {
   late TextEditingController _contentController;
+  bool _isImageExpanded = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    
-    // Initialize editable controllers with doc info
-    _titleController = TextEditingController(text: widget.document.title);
-    _dateController = TextEditingController(text: widget.document.dateLabel);
-    _caseController = TextEditingController(text: 'قضية مطالبة مالية - الرياض');
     _contentController = TextEditingController(
-      text: widget.extractedText ??
-          'المستند المرفق هو عقد توريد وتركيب مواد كهربائية وانشائية مؤرخ في ٢٠ مايو ٢٠٢٦م، محرر بين شركة النور للتجارة والتوريدات (طرف أول) ومؤسسة العمار للمقاولات (طرف ثاني)، بقيمة إجمالية قدرها ١٥٠,٠٠٠ ريال سعودي. المحكمة التجارية بالرياض هي الجهة القضائية المتفق عليها لتسوية النزاعات.',
+      text: widget.extractedText ?? '',
     );
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
-    _titleController.dispose();
-    _dateController.dispose();
-    _caseController.dispose();
     _contentController.dispose();
     super.dispose();
   }
 
+  bool get _isImageFile {
+    final ext = (widget.fileType ?? '').toLowerCase();
+    return ext == 'jpg' || ext == 'jpeg' || ext == 'png' || ext == 'webp';
+  }
+
   void _saveDocument() {
-    // Show a beautiful premium feedback SnackBar
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: Colors.transparent,
@@ -112,10 +106,11 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> with SingleTickerProv
                   : Colors.white,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: (Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : const Color(0xFFD9C3AE))
-                    .withValues(alpha: 0.15),
+                color:
+                    (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : const Color(0xFFD9C3AE))
+                        .withValues(alpha: 0.15),
               ),
               boxShadow: const [
                 BoxShadow(
@@ -147,33 +142,63 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> with SingleTickerProv
       },
     );
 
-    String caseNumber = '١٤٤٧/٩٨٧٦٥';
-    String clientName = 'شركة النور للتجارة والتوريدات';
-    String court = 'المحكمة التجارية بالرياض';
-    String caseType = 'تجاري - مطالبة مالية';
+    String caseNumber = '';
+    String clientName = '';
+    String court = '';
+    String caseType = '';
+    String adversary = '';
+    String legalClaims = '';
+    bool success = false;
 
     try {
       final response = await widget.appState.apiService.generateCaseFile(
         revisedText: _contentController.text,
       );
 
-      final data = response['data'] as Map<String, dynamic>?;
-      if (data != null) {
-        caseNumber = data['number'] ?? data['caseNumber'] ?? caseNumber;
-        clientName = data['clientName'] ?? data['client'] ?? clientName;
-        court = data['court'] ?? data['courtName'] ?? court;
-        caseType = data['type'] ??
-            (data['types'] != null && (data['types'] as List).isNotEmpty
-                ? data['types'][0].toString()
-                : caseType);
+      if (response['succeeded'] == true) {
+        final data = response['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          caseNumber = (data['number'] ?? data['caseNumber'] ?? '').toString();
+          clientName = (data['clientName'] ?? data['client'] ?? '').toString();
+          court = (data['court'] ?? data['courtName'] ?? '').toString();
+          caseType =
+              data['type']?.toString() ??
+              (data['types'] != null && (data['types'] as List).isNotEmpty
+                  ? data['types'][0].toString()
+                  : '');
+          adversary =
+              (data['adversary'] ??
+                      data['opponentName'] ??
+                      data['apponentName'] ??
+                      '')
+                  .toString();
+          legalClaims =
+              (data['legalClaims'] ?? data['claims'] ?? data['requests'] ?? '')
+                  .toString();
+          success = true;
+        }
       }
     } catch (e) {
       debugPrint('Error generating case via AI: $e');
-      // Fallback is already initialized to the defaults
     } finally {
       if (mounted) {
         Navigator.of(context).pop(); // dismiss loading dialog
       }
+    }
+
+    if (!success) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'فشل إنشاء القضية بالذكاء الاصطناعي. الرجاء التحقق من الاتصال بالخادم والمحاولة مرة أخرى.',
+              style: TextStyle(fontFamily: 'Tajawal'),
+            ),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+      return;
     }
 
     if (mounted) {
@@ -185,6 +210,9 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> with SingleTickerProv
             initialClientName: clientName,
             initialCourt: court,
             initialCaseType: caseType,
+            initialFacts: _contentController.text.trim(),
+            initialAdversary: adversary,
+            initialLegalClaims: legalClaims,
           ),
         ),
       );
@@ -209,121 +237,327 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> with SingleTickerProv
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          // 1. Overview Accuracy & Auto-audit Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.1),
+          // 1. Document image preview
+          _buildImageSection(isDark, cardBg, mutedText, titleColor),
+          const SizedBox(height: 20),
+
+          // 2. Extracted text section
+          _buildExtractedTextSection(isDark, cardBg, mutedText, titleColor),
+          const SizedBox(height: 20),
+
+          // 3. AI Case Generation Button
+          _buildAiGenerateButton(),
+          const SizedBox(height: 20),
+
+          // 4. Action buttons
+          _buildActionButtons(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageSection(
+    bool isDark,
+    Color cardBg,
+    Color mutedText,
+    Color titleColor,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(
+            alpha: 0.1,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(
+              0xFF885200,
+            ).withValues(alpha: isDark ? 0.01 : 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with toggle
+          InkWell(
+            onTap: () => setState(() => _isImageExpanded = !_isImageExpanded),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(24),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.image_outlined,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'الوثيقة الأصلية',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            color: titleColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.document.title,
+                          style: TextStyle(fontSize: 11, color: mutedText),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // File type badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      widget.document.type,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  AnimatedRotation(
+                    turns: _isImageExpanded ? 0.0 : -0.25,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      color: mutedText,
+                      size: 24,
+                    ),
+                  ),
+                ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF885200).withValues(alpha: isDark ? 0.01 : 0.04),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+            ),
+          ),
+
+          // Image content (collapsible)
+          AnimatedCrossFade(
+            firstChild: _buildImageContent(isDark, mutedText),
+            secondChild: const SizedBox.shrink(),
+            crossFadeState: _isImageExpanded
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            duration: const Duration(milliseconds: 250),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageContent(bool isDark, Color mutedText) {
+    final hasImage = widget.imageBytes != null && widget.imageBytes!.isNotEmpty;
+
+    return Column(
+      children: [
+        Divider(
+          height: 1,
+          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(
+            alpha: 0.1,
+          ),
+        ),
+        Container(
+          constraints: const BoxConstraints(maxHeight: 400),
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          child: hasImage && _isImageFile
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.memory(
+                    Uint8List.fromList(widget.imageBytes!),
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, e, st) => _buildPlaceholder(
+                        isDark,
+                        mutedText,
+                        'تعذر عرض الصورة',
+                      ),
+                  ),
+                )
+              : hasImage && !_isImageFile
+                  ? _buildPlaceholder(
+                      isDark,
+                      mutedText,
+                      'ملف PDF — لا يمكن عرضه كصورة',
+                      icon: Icons.picture_as_pdf,
+                    )
+                  : _buildPlaceholder(isDark, mutedText, 'لا تتوفر صورة للمعاينة'),
+        ),
+        // Pinch to zoom hint for images
+        if (hasImage && _isImageFile)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.pinch_outlined, size: 14, color: mutedText),
+                const SizedBox(width: 4),
+                Text(
+                  'اضغط مطولاً وكبّر للتفاصيل',
+                  style: TextStyle(fontSize: 10, color: mutedText),
                 ),
               ],
             ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPlaceholder(bool isDark, Color mutedText, String text,
+      {IconData icon = Icons.image_not_supported_outlined}) {
+    return Container(
+      height: 160,
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.03)
+            : const Color(0xFFF6F4EC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(
+            alpha: 0.1,
+          ),
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 40, color: mutedText),
+            const SizedBox(height: 8),
+            Text(text, style: TextStyle(fontSize: 12, color: mutedText)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExtractedTextSection(
+    bool isDark,
+    Color cardBg,
+    Color mutedText,
+    Color titleColor,
+  ) {
+    final text = _contentController.text;
+    final wordCount = text.trim().isEmpty
+        ? 0
+        : text.trim().split(RegExp(r'\s+')).length;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(
+            alpha: 0.1,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(
+              0xFF885200,
+            ).withValues(alpha: isDark ? 0.01 : 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section header
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Circular Accuracy Radial
-                SizedBox(
-                  width: 76,
-                  height: 76,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        value: 0.98,
-                        strokeWidth: 7,
-                        color: AppColors.success,
-                        backgroundColor: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
-                      ),
-                      const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '٩٨٪',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.success,
-                              height: 1.1,
-                            ),
-                          ),
-                          Text(
-                            'دقة القراءة',
-                            style: TextStyle(
-                              fontSize: 8,
-                              color: AppColors.success,
-                              fontWeight: FontWeight.bold,
-                              height: 1.1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.text_snippet_outlined,
+                    color: AppColors.success,
+                    size: 20,
                   ),
                 ),
-                const SizedBox(width: 16),
-                // Text details
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFDCFCE7),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.auto_awesome, color: Color(0xFF15803D), size: 12),
-                                SizedBox(width: 4),
-                                Text(
-                                  'تدقيق ذكي',
-                                  style: TextStyle(
-                                    color: Color(0xFF15803D),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            widget.document.type,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: mutedText,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
                       Text(
-                        _titleController.text,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'تاريخ المسح: ٢١ مايو ٢٠٢٦',
+                        'النص المستخرج',
                         style: TextStyle(
-                          fontSize: 11,
-                          color: mutedText,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: titleColor,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$wordCount كلمة',
+                        style: TextStyle(fontSize: 11, color: mutedText),
+                      ),
+                    ],
+                  ),
+                ),
+                // Accuracy badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.auto_awesome,
+                        color: Color(0xFF15803D),
+                        size: 12,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'تدقيق ذكي',
+                        style: TextStyle(
+                          color: Color(0xFF15803D),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
@@ -332,108 +566,159 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> with SingleTickerProv
               ],
             ),
           ),
-          const SizedBox(height: 20),
 
-          // 2. TabBar navigation container
-          Container(
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF141414) : const Color(0xFFF6F4EC),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.1),
-              ),
-            ),
-            padding: const EdgeInsets.all(4),
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              labelColor: Colors.white,
-              unselectedLabelColor: mutedText,
-              dividerColor: Colors.transparent,
-              indicatorSize: TabBarIndicatorSize.tab,
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Tajawal',
-                fontSize: 14,
-              ),
-              tabs: const [
-                Tab(text: 'الوثيقة الأصلية'),
-                Tab(text: 'البيانات المستخرجة'),
-              ],
+          Divider(
+            height: 1,
+            color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(
+              alpha: 0.1,
             ),
           ),
-          const SizedBox(height: 16),
 
-          // 3. TabBarView simulated height area
-          SizedBox(
-            height: 420,
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildOriginalDocView(isDark, cardBg, mutedText),
-                _buildExtractedFieldsForm(isDark, cardBg, mutedText),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // 4. Smart Check Audit Block
-          Container(
+          // Editable text content
+          Padding(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1D1D1D) : const Color(0xFFFBFAE8),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: const Color(0xFFEF950A).withValues(alpha: 0.15),
+            child: TextField(
+              controller: _contentController,
+              maxLines: null,
+              minLines: 8,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.8,
+                color: isDark ? Colors.white : const Color(0xFF2C2418),
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.security_update_good_outlined, color: AppColors.primary, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'التدقيق القانوني الذكي للوثيقة',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: titleColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '• تم تحديد أطراف التعاقد: الطرف الأول (شركة النور) والطرف الثاني (مؤسسة العمار).\n• تم رصد قيمة الالتزام المالي بشكل صحيح ومطابقتها بالتفصيل المكتوب.\n• لم يتم رصد أي تضارب في التواريخ أو المواعيد القانونية الواردة بالبند الرابع.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? Colors.white70 : const Color(0xFF5C5243),
-                    height: 1.6,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                filled: true,
+                fillColor: isDark
+                    ? Colors.white.withValues(alpha: 0.03)
+                    : const Color(0xFFFBF9F4),
+                contentPadding: const EdgeInsets.all(16),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: (isDark ? Colors.white : const Color(0xFFD9C3AE))
+                        .withValues(alpha: 0.1),
                   ),
                 ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 1.5,
+                  ),
+                ),
+                hintText: 'لا يوجد نص مستخرج...',
+                hintStyle: TextStyle(color: mutedText, fontSize: 13),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+          ),
+
+          // Edit hint
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Row(
+              children: [
+                Icon(Icons.edit_note, size: 14, color: mutedText),
+                const SizedBox(width: 4),
+                Text(
+                  'يمكنك تعديل النص المستخرج قبل إنشاء القضية',
+                  style: TextStyle(fontSize: 10, color: mutedText),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
 
-          // AI Case Generation Button
-          InkWell(
-            key: const Key('ai_generate_case_button'),
-            onTap: _generateCaseWithAi,
+  Widget _buildAiGenerateButton() {
+    return InkWell(
+      key: const Key('ai_generate_case_button'),
+      onTap: _generateCaseWithAi,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF885200), Color(0xFFEF950A)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x33885200),
+              blurRadius: 16,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+            SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                'إنشاء قضية بالذكاء الاصطناعي',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Tajawal',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('جاري إعادة الفحص وقراءة المستند...'),
+                ),
+              );
+            },
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              side: const BorderSide(
+                color: AppColors.primary,
+                width: 1.4,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: const Text(
+              'إعادة الفحص',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: InkWell(
+            onTap: _saveDocument,
             borderRadius: BorderRadius.circular(16),
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF885200), Color(0xFFEF950A)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: AppColors.goldGradient,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: const [
                   BoxShadow(
@@ -443,250 +728,17 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> with SingleTickerProv
                   ),
                 ],
               ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.auto_awesome, color: Colors.white, size: 20),
-                  SizedBox(width: 10),
-                  Text(
-                    'إنشاء قضية بالذكاء الاصطناعي ✨',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Tajawal',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // 5. Actions Row
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    // Simulating rescan
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('جاري إعادة الفحص وقراءة المستند...'),
-                      ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: AppColors.primary, width: 1.4),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text(
-                    'إعادة الفحص',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: InkWell(
-                  onTap: _saveDocument,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.goldGradient,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x33885200),
-                          blurRadius: 16,
-                          offset: Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: const Text(
-                      'حفظ المستند',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOriginalDocView(bool isDark, Color cardBg, Color mutedText) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161616) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.1),
-        ),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header of document
-            Center(
-              child: Container(
-                width: 120,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: (isDark ? Colors.white24 : Colors.black12),
-                  borderRadius: BorderRadius.circular(4),
+              alignment: Alignment.center,
+              child: const Text(
+                'حفظ المستند',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            _buildHighlightedLine('المملكة العربية السعودية', isHeader: true),
-            const SizedBox(height: 12),
-            _buildHighlightedLine('عقد توريد وتركيب مواد كهربائية وانشائية', isHighlighted: true),
-            const SizedBox(height: 20),
-            _buildHighlightedLine('إنه في يوم: ٢٠ مايو ٢٠٢٦م تم الاتفاق بين كل من:'),
-            _buildHighlightedLine('طرف أول: شركة النور للتجارة والتوريدات ويمثلها...', isHighlighted: true),
-            _buildHighlightedLine('طرف ثاني: مؤسسة العمار للمقاولات ويمثلها...'),
-            _buildHighlightedLine('موضوع العقد: توريد كابلات كهربائية ومحولات ضغط عالي حسب المواصفات الفنية الملحقة...'),
-            _buildHighlightedLine('القيمة الإجمالية: ١٥٠,٠٠٠ ريال سعودي تدفع على دفعات...', isHighlighted: true),
-            _buildHighlightedLine('المحكمة المختصة: المحكمة التجارية بالرياض في حال نشوب أي نزاع.', isHighlighted: true),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  children: [
-                    Container(width: 80, height: 2, color: isDark ? Colors.white30 : Colors.black26),
-                    const SizedBox(height: 4),
-                    Text('توقيع الطرف الأول', style: TextStyle(fontSize: 10, color: mutedText)),
-                  ],
-                ),
-                Column(
-                  children: [
-                    Container(width: 80, height: 2, color: isDark ? Colors.white30 : Colors.black26),
-                    const SizedBox(height: 4),
-                    Text('توقيع الطرف الثاني', style: TextStyle(fontSize: 10, color: mutedText)),
-                  ],
-                ),
-              ],
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHighlightedLine(String text, {bool isHeader = false, bool isHighlighted = false}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: isHighlighted
-          ? BoxDecoration(
-              color: const Color(0xFFEF950A).withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFEF950A).withValues(alpha: 0.3), width: 1),
-            )
-          : null,
-      child: Text(
-        text,
-        textAlign: isHeader ? TextAlign.center : TextAlign.start,
-        style: TextStyle(
-          fontSize: isHeader ? 14 : 12,
-          fontWeight: isHeader || isHighlighted ? FontWeight.bold : FontWeight.normal,
-          height: 1.6,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExtractedFieldsForm(bool isDark, Color cardBg, Color mutedText) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161616) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: (isDark ? Colors.white : const Color(0xFFD9C3AE)).withValues(alpha: 0.1),
-        ),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildFieldInput(
-              label: 'اسم المستند',
-              controller: _titleController,
-              icon: Icons.title,
-            ),
-            const SizedBox(height: 14),
-            _buildFieldInput(
-              label: 'تاريخ الإصدار',
-              controller: _dateController,
-              icon: Icons.calendar_today,
-            ),
-            const SizedBox(height: 14),
-            _buildFieldInput(
-              label: 'القضية المرتبطة',
-              controller: _caseController,
-              icon: Icons.gavel,
-            ),
-            const SizedBox(height: 14),
-            _buildFieldInput(
-              label: 'محتوى النص المستخرج',
-              controller: _contentController,
-              icon: Icons.description_outlined,
-              maxLines: 4,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFieldInput({
-    required String label,
-    required TextEditingController controller,
-    required IconData icon,
-    int maxLines = 1,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
           ),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            prefixIcon: Icon(icon, size: 18, color: AppColors.primary),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            filled: true,
-            fillColor: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFFBF9F4),
-          ),
-          style: const TextStyle(fontSize: 13),
         ),
       ],
     );

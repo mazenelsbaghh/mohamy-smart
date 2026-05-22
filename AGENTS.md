@@ -23,6 +23,8 @@ Auto-generated from all feature plans. Last updated: 2026-05-22
 - Existing SQL Server tables only (`AiJobs`, `AiUsageRecords`, defense memo legacy analysis tables); no schema change planned (076-split-defense-memo)
 - Dart 3.11.0 with Flutter 3.41.0 + Flutter Material, flutter_localizations, built-in ChangeNotifier/Listenable state, flutter_tes (077-flutter-mobile-app)
 - In-memory demo repository for MVP; repository boundary isolates future secure/local/API storage (077-flutter-mobile-app)
+- Dart 3.11.0 with Flutter 3.41.0; existing backend C#/.NET 9 remains the API source of truth + Flutter Material, flutter_localizations, http, signalr_netcore, logging, flutter_test; add secure/local storage and mobile file/share helpers only where a story requires them (078-mobile-web-parity)
+- Secure/local device storage for auth session and lightweight preferences; backend SQL Server remains authoritative for cases, clients, documents, workflows, subscriptions, and point history (078-mobile-web-parity)
 
 - TypeScript 5.x / React 19 + Redux Toolkit, React Router 7, HeroUI, Tailwind CSS 4 (065-unify-workflow-arch)
 
@@ -42,9 +44,9 @@ npm test && npm run lint
 TypeScript 5.x / React 19: Follow standard conventions
 
 ## Recent Changes
+- 078-mobile-web-parity: Added Dart 3.11.0 with Flutter 3.41.0; existing backend C#/.NET 9 remains the API source of truth + Flutter Material, flutter_localizations, http, signalr_netcore, logging, flutter_test; add secure/local storage and mobile file/share helpers only where a story requires them
 - 077-flutter-mobile-app: Added Dart 3.11.0 with Flutter 3.41.0 + Flutter Material, flutter_localizations, built-in ChangeNotifier/Listenable state, flutter_tes
 - 076-split-defense-memo: Added C# / .NET 9 backend; TypeScript 5.x / React 19 lawyer dashboard + ASP.NET Core, EF Core 9, Hangfire, System.Text.Json, Redux Toolkit, HeroUI, Axios, existing AI provider factory and usage tracking services
-- 075-add-gemini-35-flash: Added C# / .NET 9 backend; TypeScript 5.x / React 19 admin dashboard + ASP.NET Core Authorization, EF Core 9, Redux Toolkit, React Router 7, HeroUI, Axios, System.Text.Json
 
 
 <!-- MANUAL ADDITIONS START -->

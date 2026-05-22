@@ -8,11 +8,15 @@ class SplashScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     // Background and text color variables matching the mockups
-    final Color backgroundColor = isDark ? const Color(0xFF0F0D08) : const Color(0xFFF0EEE7);
-    final Color onBackground = isDark ? const Color(0xFFF7F2E8) : const Color(0xFF1B1C18);
-    
+    final Color backgroundColor = isDark
+        ? const Color(0xFF0F0D08)
+        : const Color(0xFFF0EEE7);
+    final Color onBackground = isDark
+        ? const Color(0xFFF7F2E8)
+        : const Color(0xFF1B1C18);
+
     return Scaffold(
       backgroundColor: backgroundColor,
       body: Stack(
@@ -26,7 +30,9 @@ class SplashScreen extends StatelessWidget {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFEF950A).withValues(alpha: isDark ? 0.08 : 0.05),
+                color: const Color(
+                  0xFFEF950A,
+                ).withValues(alpha: isDark ? 0.08 : 0.05),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
@@ -43,7 +49,9 @@ class SplashScreen extends StatelessWidget {
               height: 320,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFEF950A).withValues(alpha: isDark ? 0.12 : 0.10),
+                color: const Color(
+                  0xFFEF950A,
+                ).withValues(alpha: isDark ? 0.12 : 0.10),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
@@ -70,10 +78,7 @@ class SplashScreen extends StatelessWidget {
                       ),
                     ],
                     gradient: const LinearGradient(
-                      colors: <Color>[
-                        Color(0xFF885200),
-                        Color(0xFFEF950A),
-                      ],
+                      colors: <Color>[Color(0xFF885200), Color(0xFFEF950A)],
                       begin: Alignment.topRight,
                       end: Alignment.bottomLeft,
                     ),
@@ -144,7 +149,7 @@ class SplashScreen extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(2),
                     child: LinearProgressIndicator(
-                      backgroundColor: isDark 
+                      backgroundColor: isDark
                           ? const Color(0xFF867462).withValues(alpha: 0.2)
                           : const Color(0xFF867462).withValues(alpha: 0.15),
                       valueColor: const AlwaysStoppedAnimation<Color>(

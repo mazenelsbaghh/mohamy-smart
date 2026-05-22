@@ -59,9 +59,26 @@ namespace Lawyer.Application.Services
             return Result<AiPointBalanceDto>.Success(ToBalance(subscription));
         }
 
-        public async Task<Result<AiPointBalanceDto>> ValidateCanStartAsync(Guid lawyerId, AiStepType stepType, CancellationToken ct)
+        public async Task<Result<AiPointBalanceDto>> ValidateCanStartAsync(
+            Guid lawyerId,
+            AiStepType stepType,
+            string? runId,
+            string? workflowType,
+            CancellationToken ct)
         {
             var cost = ResolvePointCost(stepType);
+
+            if (!string.IsNullOrEmpty(runId))
+            {
+                var alreadyCharged = await _db.AiPointTransactions
+                    .AsNoTracking()
+                    .AnyAsync(t => t.WorkflowRunId == runId && t.TransactionType == AiPointTransactionType.Charge, ct);
+                if (alreadyCharged)
+                {
+                    cost = 0;
+                }
+            }
+
             var balanceResult = await GetCurrentBalanceAsync(lawyerId, ct);
             if (!balanceResult.Succeeded || balanceResult.Data == null)
             {
@@ -156,6 +173,27 @@ namespace Lawyer.Application.Services
             if (job.ChargeState == AiChargeState.Charged)
             {
                 return Result<AiChargeMetadataDto>.Success(BuildChargeMetadata(job));
+            }
+
+            if (!string.IsNullOrEmpty(job.RunId))
+            {
+                var runAlreadyCharged = await _db.AiPointTransactions
+                    .AsNoTracking()
+                    .AnyAsync(t => t.WorkflowRunId == job.RunId && t.TransactionType == AiPointTransactionType.Charge, ct);
+                if (runAlreadyCharged)
+                {
+                    job.ChargeState = AiChargeState.NoCharge;
+                    job.ChargedPoints = 0;
+                    job.ChargeReason = "لم يتم خصم نقاط إضافية لهذا الطلب لأنه جزء من مرحلة عمل تم خصم نقاطها بالفعل.";
+
+                    var activeSub = await GetActiveSubscriptionAsync(lawyerId, ct);
+                    if (activeSub != null)
+                    {
+                        await AddTransactionAsync(activeSub, job, AiPointTransactionType.NoCharge, 0, AiPointReasonCode.Success, job.ChargeReason, ct);
+                    }
+                    await _db.SaveChangesAsync(ct);
+                    return Result<AiChargeMetadataDto>.Success(BuildChargeMetadata(job, activeSub == null ? null : ToBalance(activeSub)));
+                }
             }
 
             var existingCharge = await _db.AiPointTransactions

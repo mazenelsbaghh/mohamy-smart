@@ -27,15 +27,14 @@ class UserTieAvatar extends StatelessWidget {
         color: bg,
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: const Color(0xFF885200).withValues(alpha: isDark ? 0.05 : 0.1),
+            color: const Color(
+              0xFF885200,
+            ).withValues(alpha: isDark ? 0.05 : 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(
-          color: ringColor,
-          width: 2,
-        ),
+        border: Border.all(color: ringColor, width: 2),
       ),
       child: ClipOval(
         child: CustomPaint(
@@ -67,21 +66,16 @@ class UserTiePainter extends CustomPainter {
 
     // Draw Body with V-neck collar and a tie hanging down
     final path = Path();
-    
+
     // Start at bottom left of shoulders
     path.moveTo(w * 0.15, h * 0.95);
-    
+
     // Left shoulder line curving up to neck
-    path.quadraticBezierTo(
-      w * 0.25,
-      h * 0.55,
-      w * 0.38,
-      h * 0.58,
-    );
-    
+    path.quadraticBezierTo(w * 0.25, h * 0.55, w * 0.38, h * 0.58);
+
     // Left side of V-neck collar
     path.lineTo(w * 0.44, h * 0.68);
-    
+
     // Tie knot top-left
     path.lineTo(w * 0.47, h * 0.65);
     // Tie knot bottom-left
@@ -92,22 +86,18 @@ class UserTiePainter extends CustomPainter {
     path.lineTo(w * 0.54, h * 0.72);
     // Tie knot top-right
     path.lineTo(w * 0.53, h * 0.65);
-    
+
     // Right side of V-neck collar
     path.lineTo(w * 0.62, h * 0.58);
-    
+
     // Right shoulder line curving down
-    path.quadraticBezierTo(
-      w * 0.75,
-      h * 0.55,
-      w * 0.85,
-      h * 0.95,
-    );
-    
+    path.quadraticBezierTo(w * 0.75, h * 0.55, w * 0.85, h * 0.95);
+
     path.close();
     canvas.drawPath(path, paint);
   }
 
   @override
-  bool shouldRepaint(covariant UserTiePainter oldDelegate) => oldDelegate.color != color;
+  bool shouldRepaint(covariant UserTiePainter oldDelegate) =>
+      oldDelegate.color != color;
 }

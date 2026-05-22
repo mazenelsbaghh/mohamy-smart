@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, curly_braces_in_flow_control_structures, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 
 import '../../app/app_state.dart';
@@ -11,6 +13,7 @@ import '../settings/settings_screen.dart';
 import '../subscription/subscription_screen.dart';
 import '../legal_library/inheritance_calculator_screen.dart';
 import '../legal_library/court_fees_calculator_screen.dart';
+import '../notifications/notifications_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({required this.appState, super.key});
@@ -20,6 +23,12 @@ class MoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <_MoreItem>[
+      _MoreItem(
+        icon: Icons.notifications_active_outlined,
+        title: 'الإشعارات',
+        badgeCount: appState.unreadNotificationCount,
+        builder: (_) => NotificationsScreen(appState: appState),
+      ),
       _MoreItem(
         icon: Icons.people_outline,
         title: 'العملاء',
@@ -76,6 +85,7 @@ class MoreScreen extends StatelessWidget {
           (item) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: AppCard(
+              key: ValueKey('more_${item.title}'),
               onTap: () => Navigator.of(
                 context,
               ).push(MaterialPageRoute<void>(builder: item.builder)),
@@ -89,6 +99,27 @@ class MoreScreen extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                   ),
+                  if (item.badgeCount > 0) ...<Widget>[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.danger.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        item.badgeCount.toString(),
+                        style: const TextStyle(
+                          color: AppColors.danger,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
                   const Icon(Icons.chevron_left),
                 ],
               ),
@@ -115,25 +146,29 @@ class LegalLibraryScreen extends StatelessWidget {
     final libraryItems = [
       {
         'title': 'حاسبة المواريث الشرعية',
-        'desc': 'توزيع الأنصبة والتركات وفق الشريعة الإسلامية مع الوصية الواجبة والعول والرد.',
+        'desc':
+            'توزيع الأنصبة والتركات وفق الشريعة الإسلامية مع الوصية الواجبة والعول والرد.',
         'icon': Icons.calculate_outlined,
         'page': const InheritanceCalculatorScreen(),
       },
       {
         'title': 'حاسبة الرسوم القضائية',
-        'desc': 'حساب رسوم الدعاوى المدنية، الشرعية، التنفيذ، النفقة، رسوم الإيداع والمحضرين.',
+        'desc':
+            'حساب رسوم الدعاوى المدنية، الشرعية، التنفيذ، النفقة، رسوم الإيداع والمحضرين.',
         'icon': Icons.receipt_long_outlined,
         'page': const CourtFeesCalculatorScreen(),
       },
       {
         'title': 'الوكالات الرسمية (POA)',
-        'desc': 'إدارة وتتبع أرقام الوكالات وتواريخ إصدارها وربطها بالموكلين والقضايا.',
+        'desc':
+            'إدارة وتتبع أرقام الوكالات وتواريخ إصدارها وربطها بالموكلين والقضايا.',
         'icon': Icons.assignment_ind_outlined,
         'page': PowerOfAttorneysListScreen(appState: appState),
       },
       {
         'title': 'اللوائح والأنظمة الداخلية',
-        'desc': 'استعراض اللوائح المنظمة وقواعد صياغة المذكرات وتحديثاتها الإدارية.',
+        'desc':
+            'استعراض اللوائح المنظمة وقواعد صياغة المذكرات وتحديثاتها الإدارية.',
         'icon': Icons.gavel_outlined,
         'page': InternalRegulationsListScreen(appState: appState),
       },
@@ -151,7 +186,9 @@ class LegalLibraryScreen extends StatelessWidget {
               child: AppCard(
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => item['page'] as Widget),
+                    MaterialPageRoute<void>(
+                      builder: (_) => item['page'] as Widget,
+                    ),
                   );
                 },
                 child: Row(
@@ -163,7 +200,11 @@ class LegalLibraryScreen extends StatelessWidget {
                         color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Icon(item['icon'] as IconData, color: AppColors.primary, size: 28),
+                      child: Icon(
+                        item['icon'] as IconData,
+                        color: AppColors.primary,
+                        size: 28,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -214,10 +255,12 @@ class PowerOfAttorneysListScreen extends StatefulWidget {
   final AppState appState;
 
   @override
-  State<PowerOfAttorneysListScreen> createState() => _PowerOfAttorneysListScreenState();
+  State<PowerOfAttorneysListScreen> createState() =>
+      _PowerOfAttorneysListScreenState();
 }
 
-class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen> {
+class _PowerOfAttorneysListScreenState
+    extends State<PowerOfAttorneysListScreen> {
   void _addNewPoa() {
     final numController = TextEditingController();
     final typeController = TextEditingController(text: 'توكيل رسمي عام قضايا');
@@ -252,14 +295,16 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
                 Text(
                   'إضافة توكيل رسمي جديد',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Tajawal',
-                      ),
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Tajawal',
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: numController,
-                  decoration: const InputDecoration(labelText: 'رقم التوكيل الرسمي'),
+                  decoration: const InputDecoration(
+                    labelText: 'رقم التوكيل الرسمي',
+                  ),
                   keyboardType: TextInputType.number,
                   style: const TextStyle(fontFamily: 'Tajawal'),
                 ),
@@ -270,7 +315,10 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
                   items: widget.appState.clients.map((Client client) {
                     return DropdownMenuItem<Client>(
                       value: client,
-                      child: Text(client.name, style: const TextStyle(fontFamily: 'Tajawal')),
+                      child: Text(
+                        client.name,
+                        style: const TextStyle(fontFamily: 'Tajawal'),
+                      ),
                     );
                   }).toList(),
                   onChanged: (Client? value) {
@@ -286,7 +334,9 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
                 const SizedBox(height: 12),
                 TextField(
                   controller: dateController,
-                  decoration: const InputDecoration(labelText: 'تاريخ الإصدار (YYYY-MM-DD)'),
+                  decoration: const InputDecoration(
+                    labelText: 'تاريخ الإصدار (YYYY-MM-DD)',
+                  ),
                   style: const TextStyle(fontFamily: 'Tajawal'),
                 ),
                 const SizedBox(height: 20),
@@ -294,7 +344,8 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      if (numController.text.isEmpty || selectedClient == null) return;
+                      if (numController.text.isEmpty || selectedClient == null)
+                        return;
                       widget.appState.addPowerOfAttorney(
                         PowerOfAttorney(
                           id: 'poa-${DateTime.now().millisecondsSinceEpoch}',
@@ -308,7 +359,13 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
                       );
                       Navigator.pop(context);
                     },
-                    child: const Text('حفظ التوكيل', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'حفظ التوكيل',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -331,20 +388,55 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
             return Directionality(
               textDirection: TextDirection.rtl,
               child: AlertDialog(
-                title: const Text('إلغاء الوكالة الرسمية', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.w900)),
+                title: const Text(
+                  'إلغاء الوكالة الرسمية',
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('يرجى تحديد المسوغ الشرعي والقانوني لإلغاء التوكيل:', style: TextStyle(fontFamily: 'Tajawal', fontSize: 13)),
+                    const Text(
+                      'يرجى تحديد المسوغ الشرعي والقانوني لإلغاء التوكيل:',
+                      style: TextStyle(fontFamily: 'Tajawal', fontSize: 13),
+                    ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: selectedReason,
-                      decoration: const InputDecoration(labelText: 'سبب الإلغاء'),
+                      decoration: const InputDecoration(
+                        labelText: 'سبب الإلغاء',
+                      ),
                       items: const [
-                        DropdownMenuItem(value: 'وفاة الموكل', child: Text('وفاة الموكل', style: TextStyle(fontFamily: 'Tajawal'))),
-                        DropdownMenuItem(value: 'إلغاء من الموكل', child: Text('إلغاء من الموكل (عزل)', style: TextStyle(fontFamily: 'Tajawal'))),
-                        DropdownMenuItem(value: 'انتهاء المدة', child: Text('انتهاء المدة والهدف', style: TextStyle(fontFamily: 'Tajawal'))),
-                        DropdownMenuItem(value: 'سبب آخر', child: Text('سبب آخر', style: TextStyle(fontFamily: 'Tajawal'))),
+                        DropdownMenuItem(
+                          value: 'وفاة الموكل',
+                          child: Text(
+                            'وفاة الموكل',
+                            style: TextStyle(fontFamily: 'Tajawal'),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'إلغاء من الموكل',
+                          child: Text(
+                            'إلغاء من الموكل (عزل)',
+                            style: TextStyle(fontFamily: 'Tajawal'),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'انتهاء المدة',
+                          child: Text(
+                            'انتهاء المدة والهدف',
+                            style: TextStyle(fontFamily: 'Tajawal'),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'سبب آخر',
+                          child: Text(
+                            'سبب آخر',
+                            style: TextStyle(fontFamily: 'Tajawal'),
+                          ),
+                        ),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -358,7 +450,9 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
                       const SizedBox(height: 10),
                       TextField(
                         controller: otherReasonController,
-                        decoration: const InputDecoration(labelText: 'اكتب السبب بالتفصيل'),
+                        decoration: const InputDecoration(
+                          labelText: 'اكتب السبب بالتفصيل',
+                        ),
                         style: const TextStyle(fontFamily: 'Tajawal'),
                       ),
                     ],
@@ -367,19 +461,38 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('تراجع', style: TextStyle(fontFamily: 'Tajawal')),
+                    child: const Text(
+                      'تراجع',
+                      style: TextStyle(fontFamily: 'Tajawal'),
+                    ),
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      final reason = selectedReason == 'سبب آخر' ? otherReasonController.text : selectedReason;
+                      final reason = selectedReason == 'سبب آخر'
+                          ? otherReasonController.text
+                          : selectedReason;
                       widget.appState.cancelPowerOfAttorney(poa.id, reason);
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('تم إلغاء الوكالة رقم ${poa.number} بنجاح', style: const TextStyle(fontFamily: 'Tajawal'))),
+                        SnackBar(
+                          content: Text(
+                            'تم إلغاء الوكالة رقم ${poa.number} بنجاح',
+                            style: const TextStyle(fontFamily: 'Tajawal'),
+                          ),
+                        ),
                       );
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-                    child: const Text('تأكيد الإلغاء', style: TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.danger,
+                    ),
+                    child: const Text(
+                      'تأكيد الإلغاء',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Tajawal',
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -425,16 +538,26 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
                           children: [
                             Text(
                               'رقم الوكالة: ${poa.number}',
-                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                              ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: isActive
                                     ? AppColors.success.withValues(alpha: 0.12)
                                     : (poa.status == 'ملغي'
-                                        ? AppColors.danger.withValues(alpha: 0.12)
-                                        : Colors.grey.withValues(alpha: 0.12)),
+                                          ? AppColors.danger.withValues(
+                                              alpha: 0.12,
+                                            )
+                                          : Colors.grey.withValues(
+                                              alpha: 0.12,
+                                            )),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -442,7 +565,9 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
                                 style: TextStyle(
                                   color: isActive
                                       ? AppColors.success
-                                      : (poa.status == 'ملغي' ? AppColors.danger : Colors.grey),
+                                      : (poa.status == 'ملغي'
+                                            ? AppColors.danger
+                                            : Colors.grey),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 11,
                                 ),
@@ -451,17 +576,36 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
                           ],
                         ),
                         const SizedBox(height: 10),
-                        Text('الموكل: ${poa.clientName}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          'الموكل: ${poa.clientName}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 4),
-                        Text('النوع: ${poa.type}', style: TextStyle(color: themeTokens.muted, fontSize: 13)),
+                        Text(
+                          'النوع: ${poa.type}',
+                          style: TextStyle(
+                            color: themeTokens.muted,
+                            fontSize: 13,
+                          ),
+                        ),
                         const SizedBox(height: 4),
-                        Text('تاريخ الإصدار: ${poa.dateLabel}', style: TextStyle(color: themeTokens.muted, fontSize: 12)),
+                        Text(
+                          'تاريخ الإصدار: ${poa.dateLabel}',
+                          style: TextStyle(
+                            color: themeTokens.muted,
+                            fontSize: 12,
+                          ),
+                        ),
                         if (poa.cancellationReason != null) ...[
                           const SizedBox(height: 8),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 16),
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                color: AppColors.danger,
+                                size: 16,
+                              ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
@@ -483,7 +627,11 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
                             children: [
                               TextButton.icon(
                                 onPressed: () => _cancelPoaDialog(poa),
-                                icon: const Icon(Icons.cancel_outlined, color: AppColors.danger, size: 16),
+                                icon: const Icon(
+                                  Icons.cancel_outlined,
+                                  color: AppColors.danger,
+                                  size: 16,
+                                ),
                                 label: const Text(
                                   'إلغاء الوكالة',
                                   style: TextStyle(
@@ -519,18 +667,28 @@ class InternalRegulationsListScreen extends StatefulWidget {
   final AppState appState;
 
   @override
-  State<InternalRegulationsListScreen> createState() => _InternalRegulationsListScreenState();
+  State<InternalRegulationsListScreen> createState() =>
+      _InternalRegulationsListScreenState();
 }
 
-class _InternalRegulationsListScreenState extends State<InternalRegulationsListScreen> {
+class _InternalRegulationsListScreenState
+    extends State<InternalRegulationsListScreen> {
   String _filter = 'active'; // 'all', 'active', 'archived'
 
   void _showRegulationForm({InternalRegulation? regulation}) {
-    final titleController = TextEditingController(text: regulation?.title ?? '');
-    final numberController = TextEditingController(text: regulation?.regulationNumber ?? '');
-    final authorityController = TextEditingController(text: regulation?.issuingAuthority ?? '');
-    final summaryController = TextEditingController(text: regulation?.summary ?? '');
-    
+    final titleController = TextEditingController(
+      text: regulation?.title ?? '',
+    );
+    final numberController = TextEditingController(
+      text: regulation?.regulationNumber ?? '',
+    );
+    final authorityController = TextEditingController(
+      text: regulation?.issuingAuthority ?? '',
+    );
+    final summaryController = TextEditingController(
+      text: regulation?.summary ?? '',
+    );
+
     List<String> tempSections = List<String>.from(regulation?.sections ?? []);
     final sectionInputController = TextEditingController();
 
@@ -552,14 +710,16 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                   Future.delayed(const Duration(milliseconds: 1500), () {
                     Navigator.pop(dialogCtx);
                     setSheetState(() {
-                      titleController.text = 'لائحة ضوابط المراجعة القضائية للعام 2026';
+                      titleController.text =
+                          'لائحة ضوابط المراجعة القضائية للعام 2026';
                       numberController.text = '109/2026';
                       authorityController.text = 'المجلس الأعلى للقضاء';
-                      summaryController.text = 'تنظيم ضوابط تقديم لوائح الدفاع والمراجعات الإدارية والمدد القانونية المحددة للطلبات.';
+                      summaryController.text =
+                          'تنظيم ضوابط تقديم لوائح الدفاع والمراجعات الإدارية والمدد القانونية المحددة للطلبات.';
                       tempSections = [
                         'يجب إخضاع كافة لوائح الدفاع للتدقيق الذاتي المسبق ومطابقتها مع المبادئ القضائية.',
                         'يكون رئيس قسم التقاضي هو المسؤول الأول عن سلامة الإجراءات وصحة إرفاق المستندات.',
-                        'تحفظ النسخ الرقمية من المستندات الرسمية فوراً في الأرشيف المشترك للمكتب لتفادي الفقد.'
+                        'تحفظ النسخ الرقمية من المستندات الرسمية فوراً في الأرشيف المشترك للمكتب لتفادي الفقد.',
                       ];
                     });
                   });
@@ -570,11 +730,17 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const SizedBox(height: 10),
-                          const CircularProgressIndicator(color: AppColors.primary),
+                          const CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
                           const SizedBox(height: 20),
                           const Text(
                             'جاري فحص المستند واستخراج البنود بالذكاء الاصطناعي...',
-                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 10),
@@ -604,8 +770,11 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            regulation == null ? 'إضافة لائحة داخلية جديدة' : 'تعديل لائحة داخلية',
-                            style: Theme.of(sheetCtx).textTheme.titleLarge?.copyWith(
+                            regulation == null
+                                ? 'إضافة لائحة داخلية جديدة'
+                                : 'تعديل لائحة داخلية',
+                            style: Theme.of(sheetCtx).textTheme.titleLarge
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   fontFamily: 'Tajawal',
                                 ),
@@ -613,14 +782,22 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                           TextButton.icon(
                             onPressed: runOcrSimulation,
                             icon: const Icon(Icons.document_scanner, size: 18),
-                            label: const Text('مسح OCR', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                            label: const Text(
+                              'مسح OCR',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 16),
                       TextField(
                         controller: titleController,
-                        decoration: const InputDecoration(labelText: 'عنوان اللائحة'),
+                        decoration: const InputDecoration(
+                          labelText: 'عنوان اللائحة',
+                        ),
                         style: const TextStyle(fontFamily: 'Tajawal'),
                       ),
                       const SizedBox(height: 12),
@@ -629,7 +806,9 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                           Expanded(
                             child: TextField(
                               controller: numberController,
-                              decoration: const InputDecoration(labelText: 'رقم اللائحة'),
+                              decoration: const InputDecoration(
+                                labelText: 'رقم اللائحة',
+                              ),
                               style: const TextStyle(fontFamily: 'Tajawal'),
                             ),
                           ),
@@ -637,7 +816,9 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                           Expanded(
                             child: TextField(
                               controller: authorityController,
-                              decoration: const InputDecoration(labelText: 'الجهة المصدرة'),
+                              decoration: const InputDecoration(
+                                labelText: 'الجهة المصدرة',
+                              ),
                               style: const TextStyle(fontFamily: 'Tajawal'),
                             ),
                           ),
@@ -646,7 +827,9 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                       const SizedBox(height: 12),
                       TextField(
                         controller: summaryController,
-                        decoration: const InputDecoration(labelText: 'الخلاصة أو الوصف'),
+                        decoration: const InputDecoration(
+                          labelText: 'الخلاصة أو الوصف',
+                        ),
                         style: const TextStyle(fontFamily: 'Tajawal'),
                         maxLines: 2,
                       ),
@@ -656,7 +839,8 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                         style: TextStyle(
                           fontFamily: 'Tajawal',
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(sheetCtx).brightness == Brightness.dark
+                          color:
+                              Theme.of(sheetCtx).brightness == Brightness.dark
                               ? Colors.white70
                               : AppColors.primaryBronze,
                         ),
@@ -671,15 +855,24 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                                 hintText: 'اكتب البند الجديد هنا...',
                                 hintStyle: TextStyle(fontSize: 12),
                               ),
-                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
+                              style: const TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.add_circle, color: AppColors.primary),
+                            icon: const Icon(
+                              Icons.add_circle,
+                              color: AppColors.primary,
+                            ),
                             onPressed: () {
-                              if (sectionInputController.text.trim().isEmpty) return;
+                              if (sectionInputController.text.trim().isEmpty)
+                                return;
                               setSheetState(() {
-                                tempSections.add(sectionInputController.text.trim());
+                                tempSections.add(
+                                  sectionInputController.text.trim(),
+                                );
                                 sectionInputController.clear();
                               });
                             },
@@ -692,14 +885,20 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                           padding: EdgeInsets.symmetric(vertical: 12),
                           child: Text(
                             'لم يتم إضافة أي بنود بعد.',
-                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.grey),
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
                           ),
                         )
                       else
                         Container(
                           constraints: const BoxConstraints(maxHeight: 180),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+                            border: Border.all(
+                              color: Colors.grey.withValues(alpha: 0.2),
+                            ),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: ListView.builder(
@@ -710,10 +909,17 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                                 dense: true,
                                 title: Text(
                                   tempSections[idx],
-                                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12),
+                                  style: const TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 12,
+                                  ),
                                 ),
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 18),
+                                  icon: const Icon(
+                                    Icons.remove_circle_outline,
+                                    color: Colors.redAccent,
+                                    size: 18,
+                                  ),
                                   onPressed: () {
                                     setSheetState(() {
                                       tempSections.removeAt(idx);
@@ -731,11 +937,21 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                           onPressed: () {
                             if (titleController.text.trim().isEmpty) return;
                             final newReg = InternalRegulation(
-                              id: regulation?.id ?? 'reg-${DateTime.now().millisecondsSinceEpoch}',
+                              id:
+                                  regulation?.id ??
+                                  'reg-${DateTime.now().millisecondsSinceEpoch}',
                               title: titleController.text.trim(),
-                              regulationNumber: numberController.text.trim().isEmpty ? null : numberController.text.trim(),
-                              issuingAuthority: authorityController.text.trim().isEmpty ? null : authorityController.text.trim(),
-                              summary: summaryController.text.trim().isEmpty ? null : summaryController.text.trim(),
+                              regulationNumber:
+                                  numberController.text.trim().isEmpty
+                                  ? null
+                                  : numberController.text.trim(),
+                              issuingAuthority:
+                                  authorityController.text.trim().isEmpty
+                                  ? null
+                                  : authorityController.text.trim(),
+                              summary: summaryController.text.trim().isEmpty
+                                  ? null
+                                  : summaryController.text.trim(),
                               sections: tempSections,
                               isActive: regulation?.isActive ?? true,
                             );
@@ -743,19 +959,34 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                             if (regulation == null) {
                               widget.appState.addInternalRegulation(newReg);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('تم إضافة اللائحة بنجاح', style: TextStyle(fontFamily: 'Tajawal'))),
+                                const SnackBar(
+                                  content: Text(
+                                    'تم إضافة اللائحة بنجاح',
+                                    style: TextStyle(fontFamily: 'Tajawal'),
+                                  ),
+                                ),
                               );
                             } else {
                               widget.appState.updateInternalRegulation(newReg);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('تم تعديل اللائحة بنجاح', style: TextStyle(fontFamily: 'Tajawal'))),
+                                const SnackBar(
+                                  content: Text(
+                                    'تم تعديل اللائحة بنجاح',
+                                    style: TextStyle(fontFamily: 'Tajawal'),
+                                  ),
+                                ),
                               );
                             }
                             Navigator.pop(ctx);
                           },
                           child: Text(
-                            regulation == null ? 'حفظ اللائحة' : 'تحديث اللائحة',
-                            style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+                            regulation == null
+                                ? 'حفظ اللائحة'
+                                : 'تحديث اللائحة',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -777,23 +1008,49 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
         return Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
-            title: const Text('حذف اللائحة', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.w900)),
-            content: Text('هل أنت متأكد من رغبتك في حذف لائحة "$title"؟ لا يمكن التراجع عن هذا الإجراء.', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13)),
+            title: const Text(
+              'حذف اللائحة',
+              style: TextStyle(
+                fontFamily: 'Tajawal',
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            content: Text(
+              'هل أنت متأكد من رغبتك في حذف لائحة "$title"؟ لا يمكن التراجع عن هذا الإجراء.',
+              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogCtx),
-                child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal')),
+                child: const Text(
+                  'إلغاء',
+                  style: TextStyle(fontFamily: 'Tajawal'),
+                ),
               ),
               ElevatedButton(
                 onPressed: () {
                   widget.appState.deleteInternalRegulation(id);
                   Navigator.pop(dialogCtx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('تم حذف اللائحة بنجاح', style: TextStyle(fontFamily: 'Tajawal'))),
+                    const SnackBar(
+                      content: Text(
+                        'تم حذف اللائحة بنجاح',
+                        style: TextStyle(fontFamily: 'Tajawal'),
+                      ),
+                    ),
                   );
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-                child: const Text('تأكيد الحذف', style: TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.danger,
+                ),
+                child: const Text(
+                  'تأكيد الحذف',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -846,7 +1103,8 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                           child: EmptyState(
                             icon: Icons.gavel_outlined,
                             title: 'لا توجد لوائح حالية',
-                            message: 'اضغط على زر الإضافة لإدراج لائحة جديدة أو استخدام فحص OCR للوثائق.',
+                            message:
+                                'اضغط على زر الإضافة لإدراج لائحة جديدة أو استخدام فحص OCR للوثائق.',
                           ),
                         )
                       : ListView.builder(
@@ -862,21 +1120,27 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 reg.title,
                                                 style: const TextStyle(
                                                   fontWeight: FontWeight.w900,
                                                   fontSize: 16,
-                                                  color: AppColors.primaryBronze,
+                                                  color:
+                                                      AppColors.primaryBronze,
                                                 ),
                                               ),
-                                              if (reg.regulationNumber != null || reg.issuingAuthority != null) ...[
+                                              if (reg.regulationNumber !=
+                                                      null ||
+                                                  reg.issuingAuthority !=
+                                                      null) ...[
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   '${reg.regulationNumber ?? ""} • ${reg.issuingAuthority ?? ""}',
@@ -893,19 +1157,33 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                                         PopupMenuButton<String>(
                                           onSelected: (val) {
                                             if (val == 'edit') {
-                                              _showRegulationForm(regulation: reg);
+                                              _showRegulationForm(
+                                                regulation: reg,
+                                              );
                                             } else if (val == 'archive') {
-                                              widget.appState.archiveInternalRegulation(reg.id);
-                                              ScaffoldMessenger.of(context).showSnackBar(
+                                              widget.appState
+                                                  .archiveInternalRegulation(
+                                                    reg.id,
+                                                  );
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
                                                 SnackBar(
                                                   content: Text(
-                                                    reg.isActive ? 'تم أرشفة اللائحة بنجاح' : 'تم تفعيل اللائحة بنجاح',
-                                                    style: const TextStyle(fontFamily: 'Tajawal'),
+                                                    reg.isActive
+                                                        ? 'تم أرشفة اللائحة بنجاح'
+                                                        : 'تم تفعيل اللائحة بنجاح',
+                                                    style: const TextStyle(
+                                                      fontFamily: 'Tajawal',
+                                                    ),
                                                   ),
                                                 ),
                                               );
                                             } else if (val == 'delete') {
-                                              _deleteRegulation(reg.id, reg.title);
+                                              _deleteRegulation(
+                                                reg.id,
+                                                reg.title,
+                                              );
                                             }
                                           },
                                           itemBuilder: (ctx) => [
@@ -913,9 +1191,17 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                                               value: 'edit',
                                               child: Row(
                                                 children: [
-                                                  Icon(Icons.edit_outlined, size: 18),
+                                                  Icon(
+                                                    Icons.edit_outlined,
+                                                    size: 18,
+                                                  ),
                                                   SizedBox(width: 8),
-                                                  Text('تعديل', style: TextStyle(fontFamily: 'Tajawal')),
+                                                  Text(
+                                                    'تعديل',
+                                                    style: TextStyle(
+                                                      fontFamily: 'Tajawal',
+                                                    ),
+                                                  ),
                                                 ],
                                               ),
                                             ),
@@ -923,9 +1209,22 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                                               value: 'archive',
                                               child: Row(
                                                 children: [
-                                                  Icon(reg.isActive ? Icons.archive_outlined : Icons.unarchive_outlined, size: 18),
+                                                  Icon(
+                                                    reg.isActive
+                                                        ? Icons.archive_outlined
+                                                        : Icons
+                                                              .unarchive_outlined,
+                                                    size: 18,
+                                                  ),
                                                   SizedBox(width: 8),
-                                                  Text(reg.isActive ? 'أرشفة' : 'تنشيط', style: const TextStyle(fontFamily: 'Tajawal')),
+                                                  Text(
+                                                    reg.isActive
+                                                        ? 'أرشفة'
+                                                        : 'تنشيط',
+                                                    style: const TextStyle(
+                                                      fontFamily: 'Tajawal',
+                                                    ),
+                                                  ),
                                                 ],
                                               ),
                                             ),
@@ -933,9 +1232,19 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                                               value: 'delete',
                                               child: Row(
                                                 children: [
-                                                  Icon(Icons.delete_outline, color: AppColors.danger, size: 18),
+                                                  Icon(
+                                                    Icons.delete_outline,
+                                                    color: AppColors.danger,
+                                                    size: 18,
+                                                  ),
                                                   SizedBox(width: 8),
-                                                  Text('حذف', style: TextStyle(fontFamily: 'Tajawal', color: AppColors.danger)),
+                                                  Text(
+                                                    'حذف',
+                                                    style: TextStyle(
+                                                      fontFamily: 'Tajawal',
+                                                      color: AppColors.danger,
+                                                    ),
+                                                  ),
                                                 ],
                                               ),
                                             ),
@@ -957,16 +1266,26 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
                                     const SizedBox(height: 10),
                                     ...reg.sections.map((sec) {
                                       return Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 4,
+                                        ),
                                         child: Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            const Icon(Icons.fiber_manual_record, size: 10, color: AppColors.primary),
+                                            const Icon(
+                                              Icons.fiber_manual_record,
+                                              size: 10,
+                                              color: AppColors.primary,
+                                            ),
                                             const SizedBox(width: 8),
                                             Expanded(
                                               child: Text(
                                                 sec,
-                                                style: const TextStyle(fontSize: 13, height: 1.4),
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  height: 1.4,
+                                                ),
                                               ),
                                             ),
                                           ],
@@ -1004,7 +1323,9 @@ class _InternalRegulationsListScreenState extends State<InternalRegulationsListS
       selectedColor: AppColors.primaryBronze,
       backgroundColor: Colors.transparent,
       side: BorderSide(
-        color: isSelected ? Colors.transparent : AppColors.primaryBronze.withValues(alpha: 0.3),
+        color: isSelected
+            ? Colors.transparent
+            : AppColors.primaryBronze.withValues(alpha: 0.3),
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       onSelected: (selected) {
@@ -1028,7 +1349,8 @@ class LegalContractsScreen extends StatefulWidget {
   State<LegalContractsScreen> createState() => _LegalContractsScreenState();
 }
 
-class _LegalContractsScreenState extends State<LegalContractsScreen> with SingleTickerProviderStateMixin {
+class _LegalContractsScreenState extends State<LegalContractsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   final List<Map<String, dynamic>> _contracts = [
@@ -1039,7 +1361,8 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
       'date': '2025-01-10',
       'status': 'نشط',
       'type': 'استشاري',
-      'aiAnalysis': 'العقد مستوفٍ لجميع الشروط الأساسية. توجد ملاحظة على بند تسوية المنازعات: يُفضل تحديد مركز التحكيم السعودي صراحة لتجنب الجهالة عند وقوع أي خلاف.'
+      'aiAnalysis':
+          'العقد مستوفٍ لجميع الشروط الأساسية. توجد ملاحظة على بند تسوية المنازعات: يُفضل تحديد مركز التحكيم السعودي صراحة لتجنب الجهالة عند وقوع أي خلاف.',
     },
     {
       'title': 'عقد وكالة تجارية حصرية',
@@ -1048,7 +1371,8 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
       'date': '2025-03-01',
       'status': 'مسودة',
       'type': 'وكالة تجارية',
-      'aiAnalysis': 'بند عدم المنافسة واسع النطاق جغرافياً وزمنياً (5 سنوات). يُوصى بتقليصه إلى سنتين فقط ليتوافق مع الأنظمة السعودية لعدم الاحتكار.'
+      'aiAnalysis':
+          'بند عدم المنافسة واسع النطاق جغرافياً وزمنياً (5 سنوات). يُوصى بتقليصه إلى سنتين فقط ليتوافق مع الأنظمة السعودية لعدم الاحتكار.',
     },
     {
       'title': 'اتفاقية تسوية ودية وتنازل',
@@ -1057,7 +1381,8 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
       'date': '2024-09-18',
       'status': 'مكتمل',
       'type': 'تسوية',
-      'aiAnalysis': 'التسوية نهائية وتتضمن تنازلاً كاملاً عن كافة الدعاوى القضائية المقامة والمستقبلية المتعلقة بموضوع النزاع المذكور. لا توجد ثغرات مكشوفة.'
+      'aiAnalysis':
+          'التسوية نهائية وتتضمن تنازلاً كاملاً عن كافة الدعاوى القضائية المقامة والمستقبلية المتعلقة بموضوع النزاع المذكور. لا توجد ثغرات مكشوفة.',
     },
   ];
 
@@ -1080,7 +1405,9 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
         return Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
             title: Row(
               children: [
                 const Icon(Icons.auto_awesome, color: AppColors.primary),
@@ -1088,7 +1415,10 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
                 Expanded(
                   child: Text(
                     'تدقيق ذكي: ${contract['title']}',
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
               ],
@@ -1099,7 +1429,10 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
               children: [
                 const Text(
                   'التحليل والمخاطر المكتشفة:',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryBronze),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryBronze,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -1111,7 +1444,10 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('إغلاق', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'إغلاق',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -1146,7 +1482,9 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
               children: [
                 Text(
                   'إنشاء مسودة عقد جديد',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -1166,12 +1504,16 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
                 const SizedBox(height: 12),
                 TextField(
                   controller: typeController,
-                  decoration: const InputDecoration(labelText: 'نوع العقد (مثال: تقديم خدمات، عمل، وكالة)'),
+                  decoration: const InputDecoration(
+                    labelText: 'نوع العقد (مثال: تقديم خدمات، عمل، وكالة)',
+                  ),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
-                    if (titleController.text.isEmpty || partyAController.text.isEmpty) return;
+                    if (titleController.text.isEmpty ||
+                        partyAController.text.isEmpty)
+                      return;
                     setState(() {
                       _contracts.insert(0, {
                         'title': titleController.text,
@@ -1180,7 +1522,8 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
                         'date': '2026-05-22',
                         'status': 'مسودة',
                         'type': typeController.text,
-                        'aiAnalysis': 'هذا العقد مضاف حديثاً كمسودة. يرجى تشغيل مدقق الذكاء الاصطناعي لاستخراج البنود والتحقق من سلامتها.'
+                        'aiAnalysis':
+                            'هذا العقد مضاف حديثاً كمسودة. يرجى تشغيل مدقق الذكاء الاصطناعي لاستخراج البنود والتحقق من سلامتها.',
                       });
                     });
                     Navigator.pop(context);
@@ -1207,7 +1550,10 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
           indicatorColor: AppColors.primary,
           labelColor: AppColors.primary,
           unselectedLabelColor: Colors.grey,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Tajawal'),
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Tajawal',
+          ),
           tabs: const [
             Tab(text: 'الكل'),
             Tab(text: 'نشط'),
@@ -1243,18 +1589,40 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
     }).toList();
 
     if (filtered.isEmpty) {
-      return const EmptyState(
-        icon: Icons.edit_document,
-        title: 'لا توجد عقود',
-        message: 'لا توجد عقود تندرج تحت هذا التصنيف حالياً.',
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: const <Widget>[
+          _ApiCoverageBanner(
+            title: 'ربط العقود قيد الاستكمال',
+            message:
+                'تم تجهيز مسار API للعقود القانونية، وهذه الشاشة تعرض حالياً مسودات محلية إلى أن يتم ربط القائمة الحية.',
+          ),
+          SizedBox(height: 12),
+          EmptyState(
+            icon: Icons.edit_document,
+            title: 'لا توجد عقود',
+            message: 'لا توجد عقود تندرج تحت هذا التصنيف حالياً.',
+          ),
+        ],
       );
     }
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: filtered.length,
+      itemCount: filtered.length + 1,
       itemBuilder: (context, index) {
-        final contract = filtered[index];
+        if (index == 0) {
+          return const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: _ApiCoverageBanner(
+              title: 'مصدر بيانات محلي مؤقت',
+              message:
+                  'Endpoints العقود موجودة في طبقة الخدمة، لكن هذه القائمة لم تنتقل بالكامل إلى البيانات الحية بعد.',
+            ),
+          );
+        }
+
+        final contract = filtered[index - 1];
         Color statusColor;
         switch (contract['status']) {
           case 'نشط':
@@ -1277,14 +1645,21 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: statusColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         contract['status'] as String,
-                        style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 11),
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                     Text(
@@ -1296,11 +1671,20 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
                 const SizedBox(height: 8),
                 Text(
                   contract['title'] as String,
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 15,
+                  ),
                 ),
                 const SizedBox(height: 10),
-                Text('الطرف الأول: ${contract['partyA']}', style: const TextStyle(fontSize: 13)),
-                Text('الطرف الثاني: ${contract['partyB']}', style: const TextStyle(fontSize: 13)),
+                Text(
+                  'الطرف الأول: ${contract['partyA']}',
+                  style: const TextStyle(fontSize: 13),
+                ),
+                Text(
+                  'الطرف الثاني: ${contract['partyB']}',
+                  style: const TextStyle(fontSize: 13),
+                ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1311,13 +1695,22 @@ class _LegalContractsScreenState extends State<LegalContractsScreen> with Single
                     ),
                     ElevatedButton.icon(
                       onPressed: () => _showAiAnalysis(contract),
-                      icon: const Icon(Icons.auto_awesome, size: 14, color: Colors.white),
-                      label: const Text('تدقيق ذكي', style: TextStyle(fontSize: 11)),
+                      icon: const Icon(
+                        Icons.auto_awesome,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'تدقيق ذكي',
+                        style: TextStyle(fontSize: 11),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryBronze,
                         minimumSize: const Size(100, 32),
                         padding: const EdgeInsets.symmetric(horizontal: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ],
@@ -1392,32 +1785,44 @@ class _ProcessServerScreenState extends State<ProcessServerScreen> {
               children: [
                 Text(
                   'إضافة ورقة محضرين جديدة',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: titleController,
-                  decoration: const InputDecoration(labelText: 'عنوان الإعلان / الورقة'),
+                  decoration: const InputDecoration(
+                    labelText: 'عنوان الإعلان / الورقة',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: recController,
-                  decoration: const InputDecoration(labelText: 'المنذر إليه / المستلم'),
+                  decoration: const InputDecoration(
+                    labelText: 'المنذر إليه / المستلم',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: caseController,
-                  decoration: const InputDecoration(labelText: 'رقم القضية المرتبطة'),
+                  decoration: const InputDecoration(
+                    labelText: 'رقم القضية المرتبطة',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: dateController,
-                  decoration: const InputDecoration(labelText: 'تاريخ الاستحقاق (YYYY-MM-DD)'),
+                  decoration: const InputDecoration(
+                    labelText: 'تاريخ الاستحقاق (YYYY-MM-DD)',
+                  ),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
-                    if (titleController.text.isEmpty || recController.text.isEmpty) return;
+                    if (titleController.text.isEmpty ||
+                        recController.text.isEmpty)
+                      return;
                     setState(() {
                       _papers.insert(0, {
                         'title': titleController.text,
@@ -1467,9 +1872,20 @@ class _ProcessServerScreenState extends State<ProcessServerScreen> {
         textDirection: TextDirection.rtl,
         child: ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: _papers.length,
+          itemCount: _papers.length + 1,
           itemBuilder: (context, index) {
-            final paper = _papers[index];
+            if (index == 0) {
+              return const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: _ApiCoverageBanner(
+                  title: 'ربط أوراق المحضرين قيد الاستكمال',
+                  message:
+                      'تم تجهيز مسار API لأوراق المحضرين، وهذه البيانات محلية مؤقتاً إلى حين اكتمال الربط الحي.',
+                ),
+              );
+            }
+
+            final paper = _papers[index - 1];
             final status = paper['status'] as String;
 
             Color statusColor;
@@ -1497,17 +1913,25 @@ class _ProcessServerScreenState extends State<ProcessServerScreen> {
                         Expanded(
                           child: Text(
                             paper['title'] as String,
-                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => _togglePaperStatus(index),
+                          onTap: () => _togglePaperStatus(index - 1),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: statusColor.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                              border: Border.all(
+                                color: statusColor.withValues(alpha: 0.3),
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -1516,7 +1940,11 @@ class _ProcessServerScreenState extends State<ProcessServerScreen> {
                                 const SizedBox(width: 4),
                                 Text(
                                   status,
-                                  style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 11),
+                                  style: TextStyle(
+                                    color: statusColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
                                 ),
                               ],
                             ),
@@ -1525,9 +1953,15 @@ class _ProcessServerScreenState extends State<ProcessServerScreen> {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    Text('المنذر إليه: ${paper['recipient']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      'المنذر إليه: ${paper['recipient']}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 4),
-                    Text('رقم القضية: ${paper['caseRef']}', style: TextStyle(color: themeTokens.muted, fontSize: 13)),
+                    Text(
+                      'رقم القضية: ${paper['caseRef']}',
+                      style: TextStyle(color: themeTokens.muted, fontSize: 13),
+                    ),
                     const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1535,15 +1969,22 @@ class _ProcessServerScreenState extends State<ProcessServerScreen> {
                         Text(
                           'تاريخ الاستحقاق: ${paper['dueDate']}',
                           style: TextStyle(
-                            color: status == 'متأخر' ? AppColors.danger : themeTokens.muted,
-                            fontWeight: status == 'متأخر' ? FontWeight.bold : null,
+                            color: status == 'متأخر'
+                                ? AppColors.danger
+                                : themeTokens.muted,
+                            fontWeight: status == 'متأخر'
+                                ? FontWeight.bold
+                                : null,
                             fontSize: 12,
                           ),
                         ),
                         TextButton.icon(
-                          onPressed: () => _togglePaperStatus(index),
+                          onPressed: () => _togglePaperStatus(index - 1),
                           icon: const Icon(Icons.swap_horiz, size: 14),
-                          label: const Text('تغيير الحالة', style: TextStyle(fontSize: 11)),
+                          label: const Text(
+                            'تغيير الحالة',
+                            style: TextStyle(fontSize: 11),
+                          ),
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
                             minimumSize: Size.zero,
@@ -1610,9 +2051,68 @@ class _MoreItem {
     required this.icon,
     required this.title,
     required this.builder,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
   final String title;
   final WidgetBuilder builder;
+  final int badgeCount;
+}
+
+class _ApiCoverageBanner extends StatelessWidget {
+  const _ApiCoverageBanner({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<MohamyThemeTokens>()!;
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.sync_problem_rounded,
+              color: AppColors.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: TextStyle(
+                    color: tokens.muted,
+                    fontSize: 12,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -426,7 +426,7 @@ push: ## Push all changes to GitHub (uses MSG="Latest update" by default)
 # ══════════════════════════════════════════════════════════════════
 
 run-web run-chrome: ## Run mobile app on Chrome (Web)
-	cd apps/mohamy_smart_mobile && flutter run -d chrome
+	cd apps/mohamy_smart_mobile && flutter run -d chrome --web-port 8978 --web-browser-flag "--disable-web-security"
 
 run-ios: ## Run mobile app on iOS Simulator
 	cd apps/mohamy_smart_mobile && flutter run -d ios

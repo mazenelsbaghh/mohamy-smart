@@ -112,7 +112,7 @@ namespace Lawyer.Application.Services
                 if (!repeatValidation.Succeeded)
                     return Result<AiJobStatusDto>.Error(repeatValidation.StatusCode, repeatValidation.Message);
 
-                var availability = await _points.ValidateCanStartAsync(lawyerId, dto.StepType, ct);
+                var availability = await _points.ValidateCanStartAsync(lawyerId, dto.StepType, dto.RunId, dto.WorkflowType, ct);
                 if (!availability.Succeeded)
                     return Result<AiJobStatusDto>.Error(availability.StatusCode, availability.Message);
 

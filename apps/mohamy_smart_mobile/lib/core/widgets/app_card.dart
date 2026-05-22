@@ -14,18 +14,17 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final card = Card(
-      child: Padding(padding: padding, child: child),
-    );
+    final content = Padding(padding: padding, child: child);
 
-    if (onTap == null) {
-      return card;
-    }
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(24),
-      onTap: onTap,
-      child: card,
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: onTap == null
+          ? content
+          : InkWell(
+              borderRadius: BorderRadius.circular(24),
+              onTap: onTap,
+              child: content,
+            ),
     );
   }
 }

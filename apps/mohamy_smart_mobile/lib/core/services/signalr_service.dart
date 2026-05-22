@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
-
 class SignalRService {
   SignalRService();
 
@@ -13,13 +12,19 @@ class SignalRService {
 
   // StreamControllers to expose events
   final _connectionStatusController = StreamController<bool>.broadcast();
-  final _jobStatusChangedController = StreamController<Map<String, dynamic>>.broadcast();
-  final _jobCompletedController = StreamController<Map<String, dynamic>>.broadcast();
-  final _jobFailedController = StreamController<Map<String, dynamic>>.broadcast();
+  final _jobStatusChangedController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _jobCompletedController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _jobFailedController =
+      StreamController<Map<String, dynamic>>.broadcast();
 
-  Stream<bool> get onConnectionStatusChanged => _connectionStatusController.stream;
-  Stream<Map<String, dynamic>> get onJobStatusChanged => _jobStatusChangedController.stream;
-  Stream<Map<String, dynamic>> get onJobCompleted => _jobCompletedController.stream;
+  Stream<bool> get onConnectionStatusChanged =>
+      _connectionStatusController.stream;
+  Stream<Map<String, dynamic>> get onJobStatusChanged =>
+      _jobStatusChangedController.stream;
+  Stream<Map<String, dynamic>> get onJobCompleted =>
+      _jobCompletedController.stream;
   Stream<Map<String, dynamic>> get onJobFailed => _jobFailedController.stream;
 
   bool get isConnected => _isConnected;
@@ -158,7 +163,9 @@ class SignalRService {
         _jobStatusChangedController.add(jobData);
       } else if (jobData != null) {
         try {
-          final Map<String, dynamic> parsed = Map<String, dynamic>.from(jobData as Map);
+          final Map<String, dynamic> parsed = Map<String, dynamic>.from(
+            jobData as Map,
+          );
           _jobStatusChangedController.add(parsed);
         } catch (e) {
           if (kDebugMode) {
@@ -176,7 +183,9 @@ class SignalRService {
         _jobCompletedController.add(jobData);
       } else if (jobData != null) {
         try {
-          final Map<String, dynamic> parsed = Map<String, dynamic>.from(jobData as Map);
+          final Map<String, dynamic> parsed = Map<String, dynamic>.from(
+            jobData as Map,
+          );
           _jobCompletedController.add(parsed);
         } catch (e) {
           if (kDebugMode) {
@@ -194,7 +203,9 @@ class SignalRService {
         _jobFailedController.add(jobData);
       } else if (jobData != null) {
         try {
-          final Map<String, dynamic> parsed = Map<String, dynamic>.from(jobData as Map);
+          final Map<String, dynamic> parsed = Map<String, dynamic>.from(
+            jobData as Map,
+          );
           _jobFailedController.add(parsed);
         } catch (e) {
           if (kDebugMode) {

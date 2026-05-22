@@ -34,9 +34,10 @@ export const metadata: Metadata = {
     siteName: "محامي سمارت",
     images: [
       {
-        url: "/images/og-image.svg",
+        url: "/images/og-image.png",
         width: 1200,
         height: 630,
+        type: "image/png",
         alt: "محامي سمارت - المنصة القانونية الذكية",
       },
     ],
@@ -45,7 +46,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "محامي سمارت | المنصة القانونية الأذكى لإدارة القضايا",
     description: "اكتشف محامي سمارت، المنصة القانونية الأولى عربياً. أدر قضاياك وموكليك، وحلل المستندات المعقدة في ثوانٍ بالذكاء الاصطناعي ✓ جرب المنصة الآن مجاناً!",
-    images: ["/images/og-image.svg"],
+    images: ["/images/og-image.png"],
   },
   alternates: {
     canonical: 'https://mohamy-smart.com',
@@ -151,7 +152,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   "availability": "https://schema.org/InStock"
                 },
                 "provider": { "@id": "https://mohamy-smart.com/#organization" },
-                "screenshot": "https://mohamy-smart.com/images/og-image.svg",
+                "screenshot": "https://mohamy-smart.com/images/og-image.png",
                 "inLanguage": "ar"
               },
               {

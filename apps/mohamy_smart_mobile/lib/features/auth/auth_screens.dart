@@ -6,11 +6,7 @@ import '../../core/theme/app_theme.dart';
 
 // Premium Linear Gradients matching the design system
 const LinearGradient goldGradient = LinearGradient(
-  colors: <Color>[
-    Color(0xFFFFAD26),
-    Color(0xFFEF950A),
-    Color(0xFFC35900),
-  ],
+  colors: <Color>[Color(0xFFFFAD26), Color(0xFFEF950A), Color(0xFFC35900)],
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
 );
@@ -38,12 +34,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     // Background and text color variables matching the mockups
-    final Color backgroundColor = isDark ? const Color(0xFF0F0D08) : const Color(0xFFF0EEE7);
-    final Color onBackground = isDark ? const Color(0xFFF7F2E8) : const Color(0xFF1B1C18);
-    final Color onSurfaceVariant = isDark ? const Color(0xFFA6A6A6) : const Color(0xFF534434);
-    final Color dossierColor = isDark ? const Color(0xFF1D1D1D) : const Color(0xFFFFFFFF);
+    final Color backgroundColor = isDark
+        ? const Color(0xFF0F0D08)
+        : const Color(0xFFF0EEE7);
+    final Color onBackground = isDark
+        ? const Color(0xFFF7F2E8)
+        : const Color(0xFF1B1C18);
+    final Color onSurfaceVariant = isDark
+        ? const Color(0xFFA6A6A6)
+        : const Color(0xFF534434);
+    final Color dossierColor = isDark
+        ? const Color(0xFF1D1D1D)
+        : const Color(0xFFFFFFFF);
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -59,7 +63,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 height: 250,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFEF950A).withValues(alpha: isDark ? 0.05 : 0.03),
+                  color: const Color(
+                    0xFFEF950A,
+                  ).withValues(alpha: isDark ? 0.05 : 0.03),
                 ),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
@@ -76,7 +82,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 height: 280,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFEF950A).withValues(alpha: isDark ? 0.08 : 0.05),
+                  color: const Color(
+                    0xFFEF950A,
+                  ).withValues(alpha: isDark ? 0.08 : 0.05),
                 ),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
@@ -89,7 +97,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               children: <Widget>[
                 // Header navigation bar
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
@@ -103,7 +114,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 );
                               },
                               icon: const Icon(
-                                Icons.arrow_forward, // RTL Back is arrow pointing right
+                                Icons
+                                    .arrow_forward, // RTL Back is arrow pointing right
                                 color: Color(0xFFEF950A),
                               ),
                             )
@@ -125,7 +137,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ],
                   ),
                 ),
-                
+
                 // PageView section for illustrations
                 Expanded(
                   child: PageView(
@@ -142,7 +154,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ],
                   ),
                 ),
-                
+
                 // Bottom Content Card (The "Dossier")
                 Container(
                   width: double.infinity,
@@ -180,7 +192,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                         ),
                         const SizedBox(height: 28),
-                        
+
                         // Indicators & Buttons
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -191,19 +203,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 final isActive = index == _currentPage;
                                 return AnimatedContainer(
                                   duration: const Duration(milliseconds: 300),
-                                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 3,
+                                  ),
                                   height: 6,
                                   width: isActive ? 32 : 6,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(3),
                                     color: isActive
                                         ? const Color(0xFFEF950A)
-                                        : (isDark ? const Color(0xFF333333) : const Color(0xFFD9D9D9)),
+                                        : (isDark
+                                              ? const Color(0xFF333333)
+                                              : const Color(0xFFD9D9D9)),
                                   ),
                                 );
                               }),
                             ),
-                            
+
                             // Action Button
                             SizedBox(
                               width: 130,
@@ -214,7 +230,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   gradient: goldGradient,
                                   boxShadow: <BoxShadow>[
                                     BoxShadow(
-                                      color: const Color(0xFF885200).withValues(alpha: 0.2),
+                                      color: const Color(
+                                        0xFF885200,
+                                      ).withValues(alpha: 0.2),
                                       blurRadius: 16,
                                       offset: const Offset(0, 8),
                                     ),
@@ -227,7 +245,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   onPressed: () {
                                     if (_currentPage < 2) {
                                       _pageController.nextPage(
-                                        duration: const Duration(milliseconds: 300),
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
                                         curve: Curves.easeInOut,
                                       );
                                     } else {
@@ -246,7 +266,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: <Widget>[
                                       Text(
-                                        _currentPage == 2 ? 'ابدأ الآن' : 'التالي',
+                                        _currentPage == 2
+                                            ? 'ابدأ الآن'
+                                            : 'التالي',
                                         style: const TextStyle(
                                           fontFamily: 'Tajawal',
                                           fontWeight: FontWeight.bold,
@@ -256,7 +278,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                       ),
                                       const SizedBox(width: 6),
                                       Icon(
-                                        _currentPage == 2 ? Icons.arrow_back : Icons.chevron_left, // Left chevron/arrow is forward in RTL
+                                        _currentPage == 2
+                                            ? Icons.arrow_back
+                                            : Icons
+                                                  .chevron_left, // Left chevron/arrow is forward in RTL
                                         color: Colors.white,
                                         size: 18,
                                       ),
@@ -286,7 +311,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     if (index == 0) {
       title = 'أدر قضاياك بذكاء';
-      description = 'تابع جميع قضاياك وجلساتك ومستنداتك من مكان واحد بكل سهولة واحترافية.';
+      description =
+          'تابع جميع قضاياك وجلساتك ومستنداتك من مكان واحد بكل سهولة واحترافية.';
     } else if (index == 1) {
       title = 'ذكاء اصطناعي قانوني';
       description = 'مذكرات دفاع وصحف دعوى وتحليل أحكام — في دقائق معدودة.';
@@ -324,7 +350,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   // Slide 1 Visual Illustration
   Widget _buildSlide1Illustration(bool isDark) {
-    final Color cardBackground = isDark ? const Color(0xFF2C2C26) : Colors.white;
+    final Color cardBackground = isDark
+        ? const Color(0xFF2C2C26)
+        : Colors.white;
     return Center(
       child: Container(
         width: 280,
@@ -340,7 +368,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 width: 250,
                 height: 250,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF33332A) : const Color(0xFFE1E1CF).withValues(alpha: 0.4),
+                  color: isDark
+                      ? const Color(0xFF33332A)
+                      : const Color(0xFFE1E1CF).withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(40),
                 ),
               ),
@@ -353,7 +383,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 color: cardBackground,
                 borderRadius: BorderRadius.circular(40),
                 border: Border.all(
-                  color: const Color(0xFFD9C3AE).withValues(alpha: isDark ? 0.15 : 0.2),
+                  color: const Color(
+                    0xFFD9C3AE,
+                  ).withValues(alpha: isDark ? 0.15 : 0.2),
                 ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
@@ -400,7 +432,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               bottom: 20,
               left: 10,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1FB3FF).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
@@ -422,11 +457,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1D1D1D) : const Color(0xFFF0EEE7),
+                  color: isDark
+                      ? const Color(0xFF1D1D1D)
+                      : const Color(0xFFF0EEE7),
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFFD9C3AE),
-                  ),
+                  border: Border.all(color: const Color(0xFFD9C3AE)),
                 ),
                 child: const Icon(
                   Icons.terminal,
@@ -443,7 +478,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   // Slide 2 Visual Illustration
   Widget _buildSlide2Illustration(bool isDark) {
-    final Color cardBackground = isDark ? const Color(0xFF2C2C26) : Colors.white;
+    final Color cardBackground = isDark
+        ? const Color(0xFF2C2C26)
+        : Colors.white;
     return Center(
       child: Container(
         width: 280,
@@ -458,7 +495,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFE1E1CF).withValues(alpha: isDark ? 0.05 : 0.2),
+                color: const Color(
+                  0xFFE1E1CF,
+                ).withValues(alpha: isDark ? 0.05 : 0.2),
               ),
             ),
             // Primary legal document card (rotated)
@@ -490,7 +529,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF3E3E3E) : const Color(0xFFE4E2DC),
+                        color: isDark
+                            ? const Color(0xFF3E3E3E)
+                            : const Color(0xFFE4E2DC),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -503,7 +544,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           width: (index == 1) ? 120 : (index == 3 ? 100 : 140),
                           height: 6,
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF333333) : const Color(0xFFF0EEE7),
+                            color: isDark
+                                ? const Color(0xFF333333)
+                                : const Color(0xFFF0EEE7),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
@@ -538,7 +581,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Transform.rotate(
                 angle: -0.1,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: cardBackground,
                     borderRadius: BorderRadius.circular(12),
@@ -554,14 +600,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   child: Row(
                     children: <Widget>[
-                      const Icon(Icons.flash_on, color: Color(0xFFEF950A), size: 16),
+                      const Icon(
+                        Icons.flash_on,
+                        color: Color(0xFFEF950A),
+                        size: 16,
+                      ),
                       const SizedBox(width: 6),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Container(width: 40, height: 4, color: const Color(0xFFEF950A).withValues(alpha: 0.2)),
+                          Container(
+                            width: 40,
+                            height: 4,
+                            color: const Color(
+                              0xFFEF950A,
+                            ).withValues(alpha: 0.2),
+                          ),
                           const SizedBox(height: 4),
-                          Container(width: 25, height: 4, color: const Color(0xFFEF950A).withValues(alpha: 0.1)),
+                          Container(
+                            width: 25,
+                            height: 4,
+                            color: const Color(
+                              0xFFEF950A,
+                            ).withValues(alpha: 0.1),
+                          ),
                         ],
                       ),
                     ],
@@ -576,7 +638,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Transform.rotate(
                 angle: 0.2,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: cardBackground,
                     borderRadius: BorderRadius.circular(12),
@@ -592,7 +657,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   child: Row(
                     children: <Widget>[
-                      const Icon(Icons.analytics, color: Color(0xFF006493), size: 16),
+                      const Icon(
+                        Icons.analytics,
+                        color: Color(0xFF006493),
+                        size: 16,
+                      ),
                       const SizedBox(width: 6),
                       Container(
                         width: 32,
@@ -612,7 +681,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   // Slide 3 Visual Illustration (with Google CDN network image)
   Widget _buildSlide3Illustration(bool isDark) {
-    final Color cardBackground = isDark ? const Color(0xFF2C2C26) : Colors.white;
+    final Color cardBackground = isDark
+        ? const Color(0xFF2C2C26)
+        : Colors.white;
     return Center(
       child: Container(
         width: 280,
@@ -636,29 +707,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ],
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(40),
-                child: Image.network(
-                  'https://lh3.googleusercontent.com/aida-public/AB6AXuBklkrV23TKzU-_sFl56dbRKSOaVkPoLiM26CRzL49zKNXHDU3q-5yjJKLuJdzL-VUB0-9La1iXg7bH5rb8GxPJLFrRsKBtPlzANhy8zHDBkARh5kKnMUinLI6lCcwduLs83zaI-e_858gu4c9gFJ6H0MSrvGwKWTGm3oEtgqKDcPad7AyUB8izFapI-B22TkZkzZgX8PZPttRIoqlJtlOVL7g4v9WfwO2nsPWNzsd19Y049cOTxa83KoyECn5wOvQvChuNMFoRvS0',
-                  fit: BoxFit.contain,
-                  loadingBuilder: (context, child, progress) {
-                    if (progress == null) return child;
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFFEF950A),
+              child: Center(
+                child: Container(
+                  width: 132,
+                  height: 132,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: goldGradient,
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: const Color(0xFF885200).withValues(alpha: 0.20),
+                        blurRadius: 22,
+                        offset: const Offset(0, 10),
                       ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    // Fallback to custom widget illustration if offline
-                    return const Center(
-                      child: Icon(
-                        Icons.workspace_premium_rounded,
-                        size: 96,
-                        color: Color(0xFFEF950A),
-                      ),
-                    );
-                  },
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.workspace_premium_rounded,
+                    size: 72,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -732,7 +800,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Accept standard demo logins out-of-the-box (prepopulated values)
   final _phoneController = TextEditingController(text: '0501234567');
   final _passwordController = TextEditingController(text: 'demo1234');
@@ -751,14 +819,24 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
-    final Color topBackground = isDark ? const Color(0xFF1D1D1D) : const Color(0xFFF0EEE7);
-    final Color bottomCardBackground = isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFFFFFF);
-    final Color textColor = isDark ? const Color(0xFFF7F2E8) : const Color(0xFF1B1B1B);
-    final Color textMutedColor = isDark ? const Color(0xFFA6A6A6) : const Color(0xFF534434);
-    
-    final Color inputFillColor = isDark ? const Color(0xFF1D1D1D) : const Color(0xFFF6F4EC);
-    
+
+    final Color topBackground = isDark
+        ? const Color(0xFF1D1D1D)
+        : const Color(0xFFF0EEE7);
+    final Color bottomCardBackground = isDark
+        ? const Color(0xFF0A0A0A)
+        : const Color(0xFFFFFFFF);
+    final Color textColor = isDark
+        ? const Color(0xFFF7F2E8)
+        : const Color(0xFF1B1B1B);
+    final Color textMutedColor = isDark
+        ? const Color(0xFFA6A6A6)
+        : const Color(0xFF534434);
+
+    final Color inputFillColor = isDark
+        ? const Color(0xFF1D1D1D)
+        : const Color(0xFFF6F4EC);
+
     return Scaffold(
       backgroundColor: bottomCardBackground,
       body: SafeArea(
@@ -783,7 +861,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 200,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFFEF950A).withValues(alpha: isDark ? 0.08 : 0.05),
+                          color: const Color(
+                            0xFFEF950A,
+                          ).withValues(alpha: isDark ? 0.08 : 0.05),
                         ),
                       ),
                     ),
@@ -796,7 +876,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 150,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFFEF950A).withValues(alpha: isDark ? 0.12 : 0.10),
+                          color: const Color(
+                            0xFFEF950A,
+                          ).withValues(alpha: isDark ? 0.12 : 0.10),
                         ),
                       ),
                     ),
@@ -812,11 +894,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: 80,
                             height: 80,
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF2C2C26) : Colors.white,
+                              color: isDark
+                                  ? const Color(0xFF2C2C26)
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(24),
                               boxShadow: <BoxShadow>[
                                 BoxShadow(
-                                  color: const Color(0xFF885200).withValues(alpha: 0.06),
+                                  color: const Color(
+                                    0xFF885200,
+                                  ).withValues(alpha: 0.06),
                                   blurRadius: 32,
                                   offset: const Offset(0, 12),
                                 ),
@@ -857,7 +943,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-              
+
               // Bottom 70% Card
               Transform.translate(
                 offset: const Offset(0, -28),
@@ -876,7 +962,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 32,
+                  ),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -897,7 +986,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           key: const Key('login_identifier'),
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
-                          style: TextStyle(fontFamily: 'Tajawal', color: textColor),
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            color: textColor,
+                          ),
                           decoration: InputDecoration(
                             hintText: 'تلفون',
                             hintStyle: TextStyle(
@@ -932,7 +1024,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           validator: _required,
                         ),
                         const SizedBox(height: 20),
-                        
+
                         // Password field
                         Text(
                           'كلمة المرور',
@@ -948,7 +1040,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           key: const Key('login_password'),
                           controller: _passwordController,
                           obscureText: _obscurePassword,
-                          style: TextStyle(fontFamily: 'Tajawal', color: textColor),
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            color: textColor,
+                          ),
                           decoration: InputDecoration(
                             hintText: '••••••••',
                             hintStyle: TextStyle(
@@ -995,7 +1090,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           validator: _required,
                         ),
-                        
+
                         // Forgot Password Link
                         Align(
                           alignment: AlignmentDirectional.centerStart,
@@ -1021,7 +1116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
-                        
+
                         // Error message
                         if (_showError) ...<Widget>[
                           const SizedBox(height: 8),
@@ -1035,7 +1130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                         const SizedBox(height: 24),
-                        
+
                         // Submit Button
                         Container(
                           height: 56,
@@ -1044,7 +1139,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             gradient: goldGradient,
                             boxShadow: <BoxShadow>[
                               BoxShadow(
-                                color: const Color(0xFF885200).withValues(alpha: 0.15),
+                                color: const Color(
+                                  0xFF885200,
+                                ).withValues(alpha: 0.15),
                                 blurRadius: 16,
                                 offset: const Offset(0, 8),
                               ),
@@ -1083,7 +1180,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                       SizedBox(width: 8),
                                       Icon(
-                                        Icons.arrow_back_rounded, // Left arrow pointing left for successful forward flow
+                                        Icons
+                                            .arrow_back_rounded, // Left arrow pointing left for successful forward flow
                                         color: Colors.white,
                                         size: 20,
                                       ),
@@ -1092,18 +1190,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        
+
                         // Divider
                         Row(
                           children: <Widget>[
                             Expanded(
                               child: Divider(
-                                color: const Color(0xFFD9C3AE).withValues(alpha: 0.3),
+                                color: const Color(
+                                  0xFFD9C3AE,
+                                ).withValues(alpha: 0.3),
                                 thickness: 1,
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: Text(
                                 'أو',
                                 style: TextStyle(
@@ -1116,14 +1218,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             Expanded(
                               child: Divider(
-                                color: const Color(0xFFD9C3AE).withValues(alpha: 0.3),
+                                color: const Color(
+                                  0xFFD9C3AE,
+                                ).withValues(alpha: 0.3),
                                 thickness: 1,
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 20),
-                        
+
                         // Social logins
                         Row(
                           children: <Widget>[
@@ -1137,7 +1241,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: OutlinedButton.styleFrom(
                                   minimumSize: const Size.fromHeight(56),
                                   side: BorderSide(
-                                    color: const Color(0xFFD9C3AE).withValues(alpha: 0.3),
+                                    color: const Color(
+                                      0xFFD9C3AE,
+                                    ).withValues(alpha: 0.3),
                                     width: 1.5,
                                   ),
                                   shape: RoundedRectangleBorder(
@@ -1151,10 +1257,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                       'https://lh3.googleusercontent.com/aida-public/AB6AXuBlfMqcr_y1Wssdw8SrSNWa_NFywjYh4OprsUsUxUNqltnq8hxFhIQXjEfQG3YMR4JdC_ACIayS7JOf5S6ysPFxb_h_JesATxW4p8mk-m2zHyogkQmtStFxiAXOF5mw6JZd50O8i-kQ7jjnlUbDkbH56lREKEYNuX3nd-IKbYQsG-iNAr8VgdKszBeL3TlrsArFJp3-LYCpu9ayh9b5twzLXu2MNwTwqAb8J4EIvIN12RBO7nMzQsdpaD22qMFad2h7lHRA5sN9kM0',
                                       width: 22,
                                       height: 22,
-                                      errorBuilder: (context, error, stackTrace) => const Icon(
-                                        Icons.g_mobiledata_rounded,
-                                        size: 26,
-                                      ),
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              const Icon(
+                                                Icons.g_mobiledata_rounded,
+                                                size: 26,
+                                              ),
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
@@ -1181,7 +1289,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: OutlinedButton.styleFrom(
                                   minimumSize: const Size.fromHeight(56),
                                   side: BorderSide(
-                                    color: const Color(0xFFD9C3AE).withValues(alpha: 0.3),
+                                    color: const Color(
+                                      0xFFD9C3AE,
+                                    ).withValues(alpha: 0.3),
                                     width: 1.5,
                                   ),
                                   shape: RoundedRectangleBorder(
@@ -1213,7 +1323,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                         const SizedBox(height: 32),
-                        
+
                         // Register Link
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -1233,7 +1343,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
@@ -1278,7 +1390,10 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final accepted = await widget.appState.login(_phoneController.text, _passwordController.text);
+      final accepted = await widget.appState.login(
+        _phoneController.text,
+        _passwordController.text,
+      );
       if (mounted) {
         setState(() {
           _showError = !accepted;
@@ -1359,12 +1474,22 @@ class _AuthInfoScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
-    final Color backgroundColor = isDark ? const Color(0xFF0F0D08) : const Color(0xFFF0EEE7);
-    final Color onBackground = isDark ? const Color(0xFFF7F2E8) : const Color(0xFF1B1C18);
-    final Color cardBackground = isDark ? const Color(0xFF1D1D1D) : const Color(0xFFFFFFFF);
-    final Color textMutedColor = isDark ? const Color(0xFFA6A6A6) : const Color(0xFF534434);
-    final Color inputFillColor = isDark ? const Color(0xFF1D1D1D) : const Color(0xFFF6F4EC);
+
+    final Color backgroundColor = isDark
+        ? const Color(0xFF0F0D08)
+        : const Color(0xFFF0EEE7);
+    final Color onBackground = isDark
+        ? const Color(0xFFF7F2E8)
+        : const Color(0xFF1B1C18);
+    final Color cardBackground = isDark
+        ? const Color(0xFF1D1D1D)
+        : const Color(0xFFFFFFFF);
+    final Color textMutedColor = isDark
+        ? const Color(0xFFA6A6A6)
+        : const Color(0xFF534434);
+    final Color inputFillColor = isDark
+        ? const Color(0xFF1D1D1D)
+        : const Color(0xFFF6F4EC);
 
     return Scaffold(
       backgroundColor: cardBackground,
@@ -1402,7 +1527,10 @@ class _AuthInfoScreen extends StatelessWidget {
                 style: TextStyle(fontFamily: 'Tajawal', color: onBackground),
                 decoration: InputDecoration(
                   labelText: 'رقم الجوال أو البريد الإلكتروني',
-                  labelStyle: TextStyle(fontFamily: 'Tajawal', color: textMutedColor),
+                  labelStyle: TextStyle(
+                    fontFamily: 'Tajawal',
+                    color: textMutedColor,
+                  ),
                   filled: true,
                   fillColor: inputFillColor,
                   border: OutlineInputBorder(

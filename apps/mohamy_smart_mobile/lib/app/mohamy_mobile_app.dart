@@ -75,4 +75,3 @@ class _MohamyMobileAppState extends State<MohamyMobileApp> {
     return AppShell(appState: _appState);
   }
 }
-

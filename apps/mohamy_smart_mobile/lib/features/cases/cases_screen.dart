@@ -59,13 +59,18 @@ class _CasesScreenState extends State<CasesScreen> {
       // Criminal
       return searchResult.where((c) {
         final type = c.caseType.toLowerCase();
-        return type.contains('جنايات') || type.contains('تزوير') || type.contains('جنائي');
+        return type.contains('جنايات') ||
+            type.contains('تزوير') ||
+            type.contains('جنائي');
       }).toList();
     } else if (_selectedFilterIndex == 2) {
       // Civil / Commercial
       return searchResult.where((c) {
         final type = c.caseType.toLowerCase();
-        return type.contains('تجاري') || type.contains('استئناف') || type.contains('تنفيذ') || type.contains('مدني');
+        return type.contains('تجاري') ||
+            type.contains('استئناف') ||
+            type.contains('تنفيذ') ||
+            type.contains('مدني');
       }).toList();
     } else if (_selectedFilterIndex == 3) {
       // Personal Status
@@ -85,20 +90,28 @@ class _CasesScreenState extends State<CasesScreen> {
     final filteredCases = _getFilteredCases(allCases);
 
     final scaffoldBg = isDark ? AppColors.darkBg : const Color(0xFFFBF9F2);
-    final cardBgColor = isDark ? AppColors.darkSurface : Colors.white;
     final textColor = isDark ? Colors.white : AppColors.lightTitle;
     final mutedTextColor = isDark ? AppColors.darkMuted : AppColors.lightMuted;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
     // Statistics calculation
     final totalCount = allCases.length;
-    final activeCount = allCases.where((c) => c.status == CaseStatus.active || c.status == CaseStatus.pending).length;
-    final completedCount = allCases.where((c) => c.status == CaseStatus.completed).length;
+    final activeCount = allCases
+        .where(
+          (c) =>
+              c.status == CaseStatus.active || c.status == CaseStatus.pending,
+        )
+        .length;
+    final completedCount = allCases
+        .where((c) => c.status == CaseStatus.completed)
+        .length;
 
     return Scaffold(
       backgroundColor: scaffoldBg,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.darkSurface.withValues(alpha: 0.8) : AppColors.lightSurfaceMuted.withValues(alpha: 0.8),
+        backgroundColor: isDark
+            ? AppColors.darkSurface.withValues(alpha: 0.8)
+            : AppColors.lightSurfaceMuted.withValues(alpha: 0.8),
         elevation: 0,
         leading: _isSearching
             ? null
@@ -181,12 +194,19 @@ class _CasesScreenState extends State<CasesScreen> {
       ),
       floatingActionButtonLocation: const OffsetStartFloatLocation(),
       body: ListView(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
+        padding: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: 100,
+        ),
         children: <Widget>[
           // Statistics Summary Bar
           Container(
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurfaceSoft : const Color(0xFFF6F4EC),
+              color: isDark
+                  ? AppColors.darkSurfaceSoft
+                  : const Color(0xFFF6F4EC),
               borderRadius: BorderRadius.circular(24),
               border: isDark ? Border.all(color: borderColor, width: 1) : null,
               boxShadow: isDark
@@ -281,11 +301,15 @@ class _CasesScreenState extends State<CasesScreen> {
                       gradient: isSelected ? AppColors.mainGradient : null,
                       color: isSelected
                           ? null
-                          : (isDark ? AppColors.darkSurfaceSoft : const Color(0xFFF0EEE7)),
+                          : (isDark
+                                ? AppColors.darkSurfaceSoft
+                                : const Color(0xFFF0EEE7)),
                       borderRadius: BorderRadius.circular(999),
                       border: isDark
                           ? Border.all(
-                              color: isSelected ? Colors.transparent : borderColor,
+                              color: isSelected
+                                  ? Colors.transparent
+                                  : borderColor,
                               width: 1,
                             )
                           : null,
@@ -299,14 +323,19 @@ class _CasesScreenState extends State<CasesScreen> {
                             ]
                           : null,
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
                     alignment: Alignment.center,
                     child: Text(
                       _filters[index],
                       style: TextStyle(
                         color: isSelected ? Colors.white : textColor,
                         fontSize: 13,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.w500,
                       ),
                     ),
                   ),
