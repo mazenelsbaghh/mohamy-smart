@@ -41,7 +41,7 @@
 | Payment Integration | `Paymob__APIKey`, `Paymob__SecretKey`, `Paymob__PublicKey`, `Paymob__HMAC`, `Paymob__CardIntegrationId`, `Paymob__MobileIntegrationId`, `Paymob__CallbackBaseUrl` | Secret (except `PublicKey`) | Yes | Yes |
 | Email Delivery | `EmailSettings__SmtpHost`, `EmailSettings__SmtpPort`, `EmailSettings__SmtpUser`, `EmailSettings__SmtpPassword`, `EmailSettings__FromAddress`, `EmailSettings__FromName`, `EmailSettings__UseSsl` | Secret (`SmtpUser`, `SmtpPassword`) | Optional | Yes |
 | Error Monitoring | `Sentry__Dsn`, `Sentry__Environment`, `Sentry__TracesSampleRate` | Internal (`Dsn`) | Optional | Optional |
-| Public Application URLs | `FrontendBaseUrl`, `CorsOrigins__0`, `CorsOrigins__1`, `CorsOrigins__2` | Public | Yes | Yes |
+| Public Application URLs | `FrontendBaseUrl`, `CorsOrigins__0`, `CorsOrigins__1`, `CorsOrigins__2`, `CorsOrigins__3` | Public | Yes | Yes |
 | Frontend API Base URLs | `VITE_API_BASE_URL`, `NEXT_PUBLIC_API_BASE_URL` | Public | Yes | Yes |
 | Frontend Monitoring | `VITE_SENTRY_DSN`, `VITE_SENTRY_ENVIRONMENT` | Public | Optional | Optional |
 | Port Overrides | `BACKEND_PORT`, `LAWYER_PORT`, `ADMIN_PORT`, `LANDING_PORT` | Public | N/A (not in local) | Optional |
@@ -91,6 +91,7 @@ See [Production Profile Matrix](#production-profile-matrix) below for a complete
 | `CorsOrigins__0` | `.env.docker.example` → `.env.docker` | backend container | Yes | Public |
 | `CorsOrigins__1` | `.env.docker.example` → `.env.docker` | backend container | Yes | Public |
 | `CorsOrigins__2` | `.env.docker.example` → `.env.docker` | backend container | Yes | Public |
+| `CorsOrigins__3` | `.env.docker.example` → `.env.docker` | backend container | Yes | Public |
 | `EmailSettings__SmtpHost` | `.env.docker.example` → `.env.docker` | backend container | Optional | Internal |
 | `EmailSettings__SmtpPort` | `.env.docker.example` → `.env.docker` | backend container | Optional | Internal |
 | `EmailSettings__SmtpUser` | `.env.docker.example` → `.env.docker` | backend container | Optional | Secret |
@@ -137,6 +138,7 @@ See [Production Profile Matrix](#production-profile-matrix) below for a complete
 | `CorsOrigins__0` | `.env.docker.prod.example` → `.env.docker.prod` | backend container | Yes | Public |
 | `CorsOrigins__1` | `.env.docker.prod.example` → `.env.docker.prod` | backend container | Yes | Public |
 | `CorsOrigins__2` | `.env.docker.prod.example` → `.env.docker.prod` | backend container | Yes | Public |
+| `CorsOrigins__3` | `.env.docker.prod.example` → `.env.docker.prod` | backend container | Yes | Public |
 | `VITE_LAWYER_API_URL` | `.env.docker.prod.example` → `.env.docker.prod` | lawyer-dashboard build arg | Yes | Public |
 | `VITE_ADMIN_API_URL` | `.env.docker.prod.example` → `.env.docker.prod` | admin-dashboard build arg | Yes | Public |
 | `NEXT_PUBLIC_API_BASE_URL` | `.env.docker.prod.example` → `.env.docker.prod` | landing build arg | Yes | Public |
