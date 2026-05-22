@@ -12,6 +12,7 @@ type TLawyersState = {
  isLoading: boolean;
  isLoadingDetail: boolean;
  isVerifyingPhone: boolean;
+ isUpdatingStatus: boolean;
  totalPages: number;
  totalCount: number;
  error: string | null;
@@ -23,6 +24,7 @@ const initialState: TLawyersState = {
  isLoading: false,
  isLoadingDetail: false,
  isVerifyingPhone: false,
+ isUpdatingStatus: false,
  totalPages: 1,
  totalCount: 0,
  error: null,
@@ -51,14 +53,23 @@ const lawyersSlice = createSlice({
  showErrorToast(action.payload);
  }
  })
+ .addCase(updateLawyerStatus.pending, (state) => {
+ state.isUpdatingStatus = true;
+ state.error = null;
+ })
  .addCase(updateLawyerStatus.fulfilled, (state, action) => {
+ state.isUpdatingStatus = false;
  const idx = state.list.findIndex((u) => u.id === action.payload.id);
  if (idx !== -1) {
- state.list[idx] = action.payload;
+ state.list[idx].isActive = action.payload.isActive;
+ }
+ if (state.selectedLawyer && state.selectedLawyer.id === action.payload.id) {
+ state.selectedLawyer.isActive = action.payload.isActive;
  }
  showSuccessToast("تم تحديث حالة المحامي بنجاح");
  })
  .addCase(updateLawyerStatus.rejected, (state, action) => {
+ state.isUpdatingStatus = false;
  if (typeof action.payload ==="string") {
  state.error = action.payload;
  showErrorToast(action.payload);

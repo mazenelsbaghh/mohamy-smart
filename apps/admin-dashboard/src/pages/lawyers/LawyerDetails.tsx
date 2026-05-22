@@ -27,6 +27,7 @@ import { useAppDispatch, useAppSelector } from"../../redux/hooks";
 import HeadTitle from"../../components/public/headTitle/HeadTitle";
 import fetchLawyerById from"../../redux/lawyers/thunk/fetchLawyerById";
 import verifyLawyerPhoneManually from"../../redux/lawyers/thunk/verifyLawyerPhoneManually";
+import updateLawyerStatus from"../../redux/lawyers/thunk/updateLawyerStatus";
 
 type Tone ="success" |"warning" |"danger" |"neutral";
 
@@ -126,7 +127,7 @@ const LawyerDetails = () => {
  const navigate = useNavigate();
  const [manualReason, setManualReason] = useState("");
  const [manualReasonError, setManualReasonError] = useState<string | null>(null);
- const { selectedLawyer: lawyer, isLoadingDetail, isVerifyingPhone, error } = useAppSelector(
+ const { selectedLawyer: lawyer, isLoadingDetail, isVerifyingPhone, isUpdatingStatus, error } = useAppSelector(
  (state) => state.lawyers
  );
 
@@ -135,6 +136,11 @@ const LawyerDetails = () => {
  dispatch(fetchLawyerById(id));
  }
  }, [dispatch, id]);
+
+ const handleToggleStatus = () => {
+ if (!lawyer) return;
+ dispatch(updateLawyerStatus({ id: lawyer.id, isActive: !lawyer.isActive }));
+ };
 
  const handleVerifyPhone = async () => {
  const reason = manualReason.trim();
@@ -234,6 +240,16 @@ const LawyerDetails = () => {
  </div>
 
  <div className="flex flex-wrap gap-2">
+ <Button
+ color={lawyer.isActive ?"danger" :"success"}
+ variant="flat"
+ startContent={lawyer.isActive ? <FaTimesCircle /> : <FaCheckCircle />}
+ isLoading={isUpdatingStatus}
+ isDisabled={isUpdatingStatus}
+ onPress={handleToggleStatus}
+ >
+ {lawyer.isActive ?"إيقاف الحساب" :"تنشيط الحساب"}
+ </Button>
  <Button
  variant="flat"
  className="bg-[var(--surface-muted)] text-[var(--text-primary)]"
