@@ -23,7 +23,7 @@ class AppCard extends StatelessWidget {
     }
 
     return InkWell(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(24),
       onTap: onTap,
       child: card,
     );

@@ -53,7 +53,6 @@ namespace Lawyer.Controllers
 
 		[Authorize]
 		[HttpGet()]
-		[OutputCache(Duration = 300, VaryByQueryKeys = new[] { "includeArchived" })]
 		public async Task<IActionResult> GetPlans([FromQuery] bool includeArchived = false, CancellationToken cancellationToken = default)
 		{
 			bool shouldIncludeArchived = includeArchived && User.IsInRole("Admin");
@@ -63,7 +62,6 @@ namespace Lawyer.Controllers
 
 		[Authorize]
 		[HttpGet("paginated")]
-		[OutputCache(Duration = 300)]
 		public async Task<IActionResult> GetPlansPaginated([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
 		{
 			var result = await _subscriptionService.GetAllPlansAsync(pageNumber, pageSize, cancellationToken);
@@ -206,7 +204,6 @@ namespace Lawyer.Controllers
 		/// </summary>
 		[AllowAnonymous]
 		[HttpGet("landing")]
-		[OutputCache(Duration = 600)]
 		public async Task<IActionResult> GetLandingPlans(CancellationToken cancellationToken)
 		{
 			var result = await _subscriptionService.GetLandingPlansAsync(cancellationToken);

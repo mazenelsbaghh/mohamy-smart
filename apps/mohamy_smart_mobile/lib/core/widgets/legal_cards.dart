@@ -131,12 +131,12 @@ class CaseCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(28),
+      borderRadius: BorderRadius.circular(24),
       child: Container(
         decoration: BoxDecoration(
           color: cardBgColor,
-          borderRadius: BorderRadius.circular(28),
-          border: isDark ? Border.all(color: borderColor, width: 1) : null,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: borderColor, width: 1),
           boxShadow: <BoxShadow>[
             BoxShadow(
               color: isDark ? const Color(0x02EF950A) : const Color(0x0F885200),
@@ -479,12 +479,12 @@ class WorkflowCard extends StatelessWidget {
 
     return InkWell(
       onTap: onStart,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(24),
       child: Container(
         decoration: BoxDecoration(
           color: cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: isDark ? Border.all(color: borderColor, width: 1) : null,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: borderColor, width: 1),
           boxShadow: [
             BoxShadow(
               color: isDark ? const Color(0x02000000) : const Color(0x08885200),

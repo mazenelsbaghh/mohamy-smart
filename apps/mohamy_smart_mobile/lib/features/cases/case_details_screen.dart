@@ -502,6 +502,13 @@ class CaseDetailsScreen extends StatelessWidget {
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final workflow = workflows[index];
+        final type = workflow.id.startsWith('workflow-defense-') ? 'defense-memo' :
+                     workflow.id.startsWith('workflow-claim-') ? 'preparing-statement-of-claims' :
+                     workflow.id.startsWith('workflow-appeal-') ? 'appeal-brief' :
+                     workflow.id.startsWith('workflow-complaint-') ? 'admin-complaint' :
+                     workflow.id.startsWith('workflow-ruling-') ? 'ruling-analysis' :
+                     workflow.id.startsWith('workflow-warning-') ? 'legal-warning' :
+                     workflow.id.startsWith('workflow-execution-') ? 'exec-request' : 'defense-memo';
         return WorkflowCard(
           workflow: workflow,
           canRun: points >= workflow.pointCost,
@@ -517,8 +524,10 @@ class CaseDetailsScreen extends StatelessWidget {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => AiWorkflowRunnerScreen(
+                  appState: appState,
                   workflow: workflow,
                   legalCase: legalCase,
+                  workflowType: type,
                 ),
               ),
             );
