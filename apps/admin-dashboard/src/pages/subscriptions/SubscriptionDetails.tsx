@@ -123,8 +123,8 @@ const SubscriptionDetails = () => {
  <div className="w-full md:w-6/12 p-4">
  <CustomInput
  type="text"
- label="استخدام AI"
- value={`${detail.usedAiRequests} / ${detail.limit ||"غير محدود"}`}
+ label="طلبات الذكاء المتبقية"
+ value={detail.limit ? `\u200E${Math.max(0, detail.limit - detail.usedAiRequests)} / ${detail.limit}` : "غير محدود"}
  readOnly
  />
  </div>

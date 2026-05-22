@@ -127,8 +127,8 @@ const Subscription = () => {
  
  <div className="w-full md:w-auto flex-1 max-w-md bg-[var(--surface-muted)] dark:bg-[#1b1b1b]/20 p-5 rounded-2xl border border-[var(--border-color)] dark:border-white/5 relative z-10">
  <div className="flex justify-between text-sm mb-3">
- <span className="font-bold text-[var(--title-color)]">استهلاك الذكاء الاصطناعي</span>
- <span className="text-[var(--main-color)] font-bold">{lawyerPlan.usedAiRequests} / {lawyerPlan.limit}</span>
+ <span className="font-bold text-[var(--title-color)]">طلبات الذكاء المتبقية</span>
+ <span className="text-[var(--main-color)] font-bold" dir="ltr">{Math.max(0, lawyerPlan.limit - lawyerPlan.usedAiRequests)} / {lawyerPlan.limit}</span>
  </div>
  <div className="w-full h-2.5 bg-[#1b1b1b]/5 dark:bg-white/5 rounded-full overflow-hidden">
  <div 

@@ -128,16 +128,16 @@ const Subscription = ({ user }: TSubscription) => {
  <h4 className="text-lg font-bold text-[var(--title-color)]">{lawyerPlan.limit}</h4>
  </div>
  <div className="bg-[var(--surface-muted)] rounded-xl p-3 text-center">
- <p className="text-xs text-[var(--text-color)] mb-1">المستخدم</p>
- <h4 className="text-lg font-bold text-[var(--main-color)]">{lawyerPlan.usedAiRequests}</h4>
+ <p className="text-xs text-[var(--text-color)] mb-1">المتبقي</p>
+ <h4 className="text-lg font-bold text-[var(--main-color)]">{Math.max(0, lawyerPlan.limit - lawyerPlan.usedAiRequests)}</h4>
  </div>
  </div>
 
  {/* Progress */}
  <div className="mb-5">
  <div className="flex justify-between text-sm mb-2">
- <span className="text-[var(--text-color)]">الاستخدام</span>
- <span className="font-semibold text-[var(--title-color)]">{lawyerPlan.usedAiRequests} / {lawyerPlan.limit}</span>
+ <span className="text-[var(--text-color)]">طلبات الذكاء المتبقية</span>
+ <span className="font-semibold text-[var(--title-color)]" dir="ltr">{Math.max(0, lawyerPlan.limit - lawyerPlan.usedAiRequests)} / {lawyerPlan.limit}</span>
  </div>
  <div className="w-full bg-[var(--surface-soft)] rounded-full h-2.5">
  <div

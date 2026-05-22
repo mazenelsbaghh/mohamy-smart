@@ -321,7 +321,15 @@ const LawyerDetails = () => {
  </div>
  <div className="mt-4 grid gap-3 sm:grid-cols-2">
  <InfoField label="المدة" value={`${formatNumber(subscription.durationDays)} يوم`} icon={<FaCalendarAlt />} />
- <InfoField label="طلبات الذكاء" value={`${formatNumber(subscription.usedAiRequests)} / ${subscription.aiRequestsLimit ? formatNumber(subscription.aiRequestsLimit) : "غير محدود"}`} icon={<FaRobot />} />
+ <InfoField 
+    label="طلبات الذكاء" 
+    value={subscription.aiRequestsLimit ? (
+      <span dir="ltr">
+        {formatNumber(Math.max(0, subscription.aiRequestsLimit - subscription.usedAiRequests))} / {formatNumber(subscription.aiRequestsLimit)}
+      </span>
+    ) : "غير محدود"} 
+    icon={<FaRobot />} 
+  />
  <InfoField label="السعر الشهري" value={formatNumber(subscription.price)} icon={<FaMoneyBillWave />} />
  <InfoField label="السعر السنوي" value={subscription.yearlyPrice ? formatNumber(subscription.yearlyPrice) : null} icon={<FaMoneyBillWave />} />
  </div>
