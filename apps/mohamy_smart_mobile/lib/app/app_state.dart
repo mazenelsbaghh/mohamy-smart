@@ -1,14 +1,199 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 
 import '../core/data/demo_legal_repository.dart';
 import '../core/models/legal_models.dart';
 import '../core/models/workflow_snapshot_model.dart';
+import '../core/services/api_service.dart';
+import '../core/services/signalr_service.dart';
 
 class AppState extends ChangeNotifier {
   AppState({DemoLegalRepository? repository})
     : repository = repository ?? DemoLegalRepository() {
     _cases = List<LegalCase>.from(this.repository.cases);
+    _clients = List<Client>.from(this.repository.clients);
     _snapshots = List<WorkflowSnapshot>.from(this.repository.mockSnapshots);
+    _internalRegulations = List<InternalRegulation>.from(this.repository.internalRegulations);
+    _powerOfAttorneys = List<PowerOfAttorney>.from(this.repository.powerOfAttorneys);
+
+    _apiService = ApiService();
+    _signalRService = SignalRService();
+    _initSignalR();
+  }
+
+  late final ApiService _apiService;
+  ApiService get apiService => _apiService;
+  late final SignalRService _signalRService;
+  bool _isSignalRConnected = false;
+  final Map<String, Map<String, dynamic>> _activeJobs = {};
+
+  bool get isSignalRConnected => _isSignalRConnected;
+  SignalRService get signalR => _signalRService;
+  Map<String, Map<String, dynamic>> get activeJobs => _activeJobs;
+
+  String get _defaultHubUrl {
+    if (kIsWeb) {
+      return 'http://localhost:8976/hubs/ai-jobs';
+    } else if (Platform.isAndroid) {
+      return 'http://10.0.2.2:8976/hubs/ai-jobs';
+    } else {
+      return 'http://localhost:8976/hubs/ai-jobs';
+    }
+  }
+
+  void _initSignalR() {
+    _signalRService.init(_defaultHubUrl);
+    _signalRService.onConnectionStatusChanged.listen((connected) {
+      _isSignalRConnected = connected;
+      notifyListeners();
+    });
+
+    _signalRService.onJobStatusChanged.listen(_handleJobStatusChangedEvent);
+    _signalRService.onJobCompleted.listen(_handleJobCompletedEvent);
+    _signalRService.onJobFailed.listen(_handleJobFailedEvent);
+  }
+
+  void _handleJobStatusChangedEvent(Map<String, dynamic> job) {
+    final jobId = job['id']?.toString();
+    if (jobId != null) {
+      _activeJobs[jobId] = job;
+      notifyListeners();
+    }
+  }
+
+  void _handleJobCompletedEvent(Map<String, dynamic> job) {
+    final jobId = job['id']?.toString();
+    if (jobId != null) {
+      _activeJobs[jobId] = job;
+    }
+
+    final caseId = job['caseId']?.toString();
+    final workflowType = job['workflowType']?.toString();
+    final stepType = job['stepType']?.toString();
+
+    if (caseId != null && workflowType != null && stepType != null) {
+      final stepIndex = mapStepTypeToStepIndex(workflowType, stepType);
+      if (stepIndex != null) {
+        final resultJsonRaw = job['resultJson'];
+        Map<String, dynamic> decodedOutput = {};
+        if (resultJsonRaw is String) {
+          try {
+            decodedOutput = jsonDecode(resultJsonRaw) as Map<String, dynamic>;
+          } catch (e) {
+            if (kDebugMode) {
+              print('Error decoding job resultJson: $e');
+            }
+          }
+        } else if (resultJsonRaw is Map) {
+          decodedOutput = Map<String, dynamic>.from(resultJsonRaw);
+        }
+
+        saveDraftStep(caseId, workflowType, stepIndex, decodedOutput);
+      }
+    }
+    notifyListeners();
+  }
+
+  void _handleJobFailedEvent(Map<String, dynamic> job) {
+    final jobId = job['id']?.toString();
+    if (jobId != null) {
+      _activeJobs[jobId] = job;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _connectSignalR() async {
+    try {
+      await _signalRService.connect();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error connecting SignalR on login: $e');
+      }
+    }
+  }
+
+  Future<void> _disconnectSignalR() async {
+    try {
+      await _signalRService.disconnect();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error disconnecting SignalR on logout: $e');
+      }
+    }
+  }
+
+  int? mapStepTypeToStepIndex(String workflowType, String stepType) {
+    switch (workflowType) {
+      case 'defense-memo':
+        switch (stepType) {
+          case 'FactAnalysis': return 1;
+          case 'GenerateDefenses': return 2;
+          case 'FinalRequirements': return 3;
+          case 'DefenseMemoDraft': return 4;
+        }
+        break;
+      case 'preparing-statement-of-claims':
+        switch (stepType) {
+          case 'LawsuitCaseType': return 1;
+          case 'LawsuitParties': return 2;
+          case 'LawsuitSubjects': return 3;
+          case 'LawsuitFacts': return 4;
+          case 'LawsuitLegalBasis': return 5;
+          case 'LawsuitRequests': return 6;
+          case 'StatementOfClaimsDraft': return 7;
+        }
+        break;
+      case 'appeal-brief':
+        switch (stepType) {
+          case 'AppealBriefJudgmentData': return 1;
+          case 'AppealBriefReasoningAnalysis': return 2;
+          case 'AppealBriefGrounds': return 3;
+          case 'AppealBriefRequests': return 4;
+          case 'AppealBriefLegalBasis': return 5;
+          case 'AppealBriefAssembly': return 6;
+        }
+        break;
+      case 'admin-complaint':
+        switch (stepType) {
+          case 'AdminComplaintClassification': return 1;
+          case 'AdminComplaintFacts': return 2;
+          case 'AdminComplaintViolation': return 3;
+          case 'AdminComplaintRequests': return 4;
+          case 'AdminComplaintAssembly': return 5;
+        }
+        break;
+      case 'ruling-analysis':
+        switch (stepType) {
+          case 'RulingAnalysisOperative': return 1;
+          case 'RulingAnalysisReasoning': return 2;
+          case 'RulingAnalysisDefectEvaluation': return 3;
+          case 'RulingAnalysisFeasibilityReport': return 4;
+        }
+        break;
+      case 'legal-warning':
+        switch (stepType) {
+          case 'LegalWarningClassification': return 1;
+          case 'LegalWarningBodyDraft': return 2;
+          case 'LegalWarningAssembly': return 3;
+        }
+        break;
+      case 'exec-request':
+        switch (stepType) {
+          case 'ExecRequestClassification': return 1;
+          case 'ExecRequestDrafting': return 2;
+          case 'ExecRequestAssembly': return 3;
+        }
+        break;
+    }
+    return null;
+  }
+
+  @override
+  void dispose() {
+    _signalRService.dispose();
+    super.dispose();
   }
 
   final DemoLegalRepository repository;
@@ -19,6 +204,9 @@ class AppState extends ChangeNotifier {
   int _selectedTab = 0;
   String _caseSearchQuery = '';
   late List<LegalCase> _cases;
+  late List<Client> _clients;
+  late List<InternalRegulation> _internalRegulations;
+  late List<PowerOfAttorney> _powerOfAttorneys;
 
   // Track active drafts per case and workflow type
   final Map<String, Map<String, WorkflowDraft>> _activeDrafts = {};
@@ -31,11 +219,237 @@ class AppState extends ChangeNotifier {
   int get selectedTab => _selectedTab;
   String get caseSearchQuery => _caseSearchQuery;
   LawyerProfile get profile => repository.profile;
-  List<Client> get clients => repository.clients;
+  List<Client> get clients => List<Client>.unmodifiable(_clients);
   List<AgendaItem> get agenda => repository.agenda;
   List<LegalDocument> get documents => repository.documents;
   SubscriptionPlan get subscription => repository.subscription;
   List<LegalCase> get cases => List<LegalCase>.unmodifiable(_cases);
+  List<InternalRegulation> get internalRegulations => List<InternalRegulation>.unmodifiable(_internalRegulations);
+  List<PowerOfAttorney> get powerOfAttorneys => List<PowerOfAttorney>.unmodifiable(_powerOfAttorneys);
+
+  LegalCase _mapJsonToCase(Map<String, dynamic> json) {
+    final statusVal = json['status'];
+    CaseStatus status;
+    if (statusVal == 0 || statusVal == 'Open') {
+      status = CaseStatus.active;
+    } else if (statusVal == 1 || statusVal == 'Closed') {
+      status = CaseStatus.completed;
+    } else {
+      status = CaseStatus.active;
+    }
+
+    final factsRaw = json['facts']?.toString() ?? '';
+    final factsList = factsRaw.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+
+    return LegalCase(
+      id: json['id']?.toString() ?? '',
+      caseNumber: json['number']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      clientId: json['clientId']?.toString() ?? '',
+      clientName: json['clientName']?.toString() ?? '',
+      court: json['court']?.toString() ?? '',
+      caseType: json['caseTypeName']?.toString() ?? (json['caseTypeNames'] != null && (json['caseTypeNames'] as List).isNotEmpty ? (json['caseTypeNames'] as List).first.toString() : 'جنائية'),
+      status: status,
+      facts: factsList,
+      documentIds: const [],
+      readiness: CaseReadiness(
+        hasDocuments: false,
+        hasFacts: factsList.isNotEmpty,
+        hasEnoughPoints: true,
+      ),
+      adversary: json['apponentName']?.toString() ?? '',
+    );
+  }
+
+  Client _mapJsonToClient(Map<String, dynamic> json) {
+    final casesList = json['cases'] as List?;
+    final caseIds = casesList?.map((e) => e['id']?.toString() ?? '').where((id) => id.isNotEmpty).toList() ?? <String>[];
+    return Client(
+      id: json['id']?.toString() ?? '',
+      name: json['clientName']?.toString() ?? '',
+      phone: json['phoneNumber']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      caseIds: caseIds,
+      lastActivity: json['creationDate']?.toString() ?? '',
+    );
+  }
+
+  InternalRegulation _mapJsonToRegulation(Map<String, dynamic> json) {
+    final content = json['content']?.toString() ?? '';
+    final sections = content.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    return InternalRegulation(
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      sections: sections,
+      regulationNumber: json['regulationNumber']?.toString(),
+      issuingAuthority: json['issuingAuthority']?.toString(),
+      summary: json['summary']?.toString(),
+      isActive: json['isActive'] as bool? ?? true,
+    );
+  }
+
+  PowerOfAttorney _mapJsonToPOA(Map<String, dynamic> json) {
+    final isCanceled = json['isCanceled'] as bool? ?? false;
+    return PowerOfAttorney(
+      id: json['id']?.toString() ?? '',
+      number: json['number']?.toString() ?? '',
+      clientId: json['clientId']?.toString() ?? '',
+      clientName: json['clientName']?.toString() ?? '',
+      type: json['poAType']?.toString() ?? 'general',
+      dateLabel: json['issueDate']?.toString() ?? '',
+      status: isCanceled ? 'ملغي' : 'نشط',
+      cancellationReason: json['cancellationReason']?.toString(),
+    );
+  }
+
+  Future<void> fetchLiveData() async {
+    try {
+      final casesResult = await _apiService.fetchCases();
+      if (casesResult['succeeded'] == true) {
+        final casesList = (casesResult['data']?['data'] as List?) ?? [];
+        _cases = casesList.map((e) => _mapJsonToCase(e as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to fetch cases: $e');
+    }
+
+    try {
+      final clientsResult = await _apiService.fetchClients();
+      if (clientsResult['succeeded'] == true) {
+        final clientsList = (clientsResult['data']?['items'] as List?) ?? [];
+        _clients = clientsList.map((e) => _mapJsonToClient(e as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to fetch clients: $e');
+    }
+
+    try {
+      final regsResult = await _apiService.fetchRegulations();
+      if (regsResult['succeeded'] == true) {
+        final regsList = (regsResult['data']?['data'] as List?) ?? [];
+        _internalRegulations = regsList.map((e) => _mapJsonToRegulation(e as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to fetch regulations: $e');
+    }
+
+    try {
+      final poaResult = await _apiService.fetchPOAs();
+      if (poaResult['succeeded'] == true) {
+        final poaList = (poaResult['data'] as List?) ?? [];
+        _powerOfAttorneys = poaList.map((e) => _mapJsonToPOA(e as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to fetch POAs: $e');
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> addInternalRegulation(InternalRegulation reg) async {
+    try {
+      final response = await _apiService.createRegulation(
+        title: reg.title,
+        content: reg.sections.join('\n'),
+        regulationNumber: reg.regulationNumber ?? '',
+        issuingAuthority: reg.issuingAuthority ?? '',
+        summary: reg.summary ?? '',
+      );
+      if (response['succeeded'] == true) {
+        await fetchLiveData();
+        return;
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to add internal regulation on backend: $e');
+    }
+    _internalRegulations.insert(0, reg);
+    notifyListeners();
+  }
+
+  Future<void> updateInternalRegulation(InternalRegulation reg) async {
+    try {
+      final response = await _apiService.updateRegulation(
+        id: reg.id,
+        title: reg.title,
+        content: reg.sections.join('\n'),
+        regulationNumber: reg.regulationNumber ?? '',
+        issuingAuthority: reg.issuingAuthority ?? '',
+        summary: reg.summary ?? '',
+      );
+      if (response['succeeded'] == true) {
+        await fetchLiveData();
+        return;
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to update regulation on backend: $e');
+    }
+    final idx = _internalRegulations.indexWhere((r) => r.id == reg.id);
+    if (idx != -1) {
+      _internalRegulations[idx] = reg;
+      notifyListeners();
+    }
+  }
+
+  Future<void> archiveInternalRegulation(String id) async {
+    try {
+      final response = await _apiService.archiveRegulation(id);
+      if (response['succeeded'] == true) {
+        await fetchLiveData();
+        return;
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to archive regulation on backend: $e');
+    }
+    final idx = _internalRegulations.indexWhere((r) => r.id == id);
+    if (idx != -1) {
+      _internalRegulations[idx] = _internalRegulations[idx].copyWith(isActive: false);
+      notifyListeners();
+    }
+  }
+
+  void deleteInternalRegulation(String id) {
+    _internalRegulations.removeWhere((r) => r.id == id);
+    notifyListeners();
+  }
+
+  Future<void> addPowerOfAttorney(PowerOfAttorney poa) async {
+    try {
+      final response = await _apiService.createPOA(
+        clientId: poa.clientId,
+        number: poa.number,
+        type: poa.type,
+        dateLabel: poa.dateLabel,
+      );
+      if (response['succeeded'] == true) {
+        await fetchLiveData();
+        return;
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to create POA on backend: $e');
+    }
+    _powerOfAttorneys.insert(0, poa);
+    notifyListeners();
+  }
+
+  Future<void> cancelPowerOfAttorney(String id, String reason) async {
+    try {
+      final response = await _apiService.cancelPOA(id, reason);
+      if (response['succeeded'] == true) {
+        await fetchLiveData();
+        return;
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to cancel POA on backend: $e');
+    }
+    final idx = _powerOfAttorneys.indexWhere((p) => p.id == id);
+    if (idx != -1) {
+      _powerOfAttorneys[idx] = _powerOfAttorneys[idx].copyWith(
+        status: 'ملغي',
+        cancellationReason: reason,
+      );
+      notifyListeners();
+    }
+  }
 
   // Workflow Snapshots Getters
   List<WorkflowSnapshot> get snapshots => List<WorkflowSnapshot>.unmodifiable(_snapshots);
@@ -194,19 +608,44 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool login(String identifier, String password) {
-    final accepted = identifier.trim().isNotEmpty && password.trim().isNotEmpty;
-    if (accepted) {
-      _hasCompletedOnboarding = true;
-      _isAuthenticated = true;
-      notifyListeners();
+  Future<bool> login(String identifier, String password) async {
+    try {
+      final result = await _apiService.login(identifier, password);
+      if (result['succeeded'] == true) {
+        final token = result['data']?['accessToken']?.toString();
+        if (token != null) {
+          _apiService.setToken(token);
+          _signalRService.init(_defaultHubUrl, accessToken: token);
+        }
+        _hasCompletedOnboarding = true;
+        _isAuthenticated = true;
+        await _connectSignalR();
+        await fetchLiveData();
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('API Login failed: $e. Falling back to local offline bypass.');
+      }
+      final accepted = identifier.trim().isNotEmpty && password.trim().isNotEmpty;
+      if (accepted) {
+        _hasCompletedOnboarding = true;
+        _isAuthenticated = true;
+        _signalRService.init(_defaultHubUrl);
+        await _connectSignalR();
+        notifyListeners();
+        return true;
+      }
     }
-    return accepted;
+    return false;
   }
 
   void logout() {
     _isAuthenticated = false;
     _selectedTab = 0;
+    _apiService.logout();
+    _disconnectSignalR();
     notifyListeners();
   }
 
@@ -225,7 +664,22 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addCase(AddCaseInput input) {
+  Future<void> addCase(AddCaseInput input) async {
+    try {
+      final response = await _apiService.createCase(
+        title: 'قضية ${input.caseType}',
+        number: input.caseNumber,
+        court: input.court,
+        clientName: input.clientName,
+        caseType: input.caseType,
+      );
+      if (response['succeeded'] == true) {
+        await fetchLiveData();
+        return;
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to create Case on backend: $e');
+    }
     final id = 'case-${_cases.length + 1}';
     _cases = <LegalCase>[
       LegalCase(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/app_state.dart';
+import '../../core/models/legal_models.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/empty_state.dart';
@@ -32,7 +33,7 @@ class MoreScreen extends StatelessWidget {
       _MoreItem(
         icon: Icons.menu_book_outlined,
         title: 'المكتبة القانونية',
-        builder: (_) => const LegalLibraryScreen(),
+        builder: (_) => LegalLibraryScreen(appState: appState),
       ),
       _MoreItem(
         icon: Icons.edit_document,
@@ -103,11 +104,12 @@ class MoreScreen extends StatelessWidget {
 // Interactive Legal Library Screen
 // ---------------------------------------------
 class LegalLibraryScreen extends StatelessWidget {
-  const LegalLibraryScreen({super.key});
+  const LegalLibraryScreen({required this.appState, super.key});
+
+  final AppState appState;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final themeTokens = Theme.of(context).extension<MohamyThemeTokens>()!;
 
     final libraryItems = [
@@ -127,13 +129,13 @@ class LegalLibraryScreen extends StatelessWidget {
         'title': 'الوكالات الرسمية (POA)',
         'desc': 'إدارة وتتبع أرقام الوكالات وتواريخ إصدارها وربطها بالموكلين والقضايا.',
         'icon': Icons.assignment_ind_outlined,
-        'page': const PowerOfAttorneysListScreen(),
+        'page': PowerOfAttorneysListScreen(appState: appState),
       },
       {
         'title': 'اللوائح والأنظمة الداخلية',
         'desc': 'استعراض اللوائح المنظمة وقواعد صياغة المذكرات وتحديثاتها الإدارية.',
         'icon': Icons.gavel_outlined,
-        'page': const InternalRegulationsListScreen(),
+        'page': InternalRegulationsListScreen(appState: appState),
       },
     ];
 
@@ -207,47 +209,32 @@ class LegalLibraryScreen extends StatelessWidget {
 // Interactive Power of Attorneys List Screen
 // ---------------------------------------------
 class PowerOfAttorneysListScreen extends StatefulWidget {
-  const PowerOfAttorneysListScreen({super.key});
+  const PowerOfAttorneysListScreen({required this.appState, super.key});
+
+  final AppState appState;
 
   @override
   State<PowerOfAttorneysListScreen> createState() => _PowerOfAttorneysListScreenState();
 }
 
 class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen> {
-  final List<Map<String, String>> _poas = [
-    {
-      'number': '241526435',
-      'client': 'عبد الرحمن محمد الهاشم',
-      'date': '2025-02-12',
-      'type': 'توكيل رسمي عام قضايا',
-      'status': 'نشط'
-    },
-    {
-      'number': '984534121',
-      'client': 'شركة ريادة الأعمال المحدودة',
-      'date': '2024-11-05',
-      'type': 'توكيل خاص بالدمج وتأسيس الشركات',
-      'status': 'نشط'
-    },
-    {
-      'number': '473625142',
-      'client': 'سارة عبد الله الشمري',
-      'date': '2023-05-10',
-      'type': 'توكيل رسمي خاص بالبيع والتصرف',
-      'status': 'منتهي'
-    },
-  ];
-
   void _addNewPoa() {
     final numController = TextEditingController();
-    final clientController = TextEditingController();
     final typeController = TextEditingController(text: 'توكيل رسمي عام قضايا');
     final dateController = TextEditingController(text: '2026-05-22');
+    Client? selectedClient;
+
+    if (widget.appState.clients.isNotEmpty) {
+      selectedClient = widget.appState.clients.first;
+    }
 
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) {
         return Directionality(
           textDirection: TextDirection.rtl,
@@ -264,45 +251,65 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
               children: [
                 Text(
                   'إضافة توكيل رسمي جديد',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Tajawal',
+                      ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: numController,
                   decoration: const InputDecoration(labelText: 'رقم التوكيل الرسمي'),
                   keyboardType: TextInputType.number,
+                  style: const TextStyle(fontFamily: 'Tajawal'),
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: clientController,
+                DropdownButtonFormField<Client>(
                   decoration: const InputDecoration(labelText: 'اسم الموكل'),
+                  value: selectedClient,
+                  items: widget.appState.clients.map((Client client) {
+                    return DropdownMenuItem<Client>(
+                      value: client,
+                      child: Text(client.name, style: const TextStyle(fontFamily: 'Tajawal')),
+                    );
+                  }).toList(),
+                  onChanged: (Client? value) {
+                    selectedClient = value;
+                  },
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: typeController,
                   decoration: const InputDecoration(labelText: 'نوع التوكيل'),
+                  style: const TextStyle(fontFamily: 'Tajawal'),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: dateController,
                   decoration: const InputDecoration(labelText: 'تاريخ الإصدار (YYYY-MM-DD)'),
+                  style: const TextStyle(fontFamily: 'Tajawal'),
                 ),
                 const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    if (numController.text.isEmpty || clientController.text.isEmpty) return;
-                    setState(() {
-                      _poas.insert(0, {
-                        'number': numController.text,
-                        'client': clientController.text,
-                        'date': dateController.text,
-                        'type': typeController.text,
-                        'status': 'نشط'
-                      });
-                    });
-                    Navigator.pop(context);
-                  },
-                  child: const Text('حفظ التوكيل'),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (numController.text.isEmpty || selectedClient == null) return;
+                      widget.appState.addPowerOfAttorney(
+                        PowerOfAttorney(
+                          id: 'poa-${DateTime.now().millisecondsSinceEpoch}',
+                          number: numController.text,
+                          clientId: selectedClient!.id,
+                          clientName: selectedClient!.name,
+                          dateLabel: dateController.text,
+                          type: typeController.text,
+                          status: 'نشط',
+                        ),
+                      );
+                      Navigator.pop(context);
+                    },
+                    child: const Text('حفظ التوكيل', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                  ),
                 ),
               ],
             ),
@@ -312,72 +319,193 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final themeTokens = Theme.of(context).extension<MohamyThemeTokens>()!;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  void _cancelPoaDialog(PowerOfAttorney poa) {
+    String selectedReason = 'إلغاء من الموكل';
+    final otherReasonController = TextEditingController();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('الوكالات الرسمية (POA)')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addNewPoa,
-        backgroundColor: AppColors.primaryBronze,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-      body: Directionality(
-        textDirection: TextDirection.rtl,
-        child: ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: _poas.length,
-          itemBuilder: (context, index) {
-            final poa = _poas[index];
-            final isActive = poa['status'] == 'نشط';
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Directionality(
+              textDirection: TextDirection.rtl,
+              child: AlertDialog(
+                title: const Text('إلغاء الوكالة الرسمية', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.w900)),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'رقم الوكالة: ${poa['number']}',
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isActive
-                                ? AppColors.success.withValues(alpha: 0.12)
-                                : Colors.grey.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            poa['status']!,
-                            style: TextStyle(
-                              color: isActive ? AppColors.success : Colors.grey,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
+                    const Text('يرجى تحديد المسوغ الشرعي والقانوني لإلغاء التوكيل:', style: TextStyle(fontFamily: 'Tajawal', fontSize: 13)),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: selectedReason,
+                      decoration: const InputDecoration(labelText: 'سبب الإلغاء'),
+                      items: const [
+                        DropdownMenuItem(value: 'وفاة الموكل', child: Text('وفاة الموكل', style: TextStyle(fontFamily: 'Tajawal'))),
+                        DropdownMenuItem(value: 'إلغاء من الموكل', child: Text('إلغاء من الموكل (عزل)', style: TextStyle(fontFamily: 'Tajawal'))),
+                        DropdownMenuItem(value: 'انتهاء المدة', child: Text('انتهاء المدة والهدف', style: TextStyle(fontFamily: 'Tajawal'))),
+                        DropdownMenuItem(value: 'سبب آخر', child: Text('سبب آخر', style: TextStyle(fontFamily: 'Tajawal'))),
                       ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() {
+                            selectedReason = val;
+                          });
+                        }
+                      },
                     ),
-                    const SizedBox(height: 10),
-                    Text('الموكل: ${poa['client']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text('النوع: ${poa['type']}', style: TextStyle(color: themeTokens.muted, fontSize: 13)),
-                    const SizedBox(height: 4),
-                    Text('تاريخ الإصدار: ${poa['date']}', style: TextStyle(color: themeTokens.muted, fontSize: 12)),
+                    if (selectedReason == 'سبب آخر') ...[
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: otherReasonController,
+                        decoration: const InputDecoration(labelText: 'اكتب السبب بالتفصيل'),
+                        style: const TextStyle(fontFamily: 'Tajawal'),
+                      ),
+                    ],
                   ],
                 ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('تراجع', style: TextStyle(fontFamily: 'Tajawal')),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      final reason = selectedReason == 'سبب آخر' ? otherReasonController.text : selectedReason;
+                      widget.appState.cancelPowerOfAttorney(poa.id, reason);
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('تم إلغاء الوكالة رقم ${poa.number} بنجاح', style: const TextStyle(fontFamily: 'Tajawal'))),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+                    child: const Text('تأكيد الإلغاء', style: TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                  ),
+                ],
               ),
             );
           },
-        ),
-      ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeTokens = Theme.of(context).extension<MohamyThemeTokens>()!;
+
+    return ListenableBuilder(
+      listenable: widget.appState,
+      builder: (context, _) {
+        final poas = widget.appState.powerOfAttorneys;
+        return Scaffold(
+          appBar: AppBar(title: const Text('الوكالات الرسمية (POA)')),
+          floatingActionButton: FloatingActionButton(
+            onPressed: _addNewPoa,
+            backgroundColor: AppColors.primaryBronze,
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+          body: Directionality(
+            textDirection: TextDirection.rtl,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: poas.length,
+              itemBuilder: (context, index) {
+                final poa = poas[index];
+                final isActive = poa.status == 'نشط';
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: AppCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'رقم الوكالة: ${poa.number}',
+                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: isActive
+                                    ? AppColors.success.withValues(alpha: 0.12)
+                                    : (poa.status == 'ملغي'
+                                        ? AppColors.danger.withValues(alpha: 0.12)
+                                        : Colors.grey.withValues(alpha: 0.12)),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                poa.status,
+                                style: TextStyle(
+                                  color: isActive
+                                      ? AppColors.success
+                                      : (poa.status == 'ملغي' ? AppColors.danger : Colors.grey),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text('الموكل: ${poa.clientName}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text('النوع: ${poa.type}', style: TextStyle(color: themeTokens.muted, fontSize: 13)),
+                        const SizedBox(height: 4),
+                        Text('تاريخ الإصدار: ${poa.dateLabel}', style: TextStyle(color: themeTokens.muted, fontSize: 12)),
+                        if (poa.cancellationReason != null) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 16),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'مسوغ الإلغاء: ${poa.cancellationReason}',
+                                  style: const TextStyle(
+                                    color: AppColors.danger,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (isActive) ...[
+                          const Divider(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton.icon(
+                                onPressed: () => _cancelPoaDialog(poa),
+                                icon: const Icon(Icons.cancel_outlined, color: AppColors.danger, size: 16),
+                                label: const Text(
+                                  'إلغاء الوكالة',
+                                  style: TextStyle(
+                                    color: AppColors.danger,
+                                    fontFamily: 'Tajawal',
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -385,85 +513,507 @@ class _PowerOfAttorneysListScreenState extends State<PowerOfAttorneysListScreen>
 // ---------------------------------------------
 // Interactive Internal Regulations List Screen
 // ---------------------------------------------
-class InternalRegulationsListScreen extends StatelessWidget {
-  const InternalRegulationsListScreen({super.key});
+class InternalRegulationsListScreen extends StatefulWidget {
+  const InternalRegulationsListScreen({required this.appState, super.key});
+
+  final AppState appState;
 
   @override
-  Widget build(BuildContext context) {
-    final themeTokens = Theme.of(context).extension<MohamyThemeTokens>()!;
-    final regulations = [
-      {
-        'title': 'ميثاق السلوك المهني والسرية',
-        'sections': [
-          'يجب المحافظة التامة على سرية بيانات الموكلين وقضاياهم.',
-          'يحظر مشاركة أي مستندات قضائية خارج النطاق الإداري للمكتب.',
-          'الالتزام بالاحترام المتبادل وقيم العدالة والأمانة المهنية.'
-        ]
-      },
-      {
-        'title': 'قواعد صياغة مذكرات الدفاع والعقود',
-        'sections': [
-          'الاعتماد على صيغة قانونية متينة وخالية من الركاكة اللغوية.',
-          'ترتيب الوقائع تسلسلياً ثم تقديم الدفوع وعناوين القانون.',
-          'إجراء مراجعة وتدقيق ذكي ومطابقة مع لوائح أحكام المحاكم.'
-        ]
-      },
-      {
-        'title': 'سياسة النقاط والذكاء الاصطناعي',
-        'sections': [
-          'خصم النقاط يتم فقط عند تشغيل مهام التحليل أو توليد الدفاع بنجاح.',
-          'رصيد النقاط يتجدد شهرياً تلقائياً أو عند الشراء الإضافي.',
-          'الطلبات الفاشلة لا تحسب ولا يتم خصم أي نقاط مقابلها.'
-        ]
-      },
-    ];
+  State<InternalRegulationsListScreen> createState() => _InternalRegulationsListScreenState();
+}
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('اللوائح والأنظمة الداخلية')),
-      body: Directionality(
-        textDirection: TextDirection.rtl,
-        child: ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: regulations.length,
-          itemBuilder: (context, index) {
-            final reg = regulations[index];
+class _InternalRegulationsListScreenState extends State<InternalRegulationsListScreen> {
+  String _filter = 'active'; // 'all', 'active', 'archived'
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      reg['title'] as String,
-                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.primaryBronze),
+  void _showRegulationForm({InternalRegulation? regulation}) {
+    final titleController = TextEditingController(text: regulation?.title ?? '');
+    final numberController = TextEditingController(text: regulation?.regulationNumber ?? '');
+    final authorityController = TextEditingController(text: regulation?.issuingAuthority ?? '');
+    final summaryController = TextEditingController(text: regulation?.summary ?? '');
+    
+    List<String> tempSections = List<String>.from(regulation?.sections ?? []);
+    final sectionInputController = TextEditingController();
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (sheetCtx, setSheetState) {
+            void runOcrSimulation() {
+              showDialog<void>(
+                context: ctx,
+                barrierDismissible: false,
+                builder: (dialogCtx) {
+                  Future.delayed(const Duration(milliseconds: 1500), () {
+                    Navigator.pop(dialogCtx);
+                    setSheetState(() {
+                      titleController.text = 'لائحة ضوابط المراجعة القضائية للعام 2026';
+                      numberController.text = '109/2026';
+                      authorityController.text = 'المجلس الأعلى للقضاء';
+                      summaryController.text = 'تنظيم ضوابط تقديم لوائح الدفاع والمراجعات الإدارية والمدد القانونية المحددة للطلبات.';
+                      tempSections = [
+                        'يجب إخضاع كافة لوائح الدفاع للتدقيق الذاتي المسبق ومطابقتها مع المبادئ القضائية.',
+                        'يكون رئيس قسم التقاضي هو المسؤول الأول عن سلامة الإجراءات وصحة إرفاق المستندات.',
+                        'تحفظ النسخ الرقمية من المستندات الرسمية فوراً في الأرشيف المشترك للمكتب لتفادي الفقد.'
+                      ];
+                    });
+                  });
+                  return Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: AlertDialog(
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 10),
+                          const CircularProgressIndicator(color: AppColors.primary),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'جاري فحص المستند واستخراج البنود بالذكاء الاصطناعي...',
+                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    ... (reg['sections'] as List<String>).map((sec) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(Icons.fiber_manual_record, size: 10, color: AppColors.primary),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                sec,
-                                style: const TextStyle(fontSize: 13, height: 1.4),
-                              ),
+                  );
+                },
+              );
+            }
+
+            return Directionality(
+              textDirection: TextDirection.rtl,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 20,
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            regulation == null ? 'إضافة لائحة داخلية جديدة' : 'تعديل لائحة داخلية',
+                            style: Theme.of(sheetCtx).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Tajawal',
+                                ),
+                          ),
+                          TextButton.icon(
+                            onPressed: runOcrSimulation,
+                            icon: const Icon(Icons.document_scanner, size: 18),
+                            label: const Text('مسح OCR', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: titleController,
+                        decoration: const InputDecoration(labelText: 'عنوان اللائحة'),
+                        style: const TextStyle(fontFamily: 'Tajawal'),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: numberController,
+                              decoration: const InputDecoration(labelText: 'رقم اللائحة'),
+                              style: const TextStyle(fontFamily: 'Tajawal'),
                             ),
-                          ],
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: authorityController,
+                              decoration: const InputDecoration(labelText: 'الجهة المصدرة'),
+                              style: const TextStyle(fontFamily: 'Tajawal'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: summaryController,
+                        decoration: const InputDecoration(labelText: 'الخلاصة أو الوصف'),
+                        style: const TextStyle(fontFamily: 'Tajawal'),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'بنود اللائحة:',
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(sheetCtx).brightness == Brightness.dark
+                              ? Colors.white70
+                              : AppColors.primaryBronze,
                         ),
-                      );
-                    }),
-                  ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: sectionInputController,
+                              decoration: const InputDecoration(
+                                hintText: 'اكتب البند الجديد هنا...',
+                                hintStyle: TextStyle(fontSize: 12),
+                              ),
+                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle, color: AppColors.primary),
+                            onPressed: () {
+                              if (sectionInputController.text.trim().isEmpty) return;
+                              setSheetState(() {
+                                tempSections.add(sectionInputController.text.trim());
+                                sectionInputController.clear();
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      if (tempSections.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            'لم يتم إضافة أي بنود بعد.',
+                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.grey),
+                          ),
+                        )
+                      else
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 180),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: tempSections.length,
+                            itemBuilder: (listCtx, idx) {
+                              return ListTile(
+                                dense: true,
+                                title: Text(
+                                  tempSections[idx],
+                                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12),
+                                ),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 18),
+                                  onPressed: () {
+                                    setSheetState(() {
+                                      tempSections.removeAt(idx);
+                                    });
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (titleController.text.trim().isEmpty) return;
+                            final newReg = InternalRegulation(
+                              id: regulation?.id ?? 'reg-${DateTime.now().millisecondsSinceEpoch}',
+                              title: titleController.text.trim(),
+                              regulationNumber: numberController.text.trim().isEmpty ? null : numberController.text.trim(),
+                              issuingAuthority: authorityController.text.trim().isEmpty ? null : authorityController.text.trim(),
+                              summary: summaryController.text.trim().isEmpty ? null : summaryController.text.trim(),
+                              sections: tempSections,
+                              isActive: regulation?.isActive ?? true,
+                            );
+
+                            if (regulation == null) {
+                              widget.appState.addInternalRegulation(newReg);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('تم إضافة اللائحة بنجاح', style: TextStyle(fontFamily: 'Tajawal'))),
+                              );
+                            } else {
+                              widget.appState.updateInternalRegulation(newReg);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('تم تعديل اللائحة بنجاح', style: TextStyle(fontFamily: 'Tajawal'))),
+                              );
+                            }
+                            Navigator.pop(ctx);
+                          },
+                          child: Text(
+                            regulation == null ? 'حفظ اللائحة' : 'تحديث اللائحة',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _deleteRegulation(String id, String title) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: const Text('حذف اللائحة', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.w900)),
+            content: Text('هل أنت متأكد من رغبتك في حذف لائحة "$title"؟ لا يمكن التراجع عن هذا الإجراء.', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal')),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  widget.appState.deleteInternalRegulation(id);
+                  Navigator.pop(dialogCtx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم حذف اللائحة بنجاح', style: TextStyle(fontFamily: 'Tajawal'))),
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+                child: const Text('تأكيد الحذف', style: TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeTokens = Theme.of(context).extension<MohamyThemeTokens>()!;
+
+    return ListenableBuilder(
+      listenable: widget.appState,
+      builder: (context, _) {
+        final allRegs = widget.appState.internalRegulations;
+        final filteredRegs = allRegs.where((reg) {
+          if (_filter == 'active') return reg.isActive;
+          if (_filter == 'archived') return !reg.isActive;
+          return true;
+        }).toList();
+
+        return Scaffold(
+          appBar: AppBar(title: const Text('اللوائح والأنظمة الداخلية')),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _showRegulationForm(),
+            backgroundColor: AppColors.primaryBronze,
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+          body: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildFilterChip('نشطة', 'active'),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('مؤرشفة', 'archived'),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('الكل', 'all'),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: filteredRegs.isEmpty
+                      ? const Center(
+                          child: EmptyState(
+                            icon: Icons.gavel_outlined,
+                            title: 'لا توجد لوائح حالية',
+                            message: 'اضغط على زر الإضافة لإدراج لائحة جديدة أو استخدام فحص OCR للوثائق.',
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: filteredRegs.length,
+                          itemBuilder: (context, index) {
+                            final reg = filteredRegs[index];
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: AppCard(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                reg.title,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 16,
+                                                  color: AppColors.primaryBronze,
+                                                ),
+                                              ),
+                                              if (reg.regulationNumber != null || reg.issuingAuthority != null) ...[
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  '${reg.regulationNumber ?? ""} • ${reg.issuingAuthority ?? ""}',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    color: themeTokens.muted,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                        PopupMenuButton<String>(
+                                          onSelected: (val) {
+                                            if (val == 'edit') {
+                                              _showRegulationForm(regulation: reg);
+                                            } else if (val == 'archive') {
+                                              widget.appState.archiveInternalRegulation(reg.id);
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    reg.isActive ? 'تم أرشفة اللائحة بنجاح' : 'تم تفعيل اللائحة بنجاح',
+                                                    style: const TextStyle(fontFamily: 'Tajawal'),
+                                                  ),
+                                                ),
+                                              );
+                                            } else if (val == 'delete') {
+                                              _deleteRegulation(reg.id, reg.title);
+                                            }
+                                          },
+                                          itemBuilder: (ctx) => [
+                                            const PopupMenuItem(
+                                              value: 'edit',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.edit_outlined, size: 18),
+                                                  SizedBox(width: 8),
+                                                  Text('تعديل', style: TextStyle(fontFamily: 'Tajawal')),
+                                                ],
+                                              ),
+                                            ),
+                                            PopupMenuItem(
+                                              value: 'archive',
+                                              child: Row(
+                                                children: [
+                                                  Icon(reg.isActive ? Icons.archive_outlined : Icons.unarchive_outlined, size: 18),
+                                                  SizedBox(width: 8),
+                                                  Text(reg.isActive ? 'أرشفة' : 'تنشيط', style: const TextStyle(fontFamily: 'Tajawal')),
+                                                ],
+                                              ),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'delete',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.delete_outline, color: AppColors.danger, size: 18),
+                                                  SizedBox(width: 8),
+                                                  Text('حذف', style: TextStyle(fontFamily: 'Tajawal', color: AppColors.danger)),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    if (reg.summary != null) ...[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        reg.summary!,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: themeTokens.muted,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                    const SizedBox(height: 10),
+                                    ...reg.sections.map((sec) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 4),
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Icon(Icons.fiber_manual_record, size: 10, color: AppColors.primary),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                sec,
+                                                style: const TextStyle(fontSize: 13, height: 1.4),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterChip(String label, String value) {
+    final isSelected = _filter == value;
+    return ChoiceChip(
+      label: Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'Tajawal',
+          fontWeight: FontWeight.bold,
+          color: isSelected ? Colors.white : AppColors.primaryBronze,
+          fontSize: 12,
         ),
       ),
+      selected: isSelected,
+      selectedColor: AppColors.primaryBronze,
+      backgroundColor: Colors.transparent,
+      side: BorderSide(
+        color: isSelected ? Colors.transparent : AppColors.primaryBronze.withValues(alpha: 0.3),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _filter = value;
+          });
+        }
+      },
     );
   }
 }

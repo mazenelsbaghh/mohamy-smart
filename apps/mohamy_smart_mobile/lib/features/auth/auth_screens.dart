@@ -738,6 +738,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController(text: 'demo1234');
   bool _obscurePassword = true;
   bool _showError = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -1051,7 +1052,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: ElevatedButton(
                             key: const Key('login_button'),
-                            onPressed: _submit,
+                            onPressed: _isLoading ? null : _submit,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,
@@ -1059,26 +1060,35 @@ class _LoginScreenState extends State<LoginScreen> {
                                 borderRadius: BorderRadius.circular(28),
                               ),
                             ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: <Widget>[
-                                Text(
-                                  'تسجيل الدخول',
-                                  style: TextStyle(
-                                    fontFamily: 'Tajawal',
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                    color: Colors.white,
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  )
+                                : const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: <Widget>[
+                                      Text(
+                                        'تسجيل الدخول',
+                                        style: TextStyle(
+                                          fontFamily: 'Tajawal',
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Icon(
+                                        Icons.arrow_back_rounded, // Left arrow pointing left for successful forward flow
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                SizedBox(width: 8),
-                                Icon(
-                                  Icons.arrow_back_rounded, // Left arrow pointing left for successful forward flow
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ],
-                            ),
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -1258,12 +1268,31 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    final accepted = widget.appState.login(_phoneController.text, _passwordController.text);
-    setState(() => _showError = !accepted);
+    setState(() {
+      _showError = false;
+      _isLoading = true;
+    });
+
+    try {
+      final accepted = await widget.appState.login(_phoneController.text, _passwordController.text);
+      if (mounted) {
+        setState(() {
+          _showError = !accepted;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _showError = true;
+          _isLoading = false;
+        });
+      }
+    }
   }
 }
 

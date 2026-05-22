@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -46,7 +49,7 @@ class AiWorkflowHubScreen extends StatelessWidget {
             elevation: 0,
             scrolledUnderElevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_forward), // RTL Back button
+              icon: const Icon(Icons.arrow_back),
               color: AppColors.primary,
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -571,6 +574,9 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
     _lastSavedAt = draft.lastSavedAt;
     widget.appState.addListener(_onAppStateChanged);
 
+    // Join case-specific SignalR group
+    widget.appState.signalR.joinCase(widget.legalCase.id);
+
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
@@ -595,6 +601,10 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
   @override
   void dispose() {
     widget.appState.removeListener(_onAppStateChanged);
+
+    // Leave case-specific SignalR group
+    widget.appState.signalR.leaveCase(widget.legalCase.id);
+
     _disposeControllers();
     _pulseController.dispose();
     _rotationController.dispose();
@@ -612,6 +622,33 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
         return;
       }
       final draft = widget.appState.getOrCreateDraft(widget.legalCase.id, widget.workflowType);
+
+      // If we are currently processing a backend/SignalR job, and the output is updated:
+      if (_isProcessing) {
+        final stepOutput = draft.outputs[_step];
+        if (stepOutput != null && stepOutput.isNotEmpty) {
+          _processingTimer?.cancel();
+          _phaseTimer?.cancel();
+          setState(() {
+            _isProcessing = false;
+            _lastSavedAt = draft.lastSavedAt;
+          });
+          _initializeControllers();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'تم التحليل الذكي للخطوة بنجاح! ✓ (تحديث فوري)',
+                style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+              ),
+              backgroundColor: Color(0xFF007AFF),
+              duration: Duration(seconds: 1),
+            ),
+          );
+          return;
+        }
+      }
+
       if (_step != draft.currentStep || _lastSavedAt != draft.lastSavedAt) {
         setState(() {
           _step = draft.currentStep;
@@ -801,7 +838,7 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
     });
 
     _phaseTimer?.cancel();
-    _phaseTimer = Timer(const Duration(milliseconds: 700), () {
+    _phaseTimer = Timer(const Duration(milliseconds: 1500), () {
       if (mounted) {
         setState(() {
           _processingPhase = 1;
@@ -809,8 +846,19 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
       }
     });
 
+    // Fire off backend trigger in the background if SignalR is active
+    if (widget.appState.isSignalRConnected) {
+      _triggerBackendJob(targetStep);
+    }
+
+    // Processing timer acts as a safety timeout. If connected to SignalR, we wait longer
+    // for a backend response before falling back to local mock data.
+    final duration = widget.appState.isSignalRConnected
+        ? const Duration(seconds: 8)
+        : const Duration(milliseconds: 2500);
+
     _processingTimer?.cancel();
-    _processingTimer = Timer(const Duration(milliseconds: 1500), () {
+    _processingTimer = Timer(duration, () {
       if (mounted) {
         final allMockOutputs = DemoLegalRepository.getMockOutputs(
           widget.legalCase.title,
@@ -834,17 +882,117 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
         _initializeControllers();
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'تم التحليل الذكي للخطوة بنجاح! ✓',
-              style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+              widget.appState.isSignalRConnected
+                  ? 'تم التحليل الذكي للخطوة بنجاح! ✓ (محاكاة احتياطية)'
+                  : 'تم التحليل الذكي للخطوة بنجاح! ✓',
+              style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
             ),
-            backgroundColor: Color(0xFF34BF49),
-            duration: Duration(seconds: 1),
+            backgroundColor: const Color(0xFF34BF49),
+            duration: const Duration(seconds: 1),
           ),
         );
       }
     });
+  }
+
+  String? _getStepTypeForWorkflowStep(String workflowType, int stepIndex) {
+    switch (workflowType) {
+      case 'defense-memo':
+        switch (stepIndex) {
+          case 1: return 'FactAnalysis';
+          case 2: return 'GenerateDefenses';
+          case 3: return 'FinalRequirements';
+          case 4: return 'DefenseMemoDraft';
+        }
+        break;
+      case 'preparing-statement-of-claims':
+        switch (stepIndex) {
+          case 1: return 'LawsuitCaseType';
+          case 2: return 'LawsuitParties';
+          case 3: return 'LawsuitSubjects';
+          case 4: return 'LawsuitFacts';
+          case 5: return 'LawsuitLegalBasis';
+          case 6: return 'LawsuitRequests';
+          case 7: return 'StatementOfClaimsDraft';
+        }
+        break;
+      case 'appeal-brief':
+        switch (stepIndex) {
+          case 1: return 'AppealBriefJudgmentData';
+          case 2: return 'AppealBriefReasoningAnalysis';
+          case 3: return 'AppealBriefGrounds';
+          case 4: return 'AppealBriefRequests';
+          case 5: return 'AppealBriefLegalBasis';
+          case 6: return 'AppealBriefAssembly';
+        }
+        break;
+      case 'admin-complaint':
+        switch (stepIndex) {
+          case 1: return 'AdminComplaintClassification';
+          case 2: return 'AdminComplaintFacts';
+          case 3: return 'AdminComplaintViolation';
+          case 4: return 'AdminComplaintRequests';
+          case 5: return 'AdminComplaintAssembly';
+        }
+        break;
+      case 'ruling-analysis':
+        switch (stepIndex) {
+          case 1: return 'RulingAnalysisOperative';
+          case 2: return 'RulingAnalysisReasoning';
+          case 3: return 'RulingAnalysisDefectEvaluation';
+          case 4: return 'RulingAnalysisFeasibilityReport';
+        }
+        break;
+      case 'legal-warning':
+        switch (stepIndex) {
+          case 1: return 'LegalWarningClassification';
+          case 2: return 'LegalWarningBodyDraft';
+          case 3: return 'LegalWarningAssembly';
+        }
+        break;
+      case 'exec-request':
+        switch (stepIndex) {
+          case 1: return 'ExecRequestClassification';
+          case 2: return 'ExecRequestDrafting';
+          case 3: return 'ExecRequestAssembly';
+        }
+        break;
+    }
+    return null;
+  }
+
+  Future<void> _triggerBackendJob(int targetStep) async {
+    final stepType = _getStepTypeForWorkflowStep(widget.workflowType, targetStep);
+    if (stepType == null) return;
+
+    try {
+      final isAndroid = !kIsWeb && Platform.isAndroid;
+      final baseUrl = isAndroid ? 'http://10.0.2.2:8976' : 'http://localhost:8976';
+
+      final client = HttpClient();
+      final uri = Uri.parse('$baseUrl/api/cases/${widget.legalCase.id}/ai-jobs');
+      final request = await client.postUrl(uri);
+      request.headers.set('content-type', 'application/json');
+
+      final body = {
+        'stepType': stepType,
+        'inputJson': '{}',
+        'workflowType': widget.workflowType,
+        'stepNumber': targetStep,
+      };
+
+      request.write(jsonEncode(body));
+      final response = await request.close();
+      if (kDebugMode) {
+        print('Backend AI job trigger status: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Failed to trigger backend job: $e');
+      }
+    }
   }
 
   String _getFieldLabel(String key) {
@@ -897,6 +1045,16 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
       case 'description': return 'البيان/الوصف';
       case 'courtName': return 'اسم المحكمة';
       case 'caseNumber': return 'رقم القضية';
+      case 'subjectFullText': return 'تفاصيل موضوع النزاع';
+      case 'severity': return 'مدى جسامة العيب/الثغرة';
+      case 'appealStrength': return 'قوة فرصة قبول الطعن';
+      case 'recommendedGrounds': return 'أوجه الطعن الموصى بها';
+      case 'urgencyLevel': return 'درجة استعجال الطلب';
+      case 'type': return 'نوع السند/الأساس';
+      case 'obligationDetails': return 'تفاصيل الالتزام المطلوبة';
+      case 'recommendedAction': return 'الإجراء القانوني الموصى به';
+      case 'legalRef': return 'السند القانوني للمخالفة';
+      case 'keyFacts': return 'الوقائع المحورية';
       default:
         return key.replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m[1]}').trim();
     }
@@ -917,7 +1075,7 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_forward), // RTL Back
+          icon: const Icon(Icons.arrow_back),
           color: AppColors.primary,
           onPressed: () {
             if (_isProcessing) {
@@ -947,6 +1105,36 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
           ),
         ),
         actions: <Widget>[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            child: Center(
+              child: Tooltip(
+                message: widget.appState.isSignalRConnected
+                    ? 'متصل بالخلفية (تحديث فوري)'
+                    : 'وضع محاكاة محلي (أوفلاين)',
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: widget.appState.isSignalRConnected
+                        ? const Color(0xFF34BF49) // vibrant green
+                        : Colors.orange,          // amber/orange for simulated
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: (widget.appState.isSignalRConnected
+                                ? const Color(0xFF34BF49)
+                                : Colors.orange)
+                            .withOpacity(0.4),
+                        blurRadius: 6,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
           if (!_isProcessing && _step > 0) ...[
             IconButton(
               icon: const Icon(Icons.history, color: AppColors.primary),
@@ -2034,7 +2222,7 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Icon(Icons.arrow_forward, size: 14),
+                Icon(Icons.arrow_back, size: 14),
                 SizedBox(width: 6),
                 Text(
                   'السابق',
@@ -2103,7 +2291,7 @@ class _AiWorkflowRunnerScreenState extends State<AiWorkflowRunnerScreen>
                     ),
                     const SizedBox(width: 6),
                     Icon(
-                      _step == totalSteps - 1 ? Icons.check_circle_outline : Icons.arrow_back,
+                      _step == totalSteps - 1 ? Icons.check_circle_outline : Icons.arrow_forward,
                       color: Colors.white,
                       size: 14,
                     ),
@@ -2202,7 +2390,7 @@ class WorkflowHistoryScreen extends StatelessWidget {
             backgroundColor: scaffoldBg,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_forward), // RTL Back
+              icon: const Icon(Icons.arrow_back),
               color: AppColors.primary,
               onPressed: () => Navigator.of(context).pop(),
             ),

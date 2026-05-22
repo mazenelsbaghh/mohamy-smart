@@ -216,3 +216,88 @@ class AddCaseInput {
   final String court;
   final String caseType;
 }
+
+class InternalRegulation {
+  const InternalRegulation({
+    required this.id,
+    required this.title,
+    required this.sections,
+    this.regulationNumber,
+    this.issuingAuthority,
+    this.summary,
+    this.isActive = true,
+  });
+
+  final String id;
+  final String title;
+  final List<String> sections;
+  final String? regulationNumber;
+  final String? issuingAuthority;
+  final String? summary;
+  final bool isActive;
+
+  InternalRegulation copyWith({
+    String? id,
+    String? title,
+    List<String>? sections,
+    String? regulationNumber,
+    String? issuingAuthority,
+    String? summary,
+    bool? isActive,
+  }) {
+    return InternalRegulation(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      sections: sections ?? this.sections,
+      regulationNumber: regulationNumber ?? this.regulationNumber,
+      issuingAuthority: issuingAuthority ?? this.issuingAuthority,
+      summary: summary ?? this.summary,
+      isActive: isActive ?? this.isActive,
+    );
+  }
+}
+
+class PowerOfAttorney {
+  const PowerOfAttorney({
+    required this.id,
+    required this.number,
+    required this.clientId,
+    required this.clientName,
+    required this.type,
+    required this.dateLabel,
+    required this.status, // e.g. "نشط", "منتهي", "ملغي"
+    this.cancellationReason, // death, revocation, expired, other (وفاة الموكل، إلغاء من الموكل، انتهاء المدة، سبب آخر)
+  });
+
+  final String id;
+  final String number;
+  final String clientId;
+  final String clientName;
+  final String type;
+  final String dateLabel;
+  final String status;
+  final String? cancellationReason;
+
+  PowerOfAttorney copyWith({
+    String? id,
+    String? number,
+    String? clientId,
+    String? clientName,
+    String? type,
+    String? dateLabel,
+    String? status,
+    String? cancellationReason,
+  }) {
+    return PowerOfAttorney(
+      id: id ?? this.id,
+      number: number ?? this.number,
+      clientId: clientId ?? this.clientId,
+      clientName: clientName ?? this.clientName,
+      type: type ?? this.type,
+      dateLabel: dateLabel ?? this.dateLabel,
+      status: status ?? this.status,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
+    );
+  }
+}
+

@@ -62,6 +62,78 @@ class DemoLegalRepository {
     ),
   ];
 
+  late final List<InternalRegulation> internalRegulations = <InternalRegulation>[
+    const InternalRegulation(
+      id: 'reg-1',
+      title: 'ميثاق السلوك المهني والسرية',
+      regulationNumber: 'REG-2026-001',
+      issuingAuthority: 'مجلس إدارة الشركة',
+      summary: 'يحدد التزامات المحامين والموظفين تجاه الموكلين وحفظ سرية المعلومات والوقائع والقضايا.',
+      sections: [
+        'يجب المحافظة التامة على سرية بيانات الموكلين وقضاياهم.',
+        'يحظر مشاركة أي مستندات قضائية خارج النطاق الإداري للمكتب.',
+        'الالتزام بالاحترام المتبادل وقيم العدالة والأمانة المهنية.'
+      ],
+      isActive: true,
+    ),
+    const InternalRegulation(
+      id: 'reg-2',
+      title: 'قواعد صياغة مذكرات الدفاع والعقود',
+      regulationNumber: 'REG-2026-002',
+      issuingAuthority: 'اللجنة القانونية الفنية',
+      summary: 'مبادئ توجيهية لصياغة المذكرات وتأسيس العقود القانونية وتنسيق الدفوع والطلبات.',
+      sections: [
+        'الاعتماد على صيغة قانونية متينة وخالية من الركاكة اللغوية.',
+        'ترتيب الوقائع تسلسلياً ثم تقديم الدفوع وعناوين القانون.',
+        'إجراء مراجعة وتدقيق ذكي ومطابقة مع لوائح أحكام المحاكم.'
+      ],
+      isActive: true,
+    ),
+    const InternalRegulation(
+      id: 'reg-3',
+      title: 'سياسة النقاط والذكاء الاصطناعي',
+      regulationNumber: 'REG-2026-003',
+      issuingAuthority: 'إدارة الدعم التقني',
+      summary: 'شروط خصم نقاط الذكاء الاصطناعي وتجديد الباقات والمستندات المدعومة.',
+      sections: [
+        'خصم النقاط يتم فقط عند تشغيل مهام التحليل أو توليد الدفاع بنجاح.',
+        'رصيد النقاط يتجدد شهرياً تلقائياً أو عند الشراء الإضافي.',
+        'الطلبات الفاشلة لا تحسب ولا يتم خصم أي نقاط مقابلها.'
+      ],
+      isActive: true,
+    ),
+  ];
+
+  late final List<PowerOfAttorney> powerOfAttorneys = <PowerOfAttorney>[
+    const PowerOfAttorney(
+      id: 'poa-1',
+      number: '241526435',
+      clientId: 'client-1',
+      clientName: 'أحمد السالم',
+      dateLabel: '2025-02-12',
+      type: 'توكيل رسمي عام قضايا',
+      status: 'نشط',
+    ),
+    const PowerOfAttorney(
+      id: 'poa-2',
+      number: '984534121',
+      clientId: 'client-2',
+      clientName: 'شركة النخبة التجارية',
+      dateLabel: '2024-11-05',
+      type: 'توكيل خاص بالدمج وتأسيس الشركات',
+      status: 'نشط',
+    ),
+    const PowerOfAttorney(
+      id: 'poa-3',
+      number: '473625142',
+      clientId: 'client-3',
+      clientName: 'سارة القحطاني',
+      dateLabel: '2023-05-10',
+      type: 'توكيل رسمي خاص بالبيع والتصرف',
+      status: 'منتهي',
+    ),
+  ];
+
   late final List<LegalCase> cases = <LegalCase>[
     LegalCase(
       id: 'case-1',
@@ -243,7 +315,7 @@ class DemoLegalRepository {
       pointCost: 150,
       status: AiWorkflowStatus.available,
       progress: 0,
-      stepCount: 7,
+      stepCount: 8,
       iconName: 'description',
     ),
     AiWorkflow(
@@ -254,7 +326,7 @@ class DemoLegalRepository {
       pointCost: 180,
       status: AiWorkflowStatus.available,
       progress: 0,
-      stepCount: 6,
+      stepCount: 7,
       iconName: 'gavel',
     ),
     AiWorkflow(
@@ -265,7 +337,7 @@ class DemoLegalRepository {
       pointCost: 100,
       status: AiWorkflowStatus.available,
       progress: 0,
-      stepCount: 5,
+      stepCount: 6,
       iconName: 'warning',
     ),
     AiWorkflow(
@@ -276,7 +348,7 @@ class DemoLegalRepository {
       pointCost: 80,
       status: AiWorkflowStatus.available,
       progress: 0,
-      stepCount: 4,
+      stepCount: 5,
       iconName: 'analytics',
     ),
     AiWorkflow(
@@ -287,7 +359,7 @@ class DemoLegalRepository {
       pointCost: 50,
       status: AiWorkflowStatus.available,
       progress: 0,
-      stepCount: 3,
+      stepCount: 4,
       iconName: 'fact_check',
     ),
     AiWorkflow(
@@ -298,7 +370,7 @@ class DemoLegalRepository {
       pointCost: 60,
       status: AiWorkflowStatus.available,
       progress: 0,
-      stepCount: 3,
+      stepCount: 4,
       iconName: 'task',
     ),
   ];
@@ -306,55 +378,53 @@ class DemoLegalRepository {
   // Steps definition dictionary
   static final Map<String, List<WorkflowStepDef>> workflowSteps = {
     'defense-memo': const [
-      WorkflowStepDef(index: 1, title: 'التحليل القانوني للوقائع', description: 'استخلاص الوقائع ومطابقتها قانونياً'),
-      WorkflowStepDef(index: 2, title: 'الدفوع القانونية', description: 'استخراج الدفوع الإجرائية والموضوعية والمستندية'),
-      WorkflowStepDef(index: 3, title: 'الطلبات الختامية', description: 'صياغة الطلبات النهائية الموجهة للمحكمة'),
-      WorkflowStepDef(index: 4, title: 'المسودة النهائية لمذكرة الدفاع', description: 'تجميع المذكرة وصياغتها بالكامل'),
+      WorkflowStepDef(index: 1, title: 'التحليل القانوني', description: 'استخلاص الوقائع ومطابقتها قانونياً'),
+      WorkflowStepDef(index: 2, title: 'الدفوع', description: 'استخراج الدفوع الإجرائية والموضوعية والمستندية'),
+      WorkflowStepDef(index: 3, title: 'الطلبات', description: 'صياغة الطلبات النهائية الموجهة للمحكمة'),
+      WorkflowStepDef(index: 4, title: 'المذكرة النهائية', description: 'تجميع المذكرة وصياغتها بالكامل'),
     ],
     'preparing-statement-of-claims': const [
       WorkflowStepDef(index: 1, title: 'نوع الدعوى', description: 'تحديد التصنيف الدقيق للدعوى القضائية'),
-      WorkflowStepDef(index: 2, title: 'الأطراف والخصوم', description: 'بيانات المدعي والمدعى عليه في الخصومة'),
-      WorkflowStepDef(index: 3, title: 'موضوع الدعوى', description: 'تحديد عنوان ومحور النزاع الرئيسي'),
-      WorkflowStepDef(index: 4, title: 'سرد الوقائع', description: 'الصياغة الواقعية المنظمة للأحداث'),
-      WorkflowStepDef(index: 5, title: 'التأسيس القانوني', description: 'الأسانيد والمواد القانونية المنظمة للنزاع'),
+      WorkflowStepDef(index: 2, title: 'الأطراف', description: 'بيانات المدعي والمدعى عليه في الخصومة'),
+      WorkflowStepDef(index: 3, title: 'الموضوع', description: 'تحديد عنوان ومحور النزاع الرئيسي'),
+      WorkflowStepDef(index: 4, title: 'الوقائع', description: 'الصياغة الواقعية المنظمة للأحداث'),
+      WorkflowStepDef(index: 5, title: 'الأساس القانوني', description: 'الأسانيد والمواد القانونية المنظمة للنزاع'),
       WorkflowStepDef(index: 6, title: 'الطلبات', description: 'تحديد الطلبات الرئيسية والفرعية المدعى بها'),
-      WorkflowStepDef(index: 7, title: 'المسودة النهائية لصحيفة الدعوى', description: 'تجميع صحيفة الدعوى متكاملة ومعدّة للطباعة'),
+      WorkflowStepDef(index: 7, title: 'الصحيفة', description: 'تجميع صحيفة الدعوى متكاملة ومعدّة للطباعة'),
     ],
     'appeal-brief': const [
-      WorkflowStepDef(index: 1, title: 'بيانات الحكم الابتدائي', description: 'إدخال معلومات المحكمة ومنطوق الحكم الصادر'),
-      WorkflowStepDef(index: 2, title: 'تحليل تسبيب الحكم', description: 'استخراج عيوب التدليل والقصور في الحكم'),
-      WorkflowStepDef(index: 3, title: 'أسباب الطعن بالنقض', description: 'صياغة أسباب البطلان ومخالفة القانون'),
-      WorkflowStepDef(index: 4, title: 'الطلبات الختامية للطعن', description: 'المطالبة بقبول الطعن شكلاً وفي الموضوع نقضه'),
-      WorkflowStepDef(index: 5, title: 'الأسس القانونية للطعن', description: 'الأحكام والنصوص القانونية المؤيدة لمطالب النقض'),
-      WorkflowStepDef(index: 6, title: 'التجميع النهائي لصحيفة الطعن', description: 'الصياغة النهائية لصحيفة الطعن بالنقض'),
+      WorkflowStepDef(index: 1, title: 'بيانات الحكم', description: 'إدخال معلومات المحكمة ومنطوق الحكم الصادر'),
+      WorkflowStepDef(index: 2, title: 'تحليل الأسباب', description: 'استخراج عيوب التدليل والقصور في الحكم'),
+      WorkflowStepDef(index: 3, title: 'أوجه الطعن', description: 'صياغة أسباب الطعن بالاستئناف بالنقاط'),
+      WorkflowStepDef(index: 4, title: 'الطلبات', description: 'تحديد الطلبات الختامية في الاستئناف'),
+      WorkflowStepDef(index: 5, title: 'السند القانوني', description: 'الأسانيد والمواد القانونية التي تدعم الطعن'),
+      WorkflowStepDef(index: 6, title: 'صحيفة الاستئناف', description: 'تجميع صحيفة الاستئناف متكاملة ومعدّة للطباعة'),
     ],
     'admin-complaint': const [
-      WorkflowStepDef(index: 1, title: 'تصنيف الشكوى', description: 'تحديد نوع المخالفة الإدارية وتصنيف الشكوى'),
-      WorkflowStepDef(index: 2, title: 'مسودة الوقائع للشكوى', description: 'سرد التفاصيل والأضرار الناجمة عن القرار'),
-      WorkflowStepDef(index: 3, title: 'تقييم المخالفات الإدارية', description: 'تحديد أوجه القصور والتعسف في استعمال السلطة'),
-      WorkflowStepDef(index: 4, title: 'الطلبات والالتماسات', description: 'تحديد الطلبات المرجوة من الشكوى الإدارية'),
-      WorkflowStepDef(index: 5, title: 'الشكوى النهائية', description: 'المسودة الكاملة للشكوى الإدارية الرسمية'),
+      WorkflowStepDef(index: 1, title: 'بيانات الجهة والأساس', description: 'تحديد الجهة الإدارية والأساس القانوني'),
+      WorkflowStepDef(index: 2, title: 'سرد الوقائع', description: 'تفصيل وقائع الشكوى بالتسلسل الزمني'),
+      WorkflowStepDef(index: 3, title: 'تحليل المخالفات', description: 'تحديد المخالفات الإدارية المرتكبة'),
+      WorkflowStepDef(index: 4, title: 'صياغة الطلبات', description: 'تحديد طلبات المتظلم الإدارية والمالية'),
+      WorkflowStepDef(index: 5, title: 'الشكوى النهائية', description: 'تجميع الشكوى النهائية متكاملة ومعدّة للطباعة'),
     ],
     'ruling-analysis': const [
-      WorkflowStepDef(index: 1, title: 'منطوق الحكم وأسبابه', description: 'استخلاص خلاصة منطوق الحكم'),
-      WorkflowStepDef(index: 2, title: 'أسباب الحكم التفصيلية', description: 'تحليل الأسانيد المكتوبة للحكم'),
-      WorkflowStepDef(index: 3, title: 'تقييم العيوب والثغرات', description: 'رصد ثغرات التسبيب والخطأ في تطبيق القانون'),
-      WorkflowStepDef(index: 4, title: 'خلاصة الطعن وجدواه', description: 'توصية قانونية بجدوى تقديم استئناف أو طعن'),
+      WorkflowStepDef(index: 1, title: 'منطوق الحكم', description: 'تحليل منطوق الحكم والقرارات الصادرة'),
+      WorkflowStepDef(index: 2, title: 'أسباب الحكم', description: 'دراسة تسبيب الحيثيات والحجج القانونية'),
+      WorkflowStepDef(index: 3, title: 'تقييم العيوب', description: 'تقييم الثغرات والعيوب المؤثرة في الحكم'),
+      WorkflowStepDef(index: 4, title: 'خلاصة الطعن', description: 'تقييم فرص قبول الطعن والتوصيات النهائية'),
     ],
     'legal-warning': const [
-      WorkflowStepDef(index: 1, title: 'تصنيف الإنذار ومسودته', description: 'نوع الإنذار والبيانات التمهيدية'),
-      WorkflowStepDef(index: 2, title: 'تفاصيل الإنذار والمهلة', description: 'سرد موضوع الإنذار والمهلة الممنوحة قانوناً للرد'),
-      WorkflowStepDef(index: 3, title: 'الإنذار النهائي', description: 'مسودة الإنذار الرسمي على يد محضر جاهزة للإرسال'),
+      WorkflowStepDef(index: 1, title: 'تصنيف الإنذار', description: 'تحديد نوع ومضمون الإنذار ومحله'),
+      WorkflowStepDef(index: 2, title: 'صياغة المتن', description: 'صياغة تفاصيل الإنذار والمهلة الممنوحة للوفاء'),
+      WorkflowStepDef(index: 3, title: 'الإنذار النهائي', description: 'تجميع الإنذار بصيغته النهائية المعدة للمحضرين'),
     ],
     'exec-request': const [
-      WorkflowStepDef(index: 1, title: 'تصنيف الطلب ومسودته', description: 'تحديد السند التنفيذي ونوع المطالبة'),
-      WorkflowStepDef(index: 2, title: 'تفاصيل التنفيذ والملف المستهدف', description: 'بيانات المحكوم له والمحكوم عليه ومبلغ التنفيذ'),
-      WorkflowStepDef(index: 3, title: 'الطلب التنفيذي النهائي', description: 'مسودة عريضة طلب التنفيذ الموجه لقاضي التنفيذ'),
+      WorkflowStepDef(index: 1, title: 'تصنيف الطلب', description: 'تحديد تصنيف الطلب والمستند التنفيذي والجهة'),
+      WorkflowStepDef(index: 2, title: 'صياغة المبررات', description: 'كتابة أسباب ومبررات طلب التنفيذ العاجل'),
+      WorkflowStepDef(index: 3, title: 'الطلب النهائي', description: 'تجميع طلب التنفيذ بصيغته النهائية وطلبات الحجز'),
     ],
   };
-
-  // Mock initial snapshots history
-  late final List<WorkflowSnapshot> mockSnapshots = [];
+  late final List<WorkflowSnapshot> mockSnapshots = <WorkflowSnapshot>[];
 
   void _initMockSnapshots() {
     mockSnapshots.addAll([
@@ -363,134 +433,233 @@ class DemoLegalRepository {
         caseId: 'case-1',
         workflowType: 'defense-memo',
         currentStep: 2,
-        label: 'مسودة الدفوع المبدئية',
+        label: 'لقطة دفاع - جلسة الاستجواب الأولى',
         createdAt: DateTime.now().subtract(const Duration(days: 2)),
-        outputs: {
+        outputs: const {
           1: {
             'legalFactsSummary': [
-              'انتفاء الركن المادي للجريمة لعدم مطابقة التوقيع.',
-              'تأخر المدعى عليه في سداد مستحقات العقد التوريدي.',
+              'انتفاء الركن المادي للجريمة المنسوبة في الأوراق.',
+              'تناقض أقوال شهود الإثبات وتضارب رواياتهم حول الواقعة.'
             ],
-            'caseType': 'تجاري - مطالبة مالية',
+            'caseType': 'مذكرة دفاع جنائي'
           },
           2: {
-            'defensesFormal': ['الدفع بعدم الاختصاص المحلي طبقاً للمادة ٢٧ مرافعات.'],
-            'defensesSubstantive': ['الدفع بانتفاء القصد الجنائي لدى موكلنا.'],
+            'defensesFormal': ['الدفع بعدم اختصاص المحكمة محلياً.'],
+            'defensesSubstantive': ['الدفع بانتفاء القصد الجنائي لدى المتهم.']
           }
         },
       ),
       WorkflowSnapshot(
         id: 'snap-2',
         caseId: 'case-1',
-        workflowType: 'defense-memo',
-        currentStep: 4,
-        label: 'مذكرة نهائية قبل جلسة المرافعة الأخيرة',
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        outputs: {
+        workflowType: 'preparing-statement-of-claims',
+        currentStep: 1,
+        label: 'مسودة صحيفة - مطالبة مالية عقود',
+        createdAt: DateTime.now().subtract(const Duration(days: 5)),
+        outputs: const {
           1: {
-            'legalFactsSummary': [
-              'تأخر المدعى عليه في سداد الدفعة الأخيرة بمبلغ ١٥٠ ألف ريال.',
-              'وجود عقد توريد معتمد ومكتمل الشروط.',
-            ],
-            'caseType': 'تجاري',
-          },
-          2: {
-            'defensesFormal': ['الدفع بعدم الاختصاص المحلي.'],
-            'defensesSubstantive': ['الدفع بانتفاء المسؤولية العقدية للقوة القاهرة.'],
-          },
-          3: {
-            'finalPrayers': ['الحكم برفض الدعوى وإلزام المدعي بالمصاريف.'],
-          },
-          4: {
-            'introduction': 'بناءً على ما قدم، يلتمس دفاع موكلنا القضاء برفض الدعوى الماثلة.',
-            'documentText': 'مذكرة بدفاع السيد / أحمد السالم ...\nنلتمس رفض الدعوى وإلزام المدعي بالمصروفات القضائية ومقابل أتعاب المحاماة.',
+            'caseMainType': 'دعوى مدنية / تجارية عقارية',
+            'caseSubType': 'فسخ عقد وطلب تعويض عن الأضرار'
           }
         },
       ),
       WorkflowSnapshot(
         id: 'snap-3',
-        caseId: 'case-4',
-        workflowType: 'defense-memo',
-        currentStep: 4,
-        label: 'مذكرة الدفوع الجنائية - تقرير التزوير المبدئي',
-        createdAt: DateTime.now().subtract(const Duration(days: 3)),
-        outputs: {
+        caseId: 'case-2',
+        workflowType: 'ruling-analysis',
+        currentStep: 1,
+        label: 'تحليل حكم ابتدائي - استئناف النخبة',
+        createdAt: DateTime.now().subtract(const Duration(hours: 4)),
+        outputs: const {
           1: {
-            'legalFactsSummary': [
-              'ثبوت تزوير عقد الملكية المشتبه به بموجب تقرير أبحاث التزييف والتزوير.',
-              'محاولة الاستيلاء على العقار دون أساس تعاقدي صحيح.',
-            ],
-            'caseType': 'جنايات - تزوير محررات رسمية',
-          },
-          2: {
-            'defensesFormal': ['الدفع ببطلان شهادة الشهود الواردة بالتحقيقات.'],
-            'defensesSubstantive': ['الدفع بانتفاء علم المتهم بالتزوير وانعدام قصده.'],
-          },
-          3: {
-            'finalPrayers': ['القضاء ببراءة المتهم من جريمة التزوير وندب خبير مضاهاة.'],
-          },
-          4: {
-            'introduction': 'يلتمس الدفاع القضاء ببراءة المتهم وندب خبير لمضاهاة التوقيعات.',
-            'documentText': 'بموجب وكالتنا عن شركة النور، نتشرف بتقديم هذه المذكرة ملتمسين البراءة لانتفاء الركنين المادي والمعنوي لجريمة التزوير.',
+            'verdictPoints': ['إلزام المدعى عليه بدفع مبلغ ١٠٠ ألف ريال سعودي للمدعي.'],
+            'verdictSummary': 'قضت المحكمة الابتدائية بإلزام موكلنا جزئياً بالمبلغ المالي المدعى به.'
           }
         },
       ),
     ]);
   }
 
-  // Get mock step data templates for simulate run
   static Map<String, Map<int, Map<String, dynamic>>> getMockOutputs(String caseTitle, String caseNumber, String court) {
     return {
       'defense-memo': {
         1: {
+          'caseType': 'مذكرة دفاع جنائي',
+          'caseNumber': caseNumber,
+          'courtName': court,
           'legalFactsSummary': [
             'انتفاء الركن المادي للجريمة المنسوبة في الأوراق.',
             'تناقض أقوال شهود الإثبات وتضارب رواياتهم حول الواقعة.',
             'خلو تقرير الخبير الفني المرفق من ثمة دليل ينسب للمتهم.'
           ],
-          'caseType': 'مذكرة دفاع جنائي'
+          'defendantsPositions': [
+            {
+              'defendantName': caseTitle.split(' ').last,
+              'relationshipToClient': 'موكلنا (المتهم الرئيسي)',
+              'positionSummary': 'الإنكار التام لكافة الاتهامات المنسوبة والتمسك بانتفاء الصلة بالواقعة.'
+            }
+          ],
+          'evidenceMap': [
+            {
+              'source': 'تقرير الطب الشرعي الفني المعتمد',
+              'proves': 'عدم وجود أي تزوير أو تلاعب منسوب لخط يد المتهم.',
+              'doesNotProve': 'أي إدانة أو اشتراك للمتهم في تزوير أختام الشهر العقاري.',
+              'limitations': 'التقرير استند لعينات الخطوط المتاحة فقط.'
+            }
+          ],
+          'legalAndTechnicalReviewPoints': [
+            'عدم كفاية الأدلة الفنية لنسبة الأفعال للمتهم.',
+            'بطلان الاعتراف لكونه وليد إكراه مادي ومعنوي.'
+          ],
+          'potentialLegalCharacterization': {
+            'chargeDescription': 'التزوير في محررات رسمية واستعمالها مع العلم بتزويرها.',
+            'elementsReliedUpon': ['صفة المحرر الرسمي', 'تغيير الحقيقة'],
+            'elementsLackingProof': ['الركن المادي (القيام بالتزوير)', 'الركن المعنوي (القصد الجنائي)']
+          }
         },
         2: {
-          'defensesFormal': ['الدفع بعدم اختصاص المحكمة محلياً بنظر الدعوى طبقاً للمادة ٢٧ مرافعات.', 'الدفع ببطلان صحيفة الدعوى للجهالة طبقاً للمادة ٨٦ مرافعات.'],
-          'defensesSubstantive': ['الدفع بانتفاء القصد الجنائي لدى المتهم.', 'الدفع بانقطاع رابطة السببية بين الفعل والنتيجة.'],
-          'defensesEvidentiary': ['الدفع ببطلان تقرير الفحص الفني المبدئي لعدم أهلية القائم عليه.']
+          'defensesFormal': [
+            'الدفع بعدم اختصاص المحكمة محلياً بنظر الدعوى طبقاً للمادة ٢٧ مرافعات.',
+            'الدفع ببطلان صحيفة الدعوى للجهالة طبقاً للمادة ٨٦ مرافعات.'
+          ],
+          'defensesSubstantive': [
+            'الدفع بانتفاء القصد الجنائي لدى المتهم.',
+            'الدفع بانقطاع رابطة السببية بين الفعل والنتيجة.'
+          ],
+          'defensesEvidentiary': [
+            'الدفع ببطلان تقرير الفحص الفني المبدئي لعدم أهلية القائم عليه.'
+          ]
         },
         3: {
-          'finalPrayers': ['أولاً وقبل كل شيء: القضاء ببراءة المتهم من كافة الاتهامات المنسوبة إليه.', 'ثانياً وبصفة احتياطية: رفض الدعوى المدنية وإلزام رافعيها بالمصروفات.']
+          'finalPrayers': [
+            {
+              'id': 'p-1',
+              'requestLevel': 'أصلي',
+              'requestText': 'أولاً وقبل كل شيء: القضاء ببراءة المتهم من كافة الاتهامات المنسوبة إليه.'
+            },
+            {
+              'id': 'p-2',
+              'requestLevel': 'احتياطي',
+              'requestText': 'ثانياً وبصفة احتياطية: رفض الدعوى المدنية وإلزام رافعيها بالمصروفات.'
+            }
+          ]
         },
         4: {
           'introduction': 'السيد رئيس المحكمة الموقرة والسادة الأعضاء الاجلاء، نقدم لعدالتكم مذكرة بدفاع المتهم في القضية رقم $caseNumber المقيدة أمام محكمتكم الموقرة $court.',
+          'factualBasis': 'تتلخص وقائع القضية في اتهام موكلنا بالتزوير بناءً على محضر محرر من جهة الإدارة.',
+          'legalTextsFull': [
+            {
+              'lawName': 'قانون العقوبات',
+              'articleNumber': '٢١١',
+              'fullText': 'كل صاحب وظيفة عمومية ارتكب في أثناء تأدية وظيفته تزويراً في أحكام صادرة...'
+            }
+          ],
+          'legalTextsUnavailableReason': '',
+          'linkingTextsToFacts': 'حيث أن موكلنا لم يقم بأي تغيير للحقيقة ولم يثبت تقرير الطب الشرعي وجود أي كتابة بخطه.',
+          'cassationPrecedentsFull': [
+            {
+              'appealNumber': '١٢٣٤٥',
+              'judicialYear': '٧٤',
+              'sessionDate': '١٢-١٢-٢٠٠٥',
+              'fullText': 'من المقرر أن التزوير لا يقوم إلا إذا ثبت تغيير الحقيقة بفعل المتهم بالذات أو باشتراكه.'
+            }
+          ],
+          'cassationPrecedentsUnavailableReason': '',
+          'counterArgumentsAndResponse': 'رداً على مزاعم النيابة العامة، فإن الدليل الفني قد أثبت براءة موكلنا.',
+          'legalEffectOfAcceptance': 'يترتب على قبول الدفوع الحكم ببراءة المتهم وسقوط التهمة الجنائية.',
+          'strengthsAndRisks': 'نقاط القوة: تقرير الطب الشرعي قاطع. نقاط المخاطرة: احتمال طلب النيابة إعادة استجواب شهود الإثبات.',
           'documentText': 'بموجب وكالتنا عن المتهم، نتشرف بتقديم مذكرة دفاعنا هذه:\nأولاً: الدفوع الشكلية:\n١. نتمسك بالدفع بعدم الاختصاص المحلي للمحكمة طبقاً لنص المادة ٢٧ مرافعات.\nثانياً: الدفوع الموضوعية:\n١. انتفاء الركن المادي والمعنوي لجريمة التزوير وخلو الأوراق من دليل قاطع.\nلذا نلتمس الحكم ببراءة المتهم ورفض الدعوى المدنية.'
         }
       },
       'preparing-statement-of-claims': {
         1: {
+          'caseId': 'case-claim-$caseNumber',
           'caseMainType': 'دعوى مدنية / تجارية عقارية',
-          'caseSubType': 'فسخ عقد وطلب تعويض عن الأضرار'
+          'caseSubType': 'فسخ عقد وطلب تعويض عن الأضرار',
+          'courtType': 'المحكمة التجارية بالرياض',
+          'proceduralNature': 'عادية',
+          'isUrgentOrSummary': 'لا',
+          'justificationSummary': 'مطالبة عادية بالتعويض لعدم تسليم المجمع العقاري.'
         },
         2: {
+          'caseId': 'case-claim-$caseNumber',
           'parties': [
-            {'name': 'شركة النور للتجارة والتوريدات', 'role': 'المدعي'},
-            {'name': 'شركة النخبة للإنشاءات والمقاولات', 'role': 'المدعى عليه'}
+            {
+              'id': 'party-1',
+              'name': 'شركة النور للتجارة والتوريدات',
+              'role': 'المدعي',
+              'type': 'شركة مساهمة',
+              'legalCapacity': 'أصيل ممثل بمديرها',
+              'address': 'الرياض - حي الملز',
+              'nationalId': '١٠١٠٢٠٣٠٤٠'
+            },
+            {
+              'id': 'party-2',
+              'name': 'شركة النخبة للإنشاءات والمقاولات',
+              'role': 'المدعى عليه',
+              'type': 'شركة ذات مسؤولية محدودة',
+              'legalCapacity': 'أصيل ممثل بالمدير التنفيذي',
+              'address': 'الرياض - حي العليا',
+              'nationalId': '١٠١٠٥٠٦٠٧٠'
+            }
           ]
         },
         3: {
-          'subjectTitle': 'المطالبة بفسخ عقد المقاولة المؤرخ في ٢٠٢٤ والتعويض عن التأخير'
+          'caseId': 'case-claim-$caseNumber',
+          'subjectTitle': 'المطالبة بفسخ عقد المقاولة المؤرخ في ٢٠٢٤ والتعويض عن التأخير',
+          'subjectFullText': 'تفاصيل ومضمون المطالبة القضائية بفسخ العقد المبرم والتعويض عن الأضرار الناشئة عن التأخير لعدم تسليم الوحدات في المواعيد المقررة.'
         },
         4: {
           'factsNarrative': 'تتلخص الوقائع في قيام موكلنا بإبرام عقد مقاولة مع الشركة المدعى عليها لتشييد مجمع سكني، إلا أن الأخيرة تأخرت في تسليم مراحل البناء لأكثر من عام دون مبرر قانوني، مما كبد موكلنا خسائر فادحة.'
         },
         5: {
+          'caseId': 'case-claim-$caseNumber',
           'legalTexts': [
-            {'lawName': 'القانون المدني المصري', 'articleNumber': '١٥٧'},
-            {'lawName': 'القانون المدني المصري', 'articleNumber': '٢٢٣'}
+            {
+              'id': 'lt-1',
+              'lawName': 'نظام المعاملات المدنية',
+              'articleNumber': '١٠٧',
+              'articleText': 'إذا لم يوفِ المدين بالتزامه بعد إعذاره جاز للدائن أن يطلب فسخ العقد.',
+              'applicationNotes': 'المدعي قام بإعذار المدعى عليه رسمياً بموجب خطاب مسجل.'
+            },
+            {
+              'id': 'lt-2',
+              'lawName': 'نظام المعاملات المدنية',
+              'articleNumber': '٢٢٣',
+              'articleText': 'التعويض عن الضرر يشمل ما لحق الدائن من خسارة وما فاته من كسب.',
+              'applicationNotes': 'الأضرار المادية الناتجة عن تعطل تشغيل المجمع العقاري.'
+            }
+          ],
+          'cassationRulings': [
+            {
+              'id': 'cr-1',
+              'court': 'المحكمة العليا بالرياض',
+              'appealNumber': '٨٧٦٥/١',
+              'judicialYear': '١٤٤٥',
+              'sessionDate': '١٥-٠٥-١٤٤٥',
+              'rulingText': 'التأخير في تسليم العين محل عقد المقاولة دون عذر يبرر الفسخ مع التعويض.',
+              'applicationNotes': 'يدعم أحقية موكلنا في فسخ العقد دون الإخلال بحقه بالتعويض.'
+            }
           ]
         },
         6: {
+          'caseId': 'case-claim-$caseNumber',
           'principalRequests': [
-            {'requestText': 'القضاء بفسخ عقد المقاولة المؤرخ في ٢٠٢٤ وإخلاء موقع العمل.'},
-            {'requestText': 'إلزام المدعى عليها بدفع تعويض قدره نصف مليون جنيه عن الأضرار اللاحقة.'}
-          ]
+            {
+              'id': 'pr-1',
+              'requestNumber': 1,
+              'requestText': 'القضاء بفسخ عقد المقاولة المؤرخ في ٢٠٢٤ وإخلاء موقع العمل.',
+              'legalReference': 'المادة ١٠٧ من نظام المعاملات المدنية'
+            },
+            {
+              'id': 'pr-2',
+              'requestNumber': 2,
+              'requestText': 'إلزام المدعى عليها بدفع تعويض قدره نصف مليون جنيه عن الأضرار اللاحقة.',
+              'legalReference': 'المادة ٢٢٣ من نظام المعاملات المدنية'
+            }
+          ],
+          'subsidiaryRequests': [],
+          'proceduralRequests': []
         },
         7: {
           'documentText': 'صحيفة افتتاح دعوى:\nأودعت هذه الصحيفة قلم كتاب محكمة $court\nمن الطالب: شركة النور للتجارة\nضد: شركة النخبة للإنشاءات\nالموضوع: فسخ عقد وتعويض.\nالوقائع:\n١. تعاقد الطالب مع المعلن إليه بموجب عقد المقاولة لتنفيذ أعمال البناء.\n٢. تقاعس المعلن إليه عن التنفيذ وامتنع عن إكمال البناء.\nلذلك نلتمس الحكم بفسخ العقد وإلزام المعلن إليه بالتعويض والمصاريف.'
@@ -500,12 +669,20 @@ class DemoLegalRepository {
         1: {
           'judgmentData': {
             'courtName': 'محكمة استئناف القاهرة التجارية',
-            'caseNumber': '٧٧٢ / قضائية ٩٩'
+            'caseNumber': '٧٧٢ / قضائية ٩٩',
+            'pronouncementExact': 'إلزام المدعى عليه بالتعويض والمصروفات',
+            'parties': 'شركة النور ضد شركة النخبة'
           },
-          'courtInformation': 'حكم صادر بجلسة الاستماع المنعقدة بتاريخ ١٥ يناير ٢٠٢٥ في الاستئناف رقم ٧٧٢.'
+          'courtInformation': 'حكم صادر بجلسة الاستماع المنعقدة بتاريخ ١٥ يناير ٢٠٢٥ في الاستئناف رقم ٧٧٢.',
+          'parties': 'شركة النور ضد شركة النخبة',
+          'verdict': 'إلزام المدعى عليه بدفع تعويض وقدره ١٠٠ ألف جنيه.'
         },
         2: {
-          'analysis': 'شاب الحكم المستأنف القصور البالغ في التسبيب، حيث أغفل الرد على الدفع الجوهري المبدى بسقوط الحق بالتقادم الحولي التجاري، ومخالفته الثابت بالمستندات رقم ٣.'
+          'analysis': 'شاب الحكم المستأنف القصور البالغ في التسبيب، حيث أغفل الرد على الدفع الجوهري المبدى بسقوط الحق بالتقادم الحولي التجاري، ومخالفته الثابت بالمستندات رقم ٣.',
+          'legalFlaws': [
+            'القصور في التسبيب للإعراض عن فحص مستندات السداد الحولي.',
+            'الخطأ في تطبيق القانون ومخالفته للنصوص التجارية.'
+          ]
         },
         3: {
           'grounds': [
@@ -514,10 +691,18 @@ class DemoLegalRepository {
           ]
         },
         4: {
-          'requests': ['قبول الطعن بالنقض شكلاً لتقديمه في الميعاد المستندي.', 'وفي الموضوع بنقض الحكم المطعون فيه وإحالة القضية للمحكمة للاستئناف مجدداً.']
+          'requests': [
+            'قبول الطعن بالنقض شكلاً لتقديمه في الميعاد المستندي.',
+            'وفي الموضوع بنقض الحكم المطعون فيه وإحالة القضية للمحكمة للاستئناف مجدداً.'
+          ],
+          'proceduralRequests': ['طلب وقف تنفيذ الحكم المطعون فيه بصفة مستعجلة.'],
+          'substantiveRequests': ['نقض الحكم وإعادة أوراق النزاع للاستئناف.'],
+          'urgentRequests': []
         },
         5: {
-          'laws': ['قانون التجارة م ٦٨', 'قانون المرافعات م ٢٥٣ و ٢٤٩']
+          'laws': ['قانون التجارة م ٦٨', 'قانون المرافعات م ٢٥٣ و ٢٤٩'],
+          'precedents': ['حكم محكمة النقض في الطعن رقم ٤٣٢ لسنة ٧٥ ق بجلسة ٢٠-١٠-٢٠٠٦.'],
+          'legalBasis': ['النص الصريح للمادة ٦٨ تجارة بشأن التقادم القصير.']
         },
         6: {
           'fullAppealText': 'السادة رئيس وأعضاء محكمة النقض الموقرين،\nنودع صحيفة الطعن بالنقض ضد الحكم الصادر في القضية رقم ٧٧٢.\nأولاً: قبول الطعن شكلاً.\nثانياً: أسباب الطعن:\n١. الخطأ في تطبيق القانون لعدم إعمال التقادم التجاري.\nنلتمس نقض الحكم وإحالة النزاع لمستأنف بهيئة أخرى.'
@@ -526,15 +711,21 @@ class DemoLegalRepository {
       'admin-complaint': {
         1: {
           'complaintType': 'تظلم من قرار إداري سلبي',
-          'targetAuthority': 'الهيئة العامة للاستثمار والتطوير'
+          'targetAuthority': 'الهيئة العامة للاستثمار والتطوير',
+          'legalBasis': 'المادة رقم ١٢ من اللائحة التنفيذية لقانون الاستثمار والضمانات الممنوحة للمستثمرين.'
         },
         2: {
-          'factsSummary': 'تظلم موكلنا ضد امتناع الهيئة عن إصدار ترخيص التشغيل النهائي للمصنع العقاري رغم استيفاء كامل شروط الأمن والسلامة والموافقات البيئية اللازمة.'
+          'factsSummary': 'تظلم موكلنا ضد امتناع الهيئة عن إصدار ترخيص التشغيل النهائي للمصنع العقاري رغم استيفاء كامل شروط الأمن والسلامة والموافقات البيئية اللازمة.',
+          'keyFacts': [
+            'امتناع الهيئة عن إصدار الترخيص دون إبداء أسباب مكتوبة.',
+            'استيفاء موكلنا لكافة الشروط الفنية والموافقات البيئية المطلوبة.',
+            'تجاوز الهيئة للميعاد القانوني المحدد للبت في طلب الترخيص.'
+          ]
         },
         3: {
           'violations': [
-            {'description': 'مخالفة قرار رئيس الوزراء رقم ١٢ لتبسيط إجراءات التراخيص الصناعية.'},
-            {'description': 'إساءة استعمال السلطة والتعسف الإداري دون إبداء أسباب مكتوبة.'}
+            {'description': 'مخالفة قرار رئيس الوزراء رقم ١٢ لتبسيط إجراءات التراخيص الصناعية.', 'legalRef': 'قرار رئيس الوزراء رقم ١٢ لسنة ٢٠٢٣ المادة الرابعة'},
+            {'description': 'إساءة استعمال السلطة والتعسف الإداري دون إبداء أسباب مكتوبة.', 'legalRef': 'المادة رقم ٢٠ من قانون الخدمة المدنية ولائحته التنفيذية'}
           ]
         },
         4: {
@@ -547,26 +738,38 @@ class DemoLegalRepository {
       'ruling-analysis': {
         1: {
           'verdictPoints': ['إلزام المدعى عليه بدفع مبلغ ١٠٠ ألف ريال سعودي للمدعي.', 'إلزام المدعى عليه بالمصروفات وأتعاب المحاماة الفائتة.'],
-          'verdictSummary': 'قضت المحكمة الابتدائية بإلزام موكلنا جزئياً بالمبلغ المالي المدعى به بناءً على تقرير المحاسب الاستشاري دون استجواب موكلنا.'
+          'verdictSummary': 'قضت المحكمة الابتدائية بإلزام موكلنا جزئياً بالمبلغ المالي المدعى به بناءً على تقرير المحاسب الاستشاري دون استجواب موكلنا.',
+          'charges': ['المطالبة بقيمة توريدات كهربائية متأخرة']
         },
         2: {
-          'reasoningPoints': ['استندت المحكمة كلياً لنتائج تقرير الخبير الحسابي.', 'اعتبرت المحكمة غياب موكلنا عن جلسة وحيدة بمثابة إقرار بالحق المزعوم.']
+          'reasoningPoints': ['استندت المحكمة كلياً لنتائج تقرير الخبير الحسابي.', 'اعتبرت المحكمة غياب موكلنا عن جلسة وحيدة بمثابة إقرار بالحق المزعوم.'],
+          'keyFindings': ['أغفلت المحكمة فحص أوراق السداد الجزئي بقيمة ٤٠ ألف ريال.']
         },
         3: {
           'defects': [
-            {'description': 'الإخلال بحق الدفاع لعدم تمكين موكلنا من مناقشة تقرير الخبير.'},
-            {'description': 'قصور التسبيب بمصادرة رغبة المتهم في تقديم مستندات تسوية الدفع.'}
+            {'description': 'الإخلال بحق الدفاع لعدم تمكين موكلنا من مناقشة تقرير الخبير.', 'severity': 'جسيم / مؤثر جوهرياً في منطوق الحكم'},
+            {'description': 'قصور التسبيب بمصادرة رغبة المتهم في تقديم مستندات تسوية الدفع.', 'severity': 'متوسط / ثغرة قانونية تدعم قبول الاستئناف'}
           ]
         },
         4: {
           'isAppealViable': true,
+          'appealStrength': 'قوية جداً (نسبة نجاح تقدر بـ ٨٥٪)',
+          'recommendedGrounds': [
+            'الخطأ في تطبيق القانون ومخالفة الثابت بالأوراق لإهمال مستندات السداد.',
+            'القصور الفادح في التسبيب والإخلال بحق الدفاع لعدم تمكين الدفاع من مناقشة الخبير.'
+          ],
           'conclusion': 'نوصي بشدة برفع استئناف ضد هذا الحكم لوجود عيوب إجرائية فادحة وتوفر فرصة كبيرة لنقضه وإحالة الملف لخبير حسابي آخر للتأكد من تسديد الدفعات.'
         }
       },
       'legal-warning': {
         1: {
           'warningType': 'إنذار رسمي بسداد مديونية عقد توريد رقم ٤',
-          'legalBasis': {'description': 'البند السابع من اتفاقية التوريد والمادة ١٥٧ من القانون المدني.'}
+          'legalBasis': {
+            'type': 'سند تعاقدي وقانوني',
+            'description': 'البند السابع من اتفاقية التوريد والمادة ١٥٧ من القانون المدني المصري.'
+          },
+          'obligationDetails': 'الالتزام بسداد المبلغ المتبقي وقدره ١٢٠ ألف ريال سعودي في الأجل المحدد قانوناً.',
+          'recommendedAction': 'توجيه إنذار رسمي على يد محضر لإعذار المدين وقطع التقادم قبل رفع الدعوى.'
         },
         2: {
           'warningBody': 'بناءً على طلب موكلنا، ننذركم بضرورة سداد المبلغ المتبقي وقدره ١٢٠ ألف ريال خلال مهلة أقصاها ١٥ يوماً من تاريخ التبليغ، وإلا سنضطر لرفع دعوى الفسخ والتعويض.',
@@ -579,7 +782,9 @@ class DemoLegalRepository {
       'exec-request': {
         1: {
           'requestType': 'طلب تنفيذ حكم تجاري حائز للصيغة التنفيذية',
-          'executionGrounds': 'الحكم النهائي الصادر في الدعوى رقم ١٢٣٤ لسنة ٢٠٢٦.'
+          'legalBasis': 'المادة رقم ٣٤ من نظام التنفيذ ولائحته التنفيذية.',
+          'executionGrounds': 'الحكم النهائي الصادر في الدعوى رقم ١٢٣٤ لسنة ٢٠٢٦.',
+          'urgencyLevel': 'عاجل (وجود تخوف حقيقي من تهريب الأموال)'
         },
         2: {
           'requestBody': 'نلتمس من قاضي التنفيذ قيد ملف التنفيذ وإصدار قرار المادة ٣٤ لإخطار المنفذ ضده بالوفاء خلال ٥ أيام، واتخاذ إجراءات الحجز على الأرصدة البنكية في حال امتناعه.',
@@ -592,4 +797,3 @@ class DemoLegalRepository {
     };
   }
 }
-
