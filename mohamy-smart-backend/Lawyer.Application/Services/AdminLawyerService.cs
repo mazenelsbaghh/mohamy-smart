@@ -10,6 +10,7 @@ using Lawyer.Application.Services.Workflows;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Lawyer.Application.Services
 {
@@ -575,14 +576,138 @@ namespace Lawyer.Application.Services
 			try
 			{
 				using var document = JsonDocument.Parse(trimmed);
-				trimmed = JsonSerializer.Serialize(document.RootElement, JsonOptions.Serialize);
+				var lines = new List<string>();
+				CollectPreviewLines(document.RootElement, lines);
+				trimmed = lines.Count > 0
+					? string.Join("\n", lines.Take(10))
+					: JsonSerializer.Serialize(document.RootElement, JsonOptions.Serialize);
 			}
 			catch (JsonException)
 			{
-				// Keep the raw text when older jobs stored non-JSON output.
+				trimmed = DecodeEscapedText(trimmed);
 			}
 
 			return trimmed.Length <= 700 ? trimmed : $"{trimmed[..700]}...";
+		}
+
+		private static void CollectPreviewLines(JsonElement element, List<string> lines, string? label = null)
+		{
+			if (lines.Count >= 12)
+				return;
+
+			switch (element.ValueKind)
+			{
+				case JsonValueKind.Object:
+					foreach (var property in element.EnumerateObject())
+					{
+						if (ShouldSkipPreviewField(property.Name))
+							continue;
+
+						CollectPreviewLines(property.Value, lines, ToPreviewLabel(property.Name));
+						if (lines.Count >= 12)
+							break;
+					}
+					break;
+
+				case JsonValueKind.Array:
+					var primitiveItems = element.EnumerateArray()
+						.Where(item => item.ValueKind is JsonValueKind.String or JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False)
+						.Select(ToPreviewValue)
+						.Where(value => !string.IsNullOrWhiteSpace(value))
+						.Take(4)
+						.ToList();
+
+					if (primitiveItems.Count > 0)
+					{
+						AddPreviewLine(lines, label, string.Join("، ", primitiveItems));
+						break;
+					}
+
+					var index = 1;
+					foreach (var item in element.EnumerateArray().Take(3))
+					{
+						CollectPreviewLines(item, lines, label == null ? $"عنصر {index}" : $"{label} {index}");
+						index++;
+						if (lines.Count >= 12)
+							break;
+					}
+					break;
+
+				case JsonValueKind.String:
+				case JsonValueKind.Number:
+				case JsonValueKind.True:
+				case JsonValueKind.False:
+					AddPreviewLine(lines, label, ToPreviewValue(element));
+					break;
+			}
+		}
+
+		private static void AddPreviewLine(List<string> lines, string? label, string value)
+		{
+			if (string.IsNullOrWhiteSpace(value))
+				return;
+
+			var cleanValue = DecodeEscapedText(value).Trim();
+			if (cleanValue.Length > 180)
+				cleanValue = $"{cleanValue[..180]}...";
+
+			lines.Add(string.IsNullOrWhiteSpace(label) ? cleanValue : $"{label}: {cleanValue}");
+		}
+
+		private static string ToPreviewValue(JsonElement element) => element.ValueKind switch
+		{
+			JsonValueKind.String => element.GetString() ?? string.Empty,
+			JsonValueKind.Number => element.GetRawText(),
+			JsonValueKind.True => "نعم",
+			JsonValueKind.False => "لا",
+			_ => string.Empty
+		};
+
+		private static bool ShouldSkipPreviewField(string name)
+		{
+			var normalized = name.Replace("_", "", StringComparison.Ordinal).ToLowerInvariant();
+			return normalized is "id" or "caseid" or "defenseid" or "clientdefenseid" or "workflowid" or "runid";
+		}
+
+		private static string ToPreviewLabel(string name)
+		{
+			return name switch
+			{
+				"case_number" or "caseNumber" => "رقم القضية",
+				"court_name" or "courtName" => "المحكمة",
+				"legal_facts_summary" or "legalFactsSummary" => "ملخص الوقائع",
+				"defenseTitle" or "defense_title" or "title" => "العنوان",
+				"legalBasis" or "legal_basis" => "السند القانوني",
+				"reasoning" => "التسبيب",
+				"basisFromCase" or "basis_from_case" => "أساسه من القضية",
+				"recommendation" => "التوصية",
+				"requests" => "الطلبات",
+				"facts" => "الوقائع",
+				"description" => "الوصف",
+				"type" => "النوع",
+				"court" => "المحكمة",
+				"clientName" or "client_name" => "الموكل",
+				"opponentName" or "opponent_name" => "الخصم",
+				_ => SplitIdentifier(name)
+			};
+		}
+
+		private static string SplitIdentifier(string name)
+		{
+			var spaced = Regex.Replace(name.Replace("_", " ", StringComparison.Ordinal), "([a-z])([A-Z])", "$1 $2");
+			return spaced.Trim();
+		}
+
+		private static string DecodeEscapedText(string value)
+		{
+			try
+			{
+				return Regex.Unescape(value);
+			}
+			catch
+			{
+				return value;
+			}
 		}
 
 		private async Task<Dictionary<Guid, int>> GetPointUsageBySubscriptionAsync(
