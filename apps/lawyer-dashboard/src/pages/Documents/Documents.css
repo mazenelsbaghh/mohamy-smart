@@ -202,4 +202,12 @@ section.documents ul li p::-webkit-scrollbar-thumb {
         padding: 2rem 1rem;
         min-height: 420px;
     }
+    section.documents button {
+        white-space: normal !important;
+        height: auto !important;
+        min-height: 3rem;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+        line-height: 1.4 !important;
+    }
 }

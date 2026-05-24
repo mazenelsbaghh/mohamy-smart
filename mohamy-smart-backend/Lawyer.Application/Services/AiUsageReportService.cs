@@ -48,11 +48,30 @@ namespace Lawyer.Application.Services
                     })
                     .ToListAsync(ct);
 
-                var aiGroup = providerGroups.FirstOrDefault(g => g.Provider == "Gemini");
-                var ocrGroup = providerGroups.FirstOrDefault(g => g.Provider == "GoogleVision");
+                var aiGroup = await query
+                    .Where(r => r.AiStepType != AiStepType.Ocr)
+                    .GroupBy(_ => 1)
+                    .Select(g => new
+                    {
+                        Cost = g.Sum(r => r.EstimatedCostUsd),
+                        Count = g.Count(),
+                        Input = g.Sum(r => r.InputTokens),
+                        Output = g.Sum(r => r.OutputTokens)
+                    })
+                    .FirstOrDefaultAsync(ct);
+
+                var ocrGroup = await query
+                    .Where(r => r.AiStepType == AiStepType.Ocr)
+                    .GroupBy(_ => 1)
+                    .Select(g => new
+                    {
+                        Cost = g.Sum(r => r.EstimatedCostUsd),
+                        Count = g.Count()
+                    })
+                    .FirstOrDefaultAsync(ct);
 
                 var modelGroups = await query
-                    .Where(r => r.Provider == "Gemini")
+                    .Where(r => r.Provider == "Gemini" && r.AiStepType != AiStepType.Ocr)
                     .GroupBy(r => r.ModelIdentifier)
                     .Select(g => new
                     {
@@ -129,7 +148,7 @@ namespace Lawyer.Application.Services
                 var query = BuildQuery(from, to);
 
                 var rawRecords = await query
-                    .Select(r => new { r.LawyerId, r.Provider, r.EstimatedCostUsd })
+                    .Select(r => new { r.LawyerId, r.AiStepType, r.EstimatedCostUsd })
                     .ToListAsync(ct);
 
                 var distinctIds = rawRecords.Select(r => r.LawyerId).Distinct().ToList();
@@ -153,12 +172,12 @@ namespace Lawyer.Application.Services
                 }
 
                 var lawyerGroups = rawRecords
-                    .Select(r => new { r.Provider, r.EstimatedCostUsd, CanonicalId = toCanonicalId.GetValueOrDefault(r.LawyerId, r.LawyerId) })
+                    .Select(r => new { r.AiStepType, r.EstimatedCostUsd, CanonicalId = toCanonicalId.GetValueOrDefault(r.LawyerId, r.LawyerId) })
                     .GroupBy(r => r.CanonicalId)
                     .Select(g =>
                     {
-                        var aiRecs = g.Where(s => s.Provider == "Gemini").ToList();
-                        var ocrRecs = g.Where(s => s.Provider == "GoogleVision").ToList();
+                        var aiRecs = g.Where(s => s.AiStepType != AiStepType.Ocr).ToList();
+                        var ocrRecs = g.Where(s => s.AiStepType == AiStepType.Ocr).ToList();
                         var lawyerName = canonicalNames.GetValueOrDefault(g.Key, "غير معروف");
 
                         return new LawyerUsageDto
@@ -218,8 +237,8 @@ namespace Lawyer.Application.Services
                 if (records.Count == 0)
                     return ApiExceptionResponse.NotFound<LawyerUsageDetailDto>("Lawyer not found or no usage data available");
 
-                var aiRecords = records.Where(r => r.Provider == "Gemini").ToList();
-                var ocrRecords = records.Where(r => r.Provider == "GoogleVision").ToList();
+                var aiRecords = records.Where(r => r.AiStepType != AiStepType.Ocr).ToList();
+                var ocrRecords = records.Where(r => r.AiStepType == AiStepType.Ocr).ToList();
 
                 var lawyerName = !string.IsNullOrWhiteSpace(lawyerEntity?.ApplicationUser?.FullName)
                     ? lawyerEntity.ApplicationUser.FullName
@@ -333,8 +352,8 @@ namespace Lawyer.Application.Services
                     .Select(g => new DailyCostDto
                     {
                         Date = g.Key,
-                        AiCost = g.Where(r => r.Provider == "Gemini").Sum(r => r.EstimatedCostUsd),
-                        OcrCost = g.Where(r => r.Provider == "GoogleVision").Sum(r => r.EstimatedCostUsd),
+                        AiCost = g.Where(r => r.AiStepType != AiStepType.Ocr).Sum(r => r.EstimatedCostUsd),
+                        OcrCost = g.Where(r => r.AiStepType == AiStepType.Ocr).Sum(r => r.EstimatedCostUsd),
                         Requests = g.Count()
                     })
                     .OrderBy(d => d.Date)
@@ -414,7 +433,7 @@ namespace Lawyer.Application.Services
         {
             try
             {
-                var query = BuildQuery(from, to).Where(r => r.Provider == "Gemini");
+                var query = BuildQuery(from, to).Where(r => r.Provider == "Gemini" && r.AiStepType != AiStepType.Ocr);
 
                 var stats = await query
                     .GroupBy(r => r.ModelIdentifier)

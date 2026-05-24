@@ -42,6 +42,8 @@ export type TLawyerActivitySummary = {
  pendingReviewsCount: number;
  averageReviewRating: number | null;
  aiUsageCount: number;
+ aiRequestUsageCount: number;
+ ocrUsageCount: number;
  aiTotalTokens: number;
  aiEstimatedCostUsd: number;
  lastActivityAt: string | null;

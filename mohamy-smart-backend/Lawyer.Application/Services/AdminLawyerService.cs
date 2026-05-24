@@ -3,6 +3,7 @@ using Lawyer.Application.Common;
 using Lawyer.Application.Dtos.Lawyers;
 using Lawyer.Application.IServices;
 using Lawyer.Core.Exceptions;
+using Lawyer.Core.Enum;
 using Lawyer.Core.IRepositories;
 using Lawyer.Core.Models;
 using Microsoft.EntityFrameworkCore;
@@ -55,6 +56,9 @@ namespace Lawyer.Application.Services
 				.ThenByDescending(ls => ls.EndDate)
 				.ToList();
 			var currentSubscription = subscriptions.FirstOrDefault();
+			var subscriptionUsageOverrides = await GetPointUsageBySubscriptionAsync(
+				subscriptions.Select(s => s.Id).ToList(),
+				cancellationToken);
 
 			var casesQuery = _unitOfWork.Repository<Case>().AsQueryable()
 				.AsNoTracking()
@@ -84,6 +88,8 @@ namespace Lawyer.Application.Services
 				? Math.Round((decimal)await reviewsQuery.AverageAsync(r => r.Rating, cancellationToken), 2)
 				: (decimal?)null;
 			var aiUsageCount = await aiUsageQuery.CountAsync(cancellationToken);
+			var aiRequestUsageCount = await aiUsageQuery.CountAsync(a => a.AiStepType != AiStepType.Ocr, cancellationToken);
+			var ocrUsageCount = await aiUsageQuery.CountAsync(a => a.AiStepType == AiStepType.Ocr, cancellationToken);
 			var aiTotalTokens = await aiUsageQuery.SumAsync(a => (long?)a.TotalTokens, cancellationToken) ?? 0;
 			var aiEstimatedCost = await aiUsageQuery.SumAsync(a => (decimal?)a.EstimatedCostUsd, cancellationToken) ?? 0;
 
@@ -168,8 +174,8 @@ namespace Lawyer.Application.Services
 				SubscriptionPlanName = currentSubscription?.Subscription?.Name,
 				SubscriptionIsActive = currentSubscription?.IsActive,
 				NumberOfCases = casesCount,
-				Subscription = currentSubscription != null ? MapSubscription(currentSubscription) : null,
-				RecentSubscriptions = subscriptions.Take(3).Select(MapSubscription).ToList(),
+				Subscription = currentSubscription != null ? MapSubscription(currentSubscription, subscriptionUsageOverrides) : null,
+				RecentSubscriptions = subscriptions.Take(3).Select(s => MapSubscription(s, subscriptionUsageOverrides)).ToList(),
 				RecentCases = recentCases,
 				RecentReviews = recentReviews,
 				RecentAiUsage = recentAiUsage,
@@ -186,6 +192,8 @@ namespace Lawyer.Application.Services
 					PendingReviewsCount = pendingReviewsCount,
 					AverageReviewRating = averageReviewRating,
 					AiUsageCount = aiUsageCount,
+					AiRequestUsageCount = aiRequestUsageCount,
+					OcrUsageCount = ocrUsageCount,
 					AiTotalTokens = aiTotalTokens,
 					AiEstimatedCostUsd = aiEstimatedCost,
 					LastActivityAt = lastActivityAt
@@ -387,7 +395,9 @@ namespace Lawyer.Application.Services
 			return ApiExceptionResponse.Success(result, "تم توثيق رقم الهاتف يدويًا.");
 		}
 
-		private static AdminLawyerSubscriptionSummaryDto MapSubscription(LawyerSubscription subscription)
+		private static AdminLawyerSubscriptionSummaryDto MapSubscription(
+			LawyerSubscription subscription,
+			IReadOnlyDictionary<Guid, int>? usageOverrides = null)
 		{
 			return new AdminLawyerSubscriptionSummaryDto
 			{
@@ -398,10 +408,46 @@ namespace Lawyer.Application.Services
 				EndDate = subscription.EndDate,
 				DurationDays = subscription.Subscription?.DurationDays ?? 0,
 				AiRequestsLimit = subscription.Subscription?.AiRequestsLimit,
-				UsedAiRequests = subscription.UsedAiRequests,
+				UsedAiRequests = usageOverrides != null && usageOverrides.TryGetValue(subscription.Id, out var usedFromTransactions)
+					? usedFromTransactions
+					: subscription.UsedAiRequests,
 				Price = subscription.Subscription?.Price ?? 0,
 				YearlyPrice = subscription.Subscription?.YearlyPrice
 			};
+		}
+
+		private async Task<Dictionary<Guid, int>> GetPointUsageBySubscriptionAsync(
+			IReadOnlyCollection<Guid> subscriptionIds,
+			CancellationToken cancellationToken)
+		{
+			if (subscriptionIds.Count == 0)
+			{
+				return new Dictionary<Guid, int>();
+			}
+
+			var transactionGroups = await _unitOfWork.Repository<AiPointTransaction>()
+				.AsQueryable()
+				.AsNoTracking()
+				.Where(t => subscriptionIds.Contains(t.LawyerSubscriptionId))
+				.GroupBy(t => new { t.LawyerSubscriptionId, t.TransactionType })
+				.Select(g => new
+				{
+					g.Key.LawyerSubscriptionId,
+					g.Key.TransactionType,
+					Points = g.Sum(t => t.Points)
+				})
+				.ToListAsync(cancellationToken);
+
+			return transactionGroups
+				.GroupBy(t => t.LawyerSubscriptionId)
+				.ToDictionary(
+					g => g.Key,
+					g =>
+					{
+						var charged = g.FirstOrDefault(t => t.TransactionType == AiPointTransactionType.Charge)?.Points ?? 0;
+						var restored = g.FirstOrDefault(t => t.TransactionType == AiPointTransactionType.Restore)?.Points ?? 0;
+						return Math.Max(0, charged - restored);
+					});
 		}
 
 		private async Task<AdminManualPhoneVerificationAuditDto?> GetLatestManualPhoneVerificationAsync(Guid userId, CancellationToken cancellationToken)

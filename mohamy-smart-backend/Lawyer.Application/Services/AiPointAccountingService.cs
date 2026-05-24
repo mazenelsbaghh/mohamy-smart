@@ -50,11 +50,7 @@ namespace Lawyer.Application.Services
                     "انتهى الاشتراك الحالي. يرجى تجديد الاشتراك لاستخدام ميزات الذكاء الاصطناعي.");
             }
 
-            if (subscription.UsedAiRequests > 0)
-            {
-                subscription.UsedAiRequests = 0;
-                await _db.SaveChangesAsync(ct);
-            }
+            await SyncUsedRequestsFromTransactionsAsync(subscription, ct);
 
             return Result<AiPointBalanceDto>.Success(ToBalance(subscription));
         }
@@ -130,7 +126,9 @@ namespace Lawyer.Application.Services
             var limit = subscription.Subscription.AiRequestsLimit ?? 0;
             if (subscription.UsedAiRequests + pointCost > limit)
             {
-                subscription.UsedAiRequests = 0;
+                return Result<AiPointBalanceDto>.Error(
+                    HttpStatusCode.PaymentRequired,
+                    "رصيد النقاط غير كافٍ لتشغيل هذا الطلب.");
             }
 
             var before = subscription.UsedAiRequests;
@@ -222,7 +220,11 @@ namespace Lawyer.Application.Services
             var limit = subscription.Subscription.AiRequestsLimit ?? 0;
             if (subscription.UsedAiRequests + job.PointCost > limit)
             {
-                subscription.UsedAiRequests = 0;
+                job.ChargeState = AiChargeState.NoCharge;
+                job.ChargedPoints = 0;
+                job.ChargeReason = "لم يتم خصم أي نقاط لأن رصيد الاشتراك غير كافٍ وقت اكتمال الطلب.";
+                await _db.SaveChangesAsync(ct);
+                return Result<AiChargeMetadataDto>.Error(HttpStatusCode.PaymentRequired, job.ChargeReason);
             }
 
             var before = subscription.UsedAiRequests;
@@ -384,6 +386,33 @@ namespace Lawyer.Application.Services
                 ReasonCode = reasonCode,
                 MessageAr = messageAr
             });
+        }
+
+        private async Task SyncUsedRequestsFromTransactionsAsync(LawyerSubscription subscription, CancellationToken ct)
+        {
+            var transactions = await _db.AiPointTransactions
+                .AsNoTracking()
+                .Where(t => t.LawyerSubscriptionId == subscription.Id)
+                .GroupBy(t => t.TransactionType)
+                .Select(g => new { Type = g.Key, Points = g.Sum(t => t.Points) })
+                .ToListAsync(ct);
+
+            if (transactions.Count == 0)
+            {
+                return;
+            }
+
+            var charged = transactions.FirstOrDefault(t => t.Type == AiPointTransactionType.Charge)?.Points ?? 0;
+            var restored = transactions.FirstOrDefault(t => t.Type == AiPointTransactionType.Restore)?.Points ?? 0;
+            var syncedUsed = Math.Max(0, charged - restored);
+
+            if (subscription.UsedAiRequests == syncedUsed)
+            {
+                return;
+            }
+
+            subscription.UsedAiRequests = syncedUsed;
+            await _db.SaveChangesAsync(ct);
         }
 
         private static AiPointBalanceDto ToBalance(LawyerSubscription subscription)

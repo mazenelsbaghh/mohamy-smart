@@ -41,14 +41,18 @@ const Subscription = () => {
    setSelectedPlanIdForPayment(null);
  }, []);
 
+  const filteredPlans = useMemo(() => {
+    return plans.filter(p => p.name !== 'الباقة التجريبية' && p.name !== 'Free Trial');
+  }, [plans]);
+
  const selectedPlanDetails = useMemo(() => {
    if (!selectedPlanIdForPayment) return null;
-   const p = plans.find(plan => plan.id === selectedPlanIdForPayment);
+   const p = filteredPlans.find(plan => plan.id === selectedPlanIdForPayment);
    if (!p) return null;
    const isYearly = billingCycle === 'yearly' && p.hasYearlyOption && p.yearlyPrice != null && p.yearlyPrice > 0;
    const displayPrice = isYearly ? p.yearlyPrice! : p.price;
    return { name: p.name, price: displayPrice };
- }, [selectedPlanIdForPayment, plans, billingCycle]);
+ }, [selectedPlanIdForPayment, filteredPlans, billingCycle]);
 
  useEffect(() => {
  dispatch(thunkGetSubscriptionPlans());
@@ -99,9 +103,9 @@ const Subscription = () => {
  return Math.min(100, Math.round((lawyerPlan.usedAiRequests / lawyerPlan.limit) * 100));
  }, [lawyerPlan]);
 
-  const hasApiPlans = useMemo(() => plans.length > 0, [plans.length]);
+  const hasApiPlans = useMemo(() => filteredPlans.length > 0, [filteredPlans.length]);
 
-  const anyPlanHasYearly = useMemo(() => plans.some(p => p.hasYearlyOption && p.yearlyPrice != null && p.yearlyPrice > 0), [plans]);
+  const anyPlanHasYearly = useMemo(() => filteredPlans.some(p => p.hasYearlyOption && p.yearlyPrice != null && p.yearlyPrice > 0), [filteredPlans]);
 
  return (
  <section className="subscription-page" dir="rtl">
@@ -179,7 +183,7 @@ const Subscription = () => {
  ) : (
  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 items-stretch">
  {hasApiPlans ? (
-  plans.map((plan, idx) => {
+  filteredPlans.map((plan, idx) => {
   const isCurrentPlan = lawyerPlan?.planName === plan.name && lawyerPlan?.isActive;
   const isPopular = plan.isPopular;
   const isLoading = paymentLoading === 'pending' && checkingPlan === plan.id;

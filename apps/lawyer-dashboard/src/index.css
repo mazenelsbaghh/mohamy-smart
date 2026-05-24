@@ -190,6 +190,40 @@ body::selection {
   z-index: 2147483647 !important;
 }
 
+/* Sileo Toast Mobile Responsiveness Overrides */
+[data-sileo-toast] {
+  max-width: calc(100vw - 1.5rem) !important;
+}
+
+@media (max-width: 480px) {
+  :root {
+    --sileo-width: calc(100vw - 1.5rem) !important;
+  }
+  
+  [data-sileo-toast] {
+    width: calc(100vw - 1.5rem) !important;
+    height: auto !important;
+    min-height: var(--sileo-height) !important;
+  }
+  
+  [data-sileo-header] {
+    height: auto !important;
+    min-height: var(--sileo-height) !important;
+    overflow: visible !important;
+    padding-block: 0.25rem !important;
+  }
+  
+  [data-sileo-header-inner] {
+    white-space: normal !important;
+    flex-wrap: wrap !important;
+  }
+  
+  [data-sileo-title] {
+    font-size: 0.76rem !important;
+    line-height: 1.25 !important;
+  }
+}
+
 .pagination-box {
   direction: ltr;
   display: flex;

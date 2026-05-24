@@ -197,6 +197,9 @@ const LawyerDetails = () => {
 
  const subscription = lawyer.subscription;
  const activity = lawyer.activity;
+ const aiRequestsLimit = subscription?.aiRequestsLimit ?? 0;
+ const usedAiRequests = subscription?.usedAiRequests ?? 0;
+ const remainingAiRequests = Math.max(0, aiRequestsLimit - usedAiRequests);
  const hasLawyerProfile = Boolean(lawyer.lawyerId);
  const activeTone: Tone = lawyer.isActive ?"success" :"danger";
  const subscriptionTone: Tone = subscription?.isActive ?"success" : subscription ?"warning" :"neutral";
@@ -275,7 +278,12 @@ const LawyerDetails = () => {
  <MetricCard label="إجمالي القضايا" value={formatNumber(activity.casesCount)} icon={<FaFolderOpen />} sub={`${formatNumber(activity.activeCasesCount)} قضية نشطة`} />
  <MetricCard label="العملاء" value={formatNumber(activity.clientsCount)} icon={<FaUsers />} sub="إجمالي العملاء المرتبطين" />
  <MetricCard label="التوكيلات" value={formatNumber(activity.powersOfAttorneyCount)} icon={<FaFileSignature />} sub={`${formatNumber(activity.activePowersOfAttorneyCount)} توكيل نشط`} />
- <MetricCard label="استخدام الذكاء" value={formatNumber(activity.aiUsageCount)} icon={<FaRobot />} sub={`${formatNumber(activity.aiTotalTokens)} توكن`} />
+ <MetricCard
+ label="استخدام الذكاء"
+ value={formatNumber(activity.aiRequestUsageCount ?? activity.aiUsageCount)}
+ icon={<FaRobot />}
+ sub={`${formatNumber(activity.ocrUsageCount ?? 0)} OCR، ${formatNumber(activity.aiTotalTokens)} توكن`}
+ />
  </div>
 
  <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -322,14 +330,16 @@ const LawyerDetails = () => {
  <div className="mt-4 grid gap-3 sm:grid-cols-2">
  <InfoField label="المدة" value={`${formatNumber(subscription.durationDays)} يوم`} icon={<FaCalendarAlt />} />
  <InfoField 
-    label="طلبات الذكاء" 
-    value={subscription.aiRequestsLimit ? (
+    label="طلبات AI المتبقية" 
+    value={aiRequestsLimit ? (
       <span dir="ltr">
-        {formatNumber(Math.max(0, subscription.aiRequestsLimit - subscription.usedAiRequests))} / {formatNumber(subscription.aiRequestsLimit)}
+        {formatNumber(remainingAiRequests)} / {formatNumber(aiRequestsLimit)}
       </span>
     ) : "غير محدود"} 
     icon={<FaRobot />} 
   />
+ <InfoField label="طلبات AI المستخدمة" value={formatNumber(usedAiRequests)} icon={<FaRobot />} />
+ <InfoField label="طلبات OCR" value={formatNumber(activity.ocrUsageCount ?? 0)} icon={<FaFileSignature />} />
  <InfoField label="السعر الشهري" value={formatNumber(subscription.price)} icon={<FaMoneyBillWave />} />
  <InfoField label="السعر السنوي" value={subscription.yearlyPrice ? formatNumber(subscription.yearlyPrice) : null} icon={<FaMoneyBillWave />} />
  </div>

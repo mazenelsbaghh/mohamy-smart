@@ -84,6 +84,8 @@ public class AdminLawyerActivitySummaryDto
     public int PendingReviewsCount { get; set; }
     public decimal? AverageReviewRating { get; set; }
     public int AiUsageCount { get; set; }
+    public int AiRequestUsageCount { get; set; }
+    public int OcrUsageCount { get; set; }
     public long AiTotalTokens { get; set; }
     public decimal AiEstimatedCostUsd { get; set; }
     public DateTime? LastActivityAt { get; set; }

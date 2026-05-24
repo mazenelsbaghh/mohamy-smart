@@ -2,6 +2,7 @@ using Lawyer.Application.Common;
 using Lawyer.Application.Dtos;
 using Lawyer.Application.IServices;
 using Lawyer.Core.Exceptions;
+using Lawyer.Core.Enum;
 using Lawyer.Core.IRepositories;
 using Lawyer.Core.Models;
 using Microsoft.EntityFrameworkCore;
@@ -245,7 +246,7 @@ namespace Lawyer.Application.Services
 				PlanName = sub.Subscription.Name,
 				StartDate = sub.StartDate,
 				EndDate = sub.EndDate,
-				UsedAiRequests = sub.UsedAiRequests,
+				UsedAiRequests = await ResolveUsedAiRequestsAsync(sub, cancellationToken),
 				Limit = sub.Subscription.AiRequestsLimit ?? 0,
 				IsActive = sub.IsActive
 			});
@@ -305,6 +306,26 @@ namespace Lawyer.Application.Services
 			return ApiExceptionResponse.Success(result, "Lawyers plans retrieved successfully");
 		}
 
+		private async Task<int> ResolveUsedAiRequestsAsync(LawyerSubscription subscription, CancellationToken cancellationToken)
+		{
+			var transactionGroups = await _unitOfWork.Repository<AiPointTransaction>()
+				.AsQueryable()
+				.AsNoTracking()
+				.Where(t => t.LawyerSubscriptionId == subscription.Id)
+				.GroupBy(t => t.TransactionType)
+				.Select(g => new { Type = g.Key, Points = g.Sum(t => t.Points) })
+				.ToListAsync(cancellationToken);
+
+			if (transactionGroups.Count == 0)
+			{
+				return subscription.UsedAiRequests;
+			}
+
+			var charged = transactionGroups.FirstOrDefault(t => t.Type == AiPointTransactionType.Charge)?.Points ?? 0;
+			var restored = transactionGroups.FirstOrDefault(t => t.Type == AiPointTransactionType.Restore)?.Points ?? 0;
+			return Math.Max(0, charged - restored);
+		}
+
 		public async Task<bool> CheckAiRequestAvailability(Guid lawyerId, CancellationToken cancellationToken = default)
 		{
 			var subscription = await _unitOfWork.Repository<LawyerSubscription>()
@@ -320,13 +341,6 @@ namespace Lawyer.Application.Services
 				await _unitOfWork.Repository<LawyerSubscription>().Update(subscription);
 				await _unitOfWork.SaveChangesAsync(cancellationToken);
 				return false;
-			}
-
-			if (subscription.UsedAiRequests > 0)
-			{
-				subscription.UsedAiRequests = 0;
-				await _unitOfWork.Repository<LawyerSubscription>().Update(subscription);
-				await _unitOfWork.SaveChangesAsync(cancellationToken);
 			}
 
 			// Check available requests

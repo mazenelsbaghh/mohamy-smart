@@ -3,7 +3,7 @@ import'./Settings.css';
 import SubTitle from'../../../components/subTitle/SubTitle';
 
 import { useAppDispatch, useAppSelector } from'../../../hooks/reduxHooks';
-import { useEffect, useState } from'react';
+import { useEffect, useState, useMemo } from'react';
 import thunkGetSubscriptionPlans from'../../../redux/subscription/thunk/thunkGetSubscriptionPlans';
 import SkeletonCardsList from'../../../components/skeleton/SkeletonCardsList';
 import type { TUser } from'../../../types/types';
@@ -86,6 +86,10 @@ const Subscription = ({ user }: TSubscription) => {
  const usagePercentage = lawyerPlan
  ? Math.min((lawyerPlan.usedAiRequests / lawyerPlan.limit) * 100, 100)
  : 0;
+
+  const filteredPlans = useMemo(() => {
+    return plans.filter(p => p.name !== 'الباقة التجريبية' && p.name !== 'Free Trial');
+  }, [plans]);
 
  return (
  <div className='subscription pt-5 pb-10'>
@@ -178,9 +182,9 @@ const Subscription = ({ user }: TSubscription) => {
 
  {plansLoading ==='pending' && <SkeletonCardsList />}
 
- {plansLoading !=='pending' && plans.length > 0 && (
+ {plansLoading !=='pending' && filteredPlans.length > 0 && (
  <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
- {plans.map((plan) => (
+ {filteredPlans.map((plan) => (
  <div
  key={plan.id}
  className="bg-[var(--white-color)] rounded-2xl shadow-md p-6 border border-[var(--border-color)] hover:shadow-xl transition-colors duration-200 flex flex-col justify-between"
