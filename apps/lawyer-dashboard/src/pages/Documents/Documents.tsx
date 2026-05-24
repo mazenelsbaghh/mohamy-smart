@@ -19,6 +19,7 @@ import thunkGenerateCase from'../../redux/ocr/thunk/thunkGenerateCase';
 import { IoMdAdd } from'react-icons/io';
 import { MdOutlineClear } from'react-icons/md';
 import thunkGetAllCaseType from'../../redux/caseType/thunk/thunkGetAllCaseType';
+import thunkGetAiPointBalance from'../../redux/subscription/thunk/thunkGetAiPointBalance';
 
 import * as pdfjsLib from'pdfjs-dist';
 import JSZip from'jszip';
@@ -301,16 +302,14 @@ const Documents = () => {
  });
 
  const accumulated: TResult[] = [];
+ const wordFiles = selectedFiles.filter((preparedFile) => preparedFile.sourceType ==='word');
+ const ocrFiles = selectedFiles.filter((preparedFile) => preparedFile.sourceType !=='word');
 
- for (const [index, preparedFile] of selectedFiles.entries()) {
- // Check if processing was cancelled
+ for (const [index, preparedFile] of wordFiles.entries()) {
  if (controller.signal.aborted) break;
-
- const { file, sourceType, pageNumber, totalPages } = preparedFile;
- const isImage = file.type.startsWith("image/");
+ const { file } = preparedFile;
 
  try {
- if (sourceType ==='word') {
  accumulated.push({
  file,
  imageUrl:'',
@@ -318,50 +317,14 @@ const Documents = () => {
  fileType:'word',
  fileName: file.name,
  });
- } else {
- const ocrPromise = dispatch(thunkOcrExtract(file)).unwrap();
- const dataUrlPromise = isImage ? fileToPreviewDataUrl(file) : Promise.resolve('');
-
- const [pageTexts, dataUrl] = await Promise.all([ocrPromise, dataUrlPromise]);
-
- if (controller.signal.aborted) break;
-
- if (isImage) {
- accumulated.push({
- file,
- imageUrl: dataUrl,
- text: pageTexts[0] ||"",
- fileType: sourceType ==='pdf' ?"pdf-page" :"image",
- pageNumber,
- totalPages,
- fileName: file.name,
- });
- } else {
- pageTexts.forEach((text, pageIdx) => {
- accumulated.push({
- file,
- imageUrl:"",
- text: text ||"",
- fileType:"pdf-page",
- pageNumber: pageNumber ?? pageIdx + 1,
- totalPages: totalPages ?? pageTexts.length,
- fileName: file.name,
- });
- });
- }
- }
  } catch (errorMessage) {
  if (controller.signal.aborted) break;
  sileo.error({ title: `حدث خطأ أثناء معالجة الملف: ${file.name}\n ${errorMessage}` });
- let errorImageUrl ='';
- if (isImage) {
- try { errorImageUrl = await fileToPreviewDataUrl(file); } catch { /* swallow */ }
- }
  accumulated.push({
  file,
- imageUrl: errorImageUrl,
+ imageUrl:'',
  text:"— حدث خطأ أثناء استخراج النص —",
- fileType: sourceType ==='word' ?"word" : isImage ?"image" :"pdf",
+ fileType:'word',
  fileName: file.name,
  });
  }
@@ -372,12 +335,71 @@ const Documents = () => {
  phase:'processing',
  completed,
  total: selectedFiles.length,
- label: sourceType ==='pdf'
- ? `جاري معالجة PDF: تم إنجاز ${completed} من ${selectedFiles.length} صفحة`
- : sourceType ==='word'
- ? `جاري قراءة ملفات Word: تم إنجاز ${completed} من ${selectedFiles.length} ملف`
- : `جاري معالجة الصور: تم إنجاز ${completed} من ${selectedFiles.length} صورة`,
+ label: `جاري قراءة ملفات Word: تم إنجاز ${completed} من ${selectedFiles.length} ملف`,
  });
+ }
+
+ if (!controller.signal.aborted && ocrFiles.length > 0) {
+ const completedWords = accumulated.length;
+ setProcessingStatus({
+ phase:'processing',
+ completed: completedWords,
+ total: selectedFiles.length,
+ label: `جاري استخراج النصوص: سيتم خصم نقطة OCR واحدة لدفعة الرفع الحالية`,
+ });
+
+ try {
+ const previewPromises = ocrFiles.map(({ file }) => file.type.startsWith("image/") ? fileToPreviewDataUrl(file) : Promise.resolve(''));
+ const [pageTexts, previewUrls] = await Promise.all([
+ dispatch(thunkOcrExtract(ocrFiles.map(({ file }) => file))).unwrap(),
+ Promise.all(previewPromises),
+ ]);
+
+ if (!controller.signal.aborted) {
+ ocrFiles.forEach((preparedFile, index) => {
+ const { file, sourceType, pageNumber, totalPages } = preparedFile;
+ const isImage = file.type.startsWith("image/");
+ accumulated.push({
+ file,
+ imageUrl: isImage ? previewUrls[index] ||'' :'',
+ text: pageTexts[index] ||"",
+ fileType: sourceType ==='pdf' ?"pdf-page" :"image",
+ pageNumber,
+ totalPages,
+ fileName: file.name,
+ });
+ });
+ setResults([...accumulated]);
+ setProcessingStatus({
+ phase:'processing',
+ completed: selectedFiles.length,
+ total: selectedFiles.length,
+ label: `تم استخراج النصوص من ${ocrFiles.length} صورة/صفحة بنقطة OCR واحدة`,
+ });
+ }
+ } catch (errorMessage) {
+ if (!controller.signal.aborted) {
+ sileo.error({ title: `حدث خطأ أثناء استخراج النصوص\n ${errorMessage}` });
+ const errorResults = await Promise.all(ocrFiles.map(async (preparedFile) => {
+ const { file, sourceType, pageNumber, totalPages } = preparedFile;
+ let errorImageUrl ='';
+ if (file.type.startsWith("image/")) {
+ try { errorImageUrl = await fileToPreviewDataUrl(file); } catch { /* swallow */ }
+ }
+ return {
+ file,
+ imageUrl: errorImageUrl,
+ text:"— حدث خطأ أثناء استخراج النص —",
+ fileType: sourceType ==='pdf' ?"pdf-page" :"image",
+ pageNumber,
+ totalPages,
+ fileName: file.name,
+ } satisfies TResult;
+ }));
+ accumulated.push(...errorResults);
+ setResults([...accumulated]);
+ }
+ }
  }
 
  // If cancelled, don't override the cancel handler's cleanup
@@ -395,11 +417,10 @@ const Documents = () => {
  totalPages: r.totalPages,
  imageUrl: r.imageUrl,
  }))));
+ dispatch(thunkGetAiPointBalance());
 
  sileo.success({ title:"تم استخراج النصوص بنجاح" });
  };
-
- const { generatedCase } = useAppSelector((state) => state.ocr);
 
  const getAllText = async () => {
  const ocrText = results.map((r) => r.text).join('\n');
@@ -408,14 +429,9 @@ const Documents = () => {
  sileo.error({ title:"لا يوجد نص لتحليله — أرفع مستنداً أو أضف نصاً يدوياً" });
  return;
  }
- // لو عندنا generated case خلاص → افتح الـ modal بس
- if (generatedCase) {
- onOpen();
- return;
- }
- // لو مفيش → كلم الباك
  await dispatch(thunkGenerateCase({ revisedText: allText, availableCaseTypes: caseType })).unwrap()
  .then(() => {
+ dispatch(thunkGetAiPointBalance());
  onOpen();
  }).catch((err) => {
  sileo.error({ title: err });
@@ -512,7 +528,7 @@ const Documents = () => {
   <div className="text">
   <h3>ارفع مستند القضية وسنحوّله إلى قضية ذكية</h3>
   <p>ارفع صورة أو ملف PDF أو Word لأي مستند قانوني (صحيفة دعوى، حكم، محضر…)</p>
-  <p style={{ marginTop:'4px', fontSize:'0.8rem' }}>سيقوم النظام تلقائيًا باستخراج النص من المستند، ثم يمكنك تحليله بالذكاء الاصطناعي وإنشاء قضية جديدة من محتواه مباشرةً.</p>
+  <p style={{ marginTop:'4px', fontSize:'0.8rem' }}>سيقوم النظام تلقائيًا باستخراج النص من المستند بنقطة OCR واحدة لكل دفعة رفع، ثم يمكنك تحليله بالذكاء الاصطناعي بنقطة إضافية وإنشاء قضية جديدة من محتواه مباشرةً.</p>
   <p style={{ marginTop:'4px', fontSize:'0.8rem', opacity: 0.7 }}>الصيغ المدعومة: JPG، PNG، WEBP، PDF، DOCX</p>
   </div>
   </div>
@@ -562,7 +578,7 @@ const Documents = () => {
  <div className="w-full sm:w-6/12 lg:w-4/12">
  <CustomButton
  type='button'
- text={loading ==="pending" ?"جارٍ الإنشاء..." :"تحليل النص وإنشاء قضية جديدة"}
+ text={loading ==="pending" ?"جارٍ الإنشاء..." :"تحليل النص وإنشاء قضية جديدة (نقطة AI)"}
  size="lg"
  radius="md"
  color="primary"
@@ -649,7 +665,7 @@ const Documents = () => {
  <div className="w-full sm:w-6/12 lg:w-4/12">
  <CustomButton
  type='button'
- text={loading ==="pending" ?"جارٍ الإنشاء..." : processingStatus.phase !=='idle' ?"في انتظار استخراج النصوص..." :"تحليل المستند تفصيلياً وإنشاء قضية جديدة"}
+ text={loading ==="pending" ?"جارٍ الإنشاء..." : processingStatus.phase !=='idle' ?"في انتظار استخراج النصوص..." :"تحليل المستند تفصيلياً وإنشاء قضية جديدة (نقطة AI)"}
  size="lg"
  radius="md"
  color="primary"

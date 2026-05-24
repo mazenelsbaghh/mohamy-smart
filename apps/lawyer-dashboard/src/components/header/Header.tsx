@@ -1,7 +1,7 @@
 import './Header.css';
 
 
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { HiSun, HiMenu } from "react-icons/hi";
 
 
@@ -26,10 +26,34 @@ const Header = ({ theme, setTheme }: THeader) => {
     const { aiPointBalance, loading: subscriptionLoading } = useAppSelector((state) => state.subscription);
     const { toggle } = useSidebar();
 
+    const refreshAiPointBalance = useCallback(() => {
+        if (!user || document.visibilityState === 'hidden') return;
+        dispatch(thunkGetAiPointBalance({ silent: true }));
+    }, [dispatch, user]);
+
     useEffect(() => {
         if (!user || aiPointBalance || subscriptionLoading === 'pending') return;
         dispatch(thunkGetAiPointBalance());
     }, [dispatch, user, aiPointBalance, subscriptionLoading]);
+
+    useEffect(() => {
+        if (!user) return;
+
+        refreshAiPointBalance();
+        const intervalId = window.setInterval(refreshAiPointBalance, 15000);
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') refreshAiPointBalance();
+        };
+
+        window.addEventListener('focus', refreshAiPointBalance);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.clearInterval(intervalId);
+            window.removeEventListener('focus', refreshAiPointBalance);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [refreshAiPointBalance, user]);
 
     return (
         <header className="px-4 py-3.5 md:px-6 md:py-4 mx-4 sm:mx-8 mt-4 md:mt-6 rounded-2xl bg-[var(--white-color)] dark:app-surface border app-border dark:app-border-strong shadow-sm transition-colors duration-300 z-40 relative flex flex-col lg:flex-row lg:items-center justify-between gap-y-3.5 gap-x-4">

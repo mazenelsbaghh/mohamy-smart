@@ -18,6 +18,7 @@ namespace Lawyer.Core.Enum
 
         Ocr = 20,
         ClarifyFacts = 21,
+        DocumentCaseAnalysis = 22,
 
         Chat = 30,
 

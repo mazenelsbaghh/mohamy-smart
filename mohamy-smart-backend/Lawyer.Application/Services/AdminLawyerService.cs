@@ -72,9 +72,10 @@ namespace Lawyer.Application.Services
 			var reviewsQuery = _unitOfWork.Repository<Review>().AsQueryable()
 				.AsNoTracking()
 				.Where(r => r.LawyerId == lawyerIdText);
+			var aiUsageIds = new[] { lawyer.Id, lawyer.ApplicationUserId };
 			var aiUsageQuery = _unitOfWork.Repository<AiUsageRecord>().AsQueryable()
 				.AsNoTracking()
-				.Where(a => a.LawyerId == lawyerId);
+				.Where(a => aiUsageIds.Contains(a.LawyerId));
 
 			var casesCount = await casesQuery.CountAsync(cancellationToken);
 			var activeCasesCount = await casesQuery.CountAsync(c => c.IsActive, cancellationToken);

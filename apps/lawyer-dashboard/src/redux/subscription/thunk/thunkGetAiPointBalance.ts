@@ -3,7 +3,11 @@ import api from '../../../APIs/api';
 import { axiosErrorHandler } from '@mohamy/shared-api';
 import type { AiPointBalance } from '../../aiJobs/aiPointTypes';
 
-const thunkGetAiPointBalance = createAsyncThunk('subscription/thunkGetAiPointBalance', async (_, thunkAPI) => {
+export type GetAiPointBalanceArgs = {
+  silent?: boolean;
+} | undefined;
+
+const thunkGetAiPointBalance = createAsyncThunk('subscription/thunkGetAiPointBalance', async (_args: GetAiPointBalanceArgs, thunkAPI) => {
   const { rejectWithValue } = thunkAPI;
   try {
     const res = await api.get('/Subscription/ai-points/balance');

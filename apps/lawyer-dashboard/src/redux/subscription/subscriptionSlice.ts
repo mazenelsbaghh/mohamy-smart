@@ -10,6 +10,8 @@ import thunkGetPaymentHistory from"./thunk/thunkGetPaymentHistory";
 import thunkGetAiPointBalance from"./thunk/thunkGetAiPointBalance";
 import thunkGetAiPointHistory from"./thunk/thunkGetAiPointHistory";
 import type { AiPointBalance, AiPointTransaction } from"../aiJobs/aiPointTypes";
+import { upsertJob } from"../aiJobs/aiJobsSlice";
+import thunkGetAllAiJobs from"../aiJobs/thunk/thunkGetAllAiJobs";
 
 type TSubscriptionPlan = {
   id: number;
@@ -75,7 +77,10 @@ const subscriptionSlice = createSlice({
  state.activePaymentUrl = null;
  state.activePaymentId = null;
  state.paymentStatus = null;
- }
+ },
+ setAiPointBalance: (state, action) => {
+ state.aiPointBalance = action.payload;
+ },
  },
  extraReducers(builder) {
  builder
@@ -159,7 +164,8 @@ const subscriptionSlice = createSlice({
  })
 
  // get AI point balance
- .addCase(thunkGetAiPointBalance.pending, (state) => {
+ .addCase(thunkGetAiPointBalance.pending, (state, action) => {
+ if (action.meta.arg?.silent) return;
  state.loading ='pending';
  state.error = null;
  })
@@ -168,6 +174,7 @@ const subscriptionSlice = createSlice({
  state.aiPointBalance = action.payload;
  })
  .addCase(thunkGetAiPointBalance.rejected, (state, action) => {
+ if (action.meta.arg?.silent) return;
  state.loading ='failed';
  if (isString(action.payload)) state.error = action.payload;
  })
@@ -182,10 +189,20 @@ const subscriptionSlice = createSlice({
  })
  .addCase(thunkGetAiPointHistory.rejected, (state) => {
  state.loading ='failed';
+ })
+ .addCase(upsertJob, (state, action) => {
+ const balance = action.payload.charge?.balance;
+ if (balance) state.aiPointBalance = balance;
+ })
+ .addCase(thunkGetAllAiJobs.fulfilled, (state, action) => {
+ const chargedJob = [...action.payload]
+ .reverse()
+ .find((job) => job.charge?.balance);
+ if (chargedJob?.charge?.balance) state.aiPointBalance = chargedJob.charge.balance;
  });
  },
 });
 
-export const { clearActivePayment } = subscriptionSlice.actions;
+export const { clearActivePayment, setAiPointBalance } = subscriptionSlice.actions;
 
 export default subscriptionSlice.reducer;

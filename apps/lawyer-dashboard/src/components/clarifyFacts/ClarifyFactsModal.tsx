@@ -94,7 +94,7 @@ const ClarifyFactsModal = ({
  </div>
 
  {/* Options */}
- <div className="flex flex-col gap-2 me-10">
+ <div className="flex flex-col gap-2 sm:ms-10 ms-0">
  {q.suggestedOptions.map((opt, optIdx) => {
  const isSelected = currentAnswer?.selected === opt;
  return (
@@ -103,7 +103,7 @@ const ClarifyFactsModal = ({
  type="button"
  onClick={() => handleSelect(qIdx, opt)}
  className={`
- group flex items-center gap-3 w-full text-end px-4 py-3 rounded-xl
+ group flex items-start gap-3 w-full text-start px-4 py-3 rounded-xl
  border-2 transition-colors duration-200 text-sm
  ${isSelected
  ?'border-[var(--main-color)] bg-orange-50 dark:bg-orange-900/20 shadow-sm'
@@ -112,7 +112,7 @@ const ClarifyFactsModal = ({
  `}
  >
  <span className={`
- w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors
+ w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors mt-0.5
  ${isSelected
  ?'border-[var(--main-color)] bg-[var(--main-color)] text-white'
  :'app-border-strong dark:border-gray-500'
@@ -132,7 +132,7 @@ const ClarifyFactsModal = ({
  type="button"
  onClick={() => handleCustomToggle(qIdx)}
  className={`
- group flex items-center gap-3 w-full text-end px-4 py-3 rounded-xl
+ group flex items-start gap-3 w-full text-start px-4 py-3 rounded-xl
  border-2 transition-colors duration-200 text-sm
  ${isCustomActive
  ?'border-[var(--main-color)] bg-orange-50 dark:bg-orange-900/20 shadow-sm'
@@ -141,7 +141,7 @@ const ClarifyFactsModal = ({
  `}
  >
  <span className={`
- w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors
+ w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors mt-0.5
  ${isCustomActive
  ?'border-[var(--main-color)] bg-[var(--main-color)] text-white'
  :'app-border-strong dark:border-gray-500'
@@ -161,7 +161,7 @@ const ClarifyFactsModal = ({
  onChange={(e) => handleCustomChange(qIdx, e.target.value)}
  placeholder="اكتب إجابتك هنا..."
  rows={2}
- className="w-full mt-1 me-8 px-4 py-3 rounded-xl border-2 border-[var(--main-color)]/30
+ className="w-[calc(100%-2rem)] mt-1 ms-8 px-4 py-3 rounded-xl border-2 border-[var(--main-color)]/30
  bg-white dark:bg-[#1D1D1D] text-sm text-[var(--title-color)] dark:text-gray-200
  focus:outline-none focus:border-[var(--main-color)] focus:ring-1 focus:ring-[var(--main-color)]/20
  resize-none transition-colors placeholder:app-text-subtle"

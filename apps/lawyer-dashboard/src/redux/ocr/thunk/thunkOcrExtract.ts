@@ -6,12 +6,15 @@ type TOcrResponse = {
  data: string[];
 };
 
-const thunkOcrExtract = createAsyncThunk<string[], File, { rejectValue: string }>('ocr/thunkOcrExtract',
- async (file, thunkAPI) => {
+const thunkOcrExtract = createAsyncThunk<string[], File | File[], { rejectValue: string }>('ocr/thunkOcrExtract',
+ async (inputFiles, thunkAPI) => {
  const { rejectWithValue } = thunkAPI;
  try {
+ const files = Array.isArray(inputFiles) ? inputFiles : [inputFiles];
  const formData = new FormData();
+ files.forEach((file) => {
  formData.append('Images', file, file.name ||'document.pdf');
+ });
 
  const res = await api.post<TOcrResponse>('/Ocr/ocr', formData);
  return res.data.data ?? [];

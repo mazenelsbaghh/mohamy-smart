@@ -95,6 +95,27 @@ namespace Lawyer.Application.Services
 			if (requireGoogleVision && string.IsNullOrWhiteSpace(_googleVisionApiKey))
 				return ApiExceptionResponse.ServerError<List<string>>("خدمة Google Vision غير مفعلة على الخادم.");
 
+			var chargeLawyerId = await ResolveLawyerProfileIdAsync(userId, cancellationToken);
+			if (!chargeLawyerId.HasValue)
+			{
+				_logger.LogWarning("OCR extraction rejected because lawyer profile could not be resolved. UserId={UserId}", RedactForLog(userId ?? string.Empty));
+				return ApiExceptionResponse.Unauthorized<List<string>>("تعذر تحديد حساب المحامي لاستخدام OCR.");
+			}
+
+			var ocrCost = _pointAccounting.ResolvePointCost(AiStepType.Ocr);
+			var balanceResult = await _pointAccounting.GetCurrentBalanceAsync(chargeLawyerId.Value, cancellationToken);
+			if (!balanceResult.Succeeded || balanceResult.Data == null)
+			{
+				return Result<List<string>>.Error(balanceResult.StatusCode, balanceResult.Message);
+			}
+
+			if (ocrCost > 0 && balanceResult.Data.Available < ocrCost)
+			{
+				return Result<List<string>>.Error(
+					HttpStatusCode.PaymentRequired,
+					"رصيد النقاط غير كافٍ لاستخراج النص من المستندات.");
+			}
+
 			var extractedTexts = new List<string>();
 
 			foreach (var file in images)
@@ -170,6 +191,12 @@ namespace Lawyer.Application.Services
 			}
 
 			_logger.LogInformation("OCR extraction complete for {Count} files/pages", extractedTexts.Count);
+
+			var chargeResult = await ChargeOcrExtractionPointAsync(chargeLawyerId.Value, ocrCost, cancellationToken);
+			if (!chargeResult.Succeeded)
+			{
+				return Result<List<string>>.Error(chargeResult.StatusCode, chargeResult.Message);
+			}
 
 			return ApiExceptionResponse.Success(extractedTexts, "Text extracted successfully");
 		}
@@ -378,7 +405,8 @@ namespace Lawyer.Application.Services
 				return ApiExceptionResponse.Unauthorized<CaseExtractionResultDto>("تعذر تحديد حساب المحامي لاستخدام الذكاء الاصطناعي.");
 			}
 
-			var cost = _pointAccounting.ResolvePointCost(AiStepType.Ocr);
+			const AiStepType analysisStepType = AiStepType.DocumentCaseAnalysis;
+			var cost = _pointAccounting.ResolvePointCost(analysisStepType);
 			var balanceResult = await _pointAccounting.GetCurrentBalanceAsync(chargeLawyerId.Value, cancellationToken);
 			if (!balanceResult.Succeeded || balanceResult.Data == null)
 			{
@@ -412,7 +440,7 @@ namespace Lawyer.Application.Services
 			}
 
 			var aiProvider = _aiProviderFactory.GetProvider();
-			var ocrModel = await _aiProviderFactory.GetModelForStepAsync(AiStepType.Ocr);
+			var analysisModel = await _aiProviderFactory.GetModelForStepAsync(analysisStepType);
 			var aiResult = await aiProvider.SendChatCompletionAsync(
 				finalPrompt,
 				"استخرج بيانات القضية بناءً على التعليمات الموضحة وأعد كائن JSON كامل.",
@@ -420,7 +448,7 @@ namespace Lawyer.Application.Services
 				{
 					Temperature = 0,
 					MaxTokens = AIRequestOptions.GeminiMaxOutputTokens,
-					Model = ocrModel
+					Model = analysisModel
 				},
 				cancellationToken);
 
@@ -436,11 +464,11 @@ namespace Lawyer.Application.Services
 			{
 				try
 				{
-						BackgroundJob.Enqueue<IAiUsageTrackingService>(s => s.RecordGeminiUsageAsync(chargeLawyerId.Value, null, AiStepType.Ocr, ocrModel, aiResult.Data.Usage, CancellationToken.None, null, null, null));
+						BackgroundJob.Enqueue<IAiUsageTrackingService>(s => s.RecordGeminiUsageAsync(chargeLawyerId.Value, null, analysisStepType, analysisModel, aiResult.Data.Usage, CancellationToken.None, null, null, null));
 				}
 				catch
 				{
-					await _trackingService.RecordGeminiUsageAsync(chargeLawyerId.Value, null, AiStepType.Ocr, ocrModel, aiResult.Data.Usage, CancellationToken.None);
+					await _trackingService.RecordGeminiUsageAsync(chargeLawyerId.Value, null, analysisStepType, analysisModel, aiResult.Data.Usage, CancellationToken.None);
 				}
 			}
 
@@ -459,7 +487,7 @@ namespace Lawyer.Application.Services
 						Type = typeNames?.FirstOrDefault() ?? string.Empty,
 					};
 
-					var fallbackChargeResult = await ChargeGenerateCasePointAsync(chargeLawyerId.Value, cost, cancellationToken);
+					var fallbackChargeResult = await ChargeGenerateCasePointAsync(chargeLawyerId.Value, analysisStepType, cost, cancellationToken);
 					if (!fallbackChargeResult.Succeeded)
 					{
 						return Result<CaseExtractionResultDto>.Error(fallbackChargeResult.StatusCode, fallbackChargeResult.Message);
@@ -474,7 +502,7 @@ namespace Lawyer.Application.Services
 
 				_logger.LogInformation("Case JSON generated successfully");
 
-				var caseChargeResult = await ChargeGenerateCasePointAsync(chargeLawyerId.Value, cost, cancellationToken);
+				var caseChargeResult = await ChargeGenerateCasePointAsync(chargeLawyerId.Value, analysisStepType, cost, cancellationToken);
 				if (!caseChargeResult.Succeeded)
 				{
 					return Result<CaseExtractionResultDto>.Error(caseChargeResult.StatusCode, caseChargeResult.Message);
@@ -500,7 +528,24 @@ namespace Lawyer.Application.Services
 			return lawyer?.Id;
 		}
 
-		private Task<Result<AiPointBalanceDto>> ChargeGenerateCasePointAsync(Guid lawyerId, int cost, CancellationToken cancellationToken)
+		private Task<Result<AiPointBalanceDto>> ChargeOcrExtractionPointAsync(Guid lawyerId, int cost, CancellationToken cancellationToken)
+		{
+			var message = cost == 0
+				? "تم استخراج النصوص من المستندات بنجاح دون خصم أي نقاط."
+				: $"تم خصم {cost} نقاط بعد استخراج النصوص من المستندات بنجاح.";
+
+			return _pointAccounting.ChargeSuccessfulDirectActionAsync(
+				lawyerId,
+				AiStepType.Ocr,
+				cost,
+				null,
+				"ocr-extraction",
+				null,
+				message,
+				cancellationToken);
+		}
+
+		private Task<Result<AiPointBalanceDto>> ChargeGenerateCasePointAsync(Guid lawyerId, AiStepType stepType, int cost, CancellationToken cancellationToken)
 		{
 			var message = cost == 0
 				? "تم تحليل المستند وإنشاء بيانات القضية بنجاح دون خصم أي نقاط."
@@ -508,7 +553,7 @@ namespace Lawyer.Application.Services
 
 			return _pointAccounting.ChargeSuccessfulDirectActionAsync(
 				lawyerId,
-				AiStepType.Ocr,
+				stepType,
 				cost,
 				null,
 				"ocr-generate-case",

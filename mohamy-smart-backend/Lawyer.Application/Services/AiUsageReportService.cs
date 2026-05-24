@@ -552,6 +552,9 @@ namespace Lawyer.Application.Services
             AiStepType.ClarifyFacts
                 => ("clarify-facts", "استيضاح الوقائع"),
 
+            AiStepType.DocumentCaseAnalysis
+                => ("document-case-analysis", "تحليل المستند وإنشاء القضية"),
+
             _ => null
         };
 
@@ -579,6 +582,7 @@ namespace Lawyer.Application.Services
 
             AiStepType.Ocr => "التعرف البصري OCR",
             AiStepType.ClarifyFacts => "استيضاح الوقائع",
+            AiStepType.DocumentCaseAnalysis => "تحليل المستند وإنشاء القضية",
             AiStepType.Chat => "المحادثة",
 
             AiStepType.AppealBriefJudgmentData => "استخراج بيانات الحكم",

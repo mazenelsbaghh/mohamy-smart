@@ -26,7 +26,7 @@ namespace Lawyer.Application.Services
         {
             return stepType switch
             {
-                AiStepType.Ocr => 0,
+                AiStepType.Ocr => 1,
                 _ => 1
             };
         }
