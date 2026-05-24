@@ -6,8 +6,10 @@ using Lawyer.Core.Exceptions;
 using Lawyer.Core.Enum;
 using Lawyer.Core.IRepositories;
 using Lawyer.Core.Models;
+using Lawyer.Application.Services.Workflows;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace Lawyer.Application.Services
 {
@@ -109,6 +111,17 @@ namespace Lawyer.Application.Services
 					IsActive = c.IsActive
 				})
 				.ToListAsync(cancellationToken);
+
+			var recentCaseWorkflowLookup = await GetCaseWorkflowLookupAsync(
+				recentCases.Select(c => c.Id).ToList(),
+				aiUsageIds,
+				cancellationToken);
+
+			foreach (var recentCase in recentCases)
+			{
+				if (recentCaseWorkflowLookup.TryGetValue(recentCase.Id, out var workflows))
+					recentCase.Workflows = workflows;
+			}
 
 			var recentReviews = await reviewsQuery
 				.OrderByDescending(r => r.Created)
@@ -415,6 +428,161 @@ namespace Lawyer.Application.Services
 				Price = subscription.Subscription?.Price ?? 0,
 				YearlyPrice = subscription.Subscription?.YearlyPrice
 			};
+		}
+
+		private async Task<Dictionary<Guid, List<AdminLawyerCaseWorkflowDto>>> GetCaseWorkflowLookupAsync(
+			IReadOnlyCollection<Guid> caseIds,
+			IReadOnlyCollection<Guid> aiUsageIds,
+			CancellationToken cancellationToken)
+		{
+			if (caseIds.Count == 0)
+			{
+				return new Dictionary<Guid, List<AdminLawyerCaseWorkflowDto>>();
+			}
+
+			var pipelines = PipelineRegistry.GetAll().ToList();
+			var pipelineByStep = pipelines
+				.SelectMany(p => p.Steps.Select((s, index) => new PipelineStepLookup(
+					s.StepType,
+					s.DisplayName,
+					p.Id,
+					p.Name,
+					index + 1)))
+				.GroupBy(x => x.StepType)
+				.ToDictionary(g => g.Key, g => g.First());
+
+			var jobs = await _unitOfWork.Repository<AiJob>()
+				.AsQueryable()
+				.AsNoTracking()
+				.Where(j => caseIds.Contains(j.CaseId))
+				.OrderByDescending(j => j.CreatedAt)
+				.ToListAsync(cancellationToken);
+
+			if (jobs.Count == 0)
+			{
+				return new Dictionary<Guid, List<AdminLawyerCaseWorkflowDto>>();
+			}
+
+			var usageRecords = await _unitOfWork.Repository<AiUsageRecord>()
+				.AsQueryable()
+				.AsNoTracking()
+				.Where(a => a.CaseId.HasValue && caseIds.Contains(a.CaseId.Value) && aiUsageIds.Contains(a.LawyerId))
+				.ToListAsync(cancellationToken);
+
+			var usageLookup = usageRecords
+				.GroupBy(a => new
+				{
+					CaseId = a.CaseId!.Value,
+					a.AiStepType,
+					RunId = a.WorkflowRunId ?? string.Empty
+				})
+				.ToDictionary(
+					g => g.Key,
+					g => new
+					{
+						Tokens = g.Sum(a => a.TotalTokens),
+						Cost = g.Sum(a => a.EstimatedCostUsd),
+						Model = string.Join("، ", g.Select(a => a.ModelIdentifier).Where(m => !string.IsNullOrWhiteSpace(m)).Distinct())
+					});
+
+			return jobs
+				.GroupBy(j => j.CaseId)
+				.ToDictionary(
+					caseGroup => caseGroup.Key,
+					caseGroup => caseGroup
+						.Select(job =>
+						{
+							pipelineByStep.TryGetValue(job.StepType, out var pipeline);
+							var workflowKey = !string.IsNullOrWhiteSpace(job.WorkflowType)
+								? job.WorkflowType!
+								: pipeline?.WorkflowKey ?? job.StepType.ToString();
+							var workflowName = pipeline?.WorkflowName ?? workflowKey;
+
+							return new { Job = job, WorkflowKey = workflowKey, WorkflowName = workflowName };
+						})
+						.GroupBy(x => new { x.WorkflowKey, x.WorkflowName, RunId = x.Job.RunId ?? string.Empty })
+						.Select(workflowGroup =>
+						{
+							var steps = workflowGroup
+								.OrderBy(x => x.Job.StepNumber ?? GetStepOrder(x.Job.StepType, pipelineByStep))
+								.ThenBy(x => x.Job.CreatedAt)
+								.Select(x =>
+								{
+									pipelineByStep.TryGetValue(x.Job.StepType, out var pipeline);
+									var usageKey = new
+									{
+										CaseId = x.Job.CaseId,
+										AiStepType = x.Job.StepType,
+										RunId = x.Job.RunId ?? string.Empty
+									};
+									usageLookup.TryGetValue(usageKey, out var usage);
+
+									return new AdminLawyerCaseWorkflowStepDto
+									{
+										StepType = x.Job.StepType,
+										StepName = pipeline?.StepName ?? x.Job.StepType.ToString(),
+										Status = x.Job.Status.ToString(),
+										ModelIdentifier = usage?.Model,
+										TotalTokens = usage?.Tokens ?? 0,
+										EstimatedCostUsd = usage?.Cost ?? 0,
+										CreatedAt = x.Job.CreatedAt,
+										CompletedAt = x.Job.CompletedAt,
+										HasOutput = !string.IsNullOrWhiteSpace(x.Job.ResultJson),
+										ResultPreview = BuildResultPreview(x.Job.ResultJson),
+										ErrorMessage = x.Job.ErrorMessage
+									};
+								})
+								.ToList();
+
+							return new AdminLawyerCaseWorkflowDto
+							{
+								WorkflowKey = workflowGroup.Key.WorkflowKey,
+								WorkflowName = workflowGroup.Key.WorkflowName,
+								WorkflowRunId = string.IsNullOrWhiteSpace(workflowGroup.Key.RunId) ? null : workflowGroup.Key.RunId,
+								RequestCount = steps.Count,
+								CompletedSteps = steps.Count(s => string.Equals(s.Status, AiJobStatus.Completed.ToString(), StringComparison.OrdinalIgnoreCase)),
+								FailedSteps = steps.Count(s => string.Equals(s.Status, AiJobStatus.Failed.ToString(), StringComparison.OrdinalIgnoreCase)),
+								TotalCostUsd = steps.Sum(s => s.EstimatedCostUsd),
+								TotalTokens = steps.Sum(s => s.TotalTokens),
+								Steps = steps
+							};
+						})
+						.OrderByDescending(w => w.TotalCostUsd)
+						.ThenBy(w => w.WorkflowName)
+						.ToList());
+		}
+
+		private static int GetStepOrder(
+			AiStepType stepType,
+			IReadOnlyDictionary<AiStepType, PipelineStepLookup> pipelineByStep)
+		{
+			return pipelineByStep.TryGetValue(stepType, out var pipeline) ? pipeline.StepNumber : (int)stepType;
+		}
+
+		private sealed record PipelineStepLookup(
+			AiStepType StepType,
+			string StepName,
+			string WorkflowKey,
+			string WorkflowName,
+			int StepNumber);
+
+		private static string? BuildResultPreview(string? resultJson)
+		{
+			if (string.IsNullOrWhiteSpace(resultJson))
+				return null;
+
+			var trimmed = resultJson.Trim();
+			try
+			{
+				using var document = JsonDocument.Parse(trimmed);
+				trimmed = JsonSerializer.Serialize(document.RootElement, JsonOptions.Serialize);
+			}
+			catch (JsonException)
+			{
+				// Keep the raw text when older jobs stored non-JSON output.
+			}
+
+			return trimmed.Length <= 700 ? trimmed : $"{trimmed[..700]}...";
 		}
 
 		private async Task<Dictionary<Guid, int>> GetPointUsageBySubscriptionAsync(

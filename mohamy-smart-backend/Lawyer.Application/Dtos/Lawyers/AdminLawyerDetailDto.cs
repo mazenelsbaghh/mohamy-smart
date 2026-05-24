@@ -101,6 +101,35 @@ public class AdminLawyerRecentCaseDto
     public CaseStatus Status { get; set; }
     public DateTime Created { get; set; }
     public bool IsActive { get; set; }
+    public List<AdminLawyerCaseWorkflowDto> Workflows { get; set; } = new();
+}
+
+public class AdminLawyerCaseWorkflowDto
+{
+    public string WorkflowKey { get; set; } = string.Empty;
+    public string WorkflowName { get; set; } = string.Empty;
+    public string? WorkflowRunId { get; set; }
+    public int RequestCount { get; set; }
+    public int CompletedSteps { get; set; }
+    public int FailedSteps { get; set; }
+    public decimal TotalCostUsd { get; set; }
+    public int TotalTokens { get; set; }
+    public List<AdminLawyerCaseWorkflowStepDto> Steps { get; set; } = new();
+}
+
+public class AdminLawyerCaseWorkflowStepDto
+{
+    public AiStepType StepType { get; set; }
+    public string StepName { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string? ModelIdentifier { get; set; }
+    public int TotalTokens { get; set; }
+    public decimal EstimatedCostUsd { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public bool HasOutput { get; set; }
+    public string? ResultPreview { get; set; }
+    public string? ErrorMessage { get; set; }
 }
 
 public class AdminLawyerRecentReviewDto

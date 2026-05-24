@@ -58,6 +58,34 @@ export type TRecentLawyerCase = {
  status: number;
  created: string;
  isActive: boolean;
+ workflows: TRecentLawyerCaseWorkflow[];
+};
+
+export type TRecentLawyerCaseWorkflow = {
+ workflowKey: string;
+ workflowName: string;
+ workflowRunId: string | null;
+ requestCount: number;
+ completedSteps: number;
+ failedSteps: number;
+ totalCostUsd: number;
+ totalTokens: number;
+ steps: TRecentLawyerCaseWorkflowStep[];
+};
+
+export type TRecentLawyerCaseWorkflowStep = {
+ aiStepType?: number;
+ stepType?: number;
+ stepName: string;
+ status: string;
+ modelIdentifier: string | null;
+ totalTokens: number;
+ estimatedCostUsd: number;
+ createdAt: string;
+ completedAt: string | null;
+ hasOutput: boolean;
+ resultPreview: string | null;
+ errorMessage: string | null;
 };
 
 export type TRecentLawyerReview = {

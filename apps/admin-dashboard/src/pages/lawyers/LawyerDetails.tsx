@@ -9,6 +9,8 @@ import {
  FaCalendarAlt,
  FaChartLine,
  FaCheckCircle,
+ FaChevronDown,
+ FaChevronUp,
  FaEnvelope,
  FaExternalLinkAlt,
  FaFileSignature,
@@ -65,6 +67,24 @@ const formatNumber = (value?: number | null) => numberFormatter.format(value ?? 
 const formatCost = (value?: number | null) => currencyFormatter.format(value ?? 0);
 
 const getCaseStatus = (status: number) => (status === 1 ?"مغلقة" :"مفتوحة");
+
+const getJobStatusLabel = (status: string) => {
+ const normalized = status.toLowerCase();
+ if (normalized ==="completed") return "مكتملة";
+ if (normalized ==="processing") return "قيد التنفيذ";
+ if (normalized ==="queued") return "في الانتظار";
+ if (normalized ==="failed") return "فشلت";
+ if (normalized ==="conflict") return "تعارض";
+ return status ||"غير محدد";
+};
+
+const getJobStatusTone = (status: string): Tone => {
+ const normalized = status.toLowerCase();
+ if (normalized ==="completed") return "success";
+ if (normalized ==="failed" || normalized ==="conflict") return "danger";
+ if (normalized ==="processing" || normalized ==="queued") return "warning";
+ return "neutral";
+};
 
 const translateReviewStatus = (status: string) => {
  const normalized = status.toLowerCase();
@@ -127,6 +147,7 @@ const LawyerDetails = () => {
  const navigate = useNavigate();
  const [manualReason, setManualReason] = useState("");
  const [manualReasonError, setManualReasonError] = useState<string | null>(null);
+ const [expandedCaseId, setExpandedCaseId] = useState<string | null>(null);
  const { selectedLawyer: lawyer, isLoadingDetail, isVerifyingPhone, isUpdatingStatus, error } = useAppSelector(
  (state) => state.lawyers
  );
@@ -134,6 +155,7 @@ const LawyerDetails = () => {
  useEffect(() => {
  if (id) {
  dispatch(fetchLawyerById(id));
+ setExpandedCaseId(null);
  }
  }, [dispatch, id]);
 
@@ -440,15 +462,88 @@ const LawyerDetails = () => {
  {lawyer.recentCases.length ? (
  <div className="rounded-lg border border-[var(--border-color)] bg-[var(--surface-color)] shadow-sm">
  {lawyer.recentCases.map((item) => (
- <div key={item.id} className="border-b border-[var(--border-color)] px-4 py-3 last:border-b-0">
+ <div key={item.id} className="border-b border-[var(--border-color)] last:border-b-0">
+ <button
+ type="button"
+ className="w-full px-4 py-3 text-right transition-colors hover:bg-[var(--surface-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--main-color)]/30"
+ onClick={() => setExpandedCaseId((current) => current === item.id ? null : item.id)}
+ aria-expanded={expandedCaseId === item.id}
+ >
  <div className="flex flex-wrap items-start justify-between gap-3">
  <div className="min-w-0">
+ <div className="flex flex-wrap items-center gap-2">
+ <span className="text-[var(--main-color)]">{expandedCaseId === item.id ? <FaChevronUp /> : <FaChevronDown />}</span>
  <p className="break-words text-sm font-bold text-[var(--text-primary)]">{item.title ||"قضية بدون عنوان"}</p>
+ </div>
  <p className="mt-1 break-words text-xs leading-6 text-[var(--text-secondary)]">{displayValue(item.number)}، {displayValue(item.court)}، {displayValue(item.clientName)}</p>
  </div>
+ <div className="flex flex-wrap items-center gap-2">
  <StatusBadge tone={item.isActive ?"success" :"neutral"}>{getCaseStatus(item.status)}</StatusBadge>
+ <StatusBadge tone={(item.workflows?.length ?? 0) > 0 ?"warning" :"neutral"}>
+ {formatNumber(item.workflows?.length ?? 0)} مسار
+ </StatusBadge>
+ </div>
  </div>
  <p className="mt-2 text-xs text-[var(--text-muted)]">{formatDate(item.created)}</p>
+ </button>
+
+ {expandedCaseId === item.id ? (
+ <div className="border-t border-[var(--border-color)] bg-[var(--surface-soft)] px-4 py-4">
+ {item.workflows?.length ? (
+ <div className="space-y-3">
+ {item.workflows.map((workflow) => (
+ <div key={`${workflow.workflowKey}-${workflow.workflowRunId ?? "legacy"}`} className="rounded-lg border border-[var(--border-color)] bg-[var(--surface-color)] p-3">
+ <div className="flex flex-wrap items-start justify-between gap-3">
+ <div>
+ <p className="text-sm font-bold text-[var(--text-primary)]">{workflow.workflowName}</p>
+ <p className="mt-1 text-xs text-[var(--text-secondary)]">
+ {formatNumber(workflow.completedSteps)} مكتملة من {formatNumber(workflow.requestCount)}، {formatNumber(workflow.totalTokens)} توكن، {formatCost(workflow.totalCostUsd)}
+ </p>
+ </div>
+ {workflow.failedSteps > 0 ? (
+ <StatusBadge tone="danger">{formatNumber(workflow.failedSteps)} فشل</StatusBadge>
+ ) : (
+ <StatusBadge tone="success">بدون أخطاء</StatusBadge>
+ )}
+ </div>
+
+ <div className="mt-3 space-y-2">
+ {workflow.steps.map((step, index) => (
+ <div key={`${workflow.workflowKey}-${step.stepType ?? step.aiStepType ?? index}-${step.createdAt}`} className="rounded-lg border border-[var(--border-color)] bg-[var(--surface-soft)] px-3 py-3">
+ <div className="flex flex-wrap items-start justify-between gap-3">
+ <div className="min-w-0">
+ <p className="break-words text-xs font-bold text-[var(--text-primary)]">{step.stepName}</p>
+ <p className="mt-1 text-xs leading-6 text-[var(--text-secondary)]">
+ {step.modelIdentifier ||"نموذج غير محدد"}، {formatNumber(step.totalTokens)} توكن، {formatCost(step.estimatedCostUsd)}
+ </p>
+ </div>
+ <StatusBadge tone={getJobStatusTone(step.status)}>{getJobStatusLabel(step.status)}</StatusBadge>
+ </div>
+ <div className="mt-2 flex flex-wrap gap-3 text-xs text-[var(--text-muted)]">
+ <span>بدأت: {formatDate(step.createdAt)}</span>
+ <span>اكتملت: {formatDate(step.completedAt)}</span>
+ </div>
+ {step.errorMessage ? (
+ <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs leading-6 text-red-700">{step.errorMessage}</p>
+ ) : null}
+ {step.resultPreview ? (
+ <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-[var(--border-color)] bg-[var(--surface-color)] px-3 py-2 text-xs leading-6 text-[var(--text-secondary)]">
+ {step.resultPreview}
+ </pre>
+ ) : (
+ <p className="mt-2 text-xs text-[var(--text-muted)]">لا توجد نتيجة محفوظة لهذه الخطوة.</p>
+ )}
+ </div>
+ ))}
+ </div>
+ </div>
+ ))}
+ </div>
+ ) : (
+ <EmptyState text="لم يتم تشغيل مسارات ذكاء على هذه القضية بعد" />
+ )}
+ </div>
+ ) : null}
  </div>
  ))}
  </div>
