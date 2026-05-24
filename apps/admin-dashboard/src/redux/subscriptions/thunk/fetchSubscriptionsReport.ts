@@ -6,6 +6,9 @@ export type TLawyerSubscription = {
  lawyerId: string;
  lawyerName: string;
  planName: string;
+ price: number;
+ isTrial: boolean;
+ isPaid: boolean;
  startDate: string;
  endDate: string;
  limit: number;
@@ -15,7 +18,7 @@ export type TLawyerSubscription = {
 
 const fetchSubscriptionsReport = createAsyncThunk<
  TLawyerSubscription[],
- { isActive?: boolean } | undefined,
+ { isActive?: boolean; isPaid?: boolean } | undefined,
  { rejectValue: string }
 >("subscriptions/fetchLawyerSubscriptions",
  async (params = {}, thunkAPI) => {
@@ -24,6 +27,7 @@ const fetchSubscriptionsReport = createAsyncThunk<
  const res = await api.get<{ data: TLawyerSubscription[] }>("/Subscription/lawyers", {
  params: {
  ...(params?.isActive !== undefined ? { isActive: params.isActive } : {}),
+ ...(params?.isPaid !== undefined ? { isPaid: params.isPaid } : {}),
  },
  });
  return res.data.data;

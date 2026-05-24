@@ -18,6 +18,9 @@ export type TSubscriptionsReport = {
  totalSubscriptions: number;
  totalActive: number;
  totalInactive: number;
+ totalPaid: number;
+ activePaid: number;
+ totalTrial: number;
  countPerPlan: TPlanCount[];
  totalRevenue: number;
  churnedSubscriptions: number;

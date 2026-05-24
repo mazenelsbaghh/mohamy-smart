@@ -19,7 +19,7 @@ namespace Lawyer.Application.IServices
 		Task<Result<string>> UseAiRequestAsync(Guid lawyerId, CancellationToken cancellationToken = default);
 
 		Task<Result<LawyerSubscriptionDto>> UpgradeSubscriptionAsync(Guid lawyerId, int newSubscriptionId, string billingCycle, CancellationToken cancellationToken);
-		Task<Result<List<LawyerSubscriptionDto>>> GetLawyersPlanAsync(bool? isActive, CancellationToken cancellationToken);
+		Task<Result<List<LawyerSubscriptionDto>>> GetLawyersPlanAsync(bool? isActive, bool? isPaid, CancellationToken cancellationToken);
 		Task<Result<SubscriptionDto>> EditPlanAsync(int id, UpdateSubscriptionDto dto, CancellationToken cancellationToken);
 		Task<Result<LawyerSubscriptionDto>> EditLawyerSubscriptionAsync(Guid lawyerSubscriptionId, CancellationToken cancellationToken);
 

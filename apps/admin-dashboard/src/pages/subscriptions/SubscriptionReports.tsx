@@ -25,13 +25,20 @@ const SubscriptionReports = () => {
  );
  const [statusFilter, setStatusFilter] = useState<string>("");
  const [planFilter, setPlanFilter] = useState<string>("");
+ const [subscriptionTypeFilter, setSubscriptionTypeFilter] = useState<string>("");
  const [searchQuery, setSearchQuery] = useState<string>("");
 
  useEffect(() => {
  const isActive =
  statusFilter ==="نشط" ? true : statusFilter ==="غير نشط" ? false : undefined;
- dispatch(fetchSubscriptionsReport(isActive !== undefined ? { isActive } : undefined));
- }, [dispatch, statusFilter]);
+ const isPaid =
+ subscriptionTypeFilter ==="paid" ? true : subscriptionTypeFilter ==="trial" ? false : undefined;
+ const params = {
+ ...(isActive !== undefined ? { isActive } : {}),
+ ...(isPaid !== undefined ? { isPaid } : {}),
+ };
+ dispatch(fetchSubscriptionsReport(Object.keys(params).length ? params : undefined));
+ }, [dispatch, statusFilter, subscriptionTypeFilter]);
 
  const filteredRecords = records.filter((r) => {
  const matchesPlan = planFilter ? r.planName === planFilter : true;
@@ -44,7 +51,7 @@ const SubscriptionReports = () => {
  const tableData = filteredRecords.map((r) => ({
  key: r.lawyerId,
  lawyerName: r.lawyerName ||"-",
- planName: r.planName === 'الباقة التجريبية' || r.planName === 'Free Trial' ? (
+ planName: r.isTrial ? (
     <div className="flex items-center gap-1.5 justify-start">
       <span>{r.planName}</span>
       <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--main-color)]/10 text-[var(--main-color)] font-medium">تجريبية</span>
@@ -83,6 +90,17 @@ const SubscriptionReports = () => {
  </div>
  <div className="w-40">
  <FilterSelect
+ label="نوع الاشتراك"
+ options={[
+ { value:"", label:"الكل" },
+ { value:"paid", label:"مدفوعة فقط" },
+ { value:"trial", label:"تجريبية فقط" }
+ ]}
+ onChange={(e) => setSubscriptionTypeFilter(e.target.value)}
+ />
+ </div>
+ <div className="w-40">
+ <FilterSelect
  label="الخطة"
  options={[
  { value:"", label:"الكل" },
@@ -100,7 +118,13 @@ const SubscriptionReports = () => {
   </div>
   ) : (
  <div className="w-full">
+ {tableData.length ? (
  <CustomTable data={tableData} columns={columns} />
+ ) : (
+ <div className="w-full rounded-xl border border-[var(--border-color,#1B1B1B15)] bg-[var(--card-bg,#FBFAE8)] p-6 text-center text-sm text-[var(--text-secondary)]">
+ لا توجد اشتراكات مطابقة للفلاتر الحالية
+ </div>
+ )}
  </div>
  )}
  </Container>

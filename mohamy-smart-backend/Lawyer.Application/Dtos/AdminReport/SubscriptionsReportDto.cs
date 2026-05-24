@@ -5,6 +5,9 @@ namespace Lawyer.Application.Dtos.AdminReport
 		public int TotalSubscriptions { get; set; }
 		public int TotalActive { get; set; }
 		public int TotalInactive { get; set; }
+		public int TotalPaid { get; set; }
+		public int ActivePaid { get; set; }
+		public int TotalTrial { get; set; }
 		public List<PlanCountDto> CountPerPlan { get; set; } = new();
 		public decimal TotalRevenue { get; set; }
 		public int ChurnedSubscriptions { get; set; }

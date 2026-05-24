@@ -129,9 +129,9 @@ namespace Lawyer.Controllers
 
 		[Authorize(Roles = "Admin")]
 		[HttpGet("lawyers")]
-		public async Task<IActionResult> GetLawyersPlan([FromQuery] bool? isActive, CancellationToken cancellationToken)
+		public async Task<IActionResult> GetLawyersPlan([FromQuery] bool? isActive, [FromQuery] bool? isPaid, CancellationToken cancellationToken)
 		{
-			var result = await _subscriptionService.GetLawyersPlanAsync(isActive, cancellationToken);
+			var result = await _subscriptionService.GetLawyersPlanAsync(isActive, isPaid, cancellationToken);
 			return CreateResponse(result);
 		}
 

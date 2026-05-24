@@ -15,6 +15,7 @@ import { Link } from"react-router-dom";
 import { GoArrowLeft } from"react-icons/go";
 
 import fetchSubscriptionsReport from"../../redux/reports/thunk/fetchSubscriptionsReport";
+import fetchLawyerSubscriptions from"../../redux/subscriptions/thunk/fetchSubscriptionsReport";
 import api from"../../APIs/api";
 import SkeletonStatsCards from"../../components/skeleton/SkeletonStatsCards";
 import SkeletonTable from"../../components/skeleton/SkeletonTable";
@@ -37,12 +38,13 @@ const Subscriptions = () => {
 
  useEffect(() => {
  dispatch(fetchSubscriptionsReport({}));
+ dispatch(fetchLawyerSubscriptions({ isPaid: true }));
  }, [dispatch]);
 
  const tableData = records.slice(0, 5).map((r) => ({
  key: r.lawyerId,
  lawyerName: r.lawyerName ||"-",
- planName: r.planName === 'الباقة التجريبية' || r.planName === 'Free Trial' ? (
+ planName: r.isTrial ? (
     <div className="flex items-center gap-1.5 justify-start">
       <span>{r.planName}</span>
       <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--main-color)]/10 text-[var(--main-color)] font-medium">تجريبية</span>
@@ -94,19 +96,19 @@ const Subscriptions = () => {
  icon: <RiExchangeDollarLine />,
  iconColor:"#8B5CF6",
  text:"إجمالي الاشتراكات",
- number: subscriptionsReport?.totalSubscriptions ?? 0,
+ number: subscriptionsReport?.totalPaid ?? 0,
  }}
  card2={{
  icon: <IoMdCheckmarkCircleOutline />,
  iconColor:"#34BF49",
- text:"الاشتراكات النشطة",
- number: subscriptionsReport?.totalActive ?? 0,
+ text:"المدفوعة النشطة",
+ number: subscriptionsReport?.activePaid ?? 0,
  }}
  card3={{
  icon: <IoCloseCircleOutline />,
  iconColor:"#06B6D4",
- text:"المنتهية الصلاحية",
- number: subscriptionsReport?.totalInactive ?? 0,
+ text:"الاشتراكات التجريبية",
+ number: subscriptionsReport?.totalTrial ?? 0,
  }}
  />
  <SubTitle title="لوحة الأرباح"
@@ -130,7 +132,7 @@ const Subscriptions = () => {
  </div>
  </CustomCard>
  <div className="w-full mt-12">
- <SubTitle title="آخر الاشتراكات"
+ <SubTitle title="آخر الاشتراكات المدفوعة"
  components={
  <Link to="/subscriptions/subscription-reports" className="sub-title-link">
  التفاصيل
@@ -138,7 +140,13 @@ const Subscriptions = () => {
  </Link>
  }
  />
+ {tableData.length ? (
  <CustomTable data={tableData} columns={columns} />
+ ) : (
+ <div className="w-full rounded-xl border border-[var(--border-color,#1B1B1B15)] bg-[var(--card-bg,#FBFAE8)] p-6 text-center text-sm text-[var(--text-secondary)]">
+ لا توجد اشتراكات مدفوعة حالية
+ </div>
+ )}
  </div>
  </Container>
  </section>

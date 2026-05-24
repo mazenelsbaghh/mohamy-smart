@@ -57,6 +57,9 @@ namespace Lawyer.Application.Dtos
 		public Guid LawyerId { get; set; }
 		public string LawyerName { get; set; } = string.Empty;
 		public string PlanName { get; set; } = string.Empty;
+		public decimal Price { get; set; }
+		public bool IsTrial { get; set; }
+		public bool IsPaid { get; set; }
 		public DateTime StartDate { get; set; }
 		public DateTime EndDate { get; set; }
 		public int UsedAiRequests { get; set; }

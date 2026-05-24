@@ -1,6 +1,6 @@
+using Lawyer.Application.Common;
 using Lawyer.Application.Dtos.AdminReport;
 using Lawyer.Application.IServices;
-using Lawyer.Core.Enum;
 using Lawyer.Core.Enum;
 using Lawyer.Core.Exceptions;
 using Lawyer.Core.IRepositories;
@@ -99,6 +99,9 @@ namespace Lawyer.Application.Services
 
 		var total = subscriptions.Count;
 		var active = subscriptions.Count(s => s.IsActive);
+		var totalPaid = subscriptions.Count(s => SubscriptionPlanClassifier.IsPaid(s.Subscription));
+		var activePaid = subscriptions.Count(s => s.IsActive && SubscriptionPlanClassifier.IsPaid(s.Subscription));
+		var totalTrial = subscriptions.Count(s => SubscriptionPlanClassifier.IsTrial(s.Subscription));
 
 		var countPerPlan = subscriptions
 			.GroupBy(s => s.Subscription.Name)
@@ -140,6 +143,9 @@ namespace Lawyer.Application.Services
 			TotalSubscriptions = total,
 			TotalActive = active,
 			TotalInactive = total - active,
+			TotalPaid = totalPaid,
+			ActivePaid = activePaid,
+			TotalTrial = totalTrial,
 			CountPerPlan = countPerPlan,
 			TotalRevenue = totalRevenue,
 			ChurnedSubscriptions = churned,

@@ -150,16 +150,13 @@ namespace Lawyer.Application.Services
 			if (lawyer == null)
 				return ApiExceptionResponse.NotFound<LawyerSubscriptionDto>("Lawyer not found");
 
-			const string trialPlanName = "الباقة التجريبية";
-			const string legacyTrialPlanName = "Free Trial";
-
-			if (plan.Name == trialPlanName || plan.Name == legacyTrialPlanName)
+			if (SubscriptionPlanClassifier.IsTrial(plan))
 			{
 				var existingTrialSub = await _unitOfWork.Repository<LawyerSubscription>()
 					.AsQueryable()
 					.IgnoreQueryFilters()
 					.Include(ls => ls.Subscription)
-					.FirstOrDefaultAsync(ls => ls.LawyerId == lawyerId && (ls.Subscription.Name == trialPlanName || ls.Subscription.Name == legacyTrialPlanName), cancellationToken);
+					.FirstOrDefaultAsync(ls => ls.LawyerId == lawyerId && (ls.Subscription.Price <= 0 || ls.Subscription.Name == SubscriptionPlanClassifier.TrialPlanName || ls.Subscription.Name == SubscriptionPlanClassifier.LegacyTrialPlanName), cancellationToken);
 
 				if (existingTrialSub != null)
 				{
@@ -219,11 +216,16 @@ namespace Lawyer.Application.Services
 					cancellationToken);
 			}
 
+			var isTrial = SubscriptionPlanClassifier.IsTrial(plan);
+
 			return ApiExceptionResponse.Success(new LawyerSubscriptionDto
 			{
 				LawyerId = lawyerId,
 				LawyerName = lawyer.ApplicationUser?.FullName ?? string.Empty,
 				PlanName = plan.Name,
+				Price = plan.Price,
+				IsTrial = isTrial,
+				IsPaid = !isTrial,
 				StartDate = newSub.StartDate,
 				EndDate = newSub.EndDate,
 				UsedAiRequests = newSub.UsedAiRequests,
@@ -240,10 +242,15 @@ namespace Lawyer.Application.Services
 			if (sub == null)
 				return ApiExceptionResponse.NotFound<LawyerSubscriptionDto>("No active subscription found");
 
+			var isTrial = SubscriptionPlanClassifier.IsTrial(sub.Subscription);
+
 			return ApiExceptionResponse.Success(new LawyerSubscriptionDto
 			{
 				LawyerId = lawyerId,
 				PlanName = sub.Subscription.Name,
+				Price = sub.Subscription.Price,
+				IsTrial = isTrial,
+				IsPaid = !isTrial,
 				StartDate = sub.StartDate,
 				EndDate = sub.EndDate,
 				UsedAiRequests = await ResolveUsedAiRequestsAsync(sub, cancellationToken),
@@ -276,17 +283,24 @@ namespace Lawyer.Application.Services
 
 
 
-		public async Task<Result<List<LawyerSubscriptionDto>>> GetLawyersPlanAsync(bool? isActive, CancellationToken cancellationToken)
+		public async Task<Result<List<LawyerSubscriptionDto>>> GetLawyersPlanAsync(bool? isActive, bool? isPaid, CancellationToken cancellationToken)
 		{
-			var query = _unitOfWork.Repository<LawyerSubscription>()
+			IQueryable<LawyerSubscription> query = _unitOfWork.Repository<LawyerSubscription>()
 				.AsQueryable()
-				.AsNoTracking();
+				.AsNoTracking()
+				.Include(x => x.Subscription);
 
 			if (isActive.HasValue)
 				query = query.Where(x => x.IsActive == isActive.Value);
 
+			if (isPaid.HasValue)
+			{
+				query = isPaid.Value
+					? query.Where(x => x.Subscription.Price > 0 && x.Subscription.Name != SubscriptionPlanClassifier.TrialPlanName && x.Subscription.Name != SubscriptionPlanClassifier.LegacyTrialPlanName)
+					: query.Where(x => x.Subscription.Price <= 0 || x.Subscription.Name == SubscriptionPlanClassifier.TrialPlanName || x.Subscription.Name == SubscriptionPlanClassifier.LegacyTrialPlanName);
+			}
+
 			var subscriptions = await query
-				.Include(x => x.Subscription)
 				.Include(x => x.Lawyer)
 					.ThenInclude(l => l.ApplicationUser)
 				.ToListAsync(cancellationToken);
@@ -296,6 +310,9 @@ namespace Lawyer.Application.Services
 				LawyerId = sub.LawyerId,
 				LawyerName = sub.Lawyer.ApplicationUser.FullName,
 				PlanName = sub.Subscription.Name,
+				Price = sub.Subscription.Price,
+				IsTrial = SubscriptionPlanClassifier.IsTrial(sub.Subscription),
+				IsPaid = SubscriptionPlanClassifier.IsPaid(sub.Subscription),
 				StartDate = sub.StartDate,
 				EndDate = sub.EndDate,
 				UsedAiRequests = sub.UsedAiRequests,
