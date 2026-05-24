@@ -38,6 +38,8 @@ type TInitialState = {
  plans: TSubscriptionPlan[];
  lawyerPlan: TLawyerPlan | null;
  loading: TLoading;
+ plansLoading: TLoading;
+ lawyerPlanLoading: TLoading;
  error: string | null;
 
  activePaymentUrl: string | null;
@@ -53,6 +55,8 @@ const initialState: TInitialState = {
  plans: [],
  lawyerPlan: null,
  loading:'idle',
+ plansLoading:'idle',
+ lawyerPlanLoading:'idle',
  error: null,
  activePaymentUrl: null,
  activePaymentId: null,
@@ -78,14 +82,17 @@ const subscriptionSlice = createSlice({
  // Get Subscription Plans
  .addCase(thunkGetSubscriptionPlans.pending, (state) => {
  state.loading ='pending';
+ state.plansLoading ='pending';
  state.error = null;
  })
  .addCase(thunkGetSubscriptionPlans.fulfilled, (state, action) => {
  state.loading ='succeeded';
+ state.plansLoading ='succeeded';
  state.plans = action.payload;
  })
  .addCase(thunkGetSubscriptionPlans.rejected, (state, action) => {
  state.loading ='failed';
+ state.plansLoading ='failed';
  if (isString(action.payload)) {
  state.error = action.payload;
  }
@@ -94,14 +101,17 @@ const subscriptionSlice = createSlice({
  // get Lawyer Plan
  .addCase(thunkGetLawyerPlan.pending, (state) => {
  state.loading ='pending';
+ state.lawyerPlanLoading ='pending';
  state.error = null;
  })
  .addCase(thunkGetLawyerPlan.fulfilled, (state, action) => {
  state.loading ='succeeded';
+ state.lawyerPlanLoading ='succeeded';
  state.lawyerPlan = action.payload;
  })
  .addCase(thunkGetLawyerPlan.rejected, (state, action) => {
  state.loading ='failed';
+ state.lawyerPlanLoading ='failed';
  if (isString(action.payload)) {
  state.error = action.payload;
  }

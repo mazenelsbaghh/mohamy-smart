@@ -28,7 +28,7 @@ type TSubscription = {
 
 const Subscription = ({ user }: TSubscription) => {
  const dispatch = useAppDispatch();
- const { plans, lawyerPlan, loading, paymentLoading, aiPointBalance, aiPointHistory } = useAppSelector((state) => state.subscription);
+ const { plans, lawyerPlan, lawyerPlanLoading, plansLoading, paymentLoading, aiPointBalance, aiPointHistory } = useAppSelector((state) => state.subscription);
  const [searchParams, setSearchParams] = useSearchParams();
 
  const [isModalOpen, setIsModalOpen] = useState(false);
@@ -93,9 +93,9 @@ const Subscription = ({ user }: TSubscription) => {
  {/* Current Plan */}
  <SubTitle title='خطتك الحالية' />
 
- {loading ==='pending' && <SkeletonCardsList />}
+ {lawyerPlanLoading ==='pending' && <SkeletonCardsList />}
 
- {!lawyerPlan && loading !=='pending' && (
+ {!lawyerPlan && lawyerPlanLoading !=='pending' && (
  <p className='text-[var(--text-color)] text-lg my-4'>
  أنت غير مشترك في أي خطة حاليًا
  </p>
@@ -176,7 +176,9 @@ const Subscription = ({ user }: TSubscription) => {
  بعد نجاح الدفع وتفعيل الباقة سنرسل رسالة تأكيد الاشتراك إلى بريدك الإلكتروني المسجل.
  </p>
 
- {plans.length > 0 && (
+ {plansLoading ==='pending' && <SkeletonCardsList />}
+
+ {plansLoading !=='pending' && plans.length > 0 && (
  <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
  {plans.map((plan) => (
  <div

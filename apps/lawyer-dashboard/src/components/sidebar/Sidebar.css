@@ -188,8 +188,8 @@ aside .drag-box svg {
         left: 0;
         top: 0%;
         width: 100%;
-        height: auto;
-        max-height: 85vh;
+        height: 100dvh;
+        max-height: 100dvh;
         background-color: var(--surface-color);
         display: flex;
         flex-direction: column;
@@ -200,9 +200,10 @@ aside .drag-box svg {
         border-bottom: 1px solid var(--border-color);
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
         padding: 24px 20px;
-        overflow-y: auto;
+        overflow: hidden;
         overflow-x: hidden;
         overscroll-behavior: contain;
+        touch-action: pan-y;
         gap: 16px;
     }
 
@@ -251,9 +252,15 @@ aside .drag-box svg {
         flex-direction: column;
         gap: 16px;
         padding: 0;
-        flex: 0 1 auto;
-        max-height: none;
-        overflow: visible;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
+        scrollbar-width: thin;
+        scrollbar-color: var(--main-color) transparent;
     }
 
     aside nav ul,
@@ -266,8 +273,21 @@ aside .drag-box svg {
         padding: 0 !important;
         margin: 0 !important;
         border-radius: 0 !important;
-        overflow: visible !important;
+        overflow: visible;
         backdrop-filter: none !important;
+    }
+
+    aside nav::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    aside nav::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    aside nav::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--main-color) 65%, transparent);
     }
 
     aside nav ul {

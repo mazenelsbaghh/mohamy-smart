@@ -505,17 +505,17 @@ const Documents = () => {
  onChange={handleFileChange}
  aria-label="اختيار صور المستندات"
  />
- <div className="flex items-center gap-5">
- <div className="icon">
- <FiUpload />
- </div>
- <div className="text">
- <h3>ارفع مستند القضية وسنحوّله إلى قضية ذكية</h3>
- <p>ارفع صورة أو ملف PDF أو Word لأي مستند قانوني (صحيفة دعوى، حكم، محضر…)</p>
- <p style={{ marginTop:'4px', fontSize:'0.8rem' }}>سيقوم النظام تلقائيًا باستخراج النص من المستند، ثم يمكنك تحليله بالذكاء الاصطناعي وإنشاء قضية جديدة من محتواه مباشرةً.</p>
- <p style={{ marginTop:'4px', fontSize:'0.8rem', opacity: 0.7 }}>الصيغ المدعومة: JPG، PNG، WEBP، PDF، DOCX</p>
- </div>
- </div>
+  <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-right gap-5 w-full max-w-3xl px-4 justify-center md:justify-start">
+  <div className="icon">
+  <FiUpload />
+  </div>
+  <div className="text">
+  <h3>ارفع مستند القضية وسنحوّله إلى قضية ذكية</h3>
+  <p>ارفع صورة أو ملف PDF أو Word لأي مستند قانوني (صحيفة دعوى، حكم، محضر…)</p>
+  <p style={{ marginTop:'4px', fontSize:'0.8rem' }}>سيقوم النظام تلقائيًا باستخراج النص من المستند، ثم يمكنك تحليله بالذكاء الاصطناعي وإنشاء قضية جديدة من محتواه مباشرةً.</p>
+  <p style={{ marginTop:'4px', fontSize:'0.8rem', opacity: 0.7 }}>الصيغ المدعومة: JPG، PNG، WEBP، PDF، DOCX</p>
+  </div>
+  </div>
  <div className="btn mt-10 w-full flex flex-col sm:flex-row justify-center gap-3 px-4">
  <CustomButton
  type='button'

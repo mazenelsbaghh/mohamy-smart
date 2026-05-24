@@ -6,7 +6,7 @@
   position: fixed;
   left: 1rem;
   bottom: 1rem;
-  z-index: 2147482500;
+  z-index: 40;
   min-height: 2.65rem;
   display: inline-flex;
   align-items: center;

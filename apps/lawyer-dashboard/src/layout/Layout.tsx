@@ -59,7 +59,7 @@ const Layout = () => {
  <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-[var(--surface-color)] focus:text-[var(--title-color)] dark:focus:bg-[#1a1d24] dark:focus:text-white focus:rounded shadow-lg">
  تخطي إلى المحتوى الرئيسي
  </a>
- <div className="sidebar-box">
+ <div className={`sidebar-box ${isSidebarOpen ? 'open' : 'closed'}`}>
  <Sidebar />
  </div>
  {/* Mobile backdrop */}

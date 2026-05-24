@@ -21,7 +21,7 @@ const FEATURE_DESCRIPTIONS: Record<string, string> = {'10 ساعات تحليل 
 const Subscription = () => {
  const dispatch = useAppDispatch();
   usePageTitle('الاشتراك');
- const { plans, lawyerPlan, paymentLoading, activePaymentUrl, loading } = useAppSelector(s => s.subscription);
+ const { plans, lawyerPlan, paymentLoading, activePaymentUrl, plansLoading } = useAppSelector(s => s.subscription);
  const { user } = useAppSelector(s => s.auth);
 
 
@@ -170,7 +170,7 @@ const Subscription = () => {
  </div>
 
  {/* Plans Grid */}
- {loading === 'pending' ? (
+ {plansLoading === 'pending' ? (
  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
  {[1, 2, 3].map(i => (
  <div key={i} className="min-h-[500px] rounded-3xl bg-[var(--surface-muted)] dark:bg-white/5 animate-pulse" />
