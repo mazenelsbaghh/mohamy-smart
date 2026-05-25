@@ -1,6 +1,5 @@
 using System;
 using System.Text;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Lawyer.Application.IServices;
@@ -40,55 +39,27 @@ namespace Lawyer.Infrastructure.Services
                 var client = _httpClientFactory.CreateClient("PlusSms");
                 _logger.LogInformation("Sending OTP SMS to {Phone} via {Url}", normalizedPhone, _settings.BaseUrl);
 
-                // 1. Try POST (FormUrlEncoded)
-                var dict = new System.Collections.Generic.Dictionary<string, string>
+                var query =
+                    $"username={Uri.EscapeDataString(_settings.Username)}" +
+                    $"&password={Uri.EscapeDataString(_settings.Password)}" +
+                    $"&sendername={Uri.EscapeDataString(_settings.SenderName)}" +
+                    $"&message={Uri.EscapeDataString(message)}" +
+                    $"&mobiles={Uri.EscapeDataString(normalizedPhone)}";
+
+                var separator = _settings.BaseUrl.Contains('?') ? "&" : "?";
+                var requestUri = $"{_settings.BaseUrl}{separator}{query}";
+
+                using var response = await client.GetAsync(requestUri, cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
                 {
-                    { "username", _settings.Username },
-                    { "password", _settings.Password },
-                    { "sendername", _settings.SenderName },
-                    { "message", message },
-                    { "mobiles", normalizedPhone }
-                };
-
-                using var postContent = new System.Net.Http.FormUrlEncodedContent(dict);
-                using var postResponse = await client.PostAsync(_settings.BaseUrl, postContent, cancellationToken);
-
-                System.Net.Http.HttpResponseMessage finalResponse = postResponse;
-
-                // 2. Fallback to GET if POST is not allowed/supported (e.g., 405 Method Not Allowed)
-                if (postResponse.StatusCode == HttpStatusCode.MethodNotAllowed || 
-                    postResponse.StatusCode == HttpStatusCode.NotFound || 
-                    postResponse.StatusCode == HttpStatusCode.BadRequest)
-                {
-                    _logger.LogWarning("OTP SMS POST failed with status {StatusCode}, falling back to GET...", postResponse.StatusCode);
-                    
-                    var query =
-                        $"username={Uri.EscapeDataString(_settings.Username)}" +
-                        $"&password={Uri.EscapeDataString(_settings.Password)}" +
-                        $"&sendername={Uri.EscapeDataString(_settings.SenderName)}" +
-                        $"&message={Uri.EscapeDataString(message)}" +
-                        $"&mobiles={Uri.EscapeDataString(normalizedPhone)}";
-
-                    var separator = _settings.BaseUrl.Contains('?') ? "&" : "?";
-                    var requestUri = $"{_settings.BaseUrl}{separator}{query}";
-
-                    finalResponse = await client.GetAsync(requestUri, cancellationToken);
-                }
-
-                if (!finalResponse.IsSuccessStatusCode)
-                {
-                    _logger.LogWarning("OTP SMS failed for {BusinessId} with status {StatusCode}", relatedBusinessId, finalResponse.StatusCode);
+                    _logger.LogWarning("OTP SMS failed for {BusinessId} with status {StatusCode}", relatedBusinessId, response.StatusCode);
                     return false;
                 }
 
-                var body = await finalResponse.Content.ReadAsStringAsync(cancellationToken);
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogInformation("OTP SMS sent for {BusinessId}. Provider response: {ResponseBody}", relatedBusinessId, body);
-                
-                if (finalResponse != postResponse)
-                {
-                    finalResponse.Dispose();
-                }
-                
+
                 return true;
             }
             catch (Exception ex)
