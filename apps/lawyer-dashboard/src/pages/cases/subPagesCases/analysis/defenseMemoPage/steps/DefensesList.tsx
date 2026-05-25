@@ -63,6 +63,19 @@ type CompletedDefenseAnalysisPayload = {
  };
 };
 
+const makeLocalDefenseId = (
+ item: Pick<TDefense, 'id' | 'defenseTitle'>,
+ categoryTone: TDefenseWithCategory['categoryTone'],
+ index: number,
+) => {
+ if (item.id?.trim()) return item.id;
+ const normalizedTitle = item.defenseTitle
+ .trim()
+ .replace(/\s+/g, '-')
+ .slice(0, 48);
+ return `local-${categoryTone}-${index}-${normalizedTitle || 'untitled'}`;
+};
+
 const getCompletedDefenseAnalysis = (resultJson: string | null | undefined) => {
  const parsed = parseWorkflowJobResult<CompletedDefenseAnalysisPayload>(resultJson);
  if (!parsed) return null;
@@ -133,17 +146,19 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
 
  const allDefenses = useMemo<TDefenseWithCategory[]>(() => {
  if (!defenses) return [];
- const enrich = (
- items: TDefense[] | undefined | null,
- categoryLabel: string,
- categoryTone:'formal' |'substantive' |'evidentiary',
- baseScore: number,
- ) => (items ?? []).map((item, index) => ({
- ...item,
- categoryLabel,
- categoryTone,
- matchScore: Math.max(66, Math.min(baseScore - index * 6, 98)),
- }));
+	 const enrich = (
+	 items: TDefense[] | undefined | null,
+	 categoryLabel: string,
+	 categoryTone:'formal' |'substantive' |'evidentiary',
+	 baseScore: number,
+	 ) => (items ?? []).map((item, index) => ({
+	 ...item,
+	 id: makeLocalDefenseId(item, categoryTone, index),
+	 isLocal: item.isLocal || !item.id?.trim(),
+	 categoryLabel,
+	 categoryTone,
+	 matchScore: Math.max(66, Math.min(baseScore - index * 6, 98)),
+	 }));
  return [
  ...enrich(defenses.defensesFormal,'دفع شكلي','formal', 98),
  ...enrich(defenses.defensesSubstantive,'دفع موضوعي','substantive', 90),
@@ -304,11 +319,12 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  categoryTone:'substantive' as const,
  matchScore: 80,
  isLocal: defenseId.startsWith('local-'),
- } : null);
- if (!target) return;
- setIsLoading(true);
- try {
- dispatch(clearDefenseAnalysis({ defenseId }));
+	 } : null);
+	 if (!target) return;
+	 setActiveDefenseId(defenseId);
+	 setIsLoading(true);
+	 try {
+	 dispatch(clearDefenseAnalysis({ defenseId }));
  await dispatch(thunkSubmitAiJob({
  caseId,
  stepType:'AnalysisDefense',
@@ -320,9 +336,8 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  basisFromCase: target.basisFromCase,
  scope: target.scope,
  })
- })).unwrap();
- setActiveDefenseId(defenseId);
- } catch (error) {
+	 })).unwrap();
+	 } catch (error) {
  sileo.error({ title: `حدث خطأ: ${typeof error ==='string' ? error :'مشكلة بالاتصال'}` });
  } finally {
  setIsLoading(false);
