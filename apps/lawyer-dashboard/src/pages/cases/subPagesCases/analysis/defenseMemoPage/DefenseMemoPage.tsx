@@ -6,6 +6,8 @@ import { useAppDispatch, useAppSelector } from '../../../../../hooks/reduxHooks'
 import {
   hydrateStep,
   resetAnalysis,
+  setCurrentAccessibleStep,
+  setLastCompletedStep,
   smartAnalysisThunks,
   abandonSmartAnalysisWorkflow,
   restoreWorkflowSnapshot as restoreSnapshot,
@@ -280,6 +282,12 @@ const DefenseMemoPage = () => {
     } catch { /* ignore */ }
   }, [dispatch, orchestratorState.caseId, orchestratorState.outputs, caseId]);
 
+  const goToDefenses = useCallback(() => {
+    dispatch(setCurrentAccessibleStep(Math.max(orchestratorState.currentAccessibleStep ?? 0, 2)));
+    dispatch(setLastCompletedStep(Math.max(orchestratorState.lastCompletedStep ?? 0, 2)));
+    setActive(2);
+  }, [dispatch, orchestratorState.currentAccessibleStep, orchestratorState.lastCompletedStep, setActive]);
+
   const renderedStep = [
     <AnalysisFactsSelectionStep
       key="facts"
@@ -294,7 +302,7 @@ const DefenseMemoPage = () => {
       onStart={handleStartFactAnalysis}
       isStarting={isFactJobActive}
     />,
-    <LegalAnalysis key="analysis" finalFacts={finalFacts} caseFacts={facts} goToDefenses={() => setActive(2)} caseId={caseId} />,
+    <LegalAnalysis key="analysis" finalFacts={finalFacts} caseFacts={facts} goToDefenses={goToDefenses} caseId={caseId} />,
     <DefensesList
       key="defenses"
       caseId={caseId}

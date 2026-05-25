@@ -469,6 +469,8 @@ export const {
  addDefense,
  restoreWorkflowSnapshot,
  clearDefenseAnalysis,
+ setCurrentAccessibleStep,
+ setLastCompletedStep,
 } = smartAnalysisSlice.actions;
 
 export default smartAnalysisSlice.reducer;
