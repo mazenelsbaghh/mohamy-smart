@@ -1,4 +1,5 @@
 using Hangfire;
+using Lawyer.Application.Common;
 using Lawyer.Application.Dtos.SmartAnalysis;
 using Lawyer.Application.IServices;
 using Lawyer.Application.IServices.AI;
@@ -61,6 +62,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 request.InternalRegulationIds ??= new List<Guid>();
                 var selectedRegulations = await LoadSelectedInternalRegulationsAsync(lawyerId, request.InternalRegulationIds, cancellationToken);
                 var selectedRegulationsContext = BuildSelectedInternalRegulationsContext(selectedRegulations);
+                var caseContext = await BuildCaseContextForChatAsync(lawyerId, request.ContextCaseId, cancellationToken);
 
                 var systemPrompt = $"""
                     أنت المساعد القانوني الذكي الرسمي لمنصة محامي سمارت.
@@ -82,6 +84,12 @@ namespace Lawyer.Application.Services.SmartAnalysis
                     - إذا وُجد سياق بعنوان "اللوائح الداخلية المختارة للشات"، فاجعل الإجابة مبنية على هذه اللوائح قدر الإمكان.
                     - عند الاستناد إلى لائحة مختارة، اذكر اسم اللائحة أو رقمها داخل الإجابة.
                     - إذا كان السؤال خارج نطاق اللائحة المختارة، وضح ذلك وبيّن ما يمكن استخلاصه من اللائحة فقط.
+
+                    قواعد سياق القضية:
+                    - إذا وُجد سياق بعنوان "بيانات القضية الحالية"، فالتزم به في تحديد موكل المكتب والطرف الذي يجب حماية موقفه.
+                    - ممنوع تقديم صياغة أو نصيحة تضر بالطرف الذي يجب حماية موقفه في القضية الحالية.
+
+                    {caseContext}
 
                     {selectedRegulationsContext}
                     """;
@@ -243,6 +251,26 @@ namespace Lawyer.Application.Services.SmartAnalysis
             }
 
             return sb.ToString().Trim();
+        }
+
+        private async Task<string> BuildCaseContextForChatAsync(Guid lawyerId, Guid? caseId, CancellationToken cancellationToken)
+        {
+            if (caseId == null || caseId == Guid.Empty)
+                return string.Empty;
+
+            var caseEntity = await _unitOfWork.Repository<Core.Models.Case>()
+                .AsQueryable()
+                .AsNoTracking()
+                .Include(c => c.CaseType)
+                .Where(c =>
+                    c.Id == caseId.Value &&
+                    (c.LawyerId == lawyerId || c.Lawyer.ApplicationUserId == lawyerId))
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (caseEntity == null)
+                return string.Empty;
+
+            return $"بيانات القضية الحالية:\n{AnalysisHelpers.BuildCaseContext(caseEntity, caseEntity.CaseType?.Title)}";
         }
     }
 }

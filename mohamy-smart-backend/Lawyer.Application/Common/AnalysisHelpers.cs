@@ -161,12 +161,26 @@ namespace Lawyer.Application.Common
         public static string BuildCaseContext(Case c, string? caseTypeName = null)
         {
             var sb = new StringBuilder();
+            var clientName = string.IsNullOrWhiteSpace(c.ClientName) ? "غير محدد" : c.ClientName.Trim();
+            var opponentName = string.IsNullOrWhiteSpace(c.ApponentName) ? "غير محدد" : c.ApponentName.Trim();
+            var defendingParty = NormalizeDefendingParty(c.DefendingParty);
+            var representedPartyName = defendingParty == "opponent" ? opponentName : clientName;
+            var opposingPartyName = defendingParty == "opponent" ? clientName : opponentName;
+
+            sb.AppendLine("تعليمات تمثيل إلزامية:");
+            sb.AppendLine($"- موكل المكتب/المحامي المسجل في القضية: {clientName}");
+            sb.AppendLine($"- الخصم/الطرف المقابل المسجل في القضية: {opponentName}");
+            sb.AppendLine($"- الطرف الذي يجب حماية موقفه والدفاع عنه في هذا المسار: {representedPartyName}");
+            sb.AppendLine($"- الطرف المقابل لهذا المسار: {opposingPartyName}");
+            sb.AppendLine("- لا تنشئ دفوعًا أو طلبات أو صياغات تضر بالطرف الذي يجب حماية موقفه.");
+            sb.AppendLine();
+
             if (!string.IsNullOrWhiteSpace(c.ClientName))
                 sb.AppendLine($"اسم الموكل: {c.ClientName}");
             if (!string.IsNullOrWhiteSpace(c.ApponentName))
                 sb.AppendLine($"اسم الجهة أو الخصم: {c.ApponentName}");
             if (!string.IsNullOrWhiteSpace(c.DefendingParty))
-                sb.AppendLine($"الطرف المُمَثَّل: {(c.DefendingParty == "client" ? "الموكل (مدعي/مدعى عليه)" : c.DefendingParty)}");
+                sb.AppendLine($"الطرف المُمَثَّل: {(defendingParty == "client" ? $"الموكل ({clientName})" : $"الخصم/الطرف الآخر ({opponentName})")}");
             if (!string.IsNullOrWhiteSpace(c.Number))
                 sb.AppendLine($"رقم القضية: {c.Number}");
             if (!string.IsNullOrWhiteSpace(c.Court))
@@ -187,6 +201,9 @@ namespace Lawyer.Application.Common
                 sb.AppendLine(c.InternalRegulationsContext);
             return sb.ToString().Trim();
         }
+
+        private static string NormalizeDefendingParty(string? value)
+            => string.Equals(value, "opponent", StringComparison.OrdinalIgnoreCase) ? "opponent" : "client";
         public static string BuildPreviousStepsContext<TWorkflow>(TWorkflow workflow, int currentStep) where TWorkflow : WorkflowBase
         {
             var sb = new StringBuilder();

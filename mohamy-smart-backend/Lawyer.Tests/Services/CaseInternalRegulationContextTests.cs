@@ -43,4 +43,41 @@ public class CaseInternalRegulationContextTests
         context.Should().Contain("نوع القضية (حسب اختيار المحامي): القانون المدني");
         context.Should().NotContain("اللوائح الداخلية المرتبطة بالقضية");
     }
+
+    [Fact]
+    public void BuildCaseContext_ForClientDefense_IncludesExplicitRepresentationGuard()
+    {
+        var caseEntity = new Case
+        {
+            ClientName = "أحمد",
+            ApponentName = "شركة النور",
+            DefendingParty = "client"
+        };
+
+        var context = AnalysisHelpers.BuildCaseContext(caseEntity, "مدني");
+
+        context.Should().Contain("موكل المكتب/المحامي المسجل في القضية: أحمد");
+        context.Should().Contain("الخصم/الطرف المقابل المسجل في القضية: شركة النور");
+        context.Should().Contain("الطرف الذي يجب حماية موقفه والدفاع عنه في هذا المسار: أحمد");
+        context.Should().Contain("الطرف المقابل لهذا المسار: شركة النور");
+        context.Should().Contain("لا تنشئ دفوعًا أو طلبات أو صياغات تضر بالطرف الذي يجب حماية موقفه");
+    }
+
+    [Fact]
+    public void BuildCaseContext_ForOpponentDefense_UsesOpponentAsRepresentedParty()
+    {
+        var caseEntity = new Case
+        {
+            ClientName = "أحمد",
+            ApponentName = "شركة النور",
+            DefendingParty = "opponent"
+        };
+
+        var context = AnalysisHelpers.BuildCaseContext(caseEntity, "مدني");
+
+        context.Should().Contain("موكل المكتب/المحامي المسجل في القضية: أحمد");
+        context.Should().Contain("الطرف الذي يجب حماية موقفه والدفاع عنه في هذا المسار: شركة النور");
+        context.Should().Contain("الطرف المقابل لهذا المسار: أحمد");
+        context.Should().Contain("الطرف المُمَثَّل: الخصم/الطرف الآخر (شركة النور)");
+    }
 }

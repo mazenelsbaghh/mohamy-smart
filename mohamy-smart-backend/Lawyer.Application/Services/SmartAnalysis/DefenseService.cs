@@ -1110,12 +1110,13 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 defendingParty = request.DefendingParty == "client" ? "الموكل" : "الخصم",
                 defendedName,
                 opposingName,
+                representationInstruction = $"اكتب لصالح {defendedName} وضد موقف {opposingName}. لا تدرج أي طلب أو إقرار أو صياغة تضر بموقف {defendedName}.",
                 legalFactsSummary = request.LegalFactsSummary,
                 defendantsPositions = request.DefendantsPositions,
                 finalRequests = request.FinalRequests
             };
 
-            return "اكتب أجزاء إطار مذكرة الدفاع فقط بناءً على البيانات التالية. لا تكتب أي دفوع ولا تضع عنوان الدفاع:\n"
+            return "اكتب أجزاء إطار مذكرة الدفاع فقط بناءً على البيانات التالية. التزم بالطرف الذي نمثله ولا تكتب أي صياغة ضده. لا تكتب أي دفوع ولا تضع عنوان الدفاع:\n"
                 + JsonSerializer.Serialize(input, CamelCaseOptions);
         }
 
@@ -1136,14 +1137,16 @@ namespace Lawyer.Application.Services.SmartAnalysis
                     clientName = request.ClientName,
                     opponentName = request.ApponentName,
                     defendingParty = request.DefendingParty == "client" ? "الموكل" : "الخصم",
-                    defendedName = ResolveDefendedName(request)
+                    defendedName = ResolveDefendedName(request),
+                    opposingName = request.DefendingParty == "client" ? request.ApponentName : request.ClientName,
+                    representationInstruction = $"اكتب هذا الدفع لصالح {ResolveDefendedName(request)} فقط، ولا تعرضه كدفع لصالح الطرف المقابل."
                 },
                 legalFactsSummary = request.LegalFactsSummary,
                 defendantsPositions = request.DefendantsPositions,
                 defense
             };
 
-            return "اكتب HTML دفع واحد فقط، ولا تكتب المقدمة أو الوقائع أو الطلبات أو الخاتمة. البيانات:\n"
+            return "اكتب HTML دفع واحد فقط لصالح الطرف الذي نمثله، ولا تكتب المقدمة أو الوقائع أو الطلبات أو الخاتمة. البيانات:\n"
                 + JsonSerializer.Serialize(input, CamelCaseOptions);
         }
 
