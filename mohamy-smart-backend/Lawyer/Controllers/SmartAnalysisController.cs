@@ -157,7 +157,6 @@ namespace Lawyer.Controllers
         }
 
         [Authorize]
-        [CheckAiQuota]
         [HttpPost("chat")]
         public async Task<IActionResult> Chat([FromBody] ChatRequestDto dto, CancellationToken cancellationToken)
         {

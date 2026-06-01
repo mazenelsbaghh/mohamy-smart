@@ -1,6 +1,6 @@
 # mohamy smart Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-05-24
+Auto-generated from all feature plans. Last updated: 2026-06-01
 
 ## Active Technologies
 - TypeScript 5.x / React 19 for lawyer dashboard; C# / .NET 9 for backend services + Redux Toolkit, React Router 7, HeroUI, SignalR client, Axios, Hangfire, EF Core 9, SQL Server, System.Text.Json (068-workflow-start-resume)
@@ -29,6 +29,8 @@ Auto-generated from all feature plans. Last updated: 2026-05-24
 - SQL Server 2022; existing `AspNetUsers` plus new `ManualPhoneVerificationAudits` table (079-admin-phone-verify)
 - C# / .NET 9 backend; TypeScript 5.x / React 19 admin dashboard + ASP.NET Core Authorization, EF Core 9, SQL Server, Redux Toolkit, Axios, HeroUI/shared UI, Tailwind CSS 4, react-icons (080-paid-subscription-management)
 - Existing SQL Server tables only: `LawyerSubscriptions`, `Subscriptions`, `Payments`, `Lawyers`, `AspNetUsers` (080-paid-subscription-management)
+- C# / .NET 9 backend; TypeScript 5.x / React 19 lawyer dashboard remains unchanged + ASP.NET Core Authorization, EF Core 9, System.Text.Json, existing AI provider factory, existing AI usage tracking, existing AI point accounting (081-chat-free-quota)
+- Existing SQL Server tables `AiUsageRecords`, `AiPointTransactions`, `LawyerSubscriptions`, `Subscriptions`; no new table required (081-chat-free-quota)
 
 - TypeScript 5.x / React 19 + Redux Toolkit, React Router 7, HeroUI, Tailwind CSS 4 (065-unify-workflow-arch)
 
@@ -48,9 +50,9 @@ npm test && npm run lint
 TypeScript 5.x / React 19: Follow standard conventions
 
 ## Recent Changes
+- 081-chat-free-quota: Added C# / .NET 9 backend; TypeScript 5.x / React 19 lawyer dashboard remains unchanged + ASP.NET Core Authorization, EF Core 9, System.Text.Json, existing AI provider factory, existing AI usage tracking, existing AI point accounting
 - 080-paid-subscription-management: Added C# / .NET 9 backend; TypeScript 5.x / React 19 admin dashboard + ASP.NET Core Authorization, EF Core 9, SQL Server, Redux Toolkit, Axios, HeroUI/shared UI, Tailwind CSS 4, react-icons
 - 079-admin-phone-verify: Added C# / .NET 9 backend; TypeScript 5.x / React 19 admin dashboard + ASP.NET Core Authorization, EF Core 9, SQL Server, System.Text.Json, Redux Toolkit, Axios, HeroUI, Tailwind CSS 4, react-hot-toast
-- 078-mobile-web-parity: Added Dart 3.11.0 with Flutter 3.41.0; existing backend C#/.NET 9 remains the API source of truth + Flutter Material, flutter_localizations, http, signalr_netcore, logging, flutter_test; add secure/local storage and mobile file/share helpers only where a story requires them
 
 
 <!-- MANUAL ADDITIONS START -->

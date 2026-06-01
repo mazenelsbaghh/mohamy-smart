@@ -157,6 +157,44 @@ namespace Lawyer.Application.Services
             return Result<AiPointBalanceDto>.Success(ToBalance(subscription));
         }
 
+        public async Task<Result<AiPointBalanceDto>> RecordNoChargeDirectActionAsync(
+            Guid lawyerId,
+            AiStepType stepType,
+            Guid? caseId,
+            string? workflowType,
+            string? workflowRunId,
+            string messageAr,
+            CancellationToken ct)
+        {
+            var subscription = await GetActiveSubscriptionAsync(lawyerId, ct);
+            if (subscription == null || subscription.EndDate < DateTime.UtcNow)
+            {
+                return Result<AiPointBalanceDto>.Success(
+                    new AiPointBalanceDto(0, 0, 0, 0, false, messageAr),
+                    messageAr);
+            }
+
+            _db.AiPointTransactions.Add(new AiPointTransaction
+            {
+                LawyerId = lawyerId,
+                LawyerSubscriptionId = subscription.Id,
+                AiJobId = null,
+                CaseId = caseId,
+                WorkflowType = workflowType,
+                WorkflowRunId = workflowRunId,
+                StepType = stepType,
+                TransactionType = AiPointTransactionType.NoCharge,
+                Points = 0,
+                BalanceBefore = subscription.UsedAiRequests,
+                BalanceAfter = subscription.UsedAiRequests,
+                ReasonCode = AiPointReasonCode.Success,
+                MessageAr = messageAr
+            });
+
+            await _db.SaveChangesAsync(ct);
+            return Result<AiPointBalanceDto>.Success(ToBalance(subscription), messageAr);
+        }
+
         public async Task<Result<AiChargeMetadataDto>> ChargeSuccessfulJobAsync(AiJob job, Guid lawyerId, CancellationToken ct)
         {
             if (job.PointCost <= 0)

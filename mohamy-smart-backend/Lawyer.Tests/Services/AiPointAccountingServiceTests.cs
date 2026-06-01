@@ -114,6 +114,54 @@ public class AiPointAccountingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task RecordNoChargeDirectActionAsync_ShouldWriteNoChargeTransactionWithoutChangingUsedPoints()
+    {
+        var lawyerId = Guid.NewGuid();
+        var subscription = new Subscription
+        {
+            Id = 101,
+            Name = "تجريبية",
+            AiRequestsLimit = 111,
+            DurationDays = 30
+        };
+        var lawyerSubscription = new LawyerSubscription
+        {
+            Id = Guid.NewGuid(),
+            LawyerId = lawyerId,
+            SubscriptionId = subscription.Id,
+            Subscription = subscription,
+            UsedAiRequests = 7,
+            StartDate = DateTime.UtcNow.AddDays(-5),
+            EndDate = DateTime.UtcNow.AddDays(25),
+            IsActive = true
+        };
+
+        _dbContext.Subscriptions.Add(subscription);
+        _dbContext.LawyerSubscriptions.Add(lawyerSubscription);
+        await _dbContext.SaveChangesAsync();
+
+        var result = await _sut.RecordNoChargeDirectActionAsync(
+            lawyerId,
+            AiStepType.Chat,
+            null,
+            "SmartChat",
+            Guid.NewGuid().ToString(),
+            "رسالة مجانية",
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        var dbSub = await _dbContext.LawyerSubscriptions.FirstAsync(s => s.LawyerId == lawyerId);
+        dbSub.UsedAiRequests.Should().Be(7);
+
+        var transaction = await _dbContext.AiPointTransactions.SingleAsync(t => t.LawyerId == lawyerId);
+        transaction.StepType.Should().Be(AiStepType.Chat);
+        transaction.TransactionType.Should().Be(AiPointTransactionType.NoCharge);
+        transaction.Points.Should().Be(0);
+        transaction.BalanceBefore.Should().Be(7);
+        transaction.BalanceAfter.Should().Be(7);
+    }
+
+    [Fact]
     public async Task ChargeSuccessfulJobAsync_ShouldResetUsedPointsToZero_IfLimitExceeded()
     {
         // Arrange
