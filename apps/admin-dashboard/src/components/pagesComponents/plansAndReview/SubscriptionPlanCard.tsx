@@ -12,6 +12,7 @@ type TSubscriptionPlanCard = {
   price: number,
   yearlyPrice?: number | null,
   duration: string,
+  aiRequestsLimit: number,
   features: string[],
   isActive?: boolean,
   };
@@ -43,6 +44,9 @@ const SubscriptionPlanCard = ({ plan, onEdit, onArchive, onRestore }: TSubscript
   {plan.yearlyPrice != null && plan.yearlyPrice > 0 && (
   <h3><span>{plan.yearlyPrice}</span> / ج.م سنوياً</h3>
   )}
+  <p className="mt-3 text-sm font-semibold text-[var(--main-color)]">
+    {plan.aiRequestsLimit} نقطة ذكاء اصطناعي
+  </p>
  <ul>
  {plan.features.map((feature, idx) => (
  <li key={idx}>
