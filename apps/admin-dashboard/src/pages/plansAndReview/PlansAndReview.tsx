@@ -23,7 +23,7 @@ type AiPlanPath = {
 };
 
 const AI_PLAN_PATHS: AiPlanPath[] = [
- { label:"التحليل الذكي ومذكرة الدفاع", steps: 5 },
+ { label:"التحليل الذكي ومذكرة الدفاع", steps: 12 },
  { label:"إعداد الدعوى", steps: 5 },
  { label:"صحيفة الطعن", steps: 6 },
  { label:"الشكاوى الإدارية", steps: 5 },
