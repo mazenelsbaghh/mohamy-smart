@@ -56,10 +56,14 @@ namespace Lawyer.Application.Services
 	UserType? filterByUserType,
 	int pageNumber,
 	int pageSize,
+	string? search,
+	bool? isActive,
+	bool? subscriptionIsActive,
 	CancellationToken cancellationToken)
 		{
 			if (pageNumber <= 0) pageNumber = 1;
 			pageSize = PaginationDefaults.ClampPageSize(pageSize);
+			var normalizedSearch = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
 
 			var query = _unitOfWork.Repository<ApplicationUser>()
 				.AsQueryable()
@@ -80,6 +84,31 @@ namespace Lawyer.Application.Services
 					UserType.Admin => query.Where(u => u.UserType == UserType.Admin),
 					_ => query
 				};
+			}
+
+			if (isActive.HasValue)
+			{
+				query = query.Where(u => u.IsActive == isActive.Value);
+			}
+
+			if (subscriptionIsActive.HasValue)
+			{
+				query = subscriptionIsActive.Value
+					? query.Where(u => u.Lawyer != null && u.Lawyer.LawyerSubscriptions.Any(ls => ls.IsActive))
+					: query.Where(u => u.Lawyer != null && !u.Lawyer.LawyerSubscriptions.Any(ls => ls.IsActive));
+			}
+
+			if (!string.IsNullOrWhiteSpace(normalizedSearch))
+			{
+				query = query.Where(u =>
+					(u.FullName != null && EF.Functions.Like(u.FullName, $"%{normalizedSearch}%")) ||
+					(u.Email != null && EF.Functions.Like(u.Email, $"%{normalizedSearch}%")) ||
+					(u.PhoneNumber != null && EF.Functions.Like(u.PhoneNumber, $"%{normalizedSearch}%")) ||
+					(u.Lawyer != null && u.Lawyer.BarNumber != null && EF.Functions.Like(u.Lawyer.BarNumber, $"%{normalizedSearch}%")) ||
+					(u.Lawyer != null && u.Lawyer.Specialization != null && EF.Functions.Like(u.Lawyer.Specialization, $"%{normalizedSearch}%")) ||
+					(u.Lawyer != null && u.Lawyer.ExperienceNumber != null && EF.Functions.Like(u.Lawyer.ExperienceNumber, $"%{normalizedSearch}%")) ||
+					(u.Lawyer != null && u.Lawyer.LawFirmName != null && EF.Functions.Like(u.Lawyer.LawFirmName, $"%{normalizedSearch}%")) ||
+					(u.Lawyer != null && u.Lawyer.LawyerSubscriptions.Any(ls => ls.IsActive && EF.Functions.Like(ls.Subscription.Name, $"%{normalizedSearch}%"))));
 			}
 
 			query = query.OrderByDescending(u => u.CreatedAt);

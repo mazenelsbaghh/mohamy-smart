@@ -13,6 +13,7 @@ import updateLawyerStatus from "../../redux/lawyers/thunk/updateLawyerStatus";
 import fetchLawyersReport from "../../redux/reports/thunk/fetchLawyersReport";
 import SkeletonStatsCards from "../../components/skeleton/SkeletonStatsCards";
 import SkeletonTable from "../../components/skeleton/SkeletonTable";
+import AdminFilterToolbar from "../../components/adminFilters/AdminFilterToolbar";
 
 const columns = [
   { key: "fullName", label: "الاسم" },
@@ -28,7 +29,10 @@ const columns = [
 const Lawyers = () => {
   const dispatch = useAppDispatch();
   const [page, setPage] = useState(1);
-  const { list, isLoading, totalPages, isUpdatingStatus } = useAppSelector(
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [subscriptionFilter, setSubscriptionFilter] = useState("");
+  const { list, isLoading, totalPages, totalCount, isUpdatingStatus } = useAppSelector(
     (state) => state.lawyers
   );
   const { lawyersReport } = useAppSelector(
@@ -41,12 +45,24 @@ const Lawyers = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    dispatch(fetchLawyers({ pageNumber: page }));
-  }, [dispatch, page]);
+    const trimmedSearch = searchQuery.trim();
+    dispatch(fetchLawyers({
+      pageNumber: page,
+      search: trimmedSearch || undefined,
+      isActive: statusFilter === "active" ? true : statusFilter === "inactive" ? false : undefined,
+      subscriptionIsActive: subscriptionFilter === "active" ? true : subscriptionFilter === "inactive" ? false : undefined,
+    }));
+  }, [dispatch, page, searchQuery, statusFilter, subscriptionFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter, subscriptionFilter]);
 
   const handleToggleStatus = (id: string, currentIsActive: boolean) => {
     dispatch(updateLawyerStatus({ id, isActive: !currentIsActive }));
   };
+
+  const isFiltering = Boolean(searchQuery.trim() || statusFilter || subscriptionFilter);
 
   const tableData = lawyersList.map((l) => ({
     key: l.id,
@@ -148,6 +164,44 @@ const Lawyers = () => {
         />
 
         <SubTitle title="تقارير تفصيلية :" />
+        <AdminFilterToolbar
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="ابحث بالاسم، المكتب، البريد، الهاتف، رقم النقابة..."
+          totalCount={totalCount}
+          filteredCount={totalCount}
+          isFiltering={isFiltering}
+          onReset={() => {
+            setSearchQuery("");
+            setStatusFilter("");
+            setSubscriptionFilter("");
+            setPage(1);
+          }}
+          filters={[
+            {
+              key: "status",
+              label: "حالة الحساب",
+              value: statusFilter,
+              onChange: setStatusFilter,
+              options: [
+                { value: "", label: "الكل" },
+                { value: "active", label: "نشط" },
+                { value: "inactive", label: "موقوف" },
+              ],
+            },
+            {
+              key: "subscription",
+              label: "حالة الاشتراك",
+              value: subscriptionFilter,
+              onChange: setSubscriptionFilter,
+              options: [
+                { value: "", label: "الكل" },
+                { value: "active", label: "اشتراك نشط" },
+                { value: "inactive", label: "بدون اشتراك نشط" },
+              ],
+            },
+          ]}
+        />
         <div className="w-full">
           <ServerPaginationTable
             data={tableData}

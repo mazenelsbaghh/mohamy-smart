@@ -4,11 +4,10 @@ import { useAppDispatch, useAppSelector } from"../../redux/hooks";
 import HeadTitle from"../../components/public/headTitle/HeadTitle";
 import SubTitle from"../../components/public/subTitle/SubTitle";
 
-import { SearchInput } from'@mohamy/shared-ui';
-import { FilterSelect } from'@mohamy/shared-ui';
-
 import fetchSubscriptionsReport from"../../redux/subscriptions/thunk/fetchSubscriptionsReport";
 import SkeletonTable from"../../components/skeleton/SkeletonTable";
+import AdminFilterToolbar from"../../components/adminFilters/AdminFilterToolbar";
+import { recordMatchesAdminSearch } from"../../components/adminFilters/adminFilterUtils";
 
 const columns = [
  { key:"lawyerName", label:"اسم المستخدم" },
@@ -42,9 +41,12 @@ const SubscriptionReports = () => {
 
  const filteredRecords = records.filter((r) => {
  const matchesPlan = planFilter ? r.planName === planFilter : true;
- const matchesSearch = searchQuery
- ? (r.lawyerName?.toLowerCase().includes(searchQuery.toLowerCase()) || false)
- : true;
+ const matchesSearch = recordMatchesAdminSearch(searchQuery, [
+ r.lawyerName,
+ r.planName,
+ r.isActive ?"نشطة" :"منتهية",
+ r.isTrial ?"تجريبية" :"مدفوعة",
+ ]);
  return matchesPlan && matchesSearch;
  });
 
@@ -63,54 +65,61 @@ const SubscriptionReports = () => {
  }));
 
  const uniquePlans = [...new Set(records.map((r) => r.planName).filter(Boolean))];
+ const isFiltering = Boolean(searchQuery.trim() || statusFilter || planFilter || subscriptionTypeFilter);
 
  return (
  <section>
  <Container>
  <HeadTitle title="إدارة الاشتراكات" />
 
- <SubTitle title="تقارير تفصيلية :"
- components={
- <div className="flex flex-wrap gap-4">
- <SearchInput
- placeholder="ابحث باسم المستخدم..."
- value={searchQuery}
- onValueChange={setSearchQuery}
- />
- <div className="w-40">
- <FilterSelect
- label="الحالة"
- options={[
+ <SubTitle title="تقارير تفصيلية :" />
+ <AdminFilterToolbar
+ searchValue={searchQuery}
+ onSearchChange={setSearchQuery}
+ searchPlaceholder="ابحث باسم المستخدم أو الخطة..."
+ totalCount={records.length}
+ filteredCount={filteredRecords.length}
+ isFiltering={isFiltering}
+ onReset={() => {
+ setSearchQuery("");
+ setStatusFilter("");
+ setSubscriptionTypeFilter("");
+ setPlanFilter("");
+ }}
+ filters={[
+ {
+ key:"status",
+ label:"الحالة",
+ value: statusFilter,
+ onChange: setStatusFilter,
+ options: [
  { value:"", label:"الكل" },
  { value:"نشط", label:"نشط" },
- { value:"غير نشط", label:"غير نشط" }
- ]}
- onChange={(e) => setStatusFilter(e.target.value)}
- />
- </div>
- <div className="w-40">
- <FilterSelect
- label="نوع الاشتراك"
- options={[
+ { value:"غير نشط", label:"غير نشط" },
+ ],
+ },
+ {
+ key:"type",
+ label:"نوع الاشتراك",
+ value: subscriptionTypeFilter,
+ onChange: setSubscriptionTypeFilter,
+ options: [
  { value:"", label:"الكل" },
  { value:"paid", label:"مدفوعة فقط" },
- { value:"trial", label:"تجريبية فقط" }
- ]}
- onChange={(e) => setSubscriptionTypeFilter(e.target.value)}
- />
- </div>
- <div className="w-40">
- <FilterSelect
- label="الخطة"
- options={[
+ { value:"trial", label:"تجريبية فقط" },
+ ],
+ },
+ {
+ key:"plan",
+ label:"الخطة",
+ value: planFilter,
+ onChange: setPlanFilter,
+ options: [
  { value:"", label:"الكل" },
- ...uniquePlans.map(p => ({ value: p, label: p }))
+ ...uniquePlans.map(p => ({ value: p, label: p })),
+ ],
+ },
  ]}
- onChange={(e) => setPlanFilter(e.target.value)}
- />
- </div>
- </div>
- }
  />
   {isLoading ? (
   <div className="w-full">

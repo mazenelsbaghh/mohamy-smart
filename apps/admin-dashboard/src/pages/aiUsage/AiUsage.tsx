@@ -17,6 +17,8 @@ import fetchAiUsageSummary from"../../redux/aiUsage/thunk/fetchAiUsageSummary";
 import fetchModelUsage from"../../redux/aiUsage/thunk/fetchModelUsage";
 import fetchLawyerUsage from"../../redux/aiUsage/thunk/fetchLawyerUsage";
 import"./AiUsage.css";
+import AdminFilterToolbar from"../../components/adminFilters/AdminFilterToolbar";
+import { recordMatchesAdminSearch } from"../../components/adminFilters/adminFilterUtils";
 
 const lawyerColumns = [
  { key:"lawyerName", label:"الاسم" },
@@ -43,6 +45,7 @@ const AiUsage = () => {
  const [localFrom, setLocalFrom] = useState(dateFrom ||"");
  const [localTo, setLocalTo] = useState(dateTo ||"");
  const [initialLoad, setInitialLoad] = useState(true);
+ const [searchQuery, setSearchQuery] = useState("");
 
  useEffect(() => {
  dispatch(fetchAiUsageSummary({ from: dateFrom || undefined, to: dateTo || undefined }));
@@ -59,7 +62,26 @@ const AiUsage = () => {
  dispatch(fetchLawyerUsage({ page: 1, pageSize: 50, from: localFrom || undefined, to: localTo || undefined }));
  };
 
- const lawyerTableData = lawyers.map((l) => ({
+ const filteredLawyers = lawyers.filter((l) =>
+ recordMatchesAdminSearch(searchQuery, [
+ l.lawyerName,
+ l.aiCostUsd,
+ l.ocrCostUsd,
+ l.totalCostUsd,
+ l.totalRequests,
+ ])
+ );
+
+ const filteredModelUsage = modelUsage.filter((m) =>
+ recordMatchesAdminSearch(searchQuery, [
+ m.displayName,
+ m.modelIdentifier,
+ m.requestCount,
+ m.totalCostUsd,
+ ])
+ );
+
+ const lawyerTableData = filteredLawyers.map((l) => ({
  key: String(l.lawyerId),
  lawyerName: (
  <span
@@ -75,12 +97,15 @@ const AiUsage = () => {
  totalRequests: l.totalRequests,
  }));
 
- const modelTableData = modelUsage.map((m, idx) => ({
+ const modelTableData = filteredModelUsage.map((m, idx) => ({
  key: String(m.modelIdentifier || idx),
  displayName: m.displayName || m.modelIdentifier,
  requestCount: m.requestCount,
  totalCostUsd: formatCost(m.totalCostUsd),
  }));
+ const totalBreakdownRows = lawyers.length + modelUsage.length;
+ const filteredBreakdownRows = filteredLawyers.length + filteredModelUsage.length;
+ const isFiltering = Boolean(searchQuery.trim());
 
  if (initialLoad && !summary) {
  return (
@@ -90,6 +115,16 @@ const AiUsage = () => {
  <div className="flex justify-center items-center min-h-[50vh]">
  <Spinner size="lg" color="primary" />
  </div>
+
+ <AdminFilterToolbar
+ searchValue={searchQuery}
+ onSearchChange={setSearchQuery}
+ searchPlaceholder="ابحث باسم المحامي أو النموذج..."
+ totalCount={totalBreakdownRows}
+ filteredCount={filteredBreakdownRows}
+ isFiltering={isFiltering}
+ onReset={() => setSearchQuery("")}
+ />
  </Container>
  </section>
  );

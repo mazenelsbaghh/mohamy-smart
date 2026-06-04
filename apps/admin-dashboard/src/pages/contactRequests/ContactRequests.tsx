@@ -3,10 +3,12 @@ import { useEffect, useState } from"react";
 import { useAppDispatch, useAppSelector } from"../../redux/hooks";
 import HeadTitle from"../../components/public/headTitle/HeadTitle";
 
-import { Spinner, Chip, Button, Select, SelectItem } from"@heroui/react";
+import { Spinner, Chip, Button } from"@heroui/react";
 
 import fetchContactRequests from"../../redux/contacts/thunk/fetchContactRequests";
 import updateContactStatus from"../../redux/contacts/thunk/updateContactStatus";
+import AdminFilterToolbar from"../../components/adminFilters/AdminFilterToolbar";
+import { recordMatchesAdminSearch } from"../../components/adminFilters/adminFilterUtils";
 
 const statusOptions = [
  { key:"", label:"الكل" },
@@ -27,6 +29,7 @@ const ContactRequests = () => {
  (state) => state.contacts
  );
  const [statusFilter, setStatusFilter] = useState<string>("");
+ const [searchQuery, setSearchQuery] = useState<string>("");
 
  useEffect(() => {
  dispatch(fetchContactRequests(statusFilter || undefined));
@@ -40,28 +43,43 @@ const ContactRequests = () => {
  dispatch(fetchContactRequests(statusFilter || undefined));
  };
 
+ const filteredContacts = contacts.filter((contact) =>
+ recordMatchesAdminSearch(searchQuery, [
+ contact.name,
+ contact.phone,
+ contact.message,
+ statusLabelMap[contact.status] || contact.status,
+ ])
+ );
+
+ const isFiltering = Boolean(searchQuery.trim() || statusFilter);
+
  return (
  <section className="pb-20">
  <Container>
  <HeadTitle title="طلبات التواصل" />
 
- <div className="flex justify-between items-center mb-6">
- <div className="w-48">
- <Select
- label="تصفية حسب الحالة"
- selectedKeys={new Set([statusFilter])}
- onSelectionChange={(keys) => {
- const val = Array.from(keys)[0] as string;
- setStatusFilter(val ||"");
+ <AdminFilterToolbar
+ searchValue={searchQuery}
+ onSearchChange={setSearchQuery}
+ searchPlaceholder="ابحث بالاسم، الهاتف، الرسالة..."
+ totalCount={contacts.length}
+ filteredCount={filteredContacts.length}
+ isFiltering={isFiltering}
+ onReset={() => {
+ setSearchQuery("");
+ setStatusFilter("");
  }}
- size="sm"
- >
- {statusOptions.map((opt) => (
- <SelectItem key={opt.key}>{opt.label}</SelectItem>
- ))}
- </Select>
- </div>
- </div>
+ filters={[
+ {
+ key:"status",
+ label:"الحالة",
+ value: statusFilter,
+ onChange: setStatusFilter,
+ options: statusOptions.map((option) => ({ value: option.key, label: option.label })),
+ },
+ ]}
+ />
 
  {isLoading && contacts.length === 0 ? (
  <div className="flex justify-center items-center min-h-[50vh]">
@@ -84,6 +102,10 @@ const ContactRequests = () => {
  <p className="text-sm app-text-subtle">جرب تغيير فلتر الحالة</p>
  )}
  </div>
+ ) : filteredContacts.length === 0 ? (
+ <div className="flex flex-col items-center justify-center min-h-[30vh] gap-2">
+ <p className="text-lg app-text-subtle">لا توجد طلبات مطابقة للفلاتر الحالية</p>
+ </div>
  ) : (
  <CustomTable
  columns={[
@@ -94,7 +116,7 @@ const ContactRequests = () => {
  { key:"status", label:"الحالة" },
  { key:"actions", label:"الإجراءات" },
  ]}
- data={contacts.map(contact => ({
+ data={filteredContacts.map(contact => ({
  key: contact.id,
  name: contact.name,
  phone: <span dir="ltr">{contact.phone}</span>,

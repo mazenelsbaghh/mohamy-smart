@@ -1,5 +1,5 @@
 import { Container, CustomTable } from'@mohamy/shared-ui';
-import { useEffect } from"react";
+import { useEffect, useState } from"react";
 import { useAppDispatch, useAppSelector } from"../../redux/hooks";
 
 import HeadTitle from"../../components/public/headTitle/HeadTitle";
@@ -10,6 +10,8 @@ import { Spinner } from"@heroui/react";
 import { FaShieldAlt, FaEnvelope, FaLock, FaExclamationTriangle } from"react-icons/fa";
 import fetchAccountMessagingAudit from"../../redux/reports/thunk/fetchAccountMessagingAudit";
 import type { TOtpAuditEntry, TEmailAuditEntry } from"../../redux/reports/thunk/fetchAccountMessagingAudit";
+import AdminFilterToolbar from"../../components/adminFilters/AdminFilterToolbar";
+import { recordMatchesAdminSearch } from"../../components/adminFilters/adminFilterUtils";
 
 const statusColor = (status: string) => {
  switch (status) {
@@ -52,12 +54,44 @@ const eventTypeLabel = (eventType: string) => {
 const AccountMessagingReport = () => {
  const dispatch = useAppDispatch();
  const { accountMessagingAudit, isLoadingAccountMessaging } = useAppSelector((state) => state.reports);
+ const [otpSearchQuery, setOtpSearchQuery] = useState("");
+ const [otpStatusFilter, setOtpStatusFilter] = useState("");
+ const [emailSearchQuery, setEmailSearchQuery] = useState("");
+ const [emailStatusFilter, setEmailStatusFilter] = useState("");
 
  useEffect(() => {
  dispatch(fetchAccountMessagingAudit());
  }, [dispatch]);
 
- const otpTableData = (accountMessagingAudit?.recentOtpEvents ?? []).map((e: TOtpAuditEntry) => ({
+ const otpEvents = accountMessagingAudit?.recentOtpEvents ?? [];
+ const emailEvents = accountMessagingAudit?.recentEmailEvents ?? [];
+ const filteredOtpEvents = otpEvents.filter((e: TOtpAuditEntry) => {
+ const matchesStatus = otpStatusFilter ? e.status === otpStatusFilter : true;
+ const matchesSearch = recordMatchesAdminSearch(otpSearchQuery, [
+ e.userName,
+ purposeLabel(e.purpose),
+ e.maskedDestination,
+ e.status,
+ e.attemptCount,
+ e.failureReason,
+ new Date(e.issuedAtUtc).toLocaleDateString("ar-EG"),
+ ]);
+ return matchesStatus && matchesSearch;
+ });
+ const filteredEmailEvents = emailEvents.filter((e: TEmailAuditEntry) => {
+ const matchesStatus = emailStatusFilter ? e.deliveryStatus === emailStatusFilter : true;
+ const matchesSearch = recordMatchesAdminSearch(emailSearchQuery, [
+ e.recipientEmail,
+ eventTypeLabel(e.eventType),
+ e.deliveryStatus,
+ e.triggeredBy,
+ e.failureReasonCategory,
+ e.sentAtUtc ? new Date(e.sentAtUtc).toLocaleDateString("ar-EG") : "",
+ ]);
+ return matchesStatus && matchesSearch;
+ });
+
+ const otpTableData = filteredOtpEvents.map((e: TOtpAuditEntry) => ({
  key: String(e.id),
  userName: e.userName,
  purpose: purposeLabel(e.purpose),
@@ -68,7 +102,7 @@ const AccountMessagingReport = () => {
  failureReason: e.failureReason ??"-",
  }));
 
- const emailTableData = (accountMessagingAudit?.recentEmailEvents ?? []).map((e: TEmailAuditEntry) => ({
+ const emailTableData = filteredEmailEvents.map((e: TEmailAuditEntry) => ({
  key: String(e.id),
  recipientEmail: e.recipientEmail,
  eventType: eventTypeLabel(e.eventType),
@@ -96,6 +130,8 @@ const AccountMessagingReport = () => {
  { key:"triggeredBy", label:"المصدر" },
  { key:"failureReasonCategory", label:"سبب الفشل" },
  ];
+ const isOtpFiltering = Boolean(otpSearchQuery.trim() || otpStatusFilter);
+ const isEmailFiltering = Boolean(emailSearchQuery.trim() || emailStatusFilter);
 
  if (isLoadingAccountMessaging || !accountMessagingAudit) {
  return (
@@ -149,12 +185,77 @@ const AccountMessagingReport = () => {
  </div>
 
  <SubTitle title="آخر أحداث OTP" />
+ <AdminFilterToolbar
+ searchValue={otpSearchQuery}
+ onSearchChange={setOtpSearchQuery}
+ searchPlaceholder="ابحث بالمستخدم، الغرض، الوجهة..."
+ totalCount={otpEvents.length}
+ filteredCount={filteredOtpEvents.length}
+ isFiltering={isOtpFiltering}
+ onReset={() => {
+ setOtpSearchQuery("");
+ setOtpStatusFilter("");
+ }}
+ filters={[
+ {
+ key:"otp-status",
+ label:"الحالة",
+ value: otpStatusFilter,
+ onChange: setOtpStatusFilter,
+ options: [
+ { value:"", label:"الكل" },
+ { value:"Consumed", label:"مستخدم" },
+ { value:"Active", label:"نشط" },
+ { value:"Expired", label:"منتهي" },
+ { value:"Invalidated", label:"ملغي" },
+ ],
+ },
+ ]}
+ />
  <div style={{ marginBottom:"2rem" }}>
+ {otpTableData.length ? (
  <CustomTable data={otpTableData} columns={otpColumns} />
+ ) : (
+ <div className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--surface-muted)] p-6 text-center text-sm app-text-subtle">
+ لا توجد أحداث OTP مطابقة للفلاتر الحالية
+ </div>
+ )}
  </div>
 
  <SubTitle title="آخر أحداث البريد الإلكتروني" />
+ <AdminFilterToolbar
+ searchValue={emailSearchQuery}
+ onSearchChange={setEmailSearchQuery}
+ searchPlaceholder="ابحث بالبريد، النوع، المصدر..."
+ totalCount={emailEvents.length}
+ filteredCount={filteredEmailEvents.length}
+ isFiltering={isEmailFiltering}
+ onReset={() => {
+ setEmailSearchQuery("");
+ setEmailStatusFilter("");
+ }}
+ filters={[
+ {
+ key:"email-status",
+ label:"الحالة",
+ value: emailStatusFilter,
+ onChange: setEmailStatusFilter,
+ options: [
+ { value:"", label:"الكل" },
+ { value:"Sent", label:"مرسل" },
+ { value:"Failed", label:"فشل" },
+ { value:"Pending", label:"قيد الإرسال" },
+ ],
+ },
+ ]}
+ />
+ {emailTableData.length ? (
  <CustomTable data={emailTableData} columns={emailColumns} />
+ ) : (
+ <div className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--surface-muted)] p-6 text-center text-sm app-text-subtle">
+ لا توجد أحداث بريد إلكتروني مطابقة للفلاتر الحالية
+ </div>
+ )}
  </Container>
  );
 };

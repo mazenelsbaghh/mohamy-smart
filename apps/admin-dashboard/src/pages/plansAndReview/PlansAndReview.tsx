@@ -14,6 +14,8 @@ import archivePlan from"../../redux/plans/thunk/archivePlan";
 import restorePlan from"../../redux/plans/thunk/restorePlan";
 import type { TSubscription } from"../../redux/plans/thunk/fetchPlans";
 import ConfirmDialog from"../../components/ui/modal/ConfirmDialog";
+import AdminFilterToolbar from"../../components/adminFilters/AdminFilterToolbar";
+import { recordMatchesAdminSearch } from"../../components/adminFilters/adminFilterUtils";
 
 const AI_POINT_COST_PER_STEP = 1;
 
@@ -114,6 +116,8 @@ const PlansAndReview = () => {
  const [archivingPlanId, setArchivingPlanId] = useState<number | null>(null);
  const [restoringPlanId, setRestoringPlanId] = useState<number | null>(null);
  const [editingPlan, setEditingPlan] = useState<TSubscription | null>(null);
+ const [searchQuery, setSearchQuery] = useState("");
+ const [statusFilter, setStatusFilter] = useState("");
   const [formState, setFormState] = useState({
   name:"",
   price: 0,
@@ -214,7 +218,25 @@ const PlansAndReview = () => {
   setRestoringPlanId(null);
   };
 
-  const planCards = plans.map((plan) => ({
+  const filteredPlans = plans.filter((plan) => {
+  const matchesStatus = statusFilter ==="active"
+  ? plan.isActive
+  : statusFilter ==="archived"
+  ? !plan.isActive
+  : true;
+  const matchesSearch = recordMatchesAdminSearch(searchQuery, [
+  plan.name,
+  plan.features,
+  plan.price,
+  plan.yearlyPrice,
+  plan.aiRequestsLimit,
+  plan.durationDays,
+  plan.isActive ?"نشطة" :"مؤرشفة",
+  ]);
+  return matchesStatus && matchesSearch;
+  });
+
+  const planCards = filteredPlans.map((plan) => ({
   id: plan.id,
   name: plan.name,
   price: plan.price,
@@ -224,6 +246,7 @@ const PlansAndReview = () => {
   features: plan.features ? plan.features.split(",").map((f) => f.trim()) : [],
   isActive: plan.isActive,
   }));
+  const isFiltering = Boolean(searchQuery.trim() || statusFilter);
 
  if (isLoading && plans.length === 0) {
  return (
@@ -248,6 +271,31 @@ const PlansAndReview = () => {
  إنشاء خطة جديدة
  </Button>
  </div>
+ <AdminFilterToolbar
+ searchValue={searchQuery}
+ onSearchChange={setSearchQuery}
+ searchPlaceholder="ابحث باسم الخطة أو المميزات..."
+ totalCount={plans.length}
+ filteredCount={filteredPlans.length}
+ isFiltering={isFiltering}
+ onReset={() => {
+ setSearchQuery("");
+ setStatusFilter("");
+ }}
+ filters={[
+ {
+ key:"status",
+ label:"حالة الخطة",
+ value: statusFilter,
+ onChange: setStatusFilter,
+ options: [
+ { value:"", label:"الكل" },
+ { value:"active", label:"نشطة" },
+ { value:"archived", label:"مؤرشفة" },
+ ],
+ },
+ ]}
+ />
  <div className="flex flex-wrap mb-20">
  {error && plans.length === 0 ? (
  <div className="w-full flex flex-col items-center justify-center min-h-[30vh] gap-2">
@@ -261,6 +309,10 @@ const PlansAndReview = () => {
  <div className="w-full flex flex-col items-center justify-center min-h-[30vh] gap-2">
  <p className="text-lg app-text-subtle">لا توجد خطط اشتراك</p>
  <p className="text-sm app-text-subtle">أنشئ خطة جديدة باستخدام الزر أعلاه</p>
+ </div>
+ ) : filteredPlans.length === 0 ? (
+ <div className="w-full flex flex-col items-center justify-center min-h-[30vh] gap-2">
+ <p className="text-lg app-text-subtle">لا توجد خطط مطابقة للفلاتر الحالية</p>
  </div>
  ) : (
  planCards.map((plan) => (

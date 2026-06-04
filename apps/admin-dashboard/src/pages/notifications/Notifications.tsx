@@ -1,5 +1,5 @@
 import { CustomButton, Container } from'@mohamy/shared-ui';
-import { useEffect } from'react';
+import { useEffect, useState } from'react';
 import { Card, CardBody, Chip, Spinner } from'@heroui/react';
 
 import HeadTitle from'../../components/public/headTitle/HeadTitle';
@@ -10,6 +10,8 @@ import { markAllNotificationsRead } from'../../redux/notifications/thunk/markAll
 import { deleteNotification } from'../../redux/notifications/thunk/deleteNotification';
 import { clearNotificationsError } from'../../redux/notifications/notificationsSlice';
 import { showSuccessToast, showErrorToast } from'../../utils/toastHelpers';
+import AdminFilterToolbar from'../../components/adminFilters/AdminFilterToolbar';
+import { recordMatchesAdminSearch } from'../../components/adminFilters/adminFilterUtils';
 
 import { FaBell, FaCheckDouble, FaTrash, FaEnvelopeOpen } from'react-icons/fa';
 
@@ -30,6 +32,9 @@ const typeLabelMap: Record<string, string> = {
 const Notifications = () => {
  const dispatch = useAppDispatch();
  const { items, unreadCount, isLoading, error } = useAppSelector((state) => state.notifications);
+ const [searchQuery, setSearchQuery] = useState('');
+ const [readFilter, setReadFilter] = useState('');
+ const [typeFilter, setTypeFilter] = useState('');
 
  useEffect(() => {
  dispatch(fetchNotifications());
@@ -73,6 +78,26 @@ const Notifications = () => {
  });
  };
 
+ const filteredItems = items.filter((notification) => {
+ const matchesRead = readFilter ==='read'
+ ? notification.isRead
+ : readFilter ==='unread'
+ ? !notification.isRead
+ : true;
+ const matchesType = typeFilter ? notification.type === typeFilter : true;
+ const matchesSearch = recordMatchesAdminSearch(searchQuery, [
+ notification.title,
+ notification.message,
+ typeLabelMap[notification.type] || notification.type,
+ notification.isRead ?'مقروء' :'غير مقروء',
+ formatDate(notification.createdAt),
+ ]);
+ return matchesRead && matchesType && matchesSearch;
+ });
+
+ const notificationTypes = Array.from(new Set(items.map((item) => item.type).filter(Boolean)));
+ const isFiltering = Boolean(searchQuery.trim() || readFilter || typeFilter);
+
  return (
  <div className='notifications'>
  <Container>
@@ -100,6 +125,43 @@ const Notifications = () => {
  )}
  </div>
 
+ <AdminFilterToolbar
+ searchValue={searchQuery}
+ onSearchChange={setSearchQuery}
+ searchPlaceholder="ابحث في العنوان أو الرسالة..."
+ totalCount={items.length}
+ filteredCount={filteredItems.length}
+ isFiltering={isFiltering}
+ onReset={() => {
+ setSearchQuery('');
+ setReadFilter('');
+ setTypeFilter('');
+ }}
+ filters={[
+ {
+ key:'read',
+ label:'حالة القراءة',
+ value: readFilter,
+ onChange: setReadFilter,
+ options: [
+ { value:'', label:'الكل' },
+ { value:'unread', label:'غير مقروء' },
+ { value:'read', label:'مقروء' },
+ ],
+ },
+ {
+ key:'type',
+ label:'النوع',
+ value: typeFilter,
+ onChange: setTypeFilter,
+ options: [
+ { value:'', label:'الكل' },
+ ...notificationTypes.map((type) => ({ value: type, label: typeLabelMap[type] || type })),
+ ],
+ },
+ ]}
+ />
+
  {isLoading && (
  <div className="flex flex-col items-center justify-center py-20 gap-4">
  <Spinner size="lg" color="primary" />
@@ -114,8 +176,15 @@ const Notifications = () => {
  </div>
  )}
 
+ {!isLoading && items.length > 0 && filteredItems.length === 0 && (
+ <div className="flex flex-col items-center justify-center py-20 gap-4">
+ <FaBell className="text-gray-300 text-6xl" />
+ <p className="app-text-subtle text-lg">لا توجد إشعارات مطابقة للفلاتر الحالية</p>
+ </div>
+ )}
+
  <div className="flex flex-col gap-4">
- {items.map((notification) => (
+ {filteredItems.map((notification) => (
  <Card
  key={notification.notificationId}
  className={`transition-colors ${

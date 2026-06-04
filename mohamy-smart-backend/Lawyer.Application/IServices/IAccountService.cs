@@ -18,6 +18,9 @@ namespace Lawyer.Application.IServices
 	UserType? filterByUserType,
 	int pageNumber,
 	int pageSize,
+	string? search,
+	bool? isActive,
+	bool? subscriptionIsActive,
 	CancellationToken cancellationToken);
 
 		Task<Result<UserToReturnDto>> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken);

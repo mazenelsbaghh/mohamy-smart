@@ -1,5 +1,5 @@
 import { CustomButton, CustomCard, Container, CustomTable } from'@mohamy/shared-ui';
-import { useEffect } from"react";
+import { useEffect, useState } from"react";
 import { useAppDispatch, useAppSelector } from"../../redux/hooks";
 
 import HeadTitle from"../../components/public/headTitle/HeadTitle";
@@ -19,6 +19,8 @@ import fetchLawyerSubscriptions from"../../redux/subscriptions/thunk/fetchSubscr
 import api from"../../APIs/api";
 import SkeletonStatsCards from"../../components/skeleton/SkeletonStatsCards";
 import SkeletonTable from"../../components/skeleton/SkeletonTable";
+import AdminFilterToolbar from"../../components/adminFilters/AdminFilterToolbar";
+import { recordMatchesAdminSearch } from"../../components/adminFilters/adminFilterUtils";
 
 const columns = [
  { key:"lawyerName", label:"اسم المستخدم" },
@@ -35,13 +37,31 @@ const Subscriptions = () => {
  const { records, isLoading: subscriptionsLoading } = useAppSelector(
  (state) => state.subscriptions
  );
+ const [searchQuery, setSearchQuery] = useState("");
+ const [statusFilter, setStatusFilter] = useState("");
 
  useEffect(() => {
  dispatch(fetchSubscriptionsReport({}));
  dispatch(fetchLawyerSubscriptions({ isPaid: true }));
  }, [dispatch]);
 
- const tableData = records.slice(0, 5).map((r) => ({
+ const recentRecords = records.slice(0, 5);
+ const filteredRecentRecords = recentRecords.filter((r) => {
+ const matchesStatus = statusFilter ==="active"
+ ? r.isActive
+ : statusFilter ==="expired"
+ ? !r.isActive
+ : true;
+ const matchesSearch = recordMatchesAdminSearch(searchQuery, [
+ r.lawyerName,
+ r.planName,
+ r.isActive ?"نشطة" :"منتهية",
+ r.isTrial ?"تجريبية" :"مدفوعة",
+ ]);
+ return matchesStatus && matchesSearch;
+ });
+
+ const tableData = filteredRecentRecords.map((r) => ({
  key: r.lawyerId,
  lawyerName: r.lawyerName ||"-",
  planName: r.isTrial ? (
@@ -53,6 +73,7 @@ const Subscriptions = () => {
  endDate: r.endDate ? new Date(r.endDate).toLocaleDateString("ar-EG") :"-",
  isActive: r.isActive ?"نشطة" :"منتهية",
  }));
+ const isFiltering = Boolean(searchQuery.trim() || statusFilter);
 
  const handleDownloadReport = async () => {
  try {
@@ -139,6 +160,31 @@ const Subscriptions = () => {
  <GoArrowLeft />
  </Link>
  }
+ />
+ <AdminFilterToolbar
+ searchValue={searchQuery}
+ onSearchChange={setSearchQuery}
+ searchPlaceholder="ابحث باسم المستخدم أو الخطة..."
+ totalCount={recentRecords.length}
+ filteredCount={filteredRecentRecords.length}
+ isFiltering={isFiltering}
+ onReset={() => {
+ setSearchQuery("");
+ setStatusFilter("");
+ }}
+ filters={[
+ {
+ key:"status",
+ label:"الحالة",
+ value: statusFilter,
+ onChange: setStatusFilter,
+ options: [
+ { value:"", label:"الكل" },
+ { value:"active", label:"نشطة" },
+ { value:"expired", label:"منتهية" },
+ ],
+ },
+ ]}
  />
  {tableData.length ? (
  <CustomTable data={tableData} columns={columns} />

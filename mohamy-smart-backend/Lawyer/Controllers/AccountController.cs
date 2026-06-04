@@ -35,10 +35,13 @@ namespace Lawyer.Controllers
             [FromQuery] UserType? userType,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] bool? isActive = null,
+            [FromQuery] bool? subscriptionIsActive = null,
             CancellationToken cancellationToken = default)
         {
             pageSize = Math.Min(pageSize, 100);
-            var result = await _accountService.GetAllUsersAsync(userType, pageNumber, pageSize, cancellationToken);
+            var result = await _accountService.GetAllUsersAsync(userType, pageNumber, pageSize, search, isActive, subscriptionIsActive, cancellationToken);
             return CreateResponse(result);
         }
 

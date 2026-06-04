@@ -186,6 +186,69 @@ a.sub-title-link{
   color: var(--title-color);
 }
 
+.admin-filter-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  margin: 16px 0 24px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--lg-radius);
+  background: var(--surface-muted);
+}
+
+.admin-filter-toolbar__search {
+  flex: 1 1 280px;
+  min-width: min(100%, 240px);
+}
+
+.admin-filter-toolbar__filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex: 2 1 360px;
+  flex-wrap: wrap;
+}
+
+.admin-filter-toolbar__select {
+  width: 180px;
+  min-width: min(100%, 160px);
+}
+
+.admin-filter-toolbar__meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-inline-start: auto;
+  color: var(--text-color);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 550px) {
+  .admin-filter-toolbar {
+    align-items: stretch;
+    padding: 12px;
+  }
+
+  .admin-filter-toolbar__search,
+  .admin-filter-toolbar__filters,
+  .admin-filter-toolbar__select,
+  .admin-filter-toolbar__meta {
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  .admin-filter-toolbar__meta {
+    justify-content: space-between;
+    white-space: normal;
+  }
+}
+
 /* ==========================
   main Layout
 ============================= */

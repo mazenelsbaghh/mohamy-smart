@@ -179,7 +179,7 @@ export const normalizeUsersResponse = (
 
 const fetchLawyers = createAsyncThunk<
  TUsersResponse,
- { pageNumber?: number; pageSize?: number } | undefined,
+ { pageNumber?: number; pageSize?: number; search?: string; isActive?: boolean; subscriptionIsActive?: boolean } | undefined,
  { rejectValue: string }
 >("lawyers/fetchLawyers",
  async (params = {}, thunkAPI) => {
@@ -187,12 +187,16 @@ const fetchLawyers = createAsyncThunk<
  try {
  const pageNumber = params.pageNumber || 1;
  const pageSize = params.pageSize || 10;
+ const search = params.search?.trim();
 
  const res = await api.get<{ data: TUsersApiPayload }>("/Account/users", {
  params: {
  userType: 2,
  pageNumber,
  pageSize,
+ ...(search ? { search } : {}),
+ ...(params.isActive !== undefined ? { isActive: params.isActive } : {}),
+ ...(params.subscriptionIsActive !== undefined ? { subscriptionIsActive: params.subscriptionIsActive } : {}),
  },
  });
 
