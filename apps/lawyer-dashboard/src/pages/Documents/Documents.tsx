@@ -192,7 +192,6 @@ const Documents = () => {
 
  const documentInputRef = useRef<HTMLInputElement | null>(null);
  const imageInputRef = useRef<HTMLInputElement | null>(null);
- const processingToastIdRef = useRef<string | undefined>(undefined);
  const abortControllerRef = useRef<AbortController | null>(null);
  const [results, setResults] = useState<TResult[]>([]);
  const [processingStatus, setProcessingStatus] = useState<TProcessingStatus>({
@@ -210,10 +209,6 @@ const Documents = () => {
  abortControllerRef.current = null;
  }
  setProcessingStatus({ phase:'idle', completed: 0, total: 0, label:'', detail:'', percent: undefined });
- if (processingToastIdRef.current) {
- sileo.dismiss(processingToastIdRef.current);
- processingToastIdRef.current = undefined;
- }
  sileo.error({ title:'🛑 تم إلغاء المعالجة' });
  }, []);
 
@@ -562,30 +557,6 @@ const Documents = () => {
  dispatch(thunkGetAllCaseType());
  }, [dispatch]);
 
- useEffect(() => {
-	 if (processingStatus.phase ==='idle' || !processingStatus.label) {
- if (processingToastIdRef.current) {
- sileo.dismiss(processingToastIdRef.current);
- processingToastIdRef.current = undefined;
- }
-	 return;
-	 }
-
-	 if (processingToastIdRef.current) {
-	 sileo.dismiss(processingToastIdRef.current);
-	 processingToastIdRef.current = undefined;
-	 }
-
-	 processingToastIdRef.current = sileo.show({
-	 title: `${processingStatus.label ||''}`,
-	 description: processingStatus.detail ||'اضغط هنا لإلغاء العملية',
-	 type:'loading',
-	 duration: null,
-	 position:'top-center',
-	 onClick: () => handleCancelProcessing(),
-	 } as Parameters<typeof sileo.show>[0]);
-	 }, [processingStatus, handleCancelProcessing]);
-
 	 const isBusy = processingStatus.phase !=='idle';
 	 const progressPercent = processingStatus.percent
 	 ?? (processingStatus.total > 0 ? Math.round((processingStatus.completed / processingStatus.total) * 100) : undefined);
@@ -636,7 +607,7 @@ const Documents = () => {
 	 </button>
 	 </div>
 	 )}
-	 {results.length === 0 && (
+	 {results.length === 0 && !isBusy && (
 	 <div className="documents-box mt-4">
  <input
  type="file"
