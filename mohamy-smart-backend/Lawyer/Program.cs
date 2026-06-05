@@ -31,7 +31,7 @@ using System.Security.Claims;
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Limits.MaxRequestBodySize = 25L * 1024 * 1024;
+    options.Limits.MaxRequestBodySize = 2L * 1024 * 1024 * 1024; // 2GB
 });
 
 // ── Sentry error monitoring ───────────────────────────────────────────
