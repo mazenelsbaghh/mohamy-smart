@@ -47,26 +47,51 @@ namespace Lawyer.Controllers
 		[Consumes("multipart/form-data")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[RequestSizeLimit(2L * 1024 * 1024 * 1024)] // 2GB — matches Kestrel global limit
 		public async Task<IActionResult> ExtractOcrText([FromForm] List<IFormFile> images, CancellationToken cancellationToken)
 		{
+			var logger = HttpContext.RequestServices.GetRequiredService<ILogger<OcrController>>();
+
 			if (images == null || images.Count == 0)
+			{
+				// Log all form keys to diagnose field-name mismatch
+				var formKeys = Request.HasFormContentType ? string.Join(", ", Request.Form.Files.Select(f => $"{f.Name}({f.ContentType}, {f.Length}b)")) : "(no form)";
+				logger.LogWarning("OCR rejected: images list is null/empty. Form file keys: [{FormKeys}]. ContentType={ContentType}", formKeys, Request.ContentType);
 				return BadRequest("يجب رفع صورة واحدة على الأقل.");
+			}
+
+			logger.LogInformation("OCR request received: {Count} files, total={TotalBytes}b", images.Count, images.Sum(f => f.Length));
 
 			if (images.Count > MaxFileCount)
+			{
+				logger.LogWarning("OCR rejected: file count {Count} exceeds max {Max}", images.Count, MaxFileCount);
 				return BadRequest($"الحد الأقصى لعدد الملفات هو {MaxFileCount}.");
+			}
 
 			foreach (var file in images)
 			{
 				if (file == null || file.Length == 0)
+				{
+					logger.LogWarning("OCR rejected: empty file detected. FileName={FileName}", file?.FileName);
 					return BadRequest("أحد الملفات المرفوعة فارغ.");
+				}
 				if (file.Length > MaxFileBytes)
+				{
+					logger.LogWarning("OCR rejected: file too large. FileName={FileName}, Size={Size}b, Max={Max}b", file.FileName, file.Length, MaxFileBytes);
 					return BadRequest("حجم الملف كبير جداً. الحد الأقصى 200 ميجابايت لكل ملف.");
+				}
 				if (string.IsNullOrWhiteSpace(file.ContentType) || !AllowedContentTypes.Contains(file.ContentType))
+				{
+					logger.LogWarning("OCR rejected: unsupported content type. FileName={FileName}, ContentType={ContentType}", file.FileName, file.ContentType);
 					return BadRequest("نوع الملف غير مدعوم. الأنواع المسموحة: JPEG, PNG, WebP, PDF.");
+				}
 
 				var safe = await _virusScanner.IsSafeAsync(file, cancellationToken);
 				if (!safe)
+				{
+					logger.LogWarning("OCR rejected: virus detected. FileName={FileName}", file.FileName);
 					return BadRequest("الملف يحتوي على محتوى ضار");
+				}
 			}
 
 			var result = await _aiService.ExtractTextFromImagesAsync(images, GetUserId(), cancellationToken);
