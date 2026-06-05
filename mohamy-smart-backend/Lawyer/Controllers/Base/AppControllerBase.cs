@@ -59,7 +59,7 @@ namespace Lawyer.Controllers.Base
 					HttpOnly  = true,
 					Secure    = isProduction,
 					SameSite  = SameSiteMode.Lax,
-					Path      = "/api/v1/auth/",        // least-privilege — only sent to /api/v1/auth/* endpoints
+					Path      = "/api/v1/Auth/",        // least-privilege — only sent to /api/v1/Auth/* endpoints
 					MaxAge    = TimeSpan.FromDays(7)    // matches RefreshTokenExpiresAt
 				});
 			}
@@ -71,7 +71,7 @@ namespace Lawyer.Controllers.Base
 			var prefix = isProduction ? "__Host-" : "";
 
 			response.Cookies.Append($"{prefix}session",  "", new CookieOptions { MaxAge = TimeSpan.Zero, Path = "/", Secure = isProduction, SameSite = SameSiteMode.Lax });
-			response.Cookies.Append($"{prefix}refresh",  "", new CookieOptions { MaxAge = TimeSpan.Zero, Path = "/api/v1/auth/", Secure = isProduction, SameSite = SameSiteMode.Lax });
+			response.Cookies.Append($"{prefix}refresh",  "", new CookieOptions { MaxAge = TimeSpan.Zero, Path = "/api/v1/Auth/", Secure = isProduction, SameSite = SameSiteMode.Lax });
 			response.Cookies.Append("XSRF-TOKEN",        "", new CookieOptions { MaxAge = TimeSpan.Zero, Path = "/", Secure = isProduction, SameSite = SameSiteMode.Lax });
 		}
 	}

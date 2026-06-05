@@ -566,6 +566,25 @@ const Documents = () => {
  <Container>
  <HeadTitle title='إدارة المستندات' />
 
+ <input
+ type="file"
+ ref={documentInputRef}
+ style={{ display: 'none' }}
+ accept={DOCUMENT_ACCEPT}
+ multiple
+ onChange={handleFileChange}
+ aria-label="اختيار ملفات PDF أو Word"
+ />
+ <input
+ type="file"
+ ref={imageInputRef}
+ style={{ display: 'none' }}
+ accept={IMAGE_ACCEPT}
+ multiple
+ onChange={handleFileChange}
+ aria-label="اختيار صور المستندات"
+ />
+
  <div className="flex flex-wrap justify-center items-center">
  <div className="w-full flex justify-end">
  <div className="w-full sm:w-6/12 md:w-4/12 lg:max-w-3/12">
@@ -609,22 +628,6 @@ const Documents = () => {
 	 )}
 	 {results.length === 0 && !isBusy && (
 	 <div className="documents-box mt-4">
- <input
- type="file"
- ref={documentInputRef}
- accept={DOCUMENT_ACCEPT}
- multiple
- onChange={handleFileChange}
- aria-label="اختيار ملفات PDF أو Word"
- />
- <input
- type="file"
- ref={imageInputRef}
- accept={IMAGE_ACCEPT}
- multiple
- onChange={handleFileChange}
- aria-label="اختيار صور المستندات"
- />
   <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-right gap-5 w-full max-w-3xl px-4 justify-center md:justify-start">
   <div className="icon">
   <FiUpload />
