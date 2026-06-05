@@ -91,7 +91,7 @@ public class CookieAuthIntegrationTests : IClassFixture<WebApplicationFactory<Pr
             Password = "TestPass@1",
             FullName = "Test Lawyer",
         };
-        await _client.PostAsJsonAsync("/api/v1/auth/register", registerPayload);
+        await _client.PostAsJsonAsync("/api/v1/Auth/register", registerPayload);
 
         var form = new FormUrlEncodedContent(new Dictionary<string, string>
         {
@@ -100,7 +100,7 @@ public class CookieAuthIntegrationTests : IClassFixture<WebApplicationFactory<Pr
         });
 
         // Act
-        var response = await _client.PostAsync("/api/v1/auth/login", form);
+        var response = await _client.PostAsync("/api/v1/Auth/login", form);
 
         // Assert — either 200 (success) or 400 (phone not verified) — both set cookies if auth flow ran
         // We focus on the cookie flags, not the business logic response code.
@@ -142,7 +142,7 @@ public class CookieAuthIntegrationTests : IClassFixture<WebApplicationFactory<Pr
         // In a real flow the client would already have cookies from a previous login.
         // Here we test that the endpoint at minimum returns 200 OR 401 (not 500).
 
-        var response = await _client.PostAsync("/api/v1/auth/refresh-token", null);
+        var response = await _client.PostAsync("/api/v1/Auth/refresh-token", null);
 
         // 400/401 = no refresh cookie present (current middleware ordering may reject earlier); 200 = rotated.
         // Either way: no crash, no 500.
@@ -169,7 +169,7 @@ public class CookieAuthIntegrationTests : IClassFixture<WebApplicationFactory<Pr
         // POST /api/auth/logout — even without a valid session (will get 401 from [Authorize]),
         // the endpoint must not 500. When called with a valid session it should expire all cookies.
 
-        var response = await _client.PostAsync("/api/v1/auth/logout", null);
+        var response = await _client.PostAsync("/api/v1/Auth/logout", null);
 
         // 401 = not authenticated (expected in isolation); 200 = logged out successfully.
         new[] { 200, 400, 401 }.Should().Contain((int)response.StatusCode,
@@ -212,7 +212,7 @@ public class CookieAuthIntegrationTests : IClassFixture<WebApplicationFactory<Pr
         });
 
         // Act — try to hit a protected POST endpoint without any auth or CSRF
-        var response = await noXsrfClient.PostAsync("/api/v1/auth/logout", null);
+        var response = await noXsrfClient.PostAsync("/api/v1/Auth/logout", null);
 
         // Assert — must be 400 (antiforgery failure) or 401 (not authenticated comes first)
         // NOT 200 or 500.
@@ -281,7 +281,7 @@ public class CookieAuthIntegrationTests : IClassFixture<WebApplicationFactory<Pr
         });
 
         // 1. Login
-        var loginResponse = await _client.PostAsync("/api/v1/auth/login", form);
+        var loginResponse = await _client.PostAsync("/api/v1/Auth/login", form);
         var loginResponseBody = await loginResponse.Content.ReadAsStringAsync();
         loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, $"Login failed: {loginResponseBody}");
 
@@ -292,19 +292,19 @@ public class CookieAuthIntegrationTests : IClassFixture<WebApplicationFactory<Pr
         cookieHeader.Should().Contain(c => c.Contains("XSRF-TOKEN"));
 
         // 2. Access protected GET endpoint (me) — CookieContainer sends cookies automatically (HandleCookies=true)
-        var meResponse = await _client.GetAsync("/api/v1/auth/me");
+        var meResponse = await _client.GetAsync("/api/v1/Auth/me");
         var meResponseBody = await meResponse.Content.ReadAsStringAsync();
         meResponse.StatusCode.Should().Be(HttpStatusCode.OK, $"Me endpoint failed: {meResponseBody}");
 
         // 3. Refresh Token
-        var refreshResponse = await _client.PostAsync("/api/v1/auth/refresh-token", null);
+        var refreshResponse = await _client.PostAsync("/api/v1/Auth/refresh-token", null);
         refreshResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var refreshCookies = refreshResponse.Headers.GetValues("Set-Cookie").ToList();
         refreshCookies.Should().Contain(c => c.Contains("session") || c.Contains("__Host-session"));
 
         // 4. Logout (needs CSRF)
-        var csrfResponse = await _client.GetAsync("/api/v1/auth/csrf-token");
+        var csrfResponse = await _client.GetAsync("/api/v1/Auth/csrf-token");
         csrfResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         using var csrfResult = await csrfResponse.Content.ReadFromJsonAsync<System.Text.Json.JsonDocument>();
@@ -314,7 +314,7 @@ public class CookieAuthIntegrationTests : IClassFixture<WebApplicationFactory<Pr
         _client.DefaultRequestHeaders.Remove("X-XSRF-TOKEN");
         _client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", rawXsrf);
 
-        var logoutResponse = await _client.PostAsync("/api/v1/auth/logout", null);
+        var logoutResponse = await _client.PostAsync("/api/v1/Auth/logout", null);
         logoutResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Verify logout clears cookies
@@ -355,7 +355,7 @@ public class CookieAuthIntegrationTests : IClassFixture<WebApplicationFactory<Pr
         using var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
         client.DefaultRequestHeaders.Add("Cookie", $"session={jwtString}");
 
-        var response = await client.GetAsync("/api/v1/auth/me");
+        var response = await client.GetAsync("/api/v1/Auth/me");
         
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

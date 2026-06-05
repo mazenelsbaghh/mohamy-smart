@@ -24,7 +24,7 @@ public class AiPointAccountingServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GetCurrentBalanceAsync_ShouldResetUsedPointsToZero_IfGreaterThanZero()
+    public async Task GetCurrentBalanceAsync_ShouldSyncUsedRequestsFromTransactions()
     {
         // Arrange
         var lawyerId = Guid.NewGuid();
@@ -47,8 +47,27 @@ public class AiPointAccountingServiceTests : IDisposable
             IsActive = true
         };
 
+        // Seed transactions summing up to 15 points
+        var tx1 = new AiPointTransaction
+        {
+            Id = Guid.NewGuid(),
+            LawyerId = lawyerId,
+            LawyerSubscriptionId = lawyerSubscription.Id,
+            TransactionType = AiPointTransactionType.Charge,
+            Points = 20
+        };
+        var tx2 = new AiPointTransaction
+        {
+            Id = Guid.NewGuid(),
+            LawyerId = lawyerId,
+            LawyerSubscriptionId = lawyerSubscription.Id,
+            TransactionType = AiPointTransactionType.Restore,
+            Points = 5
+        };
+
         _dbContext.Subscriptions.Add(subscription);
         _dbContext.LawyerSubscriptions.Add(lawyerSubscription);
+        _dbContext.AiPointTransactions.AddRange(tx1, tx2);
         await _dbContext.SaveChangesAsync();
 
         // Act
@@ -57,16 +76,16 @@ public class AiPointAccountingServiceTests : IDisposable
         // Assert
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeNull();
-        result.Data!.Available.Should().Be(111); // Renewed to 111
-        result.Data.Used.Should().Be(0);
+        result.Data!.Available.Should().Be(96); // 111 - 15 = 96
+        result.Data.Used.Should().Be(15);
 
         // Verify database updated
         var dbSub = await _dbContext.LawyerSubscriptions.FirstAsync(s => s.LawyerId == lawyerId);
-        dbSub.UsedAiRequests.Should().Be(0);
+        dbSub.UsedAiRequests.Should().Be(15);
     }
 
     [Fact]
-    public async Task ChargeSuccessfulDirectActionAsync_ShouldResetUsedPointsToZero_IfLimitExceeded()
+    public async Task ChargeSuccessfulDirectActionAsync_ShouldFail_IfLimitExceeded()
     {
         // Arrange
         var lawyerId = Guid.NewGuid();
@@ -105,12 +124,8 @@ public class AiPointAccountingServiceTests : IDisposable
             CancellationToken.None);
 
         // Assert
-        result.Succeeded.Should().BeTrue();
-        result.Data!.Available.Should().Be(106); // 111 - 5 = 106
-        result.Data.Used.Should().Be(5);
-
-        var dbSub = await _dbContext.LawyerSubscriptions.FirstAsync(s => s.LawyerId == lawyerId);
-        dbSub.UsedAiRequests.Should().Be(5);
+        result.Succeeded.Should().BeFalse();
+        result.StatusCode.Should().Be(System.Net.HttpStatusCode.PaymentRequired);
     }
 
     [Fact]
@@ -162,7 +177,7 @@ public class AiPointAccountingServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task ChargeSuccessfulJobAsync_ShouldResetUsedPointsToZero_IfLimitExceeded()
+    public async Task ChargeSuccessfulJobAsync_ShouldFail_IfLimitExceeded()
     {
         // Arrange
         var lawyerId = Guid.NewGuid();
@@ -205,13 +220,8 @@ public class AiPointAccountingServiceTests : IDisposable
         var result = await _sut.ChargeSuccessfulJobAsync(job, lawyerId, CancellationToken.None);
 
         // Assert
-        result.Succeeded.Should().BeTrue();
-        result.Data!.Balance.Should().NotBeNull();
-        result.Data!.Balance!.Available.Should().Be(106); // 111 - 5 = 106
-        result.Data.Balance.Used.Should().Be(5);
-
-        var dbSub = await _dbContext.LawyerSubscriptions.FirstAsync(s => s.LawyerId == lawyerId);
-        dbSub.UsedAiRequests.Should().Be(5);
+        result.Succeeded.Should().BeFalse();
+        result.StatusCode.Should().Be(System.Net.HttpStatusCode.PaymentRequired);
     }
 
     [Fact]
@@ -264,7 +274,7 @@ public class AiPointAccountingServiceTests : IDisposable
         // Assert
         result.Succeeded.Should().BeTrue(); // Should succeed even though Available is 0 points because cost becomes 0
         result.Data.Should().NotBeNull();
-        result.Data!.Available.Should().Be(111);
+        result.Data!.Available.Should().Be(110); // Synced with the 1 point transaction
     }
 
     [Fact]
