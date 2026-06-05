@@ -31,7 +31,7 @@ const MAX_FILE_SIZE_MB = 800;
 const MAX_PDF_PAGES = 1000;
 const MAX_TOTAL_FILES = 90;
 const DOCUMENT_ACCEPT = '.pdf,application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-const IMAGE_ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
+const IMAGE_ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif';
 
 type TPreparedProcessingFile = {
  file: File;
@@ -52,10 +52,12 @@ type TResult = {
 };
 
 type TProcessingStatus = {
- phase:'idle' |'preparing' |'processing';
+ phase:'idle' |'preparing' |'uploading' |'extracting' |'processing';
  completed: number;
  total: number;
  label: string;
+ detail?: string;
+ percent?: number;
 };
 
 const fileToPreviewDataUrl = (file: File, maxWidth = 900): Promise<string> => {
@@ -84,6 +86,57 @@ const fileToPreviewDataUrl = (file: File, maxWidth = 900): Promise<string> => {
  });
 };
 
+const prepareImageForOcrUpload = (file: File, maxDimension = 2200, quality = 0.86): Promise<File> => {
+ return new Promise((resolve, reject) => {
+ const reader = new FileReader();
+ reader.onload = () => {
+ const image = new Image();
+ image.onload = () => {
+ const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+ const canvas = document.createElement('canvas');
+ canvas.width = Math.max(1, Math.round(image.width * scale));
+ canvas.height = Math.max(1, Math.round(image.height * scale));
+ const context = canvas.getContext('2d');
+ if (!context) {
+ reject(new Error('تعذّر تجهيز الصورة قبل الرفع.'));
+ return;
+ }
+
+ context.drawImage(image, 0, 0, canvas.width, canvas.height);
+ canvas.toBlob((blob) => {
+ if (!blob) {
+ reject(new Error('تعذّر تحويل الصورة إلى صيغة JPEG مدعومة.'));
+ return;
+ }
+
+ const baseName = file.name.replace(/\.[^.]+$/,'') ||'ocr-image';
+ resolve(new File([blob], `${baseName}.jpg`, {
+ type:'image/jpeg',
+ lastModified: file.lastModified,
+ }));
+ },'image/jpeg', quality);
+ };
+ image.onerror = () => {
+ const canUploadOriginal = ['image/jpeg','image/png','image/webp'].includes(file.type);
+ if (canUploadOriginal) {
+ resolve(file);
+ return;
+ }
+ reject(new Error('صيغة الصورة غير مدعومة. من فضلك ارفع الصورة بصيغة JPG أو PNG.'));
+ };
+ image.src = reader.result as string;
+ };
+ reader.onerror = () => reject(new Error('تعذّر قراءة الصورة قبل الرفع.'));
+ reader.readAsDataURL(file);
+ });
+};
+
+const formatFileSize = (bytes?: number) => {
+ if (!bytes) return '';
+ const megabytes = bytes / (1024 * 1024);
+ return `${megabytes.toFixed(megabytes >= 10 ? 0 : 1)} م.ب`;
+};
+
 const getExtension = (fileName: string) => fileName.split('.').pop()?.toLowerCase() || '';
 
 const isPdfFile = (file: File) =>
@@ -95,7 +148,7 @@ const isWordFile = (file: File) =>
 
 const isSupportedImageFile = (file: File) => {
  const extension = getExtension(file.name);
- return file.type.startsWith('image/') || ['jpg','jpeg','png','webp'].includes(extension);
+ return file.type.startsWith('image/') || ['jpg','jpeg','png','webp','heic','heif'].includes(extension);
 };
 
 const normalizeSupportedFile = (file: File): File => {
@@ -147,6 +200,8 @@ const Documents = () => {
  completed: 0,
  total: 0,
  label:'',
+ detail:'',
+ percent: undefined,
  });
 
  const handleCancelProcessing = useCallback(() => {
@@ -154,7 +209,7 @@ const Documents = () => {
  abortControllerRef.current.abort();
  abortControllerRef.current = null;
  }
- setProcessingStatus({ phase:'idle', completed: 0, total: 0, label:'' });
+ setProcessingStatus({ phase:'idle', completed: 0, total: 0, label:'', detail:'', percent: undefined });
  if (processingToastIdRef.current) {
  sileo.dismiss(processingToastIdRef.current);
  processingToastIdRef.current = undefined;
@@ -226,20 +281,24 @@ const Documents = () => {
  for (const file of selectedFiles) {
  if (isPdfFile(file)) {
  try {
- setProcessingStatus({
- phase:'preparing',
- completed: 0,
- total: 0,
- label: `جاري تجهيز صفحات ${file.name}...`,
- });
+	 setProcessingStatus({
+	 phase:'preparing',
+	 completed: 0,
+	 total: 0,
+	 label: `جاري تجهيز صفحات ${file.name}...`,
+	 detail:'نقرأ ملف PDF ونحوّله إلى صفحات قابلة لاستخراج النص.',
+	 percent: undefined,
+	 });
 
  const extractedImages = await convertPdfToImages(file, (completedPages, totalPages) => {
- setProcessingStatus({
- phase:'preparing',
- completed: completedPages,
- total: totalPages,
- label: `جاري تجهيز PDF: تم تجهيز ${completedPages} من ${totalPages} صفحة`,
- });
+	 setProcessingStatus({
+	 phase:'preparing',
+	 completed: completedPages,
+	 total: totalPages,
+	 label: `جاري تجهيز PDF: تم تجهيز ${completedPages} من ${totalPages} صفحة`,
+	 detail:'هذه المرحلة تتم على جهازك قبل تحميل الصفحات للخادم.',
+	 percent: Math.round((completedPages / totalPages) * 100),
+	 });
  });
 
  allFilesToProcess = [
@@ -276,12 +335,14 @@ const Documents = () => {
  }
 
  if (allFilesToProcess.length === 0) {
- setProcessingStatus({
- phase:'idle',
- completed: 0,
- total: 0,
- label:'',
- });
+	 setProcessingStatus({
+	 phase:'idle',
+	 completed: 0,
+	 total: 0,
+	 label:'',
+	 detail:'',
+	 percent: undefined,
+	 });
  e.target.value ="";
  return;
  }
@@ -294,14 +355,16 @@ const Documents = () => {
  const controller = new AbortController();
  abortControllerRef.current = controller;
 
- setProcessingStatus({
- phase:'processing',
- completed: 0,
- total: selectedFiles.length,
- label: `جاري معالجة الملفات: تم إنجاز 0 من ${selectedFiles.length}`,
- });
+	 setProcessingStatus({
+	 phase:'processing',
+	 completed: 0,
+	 total: selectedFiles.length,
+	 label: `جاري معالجة الملفات: تم إنجاز 0 من ${selectedFiles.length}`,
+	 detail:'نرتب الملفات قبل بدء التحميل.',
+	 percent: undefined,
+	 });
 
- const accumulated: TResult[] = [];
+	 const accumulated: TResult[] = [...results];
  const wordFiles = selectedFiles.filter((preparedFile) => preparedFile.sourceType ==='word');
  const ocrFiles = selectedFiles.filter((preparedFile) => preparedFile.sourceType !=='word');
 
@@ -331,29 +394,63 @@ const Documents = () => {
 
  setResults([...accumulated]);
  const completed = index + 1;
- setProcessingStatus({
- phase:'processing',
- completed,
- total: selectedFiles.length,
- label: `جاري قراءة ملفات Word: تم إنجاز ${completed} من ${selectedFiles.length} ملف`,
- });
+	 setProcessingStatus({
+	 phase:'processing',
+	 completed,
+	 total: selectedFiles.length,
+	 label: `جاري قراءة ملفات Word: تم إنجاز ${completed} من ${selectedFiles.length} ملف`,
+	 detail:'ملفات Word لا تحتاج OCR، يتم قراءة النص مباشرة.',
+	 percent: Math.round((completed / selectedFiles.length) * 100),
+	 });
  }
 
- if (!controller.signal.aborted && ocrFiles.length > 0) {
- const completedWords = accumulated.length;
- setProcessingStatus({
- phase:'processing',
- completed: completedWords,
- total: selectedFiles.length,
- label: `جاري استخراج النصوص: سيتم خصم نقطة OCR واحدة لدفعة الرفع الحالية`,
- });
+	 if (!controller.signal.aborted && ocrFiles.length > 0) {
+	 const completedWords = wordFiles.length;
+	 setProcessingStatus({
+	 phase:'uploading',
+	 completed: completedWords,
+	 total: selectedFiles.length,
+	 label:'جاري تحميل الملف',
+	 detail: `يتم تحميل ${ocrFiles.length} صورة/صفحة للخادم. بعد التحميل سيبدأ استخراج النصوص تلقائيًا.`,
+	 percent: 0,
+	 });
 
  try {
  const previewPromises = ocrFiles.map(({ file }) => file.type.startsWith("image/") ? fileToPreviewDataUrl(file) : Promise.resolve(''));
- const [pageTexts, previewUrls] = await Promise.all([
- dispatch(thunkOcrExtract(ocrFiles.map(({ file }) => file))).unwrap(),
- Promise.all(previewPromises),
- ]);
+ const uploadFilePromises = ocrFiles.map(async (preparedFile) => {
+ const { file } = preparedFile;
+ if (!file.type.startsWith("image/")) return file;
+ return prepareImageForOcrUpload(file);
+ });
+	 const [pageTexts, previewUrls] = await Promise.all([
+	 Promise.all(uploadFilePromises).then((uploadFiles) => dispatch(thunkOcrExtract({
+	 files: uploadFiles,
+	 signal: controller.signal,
+	 onUploadProgress: ({ loaded, total, percent }) => {
+	 setProcessingStatus({
+	 phase:'uploading',
+	 completed: completedWords,
+	 total: selectedFiles.length,
+	 label: percent !== undefined ? `جاري تحميل الملف: ${percent}%` :'جاري تحميل الملف',
+	 detail: total
+	 ? `تم تحميل ${formatFileSize(loaded)} من ${formatFileSize(total)}. بعد اكتمال التحميل سيبدأ استخراج النصوص.`
+	 :'يتم تحميل الملف للخادم. بعد اكتمال التحميل سيبدأ استخراج النصوص.',
+	 percent,
+	 });
+	 if (percent !== undefined && percent >= 100) {
+	 setProcessingStatus({
+	 phase:'extracting',
+	 completed: completedWords,
+	 total: selectedFiles.length,
+	 label:'تم تحميل الملف، جاري استخراج النصوص',
+	 detail:'الخادم يعالج صفحات المستند الآن. قد يستغرق ذلك ثواني إضافية حسب عدد الصفحات.',
+	 percent: undefined,
+	 });
+	 }
+	 },
+	 })).unwrap()),
+	 Promise.all(previewPromises),
+	 ]);
 
  if (!controller.signal.aborted) {
  ocrFiles.forEach((preparedFile, index) => {
@@ -370,12 +467,14 @@ const Documents = () => {
  });
  });
  setResults([...accumulated]);
- setProcessingStatus({
- phase:'processing',
- completed: selectedFiles.length,
- total: selectedFiles.length,
- label: `تم استخراج النصوص من ${ocrFiles.length} صورة/صفحة بنقطة OCR واحدة`,
- });
+	 setProcessingStatus({
+	 phase:'extracting',
+	 completed: selectedFiles.length,
+	 total: selectedFiles.length,
+	 label: `تم استخراج النصوص من ${ocrFiles.length} صورة/صفحة بنقطة OCR واحدة`,
+	 detail:'يمكنك مراجعة النص أو بدء تحليل المستند.',
+	 percent: 100,
+	 });
  }
  } catch (errorMessage) {
  if (!controller.signal.aborted) {
@@ -406,7 +505,7 @@ const Documents = () => {
  if (controller.signal.aborted) return;
 
  abortControllerRef.current = null;
- setProcessingStatus({ phase:'idle', completed: 0, total: 0, label:'' });
+	 setProcessingStatus({ phase:'idle', completed: 0, total: 0, label:'', detail:'', percent: undefined });
 
  // حفظ النتائج في Redux للاستعادة عند العودة للصفحة
  dispatch(setOcrResults(accumulated.map(r => ({
@@ -464,23 +563,32 @@ const Documents = () => {
  }, [dispatch]);
 
  useEffect(() => {
- if (processingStatus.phase ==='idle' || !processingStatus.label) {
+	 if (processingStatus.phase ==='idle' || !processingStatus.label) {
  if (processingToastIdRef.current) {
  sileo.dismiss(processingToastIdRef.current);
  processingToastIdRef.current = undefined;
  }
- return;
- }
+	 return;
+	 }
 
- processingToastIdRef.current = sileo.show({
- title: `${processingStatus.label ||''}`,
- description:'اضغط هنا لإلغاء العملية',
- type:'loading',
- duration: null,
- position:'top-center',
- onClick: () => handleCancelProcessing(),
- } as Parameters<typeof sileo.show>[0]);
- }, [processingStatus, handleCancelProcessing]);
+	 if (processingToastIdRef.current) {
+	 sileo.dismiss(processingToastIdRef.current);
+	 processingToastIdRef.current = undefined;
+	 }
+
+	 processingToastIdRef.current = sileo.show({
+	 title: `${processingStatus.label ||''}`,
+	 description: processingStatus.detail ||'اضغط هنا لإلغاء العملية',
+	 type:'loading',
+	 duration: null,
+	 position:'top-center',
+	 onClick: () => handleCancelProcessing(),
+	 } as Parameters<typeof sileo.show>[0]);
+	 }, [processingStatus, handleCancelProcessing]);
+
+	 const isBusy = processingStatus.phase !=='idle';
+	 const progressPercent = processingStatus.percent
+	 ?? (processingStatus.total > 0 ? Math.round((processingStatus.completed / processingStatus.total) * 100) : undefined);
 
  return (
  <section className='documents'>
@@ -504,7 +612,32 @@ const Documents = () => {
 	 </div>
 
 	 </div>
- <div className="documents-box mt-4">
+	 {isBusy && (
+	 <div className="documents-progress" role="status" aria-live="polite">
+	 <div className="documents-progress__head">
+	 <span className="documents-progress__phase">
+	 {processingStatus.phase ==='preparing' ?'تجهيز الملف' : processingStatus.phase ==='uploading' ?'تحميل الملف' :'استخراج النصوص'}
+	 </span>
+	 {progressPercent !== undefined && (
+	 <span className="documents-progress__percent">{Math.min(100, progressPercent)}%</span>
+	 )}
+	 </div>
+	 <p className="documents-progress__title">{processingStatus.label}</p>
+	 {processingStatus.detail && (
+	 <p className="documents-progress__detail">{processingStatus.detail}</p>
+	 )}
+	 {progressPercent !== undefined && (
+	 <div className="documents-progress__track" aria-hidden="true">
+	 <span style={{ width: `${Math.min(100, progressPercent)}%` }} />
+	 </div>
+	 )}
+	 <button type="button" className="documents-progress__cancel" onClick={handleCancelProcessing}>
+	 إلغاء العملية
+	 </button>
+	 </div>
+	 )}
+	 {results.length === 0 && (
+	 <div className="documents-box mt-4">
  <input
  type="file"
  ref={documentInputRef}
@@ -528,10 +661,10 @@ const Documents = () => {
   <div className="text">
   <h3>ارفع مستند القضية وسنحوّله إلى قضية ذكية</h3>
   <p>ارفع صورة أو ملف PDF أو Word لأي مستند قانوني (صحيفة دعوى، حكم، محضر…)</p>
-  <p style={{ marginTop:'4px', fontSize:'0.8rem' }}>سيقوم النظام تلقائيًا باستخراج النص من المستند بنقطة OCR واحدة لكل دفعة رفع، ثم يمكنك تحليله بالذكاء الاصطناعي بنقطة إضافية وإنشاء قضية جديدة من محتواه مباشرةً.</p>
-  <p style={{ marginTop:'4px', fontSize:'0.8rem', opacity: 0.7 }}>الصيغ المدعومة: JPG، PNG، WEBP، PDF، DOCX</p>
-  </div>
-  </div>
+	  <p style={{ marginTop:'4px', fontSize:'0.8rem' }}>سيقوم النظام تلقائيًا باستخراج النص من المستند بنقطة OCR واحدة لكل دفعة رفع، ثم يمكنك تحليله بالذكاء الاصطناعي بنقطة إضافية وإنشاء قضية جديدة من محتواه مباشرةً.</p>
+	  <p style={{ marginTop:'4px', fontSize:'0.8rem', opacity: 0.7 }}>الصيغ المدعومة: JPG، PNG، WEBP، PDF، DOCX</p>
+		 </div>
+		 </div>
  <div className="btn mt-10 w-full flex flex-col sm:flex-row justify-center gap-3 px-4">
  <CustomButton
  type='button'
@@ -553,10 +686,11 @@ const Documents = () => {
  onClick={handleImageClick}
  />
  </div>
- </div>
- </div>
+		 </div>
+		 )}
+		 </div>
 
- {/* نص يدوي إضافي */}
+	 {/* نص يدوي إضافي */}
  <div className="mt-6">
  <div className="flex items-center gap-2 mb-2">
  <span className="text-sm font-semibold text-[var(--main-color)]">نص إضافي</span>
@@ -686,10 +820,38 @@ const Documents = () => {
  onClick={handleClearSession}
  startContent={<MdOutlineClear />}
  />
- </div>
- </div>
- </div>
- )}
+	 </div>
+	 </div>
+
+	 <div className="documents-add-more">
+	 <p>تحتاج تضيف مستند آخر؟</p>
+	 <div className="documents-add-more__actions">
+	 <CustomButton
+	 type='button'
+	 text='إضافة PDF أو Word'
+	 size='lg'
+	 radius='md'
+	 color='primary'
+	 variant='bordered'
+	 startContent={<FiUpload />}
+	 onClick={handleDocumentClick}
+	 isDisabled={isBusy}
+	 />
+	 <CustomButton
+	 type='button'
+	 text='إضافة صورة'
+	 size='lg'
+	 radius='md'
+	 color='primary'
+	 variant='bordered'
+	 startContent={<FiUpload />}
+	 onClick={handleImageClick}
+	 isDisabled={isBusy}
+	 />
+	 </div>
+	 </div>
+	 </div>
+	 )}
 
  <FormModal isOpen={isOpen} onOpenChange={onOpenChange} title='إضافة قضية جديد' size='2xl' >
  <AddNewCaseFromOCRForm onClose={onClose} />
