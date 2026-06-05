@@ -40,6 +40,21 @@ const Lawyers = () => {
   );
   const lawyersList = Array.isArray(list) ? list : [];
 
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setPage(1);
+  };
+
+  const handleStatusFilterChange = (value: string) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
+
+  const handleSubscriptionFilterChange = (value: string) => {
+    setSubscriptionFilter(value);
+    setPage(1);
+  };
+
   useEffect(() => {
     dispatch(fetchLawyersReport());
   }, [dispatch]);
@@ -53,10 +68,6 @@ const Lawyers = () => {
       subscriptionIsActive: subscriptionFilter === "active" ? true : subscriptionFilter === "inactive" ? false : undefined,
     }));
   }, [dispatch, page, searchQuery, statusFilter, subscriptionFilter]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [searchQuery, statusFilter, subscriptionFilter]);
 
   const handleToggleStatus = (id: string, currentIsActive: boolean) => {
     dispatch(updateLawyerStatus({ id, isActive: !currentIsActive }));
@@ -166,7 +177,7 @@ const Lawyers = () => {
         <SubTitle title="تقارير تفصيلية :" />
         <AdminFilterToolbar
           searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
+          onSearchChange={handleSearchChange}
           searchPlaceholder="ابحث بالاسم، المكتب، البريد، الهاتف، رقم النقابة..."
           totalCount={totalCount}
           filteredCount={totalCount}
@@ -182,7 +193,7 @@ const Lawyers = () => {
               key: "status",
               label: "حالة الحساب",
               value: statusFilter,
-              onChange: setStatusFilter,
+              onChange: handleStatusFilterChange,
               options: [
                 { value: "", label: "الكل" },
                 { value: "active", label: "نشط" },
@@ -193,7 +204,7 @@ const Lawyers = () => {
               key: "subscription",
               label: "حالة الاشتراك",
               value: subscriptionFilter,
-              onChange: setSubscriptionFilter,
+              onChange: handleSubscriptionFilterChange,
               options: [
                 { value: "", label: "الكل" },
                 { value: "active", label: "اشتراك نشط" },

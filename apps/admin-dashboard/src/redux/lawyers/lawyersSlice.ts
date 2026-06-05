@@ -15,6 +15,7 @@ type TLawyersState = {
  isUpdatingStatus: boolean;
  totalPages: number;
  totalCount: number;
+ currentFetchRequestId: string | null;
  error: string | null;
 };
 
@@ -27,6 +28,7 @@ const initialState: TLawyersState = {
  isUpdatingStatus: false,
  totalPages: 1,
  totalCount: 0,
+ currentFetchRequestId: null,
  error: null,
 };
 
@@ -36,18 +38,25 @@ const lawyersSlice = createSlice({
  reducers: {},
  extraReducers: (builder) => {
  builder
- .addCase(fetchLawyers.pending, (state) => {
+ .addCase(fetchLawyers.pending, (state, action) => {
  state.isLoading = true;
+ state.currentFetchRequestId = action.meta?.requestId ?? null;
  state.error = null;
  })
  .addCase(fetchLawyers.fulfilled, (state, action) => {
+ const requestId = action.meta?.requestId;
+ if (requestId && state.currentFetchRequestId !== requestId) return;
  state.isLoading = false;
+ state.currentFetchRequestId = null;
  state.list = Array.isArray(action.payload.items) ? action.payload.items : [];
  state.totalPages = action.payload.totalPages ?? 1;
  state.totalCount = action.payload.totalCount ?? 0;
  })
  .addCase(fetchLawyers.rejected, (state, action) => {
+ const requestId = action.meta?.requestId;
+ if (requestId && state.currentFetchRequestId !== requestId) return;
  state.isLoading = false;
+ state.currentFetchRequestId = null;
  if (typeof action.payload ==="string") {
  state.error = action.payload;
  showErrorToast(action.payload);
