@@ -260,6 +260,8 @@ const Documents = () => {
 
  if (selectedFiles.length === 0) return;
 
+ window.scrollTo({ top: 0, behavior: 'smooth' });
+
  if (selectedFiles.length > MAX_TOTAL_FILES) {
  sileo.error({ title: `الحد الأقصى ${MAX_TOTAL_FILES} ملفات في المرة الواحدة` });
  return;
