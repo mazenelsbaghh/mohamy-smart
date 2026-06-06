@@ -569,7 +569,7 @@ const Documents = () => {
  <input
  type="file"
  ref={documentInputRef}
- style={{ display: 'none' }}
+ style={{ opacity: 0, position: 'absolute', width: '1px', height: '1px', pointerEvents: 'none' }}
  accept={DOCUMENT_ACCEPT}
  multiple
  onChange={handleFileChange}
@@ -578,7 +578,7 @@ const Documents = () => {
  <input
  type="file"
  ref={imageInputRef}
- style={{ display: 'none' }}
+ style={{ opacity: 0, position: 'absolute', width: '1px', height: '1px', pointerEvents: 'none' }}
  accept={IMAGE_ACCEPT}
  multiple
  onChange={handleFileChange}
