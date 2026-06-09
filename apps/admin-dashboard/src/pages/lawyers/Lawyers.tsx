@@ -11,6 +11,9 @@ import { FaUsers, FaUserCheck, FaCrown, FaUserClock } from "react-icons/fa";
 import fetchLawyers from "../../redux/lawyers/thunk/fetchLawyers";
 import updateLawyerStatus from "../../redux/lawyers/thunk/updateLawyerStatus";
 import fetchLawyersReport from "../../redux/reports/thunk/fetchLawyersReport";
+import fetchLawyerCasesStats from "../../redux/reports/thunk/fetchLawyerCasesStats";
+import api from "../../APIs/api";
+import { sileo } from "sileo";
 import SkeletonStatsCards from "../../components/skeleton/SkeletonStatsCards";
 import SkeletonTable from "../../components/skeleton/SkeletonTable";
 import AdminFilterToolbar from "../../components/adminFilters/AdminFilterToolbar";
@@ -26,19 +29,32 @@ const columns = [
   { key: "actions", label: "الإجراءات" },
 ];
 
+const statsColumns = [
+  { key: "fullName", label: "الاسم" },
+  { key: "phoneNumber", label: "رقم الهاتف" },
+  { key: "casesCount", label: "عدد القضايا" },
+  { key: "completedStepsCount", label: "الخطوات المنفذة" },
+  { key: "workflowVersionsCount", label: "عدد النسخ الاحتياطية" },
+];
+
 const Lawyers = () => {
   const dispatch = useAppDispatch();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [subscriptionFilter, setSubscriptionFilter] = useState("");
+  const [activeTab, setActiveTab] = useState<"accounts" | "stats">("accounts");
+  const [isExporting, setIsExporting] = useState(false);
+
   const { list, isLoading, totalPages, totalCount, isUpdatingStatus } = useAppSelector(
     (state) => state.lawyers
   );
-  const { lawyersReport } = useAppSelector(
+  const { lawyersReport, lawyerCasesStats, isLoadingLawyerCasesStats } = useAppSelector(
     (state) => state.reports
   );
+  
   const lawyersList = Array.isArray(list) ? list : [];
+  const statsList = lawyerCasesStats?.items || [];
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -55,19 +71,69 @@ const Lawyers = () => {
     setPage(1);
   };
 
+  const handleTabChange = (tab: "accounts" | "stats") => {
+    setActiveTab(tab);
+    setPage(1);
+    setSearchQuery("");
+  };
+
+  const handleDownloadReport = async () => {
+    setIsExporting(true);
+    try {
+      const res = await api.get("/admin/reports/lawyers-cases-stats", {
+        params: { pageNumber: 1, pageSize: 0, search: searchQuery.trim() || undefined },
+      });
+      
+      const stats = res.data?.data?.items || [];
+      if (stats.length === 0) {
+        sileo.warning({ title: "لا توجد بيانات لتصديرها" });
+        return;
+      }
+
+      const XLSX = await import('xlsx');
+      const data = stats.map((item: any) => ({
+        "الاسم": item.fullName || "-",
+        "رقم الهاتف": item.phoneNumber || "-",
+        "عدد القضايا": item.casesCount,
+        "الخطوات المنفذة": item.completedStepsCount,
+        "عدد النسخ الاحتياطية": item.workflowVersionsCount,
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      ws['!dir'] = 'rtl'; // RTL support in Excel sheet
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "إحصائيات القضايا");
+      XLSX.writeFile(wb, `تقرير_إحصائيات_القضايا_${new Date().toISOString().split('T')[0]}.xlsx`);
+      sileo.success({ title: "تم تصدير الملف بنجاح" });
+    } catch {
+      sileo.error({ title: "تعذّر تصدير الملف. أعد المحاولة." });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   useEffect(() => {
     dispatch(fetchLawyersReport());
   }, [dispatch]);
 
   useEffect(() => {
-    const trimmedSearch = searchQuery.trim();
-    dispatch(fetchLawyers({
-      pageNumber: page,
-      search: trimmedSearch || undefined,
-      isActive: statusFilter === "active" ? true : statusFilter === "inactive" ? false : undefined,
-      subscriptionIsActive: subscriptionFilter === "active" ? true : subscriptionFilter === "inactive" ? false : undefined,
-    }));
-  }, [dispatch, page, searchQuery, statusFilter, subscriptionFilter]);
+    if (activeTab === "accounts") {
+      const trimmedSearch = searchQuery.trim();
+      dispatch(fetchLawyers({
+        pageNumber: page,
+        search: trimmedSearch || undefined,
+        isActive: statusFilter === "active" ? true : statusFilter === "inactive" ? false : undefined,
+        subscriptionIsActive: subscriptionFilter === "active" ? true : subscriptionFilter === "inactive" ? false : undefined,
+      }));
+    } else {
+      dispatch(fetchLawyerCasesStats({
+        pageNumber: page,
+        pageSize: 50,
+        search: searchQuery.trim() || undefined,
+      }));
+    }
+  }, [dispatch, page, searchQuery, statusFilter, subscriptionFilter, activeTab]);
 
   const handleToggleStatus = (id: string, currentIsActive: boolean) => {
     dispatch(updateLawyerStatus({ id, isActive: !currentIsActive }));
@@ -110,6 +176,15 @@ const Lawyers = () => {
         {l.isActive ? "إيقاف" : "تنشيط"}
       </Button>
     ),
+  }));
+
+  const statsTableData = statsList.map((item) => ({
+    key: item.lawyerId,
+    fullName: item.fullName || "-",
+    phoneNumber: item.phoneNumber || "-",
+    casesCount: item.casesCount,
+    completedStepsCount: item.completedStepsCount,
+    workflowVersionsCount: item.workflowVersionsCount,
   }));
 
   if (isLoading && lawyersList.length === 0) {
@@ -174,53 +249,109 @@ const Lawyers = () => {
           }}
         />
 
-        <SubTitle title="تقارير تفصيلية :" />
+        {/* Tab Sub-Navigation */}
+        <div className="flex gap-4 mb-6 border-b border-[var(--border-color,#1B1B1B15)] pb-3 rtl">
+          <button
+            type="button"
+            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 relative ${
+              activeTab === "accounts"
+                ? "text-[var(--main-color)] bg-[var(--main-color)]/5 border-b-2 border-[var(--main-color)]"
+                : "text-[var(--text-secondary)] hover:bg-[var(--main-color)]/5 hover:text-[var(--main-color)]"
+            }`}
+            onClick={() => handleTabChange("accounts")}
+          >
+            إدارة الحسابات
+          </button>
+          <button
+            type="button"
+            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 relative ${
+              activeTab === "stats"
+                ? "text-[var(--main-color)] bg-[var(--main-color)]/5 border-b-2 border-[var(--main-color)]"
+                : "text-[var(--text-secondary)] hover:bg-[var(--main-color)]/5 hover:text-[var(--main-color)]"
+            }`}
+            onClick={() => handleTabChange("stats")}
+          >
+            إحصائيات القضايا
+          </button>
+        </div>
+
+        <SubTitle
+          title="تقارير تفصيلية :"
+          components={
+            activeTab === "stats" && (
+              <Button
+                size="md"
+                color="default"
+                radius="full"
+                variant="flat"
+                className="font-bold border border-[var(--border-color,#1B1B1B15)] bg-white shadow-sm"
+                isLoading={isExporting}
+                onClick={handleDownloadReport}
+                startContent={<img src="/images/icons-excel.png" alt="excel" className="w-5 h-5" />}
+              >
+                تحميل التقرير
+              </Button>
+            )
+          }
+        />
+        
         <AdminFilterToolbar
           searchValue={searchQuery}
           onSearchChange={handleSearchChange}
-          searchPlaceholder="ابحث بالاسم، المكتب، البريد، الهاتف، رقم النقابة..."
-          totalCount={totalCount}
-          filteredCount={totalCount}
-          isFiltering={isFiltering}
+          searchPlaceholder={
+            activeTab === "accounts"
+              ? "ابحث بالاسم، المكتب، البريد، الهاتف، رقم النقابة..."
+              : "ابحث بالاسم أو رقم الهاتف..."
+          }
+          totalCount={activeTab === "accounts" ? totalCount : (lawyerCasesStats?.totalCount ?? 0)}
+          filteredCount={activeTab === "accounts" ? totalCount : (lawyerCasesStats?.totalCount ?? 0)}
+          isFiltering={activeTab === "accounts" ? isFiltering : Boolean(searchQuery.trim())}
           onReset={() => {
             setSearchQuery("");
-            setStatusFilter("");
-            setSubscriptionFilter("");
+            if (activeTab === "accounts") {
+              setStatusFilter("");
+              setSubscriptionFilter("");
+            }
             setPage(1);
           }}
-          filters={[
-            {
-              key: "status",
-              label: "حالة الحساب",
-              value: statusFilter,
-              onChange: handleStatusFilterChange,
-              options: [
-                { value: "", label: "الكل" },
-                { value: "active", label: "نشط" },
-                { value: "inactive", label: "موقوف" },
-              ],
-            },
-            {
-              key: "subscription",
-              label: "حالة الاشتراك",
-              value: subscriptionFilter,
-              onChange: handleSubscriptionFilterChange,
-              options: [
-                { value: "", label: "الكل" },
-                { value: "active", label: "اشتراك نشط" },
-                { value: "inactive", label: "بدون اشتراك نشط" },
-              ],
-            },
-          ]}
+          filters={
+            activeTab === "accounts"
+              ? [
+                  {
+                    key: "status",
+                    label: "حالة الحساب",
+                    value: statusFilter,
+                    onChange: handleStatusFilterChange,
+                    options: [
+                      { value: "", label: "الكل" },
+                      { value: "active", label: "نشط" },
+                      { value: "inactive", label: "موقوف" },
+                    ],
+                  },
+                  {
+                    key: "subscription",
+                    label: "حالة الاشتراك",
+                    value: subscriptionFilter,
+                    onChange: handleSubscriptionFilterChange,
+                    options: [
+                      { value: "", label: "الكل" },
+                      { value: "active", label: "اشتراك نشط" },
+                      { value: "inactive", label: "بدون اشتراك نشط" },
+                    ],
+                  },
+                ]
+              : []
+          }
         />
+        
         <div className="w-full">
           <ServerPaginationTable
-            data={tableData}
-            columns={columns}
+            data={(activeTab === "accounts" ? tableData : statsTableData) as any[]}
+            columns={activeTab === "accounts" ? columns : statsColumns}
             page={page}
-            totalPages={totalPages}
+            totalPages={activeTab === "accounts" ? totalPages : (lawyerCasesStats?.totalPages ?? 1)}
             onPageChange={setPage}
-            isLoading={isLoading}
+            isLoading={activeTab === "accounts" ? isLoading : isLoadingLawyerCasesStats}
           />
         </div>
       </Container>

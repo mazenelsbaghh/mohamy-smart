@@ -279,5 +279,59 @@ namespace Lawyer.Application.Services
 
 			return ApiExceptionResponse.Success(dto, "Revenue report generated successfully");
 		}
+
+		public async Task<Result<Lawyer.Application.Models.PaginatedList<LawyerCasesStatsDto>>> GetLawyersCasesStatsAsync(
+			int pageNumber,
+			int pageSize,
+			string? search,
+			CancellationToken cancellationToken)
+		{
+			var query = _unitOfWork.Repository<Core.Models.Lawyer>()
+				.AsQueryable()
+				.AsNoTracking()
+				.Include(l => l.ApplicationUser)
+				.Select(l => new LawyerCasesStatsDto
+				{
+					LawyerId = l.Id,
+					FullName = l.ApplicationUser.FullName,
+					PhoneNumber = l.ApplicationUser.PhoneNumber,
+					CasesCount = _unitOfWork.Repository<Case>().AsQueryable().Count(c => c.LawyerId == l.Id),
+					CompletedStepsCount = _unitOfWork.Repository<AiJob>().AsQueryable().Count(j => j.Case.LawyerId == l.Id && j.Status == AiJobStatus.Completed),
+					WorkflowVersionsCount = _unitOfWork.Repository<WorkflowSnapshot>().AsQueryable().Count(s => s.Case.LawyerId == l.Id)
+				});
+
+			if (!string.IsNullOrWhiteSpace(search))
+			{
+				query = query.Where(l => l.FullName.Contains(search) || (l.PhoneNumber != null && l.PhoneNumber.Contains(search)));
+			}
+
+			query = query.OrderByDescending(l => l.CasesCount).ThenBy(l => l.FullName);
+
+			var totalCount = await query.CountAsync(cancellationToken);
+
+			List<LawyerCasesStatsDto> items;
+			if (pageSize > 0)
+			{
+				items = await query
+					.Skip((pageNumber - 1) * pageSize)
+					.Take(pageSize)
+					.ToListAsync(cancellationToken);
+			}
+			else
+			{
+				items = await query.ToListAsync(cancellationToken);
+			}
+
+			var result = new Lawyer.Application.Models.PaginatedList<LawyerCasesStatsDto>(
+				items,
+				totalCount,
+				pageSize > 0 ? pageNumber : 1,
+				pageSize > 0 ? pageSize : totalCount > 0 ? totalCount : 1
+			);
+
+			_logger.LogInformation("Lawyers cases stats report generated: TotalCount={TotalCount}", totalCount);
+
+			return ApiExceptionResponse.Success(result, "Lawyers cases statistics report generated successfully");
+		}
 	}
 }
