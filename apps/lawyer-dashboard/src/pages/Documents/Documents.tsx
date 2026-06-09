@@ -188,7 +188,8 @@ const Documents = () => {
 
  const dispatch = useAppDispatch();
  const { caseType } = useAppSelector((state) => state.caseType);
- const { loading, ocrResults: persistedResults, manualText } = useAppSelector((state) => state.ocr);
+  const { loading, ocrResults: persistedResults, manualText } = useAppSelector((state) => state.ocr);
+  const { aiPointBalance, error: subscriptionError } = useAppSelector((state) => state.subscription);
 
  const documentInputRef = useRef<HTMLInputElement | null>(null);
  const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -208,9 +209,53 @@ const Documents = () => {
  abortControllerRef.current.abort();
  abortControllerRef.current = null;
  }
- setProcessingStatus({ phase:'idle', completed: 0, total: 0, label:'', detail:'', percent: undefined });
- sileo.error({ title:'🛑 تم إلغاء المعالجة' });
- }, []);
+  setProcessingStatus({ phase: 'idle', completed: 0, total: 0, label: '', detail: '', percent: undefined });
+  sileo.error({ title: '🛑 تم إلغاء المعالجة' });
+  }, []);
+
+  const validateOcrAccess = useCallback(async (): Promise<boolean> => {
+    if (subscriptionError) {
+      sileo.error({ title: subscriptionError });
+      return false;
+    }
+
+    if (aiPointBalance) {
+      if (aiPointBalance.subscriptionActive === false) {
+        sileo.error({
+          title: "لا يوجد اشتراك نشط لاستخدام ميزات الذكاء الاصطناعي. يرجى تجديد الاشتراك لتتمكن من استخدام ميزة استخراج النصوص (OCR)."
+        });
+        return false;
+      }
+      if (aiPointBalance.available < 1) {
+        sileo.error({
+          title: "رصيد نقاط الذكاء الاصطناعي الخاص بك غير كافٍ لاستخراج النصوص. يرجى شحن الرصيد أولاً."
+        });
+        return false;
+      }
+      return true;
+    }
+
+    try {
+      const balance = await dispatch(thunkGetAiPointBalance()).unwrap();
+      if (balance.subscriptionActive === false) {
+        sileo.error({
+          title: "لا يوجد اشتراك نشط لاستخدام ميزات الذكاء الاصطناعي. يرجى تجديد الاشتراك لتتمكن من استخدام ميزة استخراج النصوص (OCR)."
+        });
+        return false;
+      }
+      if (balance.available < 1) {
+        sileo.error({
+          title: "رصيد نقاط الذكاء الاصطناعي الخاص بك غير كافٍ لاستخراج النصوص. يرجى شحن الرصيد أولاً."
+        });
+        return false;
+      }
+      return true;
+    } catch (err: unknown) {
+      const errMsg = (err as { message?: string })?.message || String(err) || "لا يوجد اشتراك نشط لاستخدام ميزات الذكاء الاصطناعي.";
+      sileo.error({ title: errMsg });
+      return false;
+    }
+  }, [dispatch, aiPointBalance, subscriptionError]);
 
  const handleDocumentClick = () => {
  documentInputRef.current?.click();
@@ -256,9 +301,18 @@ const Documents = () => {
 
  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
- const selectedFiles = e.target.files ? Array.from(e.target.files).map(normalizeSupportedFile) : [];
+  const selectedFiles = e.target.files ? Array.from(e.target.files).map(normalizeSupportedFile) : [];
 
- if (selectedFiles.length === 0) return;
+  if (selectedFiles.length === 0) return;
+
+  const hasOcrFiles = selectedFiles.some(f => isPdfFile(f) || isSupportedImageFile(f));
+  if (hasOcrFiles) {
+    const hasAccess = await validateOcrAccess();
+    if (!hasAccess) {
+      e.target.value = "";
+      return;
+    }
+  }
 
  window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -474,8 +528,15 @@ const Documents = () => {
 	 });
  }
  } catch (errorMessage) {
- if (!controller.signal.aborted) {
- sileo.error({ title: `حدث خطأ أثناء استخراج النصوص\n ${errorMessage}` });
+  if (!controller.signal.aborted) {
+  const isQuotaOrSubscriptionError = typeof errorMessage === 'string' &&
+    (errorMessage.includes('اشتراك') || errorMessage.includes('نقاط') || errorMessage.includes('رصيد'));
+
+  sileo.error({
+    title: isQuotaOrSubscriptionError
+      ? errorMessage
+      : `حدث خطأ أثناء استخراج النصوص\n ${errorMessage}`
+  });
  const errorResults = await Promise.all(ocrFiles.map(async (preparedFile) => {
  const { file, sourceType, pageNumber, totalPages } = preparedFile;
  let errorImageUrl ='';
