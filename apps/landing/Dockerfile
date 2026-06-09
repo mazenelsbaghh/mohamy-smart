@@ -29,11 +29,10 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN rm -rf node_modules package-lock.json \
-		&& npm install --include=optional \
+	RUN npm ci --include=optional \
 		&& arch="$(node -p "process.arch")" \
-		&& if [ "$arch" = "arm64" ]; then npm install --no-save lightningcss-linux-arm64-gnu@1.30.1; fi \
-		&& if [ "$arch" = "x64" ]; then npm install --no-save lightningcss-linux-x64-gnu@1.30.1; fi
+		&& if [ "$arch" = "arm64" ]; then npm install --no-save --no-package-lock lightningcss-linux-arm64-gnu@1.30.1; fi \
+		&& if [ "$arch" = "x64" ]; then npm install --no-save --no-package-lock lightningcss-linux-x64-gnu@1.30.1; fi
 COPY apps/landing ./apps/landing
 RUN npm run build --workspace=@mohamy/landing
 

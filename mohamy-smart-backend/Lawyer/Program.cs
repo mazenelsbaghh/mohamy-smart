@@ -214,7 +214,12 @@ if (!builder.Environment.IsEnvironment("Testing") && builder.Configuration.GetCo
                 UseRecommendedIsolationLevel = true,
                 DisableGlobalLocks = true,
             }));
-    builder.Services.AddHangfireServer();
+    var hangfireWorkerCount = builder.Configuration.GetValue<int?>("Hangfire:WorkerCount") ?? 4;
+    hangfireWorkerCount = Math.Clamp(hangfireWorkerCount, 1, 8);
+    builder.Services.AddHangfireServer(options =>
+    {
+        options.WorkerCount = hangfireWorkerCount;
+    });
 }
 
 builder.Services.AddSignalR();

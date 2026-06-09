@@ -31,11 +31,10 @@ COPY packages ./packages
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/lawyer-dashboard/package.json ./apps/lawyer-dashboard/
 	COPY apps/landing/package.json ./apps/landing/
-	RUN rm -rf node_modules package-lock.json \
-		&& npm install --include=dev --include=optional \
+	RUN npm ci --include=dev --include=optional \
 		&& arch="$(node -p "process.arch")" \
-		&& if [ "$arch" = "arm64" ]; then npm install --no-save @swc/core-linux-arm64-gnu@1.13.4 lightningcss-linux-arm64-gnu@1.30.1; fi \
-		&& if [ "$arch" = "x64" ]; then npm install --no-save @swc/core-linux-x64-gnu@1.13.4 lightningcss-linux-x64-gnu@1.30.1; fi
+		&& if [ "$arch" = "arm64" ]; then npm install --no-save --no-package-lock @swc/core-linux-arm64-gnu@1.13.4 lightningcss-linux-arm64-gnu@1.30.1; fi \
+		&& if [ "$arch" = "x64" ]; then npm install --no-save --no-package-lock @swc/core-linux-x64-gnu@1.13.4 lightningcss-linux-x64-gnu@1.30.1; fi
 COPY apps/lawyer-dashboard ./apps/lawyer-dashboard
 RUN cd apps/lawyer-dashboard && npx vite build
 
