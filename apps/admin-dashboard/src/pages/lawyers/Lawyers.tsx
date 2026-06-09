@@ -1,5 +1,5 @@
 import { Container } from '@mohamy/shared-ui';
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import HeadTitle from "../../components/public/headTitle/HeadTitle";
 import StatsCards from "../../components/public/statsCards/StatsCards";
@@ -11,7 +11,10 @@ import { FaUsers, FaUserCheck, FaCrown, FaUserClock } from "react-icons/fa";
 import fetchLawyers from "../../redux/lawyers/thunk/fetchLawyers";
 import updateLawyerStatus from "../../redux/lawyers/thunk/updateLawyerStatus";
 import fetchLawyersReport from "../../redux/reports/thunk/fetchLawyersReport";
-import fetchLawyerCasesStats from "../../redux/reports/thunk/fetchLawyerCasesStats";
+import fetchLawyerCasesStats, {
+  type TLawyerCasesStats,
+  type TPagedLawyerCasesStats,
+} from "../../redux/reports/thunk/fetchLawyerCasesStats";
 import api from "../../APIs/api";
 import { sileo } from "sileo";
 import SkeletonStatsCards from "../../components/skeleton/SkeletonStatsCards";
@@ -36,6 +39,10 @@ const statsColumns = [
   { key: "completedStepsCount", label: "الخطوات المنفذة" },
   { key: "workflowVersionsCount", label: "عدد النسخ الاحتياطية" },
 ];
+
+const REPORT_EXPORT_PAGE_SIZE = 100;
+
+type LawyersTableRow = { key: string } & Record<string, ReactNode>;
 
 const Lawyers = () => {
   const dispatch = useAppDispatch();
@@ -80,18 +87,33 @@ const Lawyers = () => {
   const handleDownloadReport = async () => {
     setIsExporting(true);
     try {
-      const res = await api.get("/admin/reports/lawyers-cases-stats", {
-        params: { pageNumber: 1, pageSize: 0, search: searchQuery.trim() || undefined },
+      const requestParams = {
+        pageSize: REPORT_EXPORT_PAGE_SIZE,
+        search: searchQuery.trim() || undefined,
+      };
+
+      const firstPage = await api.get<{ data: TPagedLawyerCasesStats }>("/admin/reports/lawyers-cases-stats", {
+        params: { ...requestParams, pageNumber: 1 },
       });
-      
-      const stats = res.data?.data?.items || [];
+
+      const firstPageData = firstPage.data?.data;
+      const stats: TLawyerCasesStats[] = [...(firstPageData?.items || [])];
+      const totalPages = firstPageData?.totalPages || 1;
+
+      for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
+        const pageRes = await api.get<{ data: TPagedLawyerCasesStats }>("/admin/reports/lawyers-cases-stats", {
+          params: { ...requestParams, pageNumber },
+        });
+        stats.push(...(pageRes.data?.data?.items || []));
+      }
+
       if (stats.length === 0) {
         sileo.warning({ title: "لا توجد بيانات لتصديرها" });
         return;
       }
 
       const XLSX = await import('xlsx');
-      const data = stats.map((item: any) => ({
+      const data = stats.map((item) => ({
         "الاسم": item.fullName || "-",
         "رقم الهاتف": item.phoneNumber || "-",
         "عدد القضايا": item.casesCount,
@@ -141,7 +163,7 @@ const Lawyers = () => {
 
   const isFiltering = Boolean(searchQuery.trim() || statusFilter || subscriptionFilter);
 
-  const tableData = lawyersList.map((l) => ({
+  const tableData: LawyersTableRow[] = lawyersList.map((l) => ({
     key: l.id,
     fullName: l.fullName || "-",
     lawFirmName: l.lawFirmName || "-",
@@ -178,7 +200,7 @@ const Lawyers = () => {
     ),
   }));
 
-  const statsTableData = statsList.map((item) => ({
+  const statsTableData: LawyersTableRow[] = statsList.map((item) => ({
     key: item.lawyerId,
     fullName: item.fullName || "-",
     phoneNumber: item.phoneNumber || "-",
@@ -346,7 +368,7 @@ const Lawyers = () => {
         
         <div className="w-full">
           <ServerPaginationTable
-            data={(activeTab === "accounts" ? tableData : statsTableData) as any[]}
+            data={activeTab === "accounts" ? tableData : statsTableData}
             columns={activeTab === "accounts" ? columns : statsColumns}
             page={page}
             totalPages={activeTab === "accounts" ? totalPages : (lawyerCasesStats?.totalPages ?? 1)}
