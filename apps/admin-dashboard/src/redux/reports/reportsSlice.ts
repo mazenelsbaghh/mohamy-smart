@@ -3,25 +3,30 @@ import fetchLawyersReport from"./thunk/fetchLawyersReport";
 import fetchSubscriptionsReport from"./thunk/fetchSubscriptionsReport";
 import fetchRevenueReport from"./thunk/fetchRevenueReport";
 import fetchAccountMessagingAudit from"./thunk/fetchAccountMessagingAudit";
+import fetchLawyerCasesStats from"./thunk/fetchLawyerCasesStats";
 import { showErrorToast } from"../../utils/toastHelpers";
 import type { TLawyersReport } from"./thunk/fetchLawyersReport";
 import type { TSubscriptionsReport } from"./thunk/fetchSubscriptionsReport";
 import type { TRevenueReport } from"./thunk/fetchRevenueReport";
 import type { TAccountMessagingAudit } from"./thunk/fetchAccountMessagingAudit";
+import type { TPagedLawyerCasesStats } from"./thunk/fetchLawyerCasesStats";
 
 type TReportsState = {
  lawyersReport: TLawyersReport | null;
  subscriptionsReport: TSubscriptionsReport | null;
  revenueReport: TRevenueReport | null;
  accountMessagingAudit: TAccountMessagingAudit | null;
+ lawyerCasesStats: TPagedLawyerCasesStats | null;
  isLoadingLawyersReport: boolean;
  isLoadingSubscriptionsReport: boolean;
  isLoadingRevenueReport: boolean;
  isLoadingAccountMessaging: boolean;
+ isLoadingLawyerCasesStats: boolean;
   errorLawyers: string | null;
   errorSubscriptions: string | null;
   errorRevenue: string | null;
   errorAccountMessaging: string | null;
+  errorLawyerCasesStats: string | null;
   error: string | null;
 };
 
@@ -30,14 +35,17 @@ const initialState: TReportsState = {
   subscriptionsReport: null,
   revenueReport: null,
   accountMessagingAudit: null,
+  lawyerCasesStats: null,
   isLoadingLawyersReport: false,
   isLoadingSubscriptionsReport: false,
   isLoadingRevenueReport: false,
   isLoadingAccountMessaging: false,
+  isLoadingLawyerCasesStats: false,
   errorLawyers: null,
   errorSubscriptions: null,
   errorRevenue: null,
   errorAccountMessaging: null,
+  errorLawyerCasesStats: null,
   error: null,
 };
 
@@ -103,6 +111,21 @@ const reportsSlice = createSlice({
   state.isLoadingAccountMessaging = false;
   if (typeof action.payload ==="string") {
   state.errorAccountMessaging = action.payload;
+  state.error = action.payload;
+  showErrorToast(action.payload);
+  }
+  })
+ .addCase(fetchLawyerCasesStats.pending, (state) => {
+ state.isLoadingLawyerCasesStats = true;
+ })
+ .addCase(fetchLawyerCasesStats.fulfilled, (state, action) => {
+ state.isLoadingLawyerCasesStats = false;
+ state.lawyerCasesStats = action.payload;
+ })
+  .addCase(fetchLawyerCasesStats.rejected, (state, action) => {
+  state.isLoadingLawyerCasesStats = false;
+  if (typeof action.payload ==="string") {
+  state.errorLawyerCasesStats = action.payload;
   state.error = action.payload;
   showErrorToast(action.payload);
   }

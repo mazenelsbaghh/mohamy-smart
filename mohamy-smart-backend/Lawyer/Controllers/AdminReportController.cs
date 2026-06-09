@@ -63,5 +63,16 @@ namespace Lawyer.Controllers
 			var result = await _adminReportService.GetAccountMessagingAuditAsync(cancellationToken);
 			return CreateResponse(result);
 		}
+
+		[HttpGet("lawyers-cases-stats")]
+		public async Task<IActionResult> GetLawyersCasesStats(
+			[FromQuery] int pageNumber = 1,
+			[FromQuery] int pageSize = 50,
+			[FromQuery] string? search = null,
+			CancellationToken cancellationToken = default)
+		{
+			var result = await _adminReportService.GetLawyersCasesStatsAsync(pageNumber, pageSize, search, cancellationToken);
+			return CreateResponse(result);
+		}
 	}
 }
