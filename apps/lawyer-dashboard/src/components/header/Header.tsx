@@ -1,7 +1,7 @@
 import './Header.css';
 
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { HiSun, HiMenu } from "react-icons/hi";
 
 
@@ -15,6 +15,8 @@ import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
 import thunkGetAiPointBalance from '../../redux/subscription/thunk/thunkGetAiPointBalance';
 import { useSidebar } from '../sidebar/sidebarContext';
 
+const AI_POINT_BALANCE_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+
 type THeader = {
     theme: 'dark' | 'light';
     setTheme: React.Dispatch<React.SetStateAction<'dark' | 'light'>>;
@@ -25,22 +27,42 @@ const Header = ({ theme, setTheme }: THeader) => {
     const user = useAppSelector((state) => state.auth.user);
     const { aiPointBalance, loading: subscriptionLoading } = useAppSelector((state) => state.subscription);
     const { toggle } = useSidebar();
+    const suppressBalancePollingRef = useRef(false);
+
+    useEffect(() => {
+        suppressBalancePollingRef.current = false;
+    }, [user?.userId]);
 
     const refreshAiPointBalance = useCallback(() => {
-        if (!user || document.visibilityState === 'hidden') return;
-        dispatch(thunkGetAiPointBalance({ silent: true }));
+        if (!user || document.visibilityState === 'hidden' || suppressBalancePollingRef.current) return;
+
+        void dispatch(thunkGetAiPointBalance({ silent: true }))
+            .unwrap()
+            .then(() => {
+                suppressBalancePollingRef.current = false;
+            })
+            .catch(() => {
+                suppressBalancePollingRef.current = true;
+            });
     }, [dispatch, user]);
 
     useEffect(() => {
-        if (!user || aiPointBalance || subscriptionLoading === 'pending') return;
-        dispatch(thunkGetAiPointBalance());
+        if (!user || aiPointBalance || subscriptionLoading === 'pending' || suppressBalancePollingRef.current) return;
+
+        void dispatch(thunkGetAiPointBalance())
+            .unwrap()
+            .then(() => {
+                suppressBalancePollingRef.current = false;
+            })
+            .catch(() => {
+                suppressBalancePollingRef.current = true;
+            });
     }, [dispatch, user, aiPointBalance, subscriptionLoading]);
 
     useEffect(() => {
         if (!user) return;
 
-        refreshAiPointBalance();
-        const intervalId = window.setInterval(refreshAiPointBalance, 15000);
+        const intervalId = window.setInterval(refreshAiPointBalance, AI_POINT_BALANCE_REFRESH_INTERVAL_MS);
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') refreshAiPointBalance();
         };
