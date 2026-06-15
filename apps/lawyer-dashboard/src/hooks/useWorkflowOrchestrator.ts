@@ -485,7 +485,13 @@ export function useWorkflowOrchestrator<
     async (fromStep: number, toStep: number) => {
       if (advancingRef.current) return;
       const wid = workflowState.workflowId;
-      if (wid) {
+
+      const isAlreadyAccessible = workflowState.runId != null && (
+        toStep <= (workflowState.currentAccessibleStep ?? 0) ||
+        toStep <= (workflowState.lastCompletedStep ?? 0)
+      );
+
+      if (wid && !isAlreadyAccessible) {
         advancingRef.current = true;
         try {
           await dispatch(thunks.advanceStage({
@@ -503,7 +509,7 @@ export function useWorkflowOrchestrator<
         setActive(toStep);
       }
     },
-    [dispatch, thunks, workflowState.workflowId, onError],
+    [dispatch, thunks, workflowState.workflowId, workflowState.runId, workflowState.currentAccessibleStep, workflowState.lastCompletedStep, onError],
   );
 
   const isAdvancingStage = (workflowState.loadingState as Record<string, unknown>).isAdvancingStage === true;

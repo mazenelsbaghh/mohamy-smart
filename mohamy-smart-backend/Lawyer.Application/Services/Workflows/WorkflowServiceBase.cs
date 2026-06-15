@@ -365,6 +365,12 @@ namespace Lawyer.Application.Services.Workflows
                 var workflow = await _unitOfWork.Repository<TWorkflow>().FirstOrDefaultAsync(x => x.Id == workflowId, ct);
                 if (workflow == null) return Result<TDto>.Error(HttpStatusCode.NotFound, "سير العمل غير موجود");
                 if (workflow.LawyerId != lawyerId) return Result<TDto>.Error(HttpStatusCode.Forbidden, "ليس لديك صلاحية");
+
+                if (toStep <= workflow.CurrentAccessibleStep)
+                {
+                    return Result<TDto>.Success(MapToDto(workflow), "تم الانتقال إلى المرحلة التالية بنجاح");
+                }
+
                 if (workflow.Status != WorkflowStatus.InProgress) return Result<TDto>.Error(HttpStatusCode.BadRequest, "سير العمل ليس قيد التقدم");
                 if (fromStep < 1 || fromStep > TotalSteps) return Result<TDto>.Error(HttpStatusCode.BadRequest, "رقم خطوة غير صالح");
                 if (toStep != fromStep + 1) return Result<TDto>.Error(HttpStatusCode.BadRequest, "يمكن الانتقال خطوة واحدة فقط");
