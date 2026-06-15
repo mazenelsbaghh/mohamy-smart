@@ -372,3 +372,15 @@
         padding: 18px;
     }
 }
+
+@keyframes checkIn {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes checkIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+}

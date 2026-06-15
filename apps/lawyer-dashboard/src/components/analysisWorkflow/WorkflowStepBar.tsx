@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
 import { AutoSaveButton } from './AutoSaveButton';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { IoArrowBackOutline } from 'react-icons/io5';
+import { IoArrowBackOutline, IoStopOutline } from 'react-icons/io5';
 
 type Step = { label: string };
 
@@ -16,6 +17,9 @@ type WorkflowStepBarProps = {
  currentAccessibleStep?: number;
  lastCompletedStep?: number;
  stageConflicts?: { stepNumber: number }[];
+ isAutoRunning?: boolean;
+ onStopAutoRun?: () => void;
+ justFinishedAutoRun?: boolean;
 };
 
 const WorkflowStepBar = ({
@@ -30,6 +34,9 @@ const WorkflowStepBar = ({
  currentAccessibleStep,
  lastCompletedStep,
  stageConflicts,
+ isAutoRunning = false,
+ onStopAutoRun,
+ justFinishedAutoRun = false,
 }: WorkflowStepBarProps) => {
  const { id } = useParams();
  const navigate = useNavigate();
@@ -38,6 +45,17 @@ const WorkflowStepBar = ({
  const total = steps.length;
  const humanStep = active + 1;
  const hasConflicts = Array.isArray(stageConflicts) && stageConflicts.length > 0;
+
+  // Auto-dismiss success badge after 3 seconds
+  const [showFinishedBadge, setShowFinishedBadge] = useState(false);
+  useEffect(() => {
+    if (justFinishedAutoRun) {
+      setShowFinishedBadge(true);
+      const timer = setTimeout(() => setShowFinishedBadge(false), 3000);
+      return () => clearTimeout(timer);
+    }
+    setShowFinishedBadge(false);
+  }, [justFinishedAutoRun]);
 
   const resolvedRunStatus = searchParams.get('fresh') === '1'
     ? 'new' as const
@@ -76,7 +94,17 @@ const WorkflowStepBar = ({
    const isLocked = currentAccessibleStep != null && idx > 0 && idx > currentAccessibleStep;
    const hasLifecycle = currentAccessibleStep != null || lastCompletedStep != null || hasConflicts;
             let dotStyle: string;
-            if (isCurrent) {
+
+            if (isAutoRunning) {
+              // Enhanced dots during auto-run
+              if (idx < active) {
+                dotStyle = 'w-2 h-2 bg-[var(--success-color)]';
+              } else if (isCurrent) {
+                dotStyle = 'w-5 h-2 bg-[var(--main-color)] animate-pulse';
+              } else {
+                dotStyle = 'w-2 h-2 app-surface-muted dark:app-surface-soft opacity-50';
+              }
+            } else if (isCurrent) {
               dotStyle = 'w-4 h-2 bg-[var(--main-color)]';
             } else if (hasLifecycle) {
               if (isCompleted) {
@@ -112,6 +140,32 @@ const WorkflowStepBar = ({
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Auto-run live status badge */}
+        {isAutoRunning && (
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg border bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700/50">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+            جاري التشغيل التلقائي
+          </span>
+        )}
+        {isAutoRunning && onStopAutoRun && (
+          <button
+            type="button"
+            onClick={onStopAutoRun}
+            className="hidden sm:inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg text-[var(--danger-color)] hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+          >
+            <IoStopOutline className="text-sm" />
+            إيقاف
+          </button>
+        )}
+        {/* Auto-run finished badge */}
+        {showFinishedBadge && !isAutoRunning && (
+          <span
+            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg border bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700/50"
+            style={{ animation: 'checkIn 0.3s ease-out' }}
+          >
+            ✓ اكتمل التشغيل التلقائي
+          </span>
+        )}
         <span className={`hidden sm:inline text-xs font-bold px-2.5 py-1 rounded-lg border ${status.className}`}>
           {status.text}
         </span>

@@ -20,6 +20,12 @@ const WARNING_JOB_STEP_MAP = {
   LegalWarningAssembly: 3,
 } as const;
 
+const AUTO_RUN_STEP_MAP: Record<number, string> = {
+  1: 'LegalWarningClassification',
+  2: 'LegalWarningBodyDraft',
+  3: 'LegalWarningAssembly',
+};
+
 const LegalWarningPage = () => {
   const {
     active,
@@ -43,6 +49,9 @@ const LegalWarningPage = () => {
     tabProps,
     isClickableTab,
     handleAdvanceStage,
+    isAutoRunning,
+    startAutoRun,
+    stopAutoRun,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: RootState) => s.legalWarning,
     thunks: legalWarningThunks,
@@ -52,6 +61,9 @@ const LegalWarningPage = () => {
     maxSteps: 3,
     steps: LEGAL_WARNING_STEP_DEFS,
     jobStepMap: WARNING_JOB_STEP_MAP,
+    autoRunStepMap: AUTO_RUN_STEP_MAP,
+    onAutoRunComplete: () => { sileo.success({ title: 'اكتملت جميع مراحل الإنذار الرسمي بنجاح' }); },
+    onAutoRunError: (step, error) => { sileo.error({ title: error ?? `فشل التشغيل التلقائي في المرحلة ${step}` }); },
     onError: (error) => { sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' }); },
   });
 
@@ -73,6 +85,8 @@ const LegalWarningPage = () => {
       startLabel="بدء تصنيف الإنذار"
       continueLabel={classification ? 'الانتقال إلى التصنيف' : 'بدء تصنيف الإنذار'}
       onStart={nextStep}
+      onRunAll={() => startAutoRun(0)}
+      isAutoRunning={isAutoRunning}
     />,
     <WarningStep1Classification key="step1" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <WarningStep2WarningDraft key="step2" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
@@ -122,6 +136,8 @@ const LegalWarningPage = () => {
             isSavingStep={isSavingStep}
             currentAccessibleStep={workflowState.currentAccessibleStep}
             lastCompletedStep={workflowState.lastCompletedStep}
+            isAutoRunning={isAutoRunning}
+            onStopAutoRun={stopAutoRun}
           />
 
           <div className="w-full">

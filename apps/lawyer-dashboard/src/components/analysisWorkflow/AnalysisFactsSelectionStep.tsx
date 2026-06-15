@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useDisclosure } from'@heroui/react';
-import { IoAdd, IoArrowBackOutline, IoCheckmarkCircle, IoDocumentTextOutline, IoHelpCircleOutline, IoReload, IoShieldCheckmarkOutline, IoCreateOutline } from'react-icons/io5';
+import { IoAdd, IoArrowBackOutline, IoCheckmarkCircle, IoDocumentTextOutline, IoHelpCircleOutline, IoPlayOutline, IoReload, IoShieldCheckmarkOutline, IoCreateOutline } from 'react-icons/io5';
 import { sileo } from"sileo";
 import { useAppDispatch } from'../../hooks/reduxHooks';
 import AddNewFact from'../forms/AddNewFact';
@@ -47,6 +47,8 @@ type AnalysisFactsSelectionStepProps = {
  footerSelected: string;
  footerUnselected: string;
  };
+ onRunAll?: () => void;
+ isAutoRunning?: boolean;
 };
 
 const defaultSelectionHint = {
@@ -57,21 +59,23 @@ const defaultSelectionHint = {
 };
 
 const AnalysisFactsSelectionStep = ({
- title ='مراجعة الوقائع',
+ title = 'مراجعة الوقائع',
  facts,
  setFacts,
  selectedFacts,
  setSelectedFacts,
- metricLabel ='الوقائع المعتمدة',
+ metricLabel = 'الوقائع المعتمدة',
  sidebarDescription,
  startLabel,
  continueLabel,
  onStart,
  isStarting = false,
- startingLabel ='جارٍ تجهيز المرحلة...',
- emptyStateText ='لا توجد وقائع محفوظة داخل القضية الحالية.',
+ startingLabel = 'جارٍ تجهيز المرحلة...',
+ emptyStateText = 'لا توجد وقائع محفوظة داخل القضية الحالية.',
  caseId,
  selectionHint = defaultSelectionHint,
+ onRunAll,
+ isAutoRunning = false,
 }: AnalysisFactsSelectionStepProps) => {
  const dispatch = useAppDispatch();
  const location = useLocation();
@@ -278,6 +282,22 @@ const AnalysisFactsSelectionStep = ({
  const hasAlreadyProceededInWorkflow = continueLabel && continueLabel !== startLabel;
  const canProceed = !caseId || hasAlreadyProceededInWorkflow || clarifyState.done || clarifyState.skipped;
 
+ // ── Run All confirmation state ──
+ const [showRunAllConfirm, setShowRunAllConfirm] = useState(false);
+
+ const handleRunAllClick = () => {
+   setShowRunAllConfirm(true);
+ };
+
+ const handleRunAllConfirm = () => {
+   setShowRunAllConfirm(false);
+   onRunAll?.();
+ };
+
+ const handleRunAllCancel = () => {
+   setShowRunAllConfirm(false);
+ };
+
  return (
  <AnalysisStageLayout
  title={title}
@@ -361,8 +381,45 @@ const AnalysisFactsSelectionStep = ({
  label={isStarting ? startingLabel : (continueLabel ?? startLabel)}
  icon={IoArrowBackOutline}
  onClick={onStart}
- disabled={isStarting || selectedFacts.length === 0 || !canProceed}
+ disabled={isStarting || selectedFacts.length === 0 || !canProceed || isAutoRunning}
  />
+
+ {onRunAll && !showRunAllConfirm && (
+ <AnalysisStageActionButton
+   label="تشغيل المسار كامل"
+   icon={IoPlayOutline}
+   onClick={handleRunAllClick}
+   disabled={isStarting || selectedFacts.length === 0 || !canProceed || isAutoRunning}
+   variant="secondary"
+ />
+ )}
+
+ {showRunAllConfirm && (
+ <div className="w-full rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50/70 dark:bg-amber-950/20 p-4 space-y-3">
+   <p className="text-sm font-bold text-[var(--title-color)] text-center">
+     سيتم تنفيذ جميع الخطوات تلقائياً
+   </p>
+   <p className="text-xs app-text-muted text-center">
+     التكلفة: 1 نقطة فقط
+   </p>
+   <div className="flex gap-3">
+     <button
+       type="button"
+       onClick={handleRunAllConfirm}
+       className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm bg-[var(--main-color)] text-white hover:bg-opacity-90 transition-colors shadow-sm"
+     >
+       تأكيد التشغيل
+     </button>
+     <button
+       type="button"
+       onClick={handleRunAllCancel}
+       className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm border app-border app-surface hover:app-surface-muted transition-colors text-[var(--title-color)]"
+     >
+       إلغاء
+     </button>
+   </div>
+ </div>
+ )}
 
  {!canProceed && selectedFacts.length > 0 && !isStarting && (
  <p className="text-xs text-center text-orange-600 font-medium flex items-center justify-center gap-1">

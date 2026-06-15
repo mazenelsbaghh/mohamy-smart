@@ -11,9 +11,16 @@ import {
   smartAnalysisThunks,
   abandonSmartAnalysisWorkflow,
   restoreWorkflowSnapshot as restoreSnapshot,
+  startParallelDefenseTracking,
+  clearParallelDefenseTracking,
 } from '../../../../../redux/analysis/smartAnalysisSlice';
+import type { ParallelDefenseTracking } from '../../../../../redux/analysis/smartAnalysisSlice';
 import thunkSubmitAiJob from '../../../../../redux/aiJobs/thunk/thunkSubmitAiJob';
+import thunkSubmitParallelDefenseAnalyses from '../../../../../redux/aiJobs/thunk/thunkSubmitParallelDefenseAnalyses';
+import type { DefenseSubmission } from '../../../../../redux/aiJobs/thunk/thunkSubmitParallelDefenseAnalyses';
+import { clearDefenseAnalysisJobs } from '../../../../../redux/aiJobs/aiJobsSlice';
 import { parseJobResult, parseWorkflowJobResult } from '@mohamy/shared-utils';
+import type { TDefenses } from '../../../../../redux/shared/workflowTypes';
 
 import AnalysisFactsSelectionStep from '../../../../../components/analysisWorkflow/AnalysisFactsSelectionStep';
 import LegalAnalysis from './steps/LegalAnalysis';
@@ -37,6 +44,14 @@ const DEFENSE_JOB_STEP_MAP = {
   FinalRequirements: 3,
   DefenseMemoDraft: 4,
 } as const;
+
+const AUTO_RUN_STEP_MAP: Record<number, string> = {
+  1: 'FactAnalysis',
+  2: 'GenerateDefenses',
+  // Step 3 is handled specially (parallel defenses)
+  4: 'FinalRequirements',
+  5: 'DefenseMemoDraft',
+};
 
 type DefenseJobKey = keyof typeof DEFENSE_JOB_STEP_MAP;
 type DefenseJobMap = Partial<Record<DefenseJobKey, { status?: string } | undefined>>;
@@ -77,6 +92,15 @@ const DefenseMemoPage = () => {
 
   const aiJobs = useAppSelector((s) => s.aiJobs);
   const { singleCase } = useAppSelector((s) => s.cases);
+  const parallelTracking = useAppSelector(
+    (s) => (s.smartAnalysis as unknown as { parallelDefenseTracking: ParallelDefenseTracking | null }).parallelDefenseTracking,
+  );
+
+  const onAutoRunStepCompleted = useCallback((stepNumber: number): boolean => {
+    // Pause auto-advance at step 2 (GenerateDefenses) to trigger parallel defense analysis
+    if (stepNumber === 2) return false;
+    return true;
+  }, []);
 
   const {
     active,
@@ -95,6 +119,10 @@ const DefenseMemoPage = () => {
     isSavingStep,
     isReadOnly,
     workflowState: orchestratorState,
+    isAutoRunning,
+    startAutoRun,
+    stopAutoRun,
+    handleAdvanceStage,
   } = useWorkflowOrchestrator({
     sliceSelector: (s) => s.smartAnalysis,
     thunks: smartAnalysisThunks,
@@ -105,6 +133,14 @@ const DefenseMemoPage = () => {
     steps: DEFENSE_MEMO_STEP_DEFS,
     isCaseIdBased: true,
     abandonThunk: abandonSmartAnalysisWorkflow,
+    autoRunStepMap: AUTO_RUN_STEP_MAP,
+    onAutoRunStepCompleted,
+    onAutoRunComplete: () => {
+      sileo.success({ title: 'تم الانتهاء من جميع المراحل تلقائياً' });
+    },
+    onAutoRunError: (_step, error) => {
+      sileo.error({ title: error || 'فشل التشغيل التلقائي' });
+    },
     stepNumberMapFn: (activeStep) => {
       if (activeStep === 1) return 1;
       if (activeStep === 2) return 2;
@@ -180,6 +216,165 @@ const DefenseMemoPage = () => {
       sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' });
     },
   });
+
+  // ── Trigger parallel defense analysis when step 2 (GenerateDefenses) completes during auto-run ──
+  const parallelTriggerRef = useRef(false);
+  useEffect(() => {
+    if (!isAutoRunning) {
+      parallelTriggerRef.current = false;
+      return;
+    }
+    // Only trigger when step 2 output is present and active step is 2
+    const defensesOutput = orchestratorState.outputs[2] as TDefenses;
+    if (!defensesOutput || active !== 2) return;
+    if (parallelTriggerRef.current) return;
+    parallelTriggerRef.current = true;
+
+    // Extract all defenses from step 2 output
+    const allDefenses: DefenseSubmission[] = [];
+    const addDefenses = (items: Array<{ id: string; defenseTitle: string; basisFromCase: string; scope: string; isLocal?: boolean }> | undefined | null) => {
+      (items ?? []).forEach((d) => {
+        allDefenses.push({
+          defenseId: d.isLocal ? d.id : d.id,
+          clientDefenseId: d.id,
+          defenseTitle: d.defenseTitle,
+          basisFromCase: d.basisFromCase,
+          scope: d.scope,
+        });
+      });
+    };
+    addDefenses(defensesOutput.defensesFormal);
+    addDefenses(defensesOutput.defensesSubstantive);
+    addDefenses(defensesOutput.defensesEvidentiary);
+
+    if (allDefenses.length === 0) return;
+
+    // Clear previous defense analysis jobs and start parallel tracking
+    dispatch(clearDefenseAnalysisJobs());
+    dispatch(thunkSubmitParallelDefenseAnalyses({ caseId, defenses: allDefenses }))
+      .unwrap()
+      .then((result) => {
+        const defenseJobMap: Record<string, string> = {};
+        for (const s of result.submitted) {
+          defenseJobMap[s.defenseId] = s.jobId;
+        }
+        dispatch(startParallelDefenseTracking({
+          totalDefenses: allDefenses.length,
+          defenseJobMap,
+        }));
+      })
+      .catch(() => {
+        sileo.error({ title: 'فشل بدء التحليل المتوازي للدفوع' });
+      });
+  }, [isAutoRunning, active, orchestratorState.outputs, caseId, dispatch]);
+
+  // ── Watch parallel tracking: when all defenses are done, advance from step 2 → 3 → 4 ──
+  useEffect(() => {
+    if (!parallelTracking) return;
+    if (parallelTracking.isRunning) return;
+    if (!isAutoRunning) return;
+
+    // All parallel defenses completed — advance through step 3 (defense analysis, already done) to step 4 (FinalRequirements)
+    // Use setTimeout to avoid dispatch during render
+    const timer = setTimeout(async () => {
+      dispatch(clearParallelDefenseTracking());
+      // Advance from step 2 to step 3 (which maps to FinalRequirements in the UI)
+      await handleAdvanceStage(2, 3);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [parallelTracking, isAutoRunning, handleAdvanceStage, dispatch]);
+
+  // ── Auto-submit step 5 (DefenseMemoDraft) during auto-run ──
+  useEffect(() => {
+    if (!isAutoRunning) return;
+    if (active !== 4) return; // active === 4 maps to step 5 (DefenseMemoDraft) in stepNumberMapFn
+
+    const memoOutput = orchestratorState.outputs[5];
+    if (memoOutput) return; // Already have output, don't submit again
+
+    const memoJob = aiJobs.jobs?.DefenseMemoDraft;
+    if (memoJob?.status === 'Queued' || memoJob?.status === 'Processing' || memoJob?.status === 'Completed') return;
+
+    // Gather all analyzed defenses (those with explanations in step 3 cache)
+    const defensesOutput = orchestratorState.outputs[2] as TDefenses;
+    const explanationsCache = (orchestratorState.outputs[3] || {}) as Record<string, unknown>;
+    const finalRequirements = orchestratorState.outputs[4] as { finalPrayers?: Array<{ id: string; requestLevel: string; requestText: string }> } | null;
+    if (!defensesOutput || !finalRequirements) return;
+
+    const allDefIds: string[] = [];
+    [...(defensesOutput.defensesFormal || []), ...(defensesOutput.defensesSubstantive || []), ...(defensesOutput.defensesEvidentiary || [])].forEach((d) => {
+      if (explanationsCache[d.id]) allDefIds.push(d.id);
+    });
+
+    if (allDefIds.length === 0) return;
+
+    // Auto-submit the memo draft job with all analyzed defenses approved
+    const allRequestIds = (finalRequirements.finalPrayers || []).map((r) => r.id);
+
+    // Build the same inputJson as FinalNote.buildAiInputJson
+    const factAnalysis = orchestratorState.outputs[1] as { caseNumber?: string; caseType?: string; courtName?: string; legalFactsSummary?: string[]; defendantsPositions?: Array<{ defendantName: string; relationshipToClient: string; positionSummary: string }> } | null;
+    const allDefenseItems = [
+      ...(defensesOutput.defensesFormal || []).map((d) => ({ ...d, type: 'Formal' })),
+      ...(defensesOutput.defensesSubstantive || []).map((d) => ({ ...d, type: 'Substantive' })),
+      ...(defensesOutput.defensesEvidentiary || []).map((d) => ({ ...d, type: 'Evidentiary' })),
+    ];
+    const approvedDefenses = allDefenseItems
+      .filter((d) => allDefIds.includes(d.id))
+      .map((d) => {
+        const exp = explanationsCache[d.id] as Record<string, unknown> | undefined;
+        if (!exp) return null;
+        return {
+          defenseTitle: d.defenseTitle,
+          basisFromCase: d.basisFromCase,
+          type: d.type,
+          explanation: {
+            introduction: (exp.introduction as string) || '',
+            factualBasis: (exp.factualBasis as string) || '',
+            legalTexts: ((exp.legalTextsFull as Array<{ lawName: string; articleNumber: string; fullText: string }>) || []).map((t) => ({
+              lawName: t.lawName,
+              articleNumber: t.articleNumber,
+              fullText: t.fullText,
+            })),
+            linkingTextsToFacts: (exp.linkingTextsToFacts as string) || '',
+            cassationPrecedents: ((exp.cassationPrecedentsFull as Array<{ appealNumber: string; judicialYear: string; sessionDate: string; fullText: string }>) || []).map((p) => ({
+              appealNumber: p.appealNumber,
+              judicialYear: p.judicialYear,
+              sessionDate: p.sessionDate,
+              fullText: p.fullText,
+            })),
+            legalApplication: (exp.legalApplication as string) || '',
+            counterArguments: (exp.counterArgumentsAndResponse as string) || '',
+            legalEffectOfAcceptance: (exp.legalEffectOfAcceptance as string) || '',
+          },
+        };
+      })
+      .filter(Boolean);
+
+    const requestPool = (finalRequirements.finalPrayers || []).filter((r) => allRequestIds.includes(r.id));
+
+    const inputJson = JSON.stringify({
+      caseId,
+      caseNumber: factAnalysis?.caseNumber || singleCase?.number || '',
+      caseType: factAnalysis?.caseType || '',
+      courtName: factAnalysis?.courtName || singleCase?.court || '',
+      clientName: singleCase?.clientName || '',
+      apponentName: singleCase?.apponentName || '',
+      defendingParty: (singleCase as unknown as { defendingParty?: string })?.defendingParty || 'client',
+      legalFactsSummary: factAnalysis?.legalFactsSummary || [],
+      defendantsPositions: (factAnalysis?.defendantsPositions || []).map((p) => ({
+        defendantName: p.defendantName,
+        relationshipToClient: p.relationshipToClient,
+        positionSummary: p.positionSummary,
+      })),
+      approvedDefenses,
+      finalRequests: requestPool.map((r) => ({
+        requestLevel: r.requestLevel,
+        requestText: r.requestText,
+      })),
+    });
+
+    dispatch(thunkSubmitAiJob({ caseId, stepType: 'DefenseMemoDraft', inputJson }));
+  }, [isAutoRunning, active, orchestratorState.outputs, aiJobs.jobs, caseId, dispatch, singleCase]);
 
 
 
@@ -301,6 +496,8 @@ const DefenseMemoPage = () => {
       continueLabel={factAnalysisJob?.status === 'Completed' ? 'الانتقال إلى التحليل القانوني' : 'بدء التحليل القانوني'}
       onStart={handleStartFactAnalysis}
       isStarting={isFactJobActive}
+      onRunAll={() => startAutoRun(0)}
+      isAutoRunning={isAutoRunning}
     />,
     <LegalAnalysis key="analysis" finalFacts={finalFacts} caseFacts={facts} goToDefenses={goToDefenses} caseId={caseId} />,
     <DefensesList
@@ -361,6 +558,8 @@ const DefenseMemoPage = () => {
                 isSavingStep={isSavingStep}
                 currentAccessibleStep={orchestratorState.currentAccessibleStep}
                 lastCompletedStep={orchestratorState.lastCompletedStep}
+                isAutoRunning={isAutoRunning}
+                onStopAutoRun={stopAutoRun}
               />
 
               <div className="w-full">

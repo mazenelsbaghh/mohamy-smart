@@ -1,6 +1,6 @@
 import { CustomCard } from'@mohamy/shared-ui';
 import { useEffect, useMemo, useRef, useState } from"react";
-import { IoAddOutline, IoArrowBackOutline, IoPencilOutline, IoReload, IoSparklesOutline, IoTrashOutline } from"react-icons/io5";
+import { IoAddOutline, IoArrowBackOutline, IoFlash, IoPencilOutline, IoReload, IoSparklesOutline, IoTrashOutline } from"react-icons/io5";
 import { LuCheck } from'react-icons/lu';
 import { useDisclosure } from"@heroui/react";
 import FormModal from'../../../../../../components/ui/form/FormModal';
@@ -11,6 +11,7 @@ import { useAppDispatch, useAppSelector } from"../../../../../../hooks/reduxHook
 import NotFoundImage from"../../../../../../components/notFound/NotFoundImage";
 import ConfirmDialog from'../../../../../../components/common/ConfirmDialog';
 import { DEFENSE_MEMO_STEPS } from '../../../../../../components/analysisWorkflow/workflowConstants';
+import ParallelDefenseProgress from '../../../../../../components/analysisWorkflow/ParallelDefenseProgress';
 
 import {
  addDefense,
@@ -25,6 +26,14 @@ import {
 } from'../../../../../../redux/analysis/smartAnalysisSlice';
 import thunkCancelAiJob from'../../../../../../redux/aiJobs/thunk/thunkCancelAiJob';
 import thunkSubmitAiJob from'../../../../../../redux/aiJobs/thunk/thunkSubmitAiJob';
+import thunkSubmitParallelDefenseAnalyses from'../../../../../../redux/aiJobs/thunk/thunkSubmitParallelDefenseAnalyses';
+import { clearDefenseAnalysisJobs } from'../../../../../../redux/aiJobs/aiJobsSlice';
+import {
+  startParallelDefenseTracking,
+  incrementParallelDefenseCompleted,
+  incrementParallelDefenseFailed,
+} from'../../../../../../redux/analysis/smartAnalysisSlice';
+import type { ParallelDefenseTracking } from'../../../../../../redux/analysis/smartAnalysisSlice';
 import {
  UnifiedStepShell,
  AnalysisStageSectionCard,
@@ -120,6 +129,12 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  const analysisToastRef = useRef<string | undefined>(undefined);
  const lastAnnouncedAnalysisStateRef = useRef<string | null>(null);
  const handledCompletedAnalysisJobRef = useRef<string | null>(null);
+ const hydratedParallelJobIds = useRef<Set<string>>(new Set());
+
+ const defenseAnalysisJobs = useAppSelector((state) => state.aiJobs.defenseAnalysisJobs);
+ const parallelTracking = useAppSelector(
+   (state) => (state.smartAnalysis as unknown as { parallelDefenseTracking: ParallelDefenseTracking | null }).parallelDefenseTracking,
+ );
 
  const isGeneratingFinalReq = isNavigating || (!!finalReqJob && (finalReqJob.status ==='Queued' || finalReqJob.status ==='Processing'));
 
@@ -280,6 +295,38 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  }
  };
  }, [currentJob]);
+
+ // ── Parallel defense job tracking: hydrate results as they complete ──
+ useEffect(() => {
+   if (!parallelTracking) return;
+   const jobMap = parallelTracking.defenseJobMap;
+   if (!jobMap) return;
+
+   for (const [defenseId, jobId] of Object.entries(jobMap)) {
+     if (hydratedParallelJobIds.current.has(jobId)) continue;
+
+     const job = defenseAnalysisJobs[jobId];
+     if (!job) continue;
+
+     if (job.status === 'Completed') {
+       hydratedParallelJobIds.current.add(jobId);
+       const completedAnalysis = getCompletedDefenseAnalysis((job as { resultJson?: string }).resultJson);
+       if (completedAnalysis && !explanationsCache[completedAnalysis.defenseId]) {
+         dispatch(hydrateStep({
+           stepNumber: 3,
+           result: {
+             defenseId: completedAnalysis.defenseId,
+             explanation: completedAnalysis.memorandum,
+           },
+         }));
+       }
+       dispatch(incrementParallelDefenseCompleted());
+     } else if (job.status === 'Failed') {
+       hydratedParallelJobIds.current.add(jobId);
+       dispatch(incrementParallelDefenseFailed());
+     }
+   }
+ }, [defenseAnalysisJobs, parallelTracking, explanationsCache, dispatch]);
 
  const reGenerateDefenses = async () => {
  if (!factAnalysis) {
@@ -621,6 +668,44 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  const activeDefenseIsAnalyzing = isAnalyzingDefense && activeDefenseId === activeDefense?.id;
  const analyzedCount = allDefenses.filter((d) => explanationsCache[d.id]).length;
 
+ const handleAnalyzeAll = async () => {
+   const unanalyzed = allDefenses.filter((d) => !explanationsCache[d.id]);
+   if (unanalyzed.length === 0) {
+     sileo.success({ title:'جميع الدفوع محللة بالفعل' });
+     return;
+   }
+   dispatch(clearDefenseAnalysisJobs());
+   const defenses = unanalyzed.map((d) => ({
+     defenseId: d.isLocal ? d.id : d.id,
+     clientDefenseId: d.id,
+     defenseTitle: d.defenseTitle,
+     basisFromCase: d.basisFromCase,
+     scope: d.scope,
+   }));
+   try {
+     const result = await dispatch(thunkSubmitParallelDefenseAnalyses({ caseId, defenses })).unwrap();
+     const defenseJobMap: Record<string, string> = {};
+     for (const s of result.submitted) {
+       defenseJobMap[s.defenseId] = s.jobId;
+     }
+     dispatch(startParallelDefenseTracking({
+       totalDefenses: unanalyzed.length,
+       defenseJobMap,
+     }));
+     sileo.success({ title: `بدأ تحليل ${unanalyzed.length} دفع بالتوازي` });
+   } catch (error) {
+     sileo.error({ title: typeof error === 'string' ? error : 'فشل بدء التحليل المتوازي' });
+   }
+ };
+
+ const defenseNamesMap = useMemo(() => {
+   const map: Record<string, string> = {};
+   for (const d of allDefenses) {
+     map[d.id] = d.defenseTitle;
+   }
+   return map;
+ }, [allDefenses]);
+
  return (
  <UnifiedStepShell
  isLoading={isShellLoading}
@@ -761,12 +846,36 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
         </FormModal>
       </CustomCard>
 
-      <AnalysisStageActionButton
-        label={finalRequirements && finalRequirements.length > 0 ? 'الذهاب للطلبات الختامية' : 'الطلبات الختامية'}
-        icon={IoArrowBackOutline}
-        onClick={handleNext}
-        disabled={isLoading}
-      />
+       <AnalysisStageActionButton
+         label={finalRequirements && finalRequirements.length > 0 ? 'الذهاب للطلبات الختامية' : 'الطلبات الختامية'}
+         icon={IoArrowBackOutline}
+         onClick={handleNext}
+         disabled={isLoading}
+       />
+
+       {allDefenses.length > 0 && !parallelTracking?.isRunning && (
+         <button
+           type="button"
+           onClick={handleAnalyzeAll}
+           disabled={isAnalyzingDefense || analyzedCount === allDefenses.length}
+           className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-colors border ${
+             analyzedCount === allDefenses.length
+               ? 'app-surface-soft app-text-subtle app-border cursor-not-allowed'
+               : 'border-[var(--main-color)] bg-orange-50/30 dark:bg-orange-950/20 text-[var(--main-color)] dark:text-white hover:bg-orange-50 dark:hover:bg-orange-950/40'
+           }`}
+         >
+           <IoFlash className="text-lg" />
+           {analyzedCount === allDefenses.length ? 'تم تحليل جميع الدفوع' : `تحليل جميع الدفوع (${allDefenses.length - analyzedCount})`}
+         </button>
+       )}
+
+       {parallelTracking && (
+         <ParallelDefenseProgress
+           tracking={parallelTracking}
+           defenseNames={defenseNamesMap}
+           defenseAnalysisJobs={defenseAnalysisJobs}
+         />
+       )}
     </>
   }
   >

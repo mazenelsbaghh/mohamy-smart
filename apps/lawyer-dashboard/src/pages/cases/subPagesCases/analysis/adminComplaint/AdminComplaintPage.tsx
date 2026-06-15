@@ -24,6 +24,14 @@ const COMPLAINT_JOB_STEP_MAP = {
   AdminComplaintAssembly: 5,
 } as const;
 
+const AUTO_RUN_STEP_MAP: Record<number, string> = {
+  1: 'AdminComplaintClassification',
+  2: 'AdminComplaintFacts',
+  3: 'AdminComplaintViolation',
+  4: 'AdminComplaintRequests',
+  5: 'AdminComplaintAssembly',
+};
+
 const AdminComplaintPage = () => {
   const {
     active,
@@ -47,6 +55,9 @@ const AdminComplaintPage = () => {
     tabProps,
     isClickableTab,
     handleAdvanceStage,
+    isAutoRunning,
+    startAutoRun,
+    stopAutoRun,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: RootState) => s.adminComplaint,
     thunks: adminComplaintThunks,
@@ -56,6 +67,9 @@ const AdminComplaintPage = () => {
     maxSteps: 5,
     steps: ADMIN_COMPLAINT_STEP_DEFS,
     jobStepMap: COMPLAINT_JOB_STEP_MAP,
+    autoRunStepMap: AUTO_RUN_STEP_MAP,
+    onAutoRunComplete: () => { sileo.success({ title: 'اكتملت جميع مراحل الشكوى الإدارية بنجاح' }); },
+    onAutoRunError: (step, error) => { sileo.error({ title: error ?? `فشل التشغيل التلقائي في المرحلة ${step}` }); },
     onError: (error) => { sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' }); },
   });
 
@@ -77,6 +91,8 @@ const AdminComplaintPage = () => {
       startLabel="بدء التصنيف"
       continueLabel={classification ? 'الانتقال إلى التصنيف' : 'بدء التصنيف'}
       onStart={nextStep}
+      onRunAll={() => startAutoRun(0)}
+      isAutoRunning={isAutoRunning}
     />,
     <ComplaintStep1Classification key="step1" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <ComplaintStep2FactsDraft key="step2" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
@@ -128,6 +144,8 @@ const AdminComplaintPage = () => {
             isSavingStep={isSavingStep}
             currentAccessibleStep={workflowState.currentAccessibleStep}
             lastCompletedStep={workflowState.lastCompletedStep}
+            isAutoRunning={isAutoRunning}
+            onStopAutoRun={stopAutoRun}
           />
 
           <div className="w-full">

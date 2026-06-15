@@ -47,6 +47,7 @@ export type AiJob = {
 
 type TAiJobsState = {
   jobs: Partial<Record<AiStepType, AiJob>>;
+  defenseAnalysisJobs: Record<string, AiJob>;
   loading: TLoading;
   error: string | null;
   activeRunId: string | number | null;
@@ -54,6 +55,7 @@ type TAiJobsState = {
 
 const initialState: TAiJobsState = {
   jobs: {},
+  defenseAnalysisJobs: {},
   loading:'idle',
   error: null,
   activeRunId: null,
@@ -64,19 +66,26 @@ const aiJobsSlice = createSlice({
  initialState,
  reducers: {
   upsertJob(state, action: PayloadAction<AiJob>) {
-  const job = action.payload;
-  if (state.activeRunId !== null && job.runId !== undefined && job.runId !== null && String(job.runId) !== String(state.activeRunId)) {
-  return;
-  }
-  state.jobs[job.stepType] = job;
-  },
+   const job = action.payload;
+   if (state.activeRunId !== null && job.runId !== undefined && job.runId !== null && String(job.runId) !== String(state.activeRunId)) {
+   return;
+   }
+   state.jobs[job.stepType] = job;
+   if (job.stepType === 'AnalysisDefense') {
+   state.defenseAnalysisJobs[job.id] = job;
+   }
+   },
   setActiveRunId(state, action: PayloadAction<string | number | null>) {
   state.activeRunId = action.payload;
   },
   resetAiJobs(state) {
  state.jobs = {};
+ state.defenseAnalysisJobs = {};
  state.loading ='idle';
  state.error = null;
+ },
+  clearDefenseAnalysisJobs(state) {
+ state.defenseAnalysisJobs = {};
  },
  },
  extraReducers: (builder) => {
@@ -111,5 +120,5 @@ const aiJobsSlice = createSlice({
  },
 });
 
-export const { upsertJob, resetAiJobs, setActiveRunId } = aiJobsSlice.actions;
+export const { upsertJob, resetAiJobs, setActiveRunId, clearDefenseAnalysisJobs } = aiJobsSlice.actions;
 export default aiJobsSlice.reducer;

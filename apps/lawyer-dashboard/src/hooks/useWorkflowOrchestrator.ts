@@ -56,6 +56,14 @@ export interface UseWorkflowOrchestratorConfig<
   onStepSave?: (stepNumber: number, payload: unknown, dispatch: AppDispatch) => Promise<void>;
   onError?: (error: unknown, context: string) => void;
   computeAutoResumeTarget?: (outputs: TOutputs, jobs: Record<string, { status?: string } | undefined>) => number;
+  /** Maps step number (1-based) → AiStepType for auto-run tracking */
+  autoRunStepMap?: Record<number, string>;
+  /** Called when auto-run completes all steps successfully */
+  onAutoRunComplete?: () => void;
+  /** Called when auto-run encounters a failure */
+  onAutoRunError?: (stepNumber: number, error: string | null) => void;
+  /** Custom handler called when a step completes during auto-run. Return false to pause auto-advance */
+  onAutoRunStepCompleted?: (stepNumber: number) => boolean;
 }
 
 export interface UseWorkflowOrchestratorReturn<TOutputs extends Record<number, unknown>> {
@@ -86,6 +94,9 @@ export interface UseWorkflowOrchestratorReturn<TOutputs extends Record<number, u
   isClickableTab: (index: number) => boolean;
   handleAdvanceStage: (fromStep: number, toStep: number) => Promise<void>;
   isAdvancingStage: boolean;
+  isAutoRunning: boolean;
+  startAutoRun: (fromStep?: number) => void;
+  stopAutoRun: () => void;
 }
 
 const WORKFLOW_NOT_FOUND_ERROR = 'Workflow not found';
@@ -130,6 +141,10 @@ export function useWorkflowOrchestrator<
     onJobCompleted,
     onError,
     computeAutoResumeTarget,
+    autoRunStepMap,
+    onAutoRunComplete,
+    onAutoRunError,
+    onAutoRunStepCompleted,
   } = config;
 
   const dispatch = useAppDispatch();
@@ -172,6 +187,8 @@ export function useWorkflowOrchestrator<
   const [active, setActive] = useState(0);
   const nextStep = useCallback(() => setActive((c) => (c < maxSteps ? c + 1 : c)), [maxSteps]);
   const prevStep = useCallback(() => setActive((c) => (c > 0 ? c - 1 : c)), []);
+  const [isAutoRunning, setIsAutoRunning] = useState(false);
+  const autoRunAdvancedSteps = useRef<Set<number>>(new Set());
   const [initialAutoJumpDone, setInitialAutoJumpDone] = useState(false);
   const [freshRunInProgress, setFreshRunInProgress] = useState(false);
   const freshRunInProgressRef = useRef(false);
@@ -514,6 +531,61 @@ export function useWorkflowOrchestrator<
 
   const isAdvancingStage = (workflowState.loadingState as Record<string, unknown>).isAdvancingStage === true;
 
+  // ── Auto-run: startAutoRun / stopAutoRun ──────────────────────────────
+  const startAutoRun = useCallback((fromStep: number = 0) => {
+    setIsAutoRunning(true);
+    autoRunAdvancedSteps.current.clear();
+    if (fromStep === 0) {
+      handleAdvanceStage(0, 1);
+    }
+  }, [handleAdvanceStage]);
+
+  const stopAutoRun = useCallback(() => {
+    setIsAutoRunning(false);
+    autoRunAdvancedSteps.current.clear();
+  }, []);
+
+  // ── Auto-run: auto-advance effect ─────────────────────────────────────
+  useEffect(() => {
+    if (!isAutoRunning) return;
+    if (!autoRunStepMap) return;
+
+    const currentStep = active;
+    const currentStepType = autoRunStepMap[currentStep];
+    if (!currentStepType) return;
+
+    const currentJob = (aiJobs.jobs as Record<string, { status?: string; resultJson?: string } | undefined>)[currentStepType];
+
+    // Step completed?
+    if (currentJob?.status === 'Completed' && currentJob.resultJson) {
+      if (autoRunAdvancedSteps.current.has(currentStep)) return;
+
+      // Custom handler can pause auto-advance
+      if (onAutoRunStepCompleted && !onAutoRunStepCompleted(currentStep)) {
+        return;
+      }
+
+      autoRunAdvancedSteps.current.add(currentStep);
+
+      if (currentStep < maxSteps) {
+        setTimeout(() => {
+          handleAdvanceStage(currentStep, currentStep + 1);
+        }, 300);
+      } else {
+        setIsAutoRunning(false);
+        autoRunAdvancedSteps.current.clear();
+        onAutoRunComplete?.();
+      }
+    }
+
+    // Step failed?
+    if (currentJob?.status === 'Failed') {
+      setIsAutoRunning(false);
+      autoRunAdvancedSteps.current.clear();
+      onAutoRunError?.(currentStep, (currentJob as any).errorMessage ?? null);
+    }
+  }, [isAutoRunning, active, aiJobs.jobs, autoRunStepMap, maxSteps, handleAdvanceStage, onAutoRunStepCompleted, onAutoRunComplete, onAutoRunError]);
+
   const onJobCompletedRef = useRef(onJobCompleted);
   onJobCompletedRef.current = onJobCompleted;
 
@@ -556,5 +628,8 @@ export function useWorkflowOrchestrator<
     isClickableTab,
     handleAdvanceStage,
     isAdvancingStage,
+    isAutoRunning,
+    startAutoRun,
+    stopAutoRun,
   };
 }

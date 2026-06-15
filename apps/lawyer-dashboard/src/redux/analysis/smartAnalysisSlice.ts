@@ -9,6 +9,18 @@ import type { ActiveStageRequest, WorkflowLifecycleSummary } from '../../types/w
 import type { AiJob } from '../aiJobs/aiJobsSlice';
 import { isActiveAiJob, workflowMatchesFilter, WORKFLOW_STEP_METADATA } from '../aiJobs/workflowJobMetadata';
 
+export type ParallelDefenseTracking = {
+ isRunning: boolean;
+ totalDefenses: number;
+ completedCount: number;
+ failedCount: number;
+ defenseJobMap: Record<string, string>;
+};
+
+type SmartAnalysisExtraState = {
+ parallelDefenseTracking: ParallelDefenseTracking | null;
+};
+
 export type {
  TDefense,
  TDefenses,
@@ -457,6 +469,36 @@ export const smartAnalysisSlice = createWorkflowSlice<{
  state.outputs[4] = null;
  state.outputs[5] = '';
  },
+  startParallelDefenseTracking: (state, action: PayloadAction<{ totalDefenses: number; defenseJobMap: Record<string, string> }>) => {
+  const ext = state as unknown as SmartAnalysisExtraState;
+  ext.parallelDefenseTracking = {
+  isRunning: true,
+  totalDefenses: action.payload.totalDefenses,
+  completedCount: 0,
+  failedCount: 0,
+  defenseJobMap: action.payload.defenseJobMap,
+  };
+  },
+  incrementParallelDefenseCompleted: (state) => {
+  const ext = state as unknown as SmartAnalysisExtraState;
+  if (!ext.parallelDefenseTracking) return;
+  ext.parallelDefenseTracking.completedCount += 1;
+  if (ext.parallelDefenseTracking.completedCount + ext.parallelDefenseTracking.failedCount >= ext.parallelDefenseTracking.totalDefenses) {
+  ext.parallelDefenseTracking.isRunning = false;
+  }
+  },
+  incrementParallelDefenseFailed: (state) => {
+  const ext = state as unknown as SmartAnalysisExtraState;
+  if (!ext.parallelDefenseTracking) return;
+  ext.parallelDefenseTracking.failedCount += 1;
+  if (ext.parallelDefenseTracking.completedCount + ext.parallelDefenseTracking.failedCount >= ext.parallelDefenseTracking.totalDefenses) {
+  ext.parallelDefenseTracking.isRunning = false;
+  }
+  },
+  clearParallelDefenseTracking: (state) => {
+  const ext = state as unknown as SmartAnalysisExtraState;
+  ext.parallelDefenseTracking = null;
+  },
  },
  maxSteps: 5,
 });
@@ -471,6 +513,10 @@ export const {
  clearDefenseAnalysis,
  setCurrentAccessibleStep,
  setLastCompletedStep,
+ startParallelDefenseTracking,
+ incrementParallelDefenseCompleted,
+ incrementParallelDefenseFailed,
+ clearParallelDefenseTracking,
 } = smartAnalysisSlice.actions;
 
 export default smartAnalysisSlice.reducer;

@@ -28,6 +28,15 @@ const STATEMENT_JOB_STEP_MAP = {
   LawsuitRequests: 6,
 } as const;
 
+const AUTO_RUN_STEP_MAP: Record<number, string> = {
+  1: 'LawsuitCaseType',
+  2: 'LawsuitParties',
+  3: 'LawsuitSubjects',
+  4: 'LawsuitFacts',
+  5: 'LawsuitLegalBasis',
+  6: 'LawsuitRequests',
+};
+
 const STATEMENT_COMPUTE_MAX_STEP = (
   outputs: TStatementOfClaimsOutputs,
   jobs: Record<string, { status?: string } | undefined>,
@@ -95,6 +104,9 @@ const PreparingStatementOfClaims = () => {
     tabProps,
     isClickableTab,
     handleAdvanceStage,
+    isAutoRunning,
+    startAutoRun,
+    stopAutoRun,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: RootState) => s.preparingStatementOfClaimsSlice,
     thunks: statementOfClaimsThunks,
@@ -107,6 +119,9 @@ const PreparingStatementOfClaims = () => {
     abandonThunk: abandonStatementOfClaimsWorkflow,
     computeMaxStepAllowed: STATEMENT_COMPUTE_MAX_STEP,
     jobStepMap: STATEMENT_JOB_STEP_MAP,
+    autoRunStepMap: AUTO_RUN_STEP_MAP,
+    onAutoRunComplete: () => { sileo.success({ title: 'اكتملت جميع مراحل إعداد الصحيفة بنجاح' }); },
+    onAutoRunError: (step, error) => { sileo.error({ title: error ?? `فشل التشغيل التلقائي في المرحلة ${step}` }); },
     onError: (error) => { sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' }); },
   });
 
@@ -156,6 +171,8 @@ const PreparingStatementOfClaims = () => {
       continueLabel={workflowState.outputs[1] ? 'الانتقال إلى نوع الدعوى' : 'إعداد نوع الدعوى'}
       onStart={nextStep}
       emptyStateText="لا توجد وقائع محفوظة داخل القضية الحالية. أضف البيانات أولاً من تفاصيل القضية."
+      onRunAll={() => startAutoRun(0)}
+      isAutoRunning={isAutoRunning}
     />,
       <LawsuitCaseType key="lawsuit-case-type" caseId={safeCaseId} nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <LawsuitParties key="lawsuit-parties" caseId={safeCaseId} nextStep={advanceToNextStep} caseType={caseType} selectedFacts={selectedFacts} />,
@@ -209,6 +226,8 @@ const PreparingStatementOfClaims = () => {
             isSavingStep={isSavingStep}
             currentAccessibleStep={visibleCurrentAccessibleStep}
             lastCompletedStep={visibleLastCompletedStep}
+            isAutoRunning={isAutoRunning}
+            onStopAutoRun={stopAutoRun}
           />
 
           <div className="w-full">

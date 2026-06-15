@@ -20,6 +20,12 @@ const EXEC_JOB_STEP_MAP = {
   ExecRequestAssembly: 3,
 } as const;
 
+const AUTO_RUN_STEP_MAP: Record<number, string> = {
+  1: 'ExecRequestClassification',
+  2: 'ExecRequestDrafting',
+  3: 'ExecRequestAssembly',
+};
+
 const ExecRequestPage = () => {
   const {
     active,
@@ -43,6 +49,9 @@ const ExecRequestPage = () => {
     tabProps,
     isClickableTab,
     handleAdvanceStage,
+    isAutoRunning,
+    startAutoRun,
+    stopAutoRun,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: RootState) => s.execRequest,
     thunks: execRequestThunks,
@@ -52,6 +61,9 @@ const ExecRequestPage = () => {
     maxSteps: 3,
     steps: EXEC_REQUEST_STEP_DEFS,
     jobStepMap: EXEC_JOB_STEP_MAP,
+    autoRunStepMap: AUTO_RUN_STEP_MAP,
+    onAutoRunComplete: () => { sileo.success({ title: 'اكتملت جميع مراحل الطلب التنفيذي بنجاح' }); },
+    onAutoRunError: (step, error) => { sileo.error({ title: error ?? `فشل التشغيل التلقائي في المرحلة ${step}` }); },
     onError: (error) => { sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' }); },
   });
 
@@ -73,6 +85,8 @@ const ExecRequestPage = () => {
       startLabel="بدء تصنيف الطلب"
       continueLabel={classification ? 'الانتقال إلى التصنيف' : 'بدء تصنيف الطلب'}
       onStart={nextStep}
+      onRunAll={() => startAutoRun(0)}
+      isAutoRunning={isAutoRunning}
     />,
     <ExecStep1Classification key="step1" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <ExecStep2Drafting key="step2" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
@@ -122,6 +136,8 @@ const ExecRequestPage = () => {
             isSavingStep={isSavingStep}
             currentAccessibleStep={workflowState.currentAccessibleStep}
             lastCompletedStep={workflowState.lastCompletedStep}
+            isAutoRunning={isAutoRunning}
+            onStopAutoRun={stopAutoRun}
           />
 
           <div className="w-full">

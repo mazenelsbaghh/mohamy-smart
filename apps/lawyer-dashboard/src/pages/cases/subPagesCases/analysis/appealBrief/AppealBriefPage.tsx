@@ -26,6 +26,15 @@ const APPEAL_JOB_STEP_MAP = {
   AppealBriefAssembly: 6,
 } as const;
 
+const AUTO_RUN_STEP_MAP: Record<number, string> = {
+  1: 'AppealBriefJudgmentData',
+  2: 'AppealBriefReasoningAnalysis',
+  3: 'AppealBriefGrounds',
+  4: 'AppealBriefRequests',
+  5: 'AppealBriefLegalBasis',
+  6: 'AppealBriefAssembly',
+};
+
 const AppealBriefPage = () => {
   const {
     active,
@@ -50,6 +59,9 @@ const AppealBriefPage = () => {
     tabProps,
     isClickableTab,
     handleAdvanceStage,
+    isAutoRunning,
+    startAutoRun,
+    stopAutoRun,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: RootState) => s.appealBrief,
     thunks: appealBriefThunks,
@@ -59,6 +71,9 @@ const AppealBriefPage = () => {
     maxSteps: 6,
     steps: APPEAL_BRIEF_STEP_DEFS,
     jobStepMap: APPEAL_JOB_STEP_MAP,
+    autoRunStepMap: AUTO_RUN_STEP_MAP,
+    onAutoRunComplete: () => { sileo.success({ title: 'اكتملت جميع مراحل صحيفة الاستئناف بنجاح' }); },
+    onAutoRunError: (step, error) => { sileo.error({ title: error ?? `فشل التشغيل التلقائي في المرحلة ${step}` }); },
     onError: (error) => { sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' }); },
   });
 
@@ -80,6 +95,8 @@ const AppealBriefPage = () => {
       startLabel="بدء استخراج بيانات الحكم"
       continueLabel={judgmentData ? 'الانتقال إلى بيانات الحكم' : 'بدء استخراج بيانات الحكم'}
       onStart={nextStep}
+      onRunAll={() => startAutoRun(0)}
+      isAutoRunning={isAutoRunning}
     />,
     <AppealStep1JudgmentData key="step1" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <AppealStep2Analysis key="step2" nextStep={advanceToNextStep} prevStep={prevStep} selectedFacts={selectedFacts} />,
@@ -132,6 +149,8 @@ const AppealBriefPage = () => {
             isSavingStep={isSavingStep}
             currentAccessibleStep={workflowState.currentAccessibleStep}
             lastCompletedStep={workflowState.lastCompletedStep}
+            isAutoRunning={isAutoRunning}
+            onStopAutoRun={stopAutoRun}
           />
 
           <div className="w-full">

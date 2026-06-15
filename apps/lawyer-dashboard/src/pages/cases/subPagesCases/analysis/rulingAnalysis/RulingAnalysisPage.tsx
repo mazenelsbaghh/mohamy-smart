@@ -22,6 +22,13 @@ const RULING_JOB_STEP_MAP = {
   RulingAnalysisFeasibilityReport: 4,
 } as const;
 
+const AUTO_RUN_STEP_MAP: Record<number, string> = {
+  1: 'RulingAnalysisOperative',
+  2: 'RulingAnalysisReasoning',
+  3: 'RulingAnalysisDefectEvaluation',
+  4: 'RulingAnalysisFeasibilityReport',
+};
+
 const RulingAnalysisPage = () => {
   const {
     active,
@@ -45,6 +52,9 @@ const RulingAnalysisPage = () => {
     tabProps,
     isClickableTab,
     handleAdvanceStage,
+    isAutoRunning,
+    startAutoRun,
+    stopAutoRun,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: RootState) => s.rulingAnalysis,
     thunks: rulingAnalysisThunks,
@@ -54,6 +64,9 @@ const RulingAnalysisPage = () => {
     maxSteps: 4,
     steps: RULING_ANALYSIS_STEP_DEFS,
     jobStepMap: RULING_JOB_STEP_MAP,
+    autoRunStepMap: AUTO_RUN_STEP_MAP,
+    onAutoRunComplete: () => { sileo.success({ title: 'اكتمل تحليل الحكم بجميع مراحله بنجاح' }); },
+    onAutoRunError: (step, error) => { sileo.error({ title: error ?? `فشل التشغيل التلقائي في المرحلة ${step}` }); },
     onError: (error) => { sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' }); },
   });
 
@@ -75,6 +88,8 @@ const RulingAnalysisPage = () => {
       startLabel="بدء تحليل الحكم"
       continueLabel={verdictAnalysis ? 'الانتقال إلى تحليل المنطوق' : 'بدء تحليل الحكم'}
       onStart={nextStep}
+      onRunAll={() => startAutoRun(0)}
+      isAutoRunning={isAutoRunning}
     />,
     <RulingStep1VerdictAnalysis key="step1" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <RulingStep2ReasonsAnalysis key="step2" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
@@ -125,6 +140,8 @@ const RulingAnalysisPage = () => {
             isSavingStep={isSavingStep}
             currentAccessibleStep={workflowState.currentAccessibleStep}
             lastCompletedStep={workflowState.lastCompletedStep}
+            isAutoRunning={isAutoRunning}
+            onStopAutoRun={stopAutoRun}
           />
 
           <div className="w-full">
