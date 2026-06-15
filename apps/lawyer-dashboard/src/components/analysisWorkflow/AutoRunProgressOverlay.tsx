@@ -12,9 +12,9 @@ import { Button, Progress } from '@heroui/react';
 
 interface AutoRunProgressOverlayProps {
   steps: Array<{ label: string; icon: React.ReactNode }>;
-  activeStep: number; // 1-based, the currently processing step
+  activeStep: number; // 0-based step index from orchestrator
   maxSteps: number;
-  completedSteps: Set<number> | number[]; // steps that have completed (1-based)
+  completedSteps: Set<number> | number[]; // step indexes that have completed (0-based)
   failedStep?: number | null; // if a step failed
   onStop: () => void;
   isComplete?: boolean; // all steps done
@@ -46,7 +46,8 @@ export const AutoRunProgressOverlay: React.FC<AutoRunProgressOverlayProps> = ({
   );
 
   const completedCount = completedSet.size;
-  const progressValue = maxSteps > 0 ? (completedCount / maxSteps) * 100 : 0;
+  const totalSteps = steps.length;
+  const progressValue = totalSteps > 0 ? (completedCount / totalSteps) * 100 : 0;
 
   const hasFailed = failedStep != null;
 
@@ -146,7 +147,7 @@ export const AutoRunProgressOverlay: React.FC<AutoRunProgressOverlayProps> = ({
                         : 'جاري التنفيذ...'}
                   </span>
                   <span className="text-[10px] app-text-muted font-medium">
-                    {completedCount}/{maxSteps}
+                    {completedCount}/{totalSteps}
                   </span>
                 </div>
 
@@ -171,7 +172,7 @@ export const AutoRunProgressOverlay: React.FC<AutoRunProgressOverlayProps> = ({
             {/* Step checklist */}
             <div className="flex flex-col gap-4 mt-4 pe-2">
               {steps.map((step, idx) => {
-                const stepNum = idx + 1; // 1-based
+                const stepNum = idx; // 0-based to match orchestrator's active
                 const status = stepStatus(stepNum);
 
                 const isCompleted = status === 'completed';

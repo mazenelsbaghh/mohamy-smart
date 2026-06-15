@@ -556,6 +556,7 @@ export function useWorkflowOrchestrator<
       try { localStorage.setItem(autoRunStorageKey, JSON.stringify({ active: true, ts: Date.now() })); } catch { /* ignore */ }
     }
     if (fromStep === 0) {
+      setAutoRunCompletedSteps([0]); // facts step is done immediately
       handleAdvanceStage(0, 1);
     }
   }, [handleAdvanceStage, autoRunStorageKey]);
