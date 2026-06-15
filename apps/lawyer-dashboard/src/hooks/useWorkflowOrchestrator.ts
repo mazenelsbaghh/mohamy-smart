@@ -638,7 +638,7 @@ export function useWorkflowOrchestrator<
       if (parsed?.active && Date.now() - (parsed.ts || 0) < 120 * 60 * 1000) {
         autoRunResumedRef.current = true;
         // When resuming, mark steps that already have outputs as completed
-        const alreadyCompleted: number[] = [];
+        const alreadyCompleted: number[] = [0]; // facts step always done
         if (autoRunStepMap) {
           for (const [stepNum] of Object.entries(autoRunStepMap)) {
             const sn = Number(stepNum);
