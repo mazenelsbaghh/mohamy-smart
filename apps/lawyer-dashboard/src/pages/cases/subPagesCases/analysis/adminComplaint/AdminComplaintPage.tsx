@@ -11,6 +11,7 @@ import ComplaintStep4RequestsDraft from './steps/ComplaintStep4RequestsDraft';
 import ComplaintStep5FinalAssembly from './steps/ComplaintStep5FinalAssembly';
 import AnalysisFactsSelectionStep from '../../../../../components/analysisWorkflow/AnalysisFactsSelectionStep';
 import WorkflowStepBar from '../../../../../components/analysisWorkflow/WorkflowStepBar';
+import { AutoRunProgressOverlay } from '../../../../../components/analysisWorkflow/AutoRunProgressOverlay';
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
 import { ADMIN_COMPLAINT_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
@@ -35,6 +36,7 @@ const AUTO_RUN_STEP_MAP: Record<number, string> = {
 const AdminComplaintPage = () => {
   const {
     active,
+    setActive,
     nextStep,
     handleTabChange,
     caseId,
@@ -58,6 +60,10 @@ const AdminComplaintPage = () => {
     isAutoRunning,
     startAutoRun,
     stopAutoRun,
+    autoRunCompletedSteps,
+    autoRunJustCompleted,
+    autoRunFailedStep,
+    dismissAutoRunOverlay,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: RootState) => s.adminComplaint,
     thunks: adminComplaintThunks,
@@ -93,6 +99,7 @@ const AdminComplaintPage = () => {
       onStart={nextStep}
       onRunAll={() => startAutoRun(0)}
       isAutoRunning={isAutoRunning}
+      estimatedSteps={5}
     />,
     <ComplaintStep1Classification key="step1" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <ComplaintStep2FactsDraft key="step2" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
@@ -100,6 +107,9 @@ const AdminComplaintPage = () => {
     <ComplaintStep4RequestsDraft key="step4" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <ComplaintStep5FinalAssembly key="step5" selectedFacts={selectedFacts} />,
   ];
+
+  const maxSteps = 5;
+  const showAutoRunOverlay = isAutoRunning || autoRunJustCompleted || autoRunFailedStep !== null;
 
   if (isLoading) {
     return (
@@ -149,28 +159,41 @@ const AdminComplaintPage = () => {
           />
 
           <div className="w-full">
-            <Tabs
-              aria-label="مراحل الشكوى"
-              selectedKey={active.toString()}
-              onSelectionChange={handleTabChange}
-              classNames={tabsClassNames}
-              {...tabProps}
-            >
-              {ADMIN_COMPLAINT_STEP_DEFS.map((step, index) => (
-                <Tab
-                  key={index.toString()}
-                  title={
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{step.icon}</span>
-                      <span className="hidden md:inline text-nowrap">{step.label}</span>
-                    </div>
-                  }
-                  isDisabled={!isClickableTab(index)}
-                >
-                  {renderedStep[index]}
-                </Tab>
-              ))}
-            </Tabs>
+            {showAutoRunOverlay ? (
+              <AutoRunProgressOverlay
+                steps={ADMIN_COMPLAINT_STEP_DEFS}
+                activeStep={active}
+                maxSteps={maxSteps}
+                completedSteps={autoRunCompletedSteps}
+                failedStep={autoRunFailedStep}
+                onStop={() => { stopAutoRun(); dismissAutoRunOverlay(); }}
+                isComplete={autoRunJustCompleted}
+                onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}
+              />
+            ) : (
+              <Tabs
+                aria-label="مراحل الشكوى"
+                selectedKey={active.toString()}
+                onSelectionChange={handleTabChange}
+                classNames={tabsClassNames}
+                {...tabProps}
+              >
+                {ADMIN_COMPLAINT_STEP_DEFS.map((step, index) => (
+                  <Tab
+                    key={index.toString()}
+                    title={
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{step.icon}</span>
+                        <span className="hidden md:inline text-nowrap">{step.label}</span>
+                      </div>
+                    }
+                    isDisabled={!isClickableTab(index)}
+                  >
+                    {renderedStep[index]}
+                  </Tab>
+                ))}
+              </Tabs>
+            )}
           </div>
         </div>
       </Container>

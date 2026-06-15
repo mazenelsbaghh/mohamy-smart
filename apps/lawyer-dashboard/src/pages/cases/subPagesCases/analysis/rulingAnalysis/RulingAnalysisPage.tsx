@@ -10,6 +10,7 @@ import RulingStep3DefectsEvaluation from './steps/RulingStep3DefectsEvaluation';
 import RulingStep4AppealViability from './steps/RulingStep4AppealViability';
 import AnalysisFactsSelectionStep from '../../../../../components/analysisWorkflow/AnalysisFactsSelectionStep';
 import WorkflowStepBar from '../../../../../components/analysisWorkflow/WorkflowStepBar';
+import { AutoRunProgressOverlay } from '../../../../../components/analysisWorkflow/AutoRunProgressOverlay';
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
 import { RULING_ANALYSIS_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
@@ -32,6 +33,7 @@ const AUTO_RUN_STEP_MAP: Record<number, string> = {
 const RulingAnalysisPage = () => {
   const {
     active,
+    setActive,
     nextStep,
     handleTabChange,
     caseId,
@@ -55,6 +57,10 @@ const RulingAnalysisPage = () => {
     isAutoRunning,
     startAutoRun,
     stopAutoRun,
+    autoRunCompletedSteps,
+    autoRunJustCompleted,
+    autoRunFailedStep,
+    dismissAutoRunOverlay,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: RootState) => s.rulingAnalysis,
     thunks: rulingAnalysisThunks,
@@ -90,12 +96,16 @@ const RulingAnalysisPage = () => {
       onStart={nextStep}
       onRunAll={() => startAutoRun(0)}
       isAutoRunning={isAutoRunning}
+      estimatedSteps={4}
     />,
     <RulingStep1VerdictAnalysis key="step1" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <RulingStep2ReasonsAnalysis key="step2" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <RulingStep3DefectsEvaluation key="step3" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <RulingStep4AppealViability key="step4" selectedFacts={selectedFacts} />,
   ];
+
+  const maxSteps = 4;
+  const showAutoRunOverlay = isAutoRunning || autoRunJustCompleted || autoRunFailedStep !== null;
 
   if (isLoading) {
     return (
@@ -145,28 +155,41 @@ const RulingAnalysisPage = () => {
           />
 
           <div className="w-full">
-            <Tabs
-              aria-label="مراحل تحليل الحكم"
-              selectedKey={active.toString()}
-              onSelectionChange={handleTabChange}
-              classNames={tabsClassNames}
-              {...tabProps}
-            >
-              {RULING_ANALYSIS_STEP_DEFS.map((step, index) => (
-                <Tab
-                  key={index.toString()}
-                  title={
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{step.icon}</span>
-                      <span className="hidden md:inline text-nowrap">{step.label}</span>
-                    </div>
-                  }
-                  isDisabled={!isClickableTab(index)}
-                >
-                  {renderedStep[index]}
-                </Tab>
-              ))}
-            </Tabs>
+            {showAutoRunOverlay ? (
+              <AutoRunProgressOverlay
+                steps={RULING_ANALYSIS_STEP_DEFS}
+                activeStep={active}
+                maxSteps={maxSteps}
+                completedSteps={autoRunCompletedSteps}
+                failedStep={autoRunFailedStep}
+                onStop={() => { stopAutoRun(); dismissAutoRunOverlay(); }}
+                isComplete={autoRunJustCompleted}
+                onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}
+              />
+            ) : (
+              <Tabs
+                aria-label="مراحل تحليل الحكم"
+                selectedKey={active.toString()}
+                onSelectionChange={handleTabChange}
+                classNames={tabsClassNames}
+                {...tabProps}
+              >
+                {RULING_ANALYSIS_STEP_DEFS.map((step, index) => (
+                  <Tab
+                    key={index.toString()}
+                    title={
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{step.icon}</span>
+                        <span className="hidden md:inline text-nowrap">{step.label}</span>
+                      </div>
+                    }
+                    isDisabled={!isClickableTab(index)}
+                  >
+                    {renderedStep[index]}
+                  </Tab>
+                ))}
+              </Tabs>
+            )}
           </div>
         </div>
       </Container>

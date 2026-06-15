@@ -32,6 +32,7 @@ import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysi
 import { Tabs, Tab } from '@heroui/react';
 import { LuHistory } from 'react-icons/lu';
 import WorkflowStepBar from '../../../../../components/analysisWorkflow/WorkflowStepBar';
+import { AutoRunProgressOverlay } from '../../../../../components/analysisWorkflow/AutoRunProgressOverlay';
 import api from '../../../../../APIs/api';
 import { DEFENSE_MEMO_STEP_DEFS, WORKFLOW_TAB_CLASSNAMES, WORKFLOW_TAB_PROPS } from '../../../../../components/analysisWorkflow/workflowConstants';
 import { useWorkflowOrchestrator } from '../../../../../hooks/useWorkflowOrchestrator';
@@ -123,6 +124,10 @@ const DefenseMemoPage = () => {
     startAutoRun,
     stopAutoRun,
     handleAdvanceStage,
+    autoRunCompletedSteps,
+    autoRunJustCompleted,
+    autoRunFailedStep,
+    dismissAutoRunOverlay,
   } = useWorkflowOrchestrator({
     sliceSelector: (s) => s.smartAnalysis,
     thunks: smartAnalysisThunks,
@@ -511,6 +516,9 @@ const DefenseMemoPage = () => {
     <FinalNote key="final-note" caseId={caseId} isActiveTab={active === 4} />,
   ];
 
+  const maxSteps = 4;
+  const showAutoRunOverlay = isAutoRunning || autoRunJustCompleted || autoRunFailedStep !== null;
+
   return (
     <section className="py-8 min-h-screen" dir="rtl">
       <Container>
@@ -563,27 +571,40 @@ const DefenseMemoPage = () => {
               />
 
               <div className="w-full">
-                <Tabs
-                  aria-label="مراحل التحليل الذكي"
-                  selectedKey={active.toString()}
-                  onSelectionChange={(key) => {
-                    const step = Number(key);
-                    if (isClickableTab(step)) setActive(step);
-                  }}
-                  classNames={WORKFLOW_TAB_CLASSNAMES}
-                  {...WORKFLOW_TAB_PROPS}
-                >
-                  {DEFENSE_MEMO_STEP_DEFS.map((step, index) => (
-                    <Tab key={index.toString()} title={
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{step.icon}</span>
-                        <span className="hidden md:inline text-nowrap">{step.label}</span>
-                      </div>
-                    } isDisabled={active !== index && !isClickableTab(index)}>
-                      {renderedStep[index]}
-                    </Tab>
-                  ))}
-                </Tabs>
+                {showAutoRunOverlay ? (
+                  <AutoRunProgressOverlay
+                    steps={DEFENSE_MEMO_STEP_DEFS}
+                    activeStep={active}
+                    maxSteps={maxSteps}
+                    completedSteps={autoRunCompletedSteps}
+                    failedStep={autoRunFailedStep}
+                    onStop={() => { stopAutoRun(); dismissAutoRunOverlay(); }}
+                    isComplete={autoRunJustCompleted}
+                    onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}
+                  />
+                ) : (
+                  <Tabs
+                    aria-label="مراحل التحليل الذكي"
+                    selectedKey={active.toString()}
+                    onSelectionChange={(key) => {
+                      const step = Number(key);
+                      if (isClickableTab(step)) setActive(step);
+                    }}
+                    classNames={WORKFLOW_TAB_CLASSNAMES}
+                    {...WORKFLOW_TAB_PROPS}
+                  >
+                    {DEFENSE_MEMO_STEP_DEFS.map((step, index) => (
+                      <Tab key={index.toString()} title={
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{step.icon}</span>
+                          <span className="hidden md:inline text-nowrap">{step.label}</span>
+                        </div>
+                      } isDisabled={active !== index && !isClickableTab(index)}>
+                        {renderedStep[index]}
+                      </Tab>
+                    ))}
+                  </Tabs>
+                )}
               </div>
             </>
           )}

@@ -13,6 +13,7 @@ import LawsuitRequests from './steps/LawsuitRequests';
 import FinalStatementOfClaims from './steps/FinalStatementOfClaims';
 import AnalysisFactsSelectionStep from '../../../../../components/analysisWorkflow/AnalysisFactsSelectionStep';
 import WorkflowStepBar from '../../../../../components/analysisWorkflow/WorkflowStepBar';
+import { AutoRunProgressOverlay } from '../../../../../components/analysisWorkflow/AutoRunProgressOverlay';
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
 import { STATEMENT_OF_CLAIMS_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
@@ -107,6 +108,10 @@ const PreparingStatementOfClaims = () => {
     isAutoRunning,
     startAutoRun,
     stopAutoRun,
+    autoRunCompletedSteps,
+    autoRunJustCompleted,
+    autoRunFailedStep,
+    dismissAutoRunOverlay,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: RootState) => s.preparingStatementOfClaimsSlice,
     thunks: statementOfClaimsThunks,
@@ -173,6 +178,7 @@ const PreparingStatementOfClaims = () => {
       emptyStateText="لا توجد وقائع محفوظة داخل القضية الحالية. أضف البيانات أولاً من تفاصيل القضية."
       onRunAll={() => startAutoRun(0)}
       isAutoRunning={isAutoRunning}
+      estimatedSteps={6}
     />,
       <LawsuitCaseType key="lawsuit-case-type" caseId={safeCaseId} nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <LawsuitParties key="lawsuit-parties" caseId={safeCaseId} nextStep={advanceToNextStep} caseType={caseType} selectedFacts={selectedFacts} />,
@@ -182,6 +188,9 @@ const PreparingStatementOfClaims = () => {
     <LawsuitRequests key="lawsuit-requests" caseId={safeCaseId} nextStep={advanceToNextStep} caseType={caseType} selectedFacts={selectedFacts} />,
     <FinalStatementOfClaims key="final-statement-of-claims" caseId={safeCaseId} />,
   ];
+
+  const maxSteps = 7;
+  const showAutoRunOverlay = isAutoRunning || autoRunJustCompleted || autoRunFailedStep !== null;
 
   if (isLoading) {
     return (
@@ -231,31 +240,44 @@ const PreparingStatementOfClaims = () => {
           />
 
           <div className="w-full">
-            <Tabs
-              aria-label="مراحل إعداد صحيفة الدعوى"
-              selectedKey={selectedVisibleStep.toString()}
-              onSelectionChange={handleTabChange}
-              classNames={tabsClassNames}
-              {...tabProps}
-            >
-              {STATEMENT_VISIBLE_STEP_INDEXES.map((stepIndex, visibleIndex) => {
-                const step = STATEMENT_VISIBLE_STEP_DEFS[visibleIndex];
-                return (
-                <Tab
-                  key={stepIndex.toString()}
-                  title={
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{step.icon}</span>
-                      <span className="hidden md:inline text-nowrap">{step.label}</span>
-                    </div>
-                  }
-                  isDisabled={!isClickableTab(stepIndex)}
-                >
-                  {renderedSteps[stepIndex]}
-                </Tab>
-                );
-              })}
-            </Tabs>
+            {showAutoRunOverlay ? (
+              <AutoRunProgressOverlay
+                steps={STATEMENT_VISIBLE_STEP_DEFS}
+                activeStep={active}
+                maxSteps={maxSteps}
+                completedSteps={autoRunCompletedSteps}
+                failedStep={autoRunFailedStep}
+                onStop={() => { stopAutoRun(); dismissAutoRunOverlay(); }}
+                isComplete={autoRunJustCompleted}
+                onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}
+              />
+            ) : (
+              <Tabs
+                aria-label="مراحل إعداد صحيفة الدعوى"
+                selectedKey={selectedVisibleStep.toString()}
+                onSelectionChange={handleTabChange}
+                classNames={tabsClassNames}
+                {...tabProps}
+              >
+                {STATEMENT_VISIBLE_STEP_INDEXES.map((stepIndex, visibleIndex) => {
+                  const step = STATEMENT_VISIBLE_STEP_DEFS[visibleIndex];
+                  return (
+                  <Tab
+                    key={stepIndex.toString()}
+                    title={
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{step.icon}</span>
+                        <span className="hidden md:inline text-nowrap">{step.label}</span>
+                      </div>
+                    }
+                    isDisabled={!isClickableTab(stepIndex)}
+                  >
+                    {renderedSteps[stepIndex]}
+                  </Tab>
+                  );
+                })}
+              </Tabs>
+            )}
           </div>
         </div>
       </Container>

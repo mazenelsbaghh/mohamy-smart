@@ -9,6 +9,7 @@ import ExecStep2Drafting from './steps/ExecStep2Drafting';
 import ExecStep3Assembly from './steps/ExecStep3Assembly';
 import AnalysisFactsSelectionStep from '../../../../../components/analysisWorkflow/AnalysisFactsSelectionStep';
 import WorkflowStepBar from '../../../../../components/analysisWorkflow/WorkflowStepBar';
+import { AutoRunProgressOverlay } from '../../../../../components/analysisWorkflow/AutoRunProgressOverlay';
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
 import { EXEC_REQUEST_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
@@ -29,6 +30,7 @@ const AUTO_RUN_STEP_MAP: Record<number, string> = {
 const ExecRequestPage = () => {
   const {
     active,
+    setActive,
     nextStep,
     handleTabChange,
     caseId,
@@ -52,6 +54,10 @@ const ExecRequestPage = () => {
     isAutoRunning,
     startAutoRun,
     stopAutoRun,
+    autoRunCompletedSteps,
+    autoRunJustCompleted,
+    autoRunFailedStep,
+    dismissAutoRunOverlay,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: RootState) => s.execRequest,
     thunks: execRequestThunks,
@@ -87,11 +93,15 @@ const ExecRequestPage = () => {
       onStart={nextStep}
       onRunAll={() => startAutoRun(0)}
       isAutoRunning={isAutoRunning}
+      estimatedSteps={3}
     />,
     <ExecStep1Classification key="step1" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <ExecStep2Drafting key="step2" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <ExecStep3Assembly key="step3" selectedFacts={selectedFacts} />,
   ];
+
+  const maxSteps = 3;
+  const showAutoRunOverlay = isAutoRunning || autoRunJustCompleted || autoRunFailedStep !== null;
 
   if (isLoading) {
     return (
@@ -141,28 +151,41 @@ const ExecRequestPage = () => {
           />
 
           <div className="w-full">
-            <Tabs
-              aria-label="مراحل الطلب التنفيذي"
-              selectedKey={active.toString()}
-              onSelectionChange={handleTabChange}
-              classNames={tabsClassNames}
-              {...tabProps}
-            >
-              {EXEC_REQUEST_STEP_DEFS.map((step, index) => (
-                <Tab
-                  key={index.toString()}
-                  title={
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{step.icon}</span>
-                      <span className="hidden md:inline text-nowrap">{step.label}</span>
-                    </div>
-                  }
-                  isDisabled={!isClickableTab(index)}
-                >
-                  {renderedStep[index]}
-                </Tab>
-              ))}
-            </Tabs>
+            {showAutoRunOverlay ? (
+              <AutoRunProgressOverlay
+                steps={EXEC_REQUEST_STEP_DEFS}
+                activeStep={active}
+                maxSteps={maxSteps}
+                completedSteps={autoRunCompletedSteps}
+                failedStep={autoRunFailedStep}
+                onStop={() => { stopAutoRun(); dismissAutoRunOverlay(); }}
+                isComplete={autoRunJustCompleted}
+                onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}
+              />
+            ) : (
+              <Tabs
+                aria-label="مراحل الطلب التنفيذي"
+                selectedKey={active.toString()}
+                onSelectionChange={handleTabChange}
+                classNames={tabsClassNames}
+                {...tabProps}
+              >
+                {EXEC_REQUEST_STEP_DEFS.map((step, index) => (
+                  <Tab
+                    key={index.toString()}
+                    title={
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{step.icon}</span>
+                        <span className="hidden md:inline text-nowrap">{step.label}</span>
+                      </div>
+                    }
+                    isDisabled={!isClickableTab(index)}
+                  >
+                    {renderedStep[index]}
+                  </Tab>
+                ))}
+              </Tabs>
+            )}
           </div>
         </div>
       </Container>

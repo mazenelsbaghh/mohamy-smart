@@ -12,6 +12,7 @@ import AppealStep5LegalBasis from './steps/AppealStep5LegalBasis';
 import AppealStep6Assembly from './steps/AppealStep6Assembly';
 import AnalysisFactsSelectionStep from '../../../../../components/analysisWorkflow/AnalysisFactsSelectionStep';
 import WorkflowStepBar from '../../../../../components/analysisWorkflow/WorkflowStepBar';
+import { AutoRunProgressOverlay } from '../../../../../components/analysisWorkflow/AutoRunProgressOverlay';
 import CaseHeaderBanner from '../../../../../components/header/CaseHeaderBanner';
 import SmartAnalysisLoader from '../../../../../components/skeleton/SmartAnalysisLoader';
 import { APPEAL_BRIEF_STEP_DEFS } from '../../../../../components/analysisWorkflow/workflowConstants';
@@ -38,6 +39,7 @@ const AUTO_RUN_STEP_MAP: Record<number, string> = {
 const AppealBriefPage = () => {
   const {
     active,
+    setActive,
     nextStep,
     prevStep,
     handleTabChange,
@@ -62,6 +64,10 @@ const AppealBriefPage = () => {
     isAutoRunning,
     startAutoRun,
     stopAutoRun,
+    autoRunCompletedSteps,
+    autoRunJustCompleted,
+    autoRunFailedStep,
+    dismissAutoRunOverlay,
   } = useWorkflowOrchestrator({
     sliceSelector: (s: RootState) => s.appealBrief,
     thunks: appealBriefThunks,
@@ -97,6 +103,7 @@ const AppealBriefPage = () => {
       onStart={nextStep}
       onRunAll={() => startAutoRun(0)}
       isAutoRunning={isAutoRunning}
+      estimatedSteps={6}
     />,
     <AppealStep1JudgmentData key="step1" nextStep={advanceToNextStep} selectedFacts={selectedFacts} />,
     <AppealStep2Analysis key="step2" nextStep={advanceToNextStep} prevStep={prevStep} selectedFacts={selectedFacts} />,
@@ -105,6 +112,9 @@ const AppealBriefPage = () => {
     <AppealStep5LegalBasis key="step5" nextStep={advanceToNextStep} prevStep={prevStep} selectedFacts={selectedFacts} />,
     <AppealStep6Assembly key="step6" prevStep={prevStep} selectedFacts={selectedFacts} />,
   ];
+
+  const maxSteps = 6;
+  const showAutoRunOverlay = isAutoRunning || autoRunJustCompleted || autoRunFailedStep !== null;
 
   if (isLoading) {
     return (
@@ -154,28 +164,41 @@ const AppealBriefPage = () => {
           />
 
           <div className="w-full">
-            <Tabs
-              aria-label="مراحل صحيفة الاستئناف"
-              selectedKey={active.toString()}
-              onSelectionChange={handleTabChange}
-              classNames={tabsClassNames}
-              {...tabProps}
-            >
-              {APPEAL_BRIEF_STEP_DEFS.map((step, index) => (
-                <Tab
-                  key={index.toString()}
-                  title={
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{step.icon}</span>
-                      <span className="hidden md:inline text-nowrap">{step.label}</span>
-                    </div>
-                  }
-                  isDisabled={!isClickableTab(index)}
-                >
-                  {renderedStep[index]}
-                </Tab>
-              ))}
-            </Tabs>
+            {showAutoRunOverlay ? (
+              <AutoRunProgressOverlay
+                steps={APPEAL_BRIEF_STEP_DEFS}
+                activeStep={active}
+                maxSteps={maxSteps}
+                completedSteps={autoRunCompletedSteps}
+                failedStep={autoRunFailedStep}
+                onStop={() => { stopAutoRun(); dismissAutoRunOverlay(); }}
+                isComplete={autoRunJustCompleted}
+                onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}
+              />
+            ) : (
+              <Tabs
+                aria-label="مراحل صحيفة الاستئناف"
+                selectedKey={active.toString()}
+                onSelectionChange={handleTabChange}
+                classNames={tabsClassNames}
+                {...tabProps}
+              >
+                {APPEAL_BRIEF_STEP_DEFS.map((step, index) => (
+                  <Tab
+                    key={index.toString()}
+                    title={
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{step.icon}</span>
+                        <span className="hidden md:inline text-nowrap">{step.label}</span>
+                      </div>
+                    }
+                    isDisabled={!isClickableTab(index)}
+                  >
+                    {renderedStep[index]}
+                  </Tab>
+                ))}
+              </Tabs>
+            )}
           </div>
         </div>
       </Container>

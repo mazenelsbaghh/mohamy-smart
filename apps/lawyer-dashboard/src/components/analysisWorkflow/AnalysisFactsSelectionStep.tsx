@@ -49,6 +49,7 @@ type AnalysisFactsSelectionStepProps = {
  };
  onRunAll?: () => void;
  isAutoRunning?: boolean;
+ estimatedSteps?: number;
 };
 
 const defaultSelectionHint = {
@@ -76,6 +77,7 @@ const AnalysisFactsSelectionStep = ({
  selectionHint = defaultSelectionHint,
  onRunAll,
  isAutoRunning = false,
+ estimatedSteps,
 }: AnalysisFactsSelectionStepProps) => {
  const dispatch = useAppDispatch();
  const location = useLocation();
@@ -399,9 +401,9 @@ const AnalysisFactsSelectionStep = ({
    <p className="text-sm font-bold text-[var(--title-color)] text-center">
      سيتم تنفيذ جميع الخطوات تلقائياً
    </p>
-   <p className="text-xs app-text-muted text-center">
-     التكلفة: 1 نقطة فقط
-   </p>
+    <p className="text-xs app-text-muted text-center">
+      {estimatedSteps ? `التكلفة المتوقعة: ${estimatedSteps} نقاط` : 'سيتم خصم النقاط حسب الاستهلاك الفعلي'}
+    </p>
    <div className="flex gap-3">
      <button
        type="button"

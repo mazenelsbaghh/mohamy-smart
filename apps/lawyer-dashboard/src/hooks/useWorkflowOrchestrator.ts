@@ -97,6 +97,10 @@ export interface UseWorkflowOrchestratorReturn<TOutputs extends Record<number, u
   isAutoRunning: boolean;
   startAutoRun: (fromStep?: number) => void;
   stopAutoRun: () => void;
+  autoRunCompletedSteps: number[];
+  autoRunJustCompleted: boolean;
+  autoRunFailedStep: number | null;
+  dismissAutoRunOverlay: () => void;
 }
 
 const WORKFLOW_NOT_FOUND_ERROR = 'Workflow not found';
@@ -188,7 +192,16 @@ export function useWorkflowOrchestrator<
   const nextStep = useCallback(() => setActive((c) => (c < maxSteps ? c + 1 : c)), [maxSteps]);
   const prevStep = useCallback(() => setActive((c) => (c > 0 ? c - 1 : c)), []);
   const [isAutoRunning, setIsAutoRunning] = useState(false);
+  const [autoRunCompletedSteps, setAutoRunCompletedSteps] = useState<number[]>([]);
+  const [autoRunJustCompleted, setAutoRunJustCompleted] = useState(false);
+  const [autoRunFailedStep, setAutoRunFailedStep] = useState<number | null>(null);
   const autoRunAdvancedSteps = useRef<Set<number>>(new Set());
+
+  // ── Auto-run: localStorage persistence key ────────────────────────────
+  const autoRunStorageKey = useMemo(
+    () => caseId ? `autoRun_${workflowPrefix}_${caseId}` : null,
+    [workflowPrefix, caseId],
+  );
   const [initialAutoJumpDone, setInitialAutoJumpDone] = useState(false);
   const [freshRunInProgress, setFreshRunInProgress] = useState(false);
   const freshRunInProgressRef = useRef(false);
@@ -534,16 +547,30 @@ export function useWorkflowOrchestrator<
   // ── Auto-run: startAutoRun / stopAutoRun ──────────────────────────────
   const startAutoRun = useCallback((fromStep: number = 0) => {
     setIsAutoRunning(true);
+    setAutoRunCompletedSteps([]);
+    setAutoRunJustCompleted(false);
+    setAutoRunFailedStep(null);
     autoRunAdvancedSteps.current.clear();
+    // Persist to localStorage so refresh/close resumes
+    if (autoRunStorageKey) {
+      try { localStorage.setItem(autoRunStorageKey, JSON.stringify({ active: true, ts: Date.now() })); } catch { /* ignore */ }
+    }
     if (fromStep === 0) {
       handleAdvanceStage(0, 1);
     }
-  }, [handleAdvanceStage]);
+  }, [handleAdvanceStage, autoRunStorageKey]);
 
   const stopAutoRun = useCallback(() => {
     setIsAutoRunning(false);
+    setAutoRunCompletedSteps([]);
+    setAutoRunJustCompleted(false);
+    setAutoRunFailedStep(null);
     autoRunAdvancedSteps.current.clear();
-  }, []);
+    // Clear localStorage
+    if (autoRunStorageKey) {
+      try { localStorage.removeItem(autoRunStorageKey); } catch { /* ignore */ }
+    }
+  }, [autoRunStorageKey]);
 
   // ── Auto-run: auto-advance effect ─────────────────────────────────────
   useEffect(() => {
@@ -566,6 +593,7 @@ export function useWorkflowOrchestrator<
       }
 
       autoRunAdvancedSteps.current.add(currentStep);
+      setAutoRunCompletedSteps(prev => [...prev, currentStep]);
 
       if (currentStep < maxSteps) {
         setTimeout(() => {
@@ -574,7 +602,11 @@ export function useWorkflowOrchestrator<
       } else {
         setIsAutoRunning(false);
         autoRunAdvancedSteps.current.clear();
+        if (autoRunStorageKey) {
+          try { localStorage.removeItem(autoRunStorageKey); } catch { /* ignore */ }
+        }
         onAutoRunComplete?.();
+        setAutoRunJustCompleted(true);
       }
     }
 
@@ -582,9 +614,46 @@ export function useWorkflowOrchestrator<
     if (currentJob?.status === 'Failed') {
       setIsAutoRunning(false);
       autoRunAdvancedSteps.current.clear();
+      if (autoRunStorageKey) {
+        try { localStorage.removeItem(autoRunStorageKey); } catch { /* ignore */ }
+      }
       onAutoRunError?.(currentStep, (currentJob as any).errorMessage ?? null);
+      setAutoRunFailedStep(currentStep);
     }
-  }, [isAutoRunning, active, aiJobs.jobs, autoRunStepMap, maxSteps, handleAdvanceStage, onAutoRunStepCompleted, onAutoRunComplete, onAutoRunError]);
+  }, [isAutoRunning, active, aiJobs.jobs, autoRunStepMap, maxSteps, handleAdvanceStage, onAutoRunStepCompleted, onAutoRunComplete, onAutoRunError, autoRunStorageKey]);
+
+  // ── Auto-run: resume after refresh ────────────────────────────────────
+  const autoRunResumedRef = useRef(false);
+  useEffect(() => {
+    if (autoRunResumedRef.current) return;
+    if (!autoRunStorageKey) return;
+    if (!initialAutoJumpDone) return; // wait for workflow data to load
+    if (isAutoRunning) return; // already running
+    try {
+      const stored = localStorage.getItem(autoRunStorageKey);
+      if (!stored) return;
+      const parsed = JSON.parse(stored);
+      // Only resume if the session is less than 2 hours old
+      if (parsed?.active && Date.now() - (parsed.ts || 0) < 120 * 60 * 1000) {
+        autoRunResumedRef.current = true;
+        // When resuming, mark steps that already have outputs as completed
+        const alreadyCompleted: number[] = [];
+        if (autoRunStepMap) {
+          for (const [stepNum] of Object.entries(autoRunStepMap)) {
+            const sn = Number(stepNum);
+            if (workflowState.outputs[sn as keyof typeof workflowState.outputs]) {
+              alreadyCompleted.push(sn);
+            }
+          }
+        }
+        setAutoRunCompletedSteps(alreadyCompleted);
+        setIsAutoRunning(true);
+        // The auto-advance effect will pick up from the current active step
+      } else {
+        localStorage.removeItem(autoRunStorageKey);
+      }
+    } catch { /* ignore */ }
+  }, [autoRunStorageKey, initialAutoJumpDone, isAutoRunning, autoRunStepMap, workflowState.outputs]);
 
   const onJobCompletedRef = useRef(onJobCompleted);
   onJobCompletedRef.current = onJobCompleted;
@@ -631,5 +700,13 @@ export function useWorkflowOrchestrator<
     isAutoRunning,
     startAutoRun,
     stopAutoRun,
+    autoRunCompletedSteps,
+    autoRunJustCompleted,
+    autoRunFailedStep,
+    dismissAutoRunOverlay: useCallback(() => {
+      setAutoRunJustCompleted(false);
+      setAutoRunFailedStep(null);
+      setAutoRunCompletedSteps([]);
+    }, []),
   };
 }
