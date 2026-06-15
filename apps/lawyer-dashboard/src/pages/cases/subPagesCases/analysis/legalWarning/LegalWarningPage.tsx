@@ -151,7 +151,7 @@ const LegalWarningPage = () => {
           />
 
           <div className="w-full">
-            {showAutoRunOverlay ? (
+            {showAutoRunOverlay && (
               <AutoRunProgressOverlay
                 steps={LEGAL_WARNING_STEP_DEFS}
                 activeStep={active}
@@ -162,7 +162,8 @@ const LegalWarningPage = () => {
                 isComplete={autoRunJustCompleted}
                 onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}
               />
-            ) : (
+            )}
+            <div style={{ display: showAutoRunOverlay ? 'none' : undefined }}>
               <Tabs
                 aria-label="مراحل الإنذار الرسمي"
                 selectedKey={active.toString()}
@@ -185,7 +186,7 @@ const LegalWarningPage = () => {
                   </Tab>
                 ))}
               </Tabs>
-            )}
+            </div>
           </div>
         </div>
       </Container>

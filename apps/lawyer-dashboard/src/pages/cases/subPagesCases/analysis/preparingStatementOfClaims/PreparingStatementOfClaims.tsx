@@ -240,7 +240,7 @@ const PreparingStatementOfClaims = () => {
           />
 
           <div className="w-full">
-            {showAutoRunOverlay ? (
+            {showAutoRunOverlay && (
               <AutoRunProgressOverlay
                 steps={STATEMENT_VISIBLE_STEP_DEFS}
                 activeStep={active}
@@ -251,7 +251,8 @@ const PreparingStatementOfClaims = () => {
                 isComplete={autoRunJustCompleted}
                 onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}
               />
-            ) : (
+            )}
+            <div style={{ display: showAutoRunOverlay ? 'none' : undefined }}>
               <Tabs
                 aria-label="مراحل إعداد صحيفة الدعوى"
                 selectedKey={selectedVisibleStep.toString()}
@@ -277,7 +278,7 @@ const PreparingStatementOfClaims = () => {
                   );
                 })}
               </Tabs>
-            )}
+            </div>
           </div>
         </div>
       </Container>

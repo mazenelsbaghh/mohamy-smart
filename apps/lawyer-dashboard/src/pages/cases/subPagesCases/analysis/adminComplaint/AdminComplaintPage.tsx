@@ -159,7 +159,7 @@ const AdminComplaintPage = () => {
           />
 
           <div className="w-full">
-            {showAutoRunOverlay ? (
+            {showAutoRunOverlay && (
               <AutoRunProgressOverlay
                 steps={ADMIN_COMPLAINT_STEP_DEFS}
                 activeStep={active}
@@ -170,7 +170,8 @@ const AdminComplaintPage = () => {
                 isComplete={autoRunJustCompleted}
                 onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}
               />
-            ) : (
+            )}
+            <div style={{ display: showAutoRunOverlay ? 'none' : undefined }}>
               <Tabs
                 aria-label="مراحل الشكوى"
                 selectedKey={active.toString()}
@@ -193,7 +194,7 @@ const AdminComplaintPage = () => {
                   </Tab>
                 ))}
               </Tabs>
-            )}
+            </div>
           </div>
         </div>
       </Container>

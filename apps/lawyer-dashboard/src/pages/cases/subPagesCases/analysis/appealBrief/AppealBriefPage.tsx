@@ -164,7 +164,7 @@ const AppealBriefPage = () => {
           />
 
           <div className="w-full">
-            {showAutoRunOverlay ? (
+            {showAutoRunOverlay && (
               <AutoRunProgressOverlay
                 steps={APPEAL_BRIEF_STEP_DEFS}
                 activeStep={active}
@@ -175,7 +175,8 @@ const AppealBriefPage = () => {
                 isComplete={autoRunJustCompleted}
                 onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}
               />
-            ) : (
+            )}
+            <div style={{ display: showAutoRunOverlay ? 'none' : undefined }}>
               <Tabs
                 aria-label="مراحل صحيفة الاستئناف"
                 selectedKey={active.toString()}
@@ -198,7 +199,7 @@ const AppealBriefPage = () => {
                   </Tab>
                 ))}
               </Tabs>
-            )}
+            </div>
           </div>
         </div>
       </Container>

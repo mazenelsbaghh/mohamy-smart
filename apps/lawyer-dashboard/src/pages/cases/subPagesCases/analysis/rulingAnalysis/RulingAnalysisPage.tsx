@@ -155,7 +155,7 @@ const RulingAnalysisPage = () => {
           />
 
           <div className="w-full">
-            {showAutoRunOverlay ? (
+            {showAutoRunOverlay && (
               <AutoRunProgressOverlay
                 steps={RULING_ANALYSIS_STEP_DEFS}
                 activeStep={active}
@@ -166,7 +166,8 @@ const RulingAnalysisPage = () => {
                 isComplete={autoRunJustCompleted}
                 onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}
               />
-            ) : (
+            )}
+            <div style={{ display: showAutoRunOverlay ? 'none' : undefined }}>
               <Tabs
                 aria-label="مراحل تحليل الحكم"
                 selectedKey={active.toString()}
@@ -189,7 +190,7 @@ const RulingAnalysisPage = () => {
                   </Tab>
                 ))}
               </Tabs>
-            )}
+            </div>
           </div>
         </div>
       </Container>

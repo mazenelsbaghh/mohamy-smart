@@ -571,7 +571,7 @@ const DefenseMemoPage = () => {
               />
 
               <div className="w-full">
-                {showAutoRunOverlay ? (
+                {showAutoRunOverlay && (
                   <AutoRunProgressOverlay
                     steps={DEFENSE_MEMO_STEP_DEFS}
                     activeStep={active}
@@ -582,7 +582,8 @@ const DefenseMemoPage = () => {
                     isComplete={autoRunJustCompleted}
                     onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}
                   />
-                ) : (
+                )}
+                <div style={{ display: showAutoRunOverlay ? 'none' : undefined }}>
                   <Tabs
                     aria-label="مراحل التحليل الذكي"
                     selectedKey={active.toString()}
@@ -604,7 +605,7 @@ const DefenseMemoPage = () => {
                       </Tab>
                     ))}
                   </Tabs>
-                )}
+                </div>
               </div>
             </>
           )}

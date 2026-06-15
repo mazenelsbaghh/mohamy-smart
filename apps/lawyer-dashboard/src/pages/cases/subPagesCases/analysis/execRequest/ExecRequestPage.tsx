@@ -151,7 +151,7 @@ const ExecRequestPage = () => {
           />
 
           <div className="w-full">
-            {showAutoRunOverlay ? (
+            {showAutoRunOverlay && (
               <AutoRunProgressOverlay
                 steps={EXEC_REQUEST_STEP_DEFS}
                 activeStep={active}
@@ -162,7 +162,8 @@ const ExecRequestPage = () => {
                 isComplete={autoRunJustCompleted}
                 onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}
               />
-            ) : (
+            )}
+            <div style={{ display: showAutoRunOverlay ? 'none' : undefined }}>
               <Tabs
                 aria-label="مراحل الطلب التنفيذي"
                 selectedKey={active.toString()}
@@ -185,7 +186,7 @@ const ExecRequestPage = () => {
                   </Tab>
                 ))}
               </Tabs>
-            )}
+            </div>
           </div>
         </div>
       </Container>
