@@ -58,7 +58,13 @@ namespace Lawyer.Infrastructure.Services
                 }
 
                 var body = await response.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogInformation("OTP SMS sent for {BusinessId}. Provider response: {ResponseBody}", relatedBusinessId, body);
+                _logger.LogInformation("OTP SMS request processed for {BusinessId}. Provider response: {ResponseBody}", relatedBusinessId, body);
+
+                if (string.IsNullOrWhiteSpace(body) || body == "[]" || !body.Contains("\"type\":\"success\""))
+                {
+                    _logger.LogWarning("OTP SMS failed to send for {BusinessId}. Response did not contain success confirmation.", relatedBusinessId);
+                    return false;
+                }
 
                 return true;
             }
