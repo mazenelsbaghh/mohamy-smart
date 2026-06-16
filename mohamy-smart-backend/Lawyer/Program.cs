@@ -210,7 +210,8 @@ if (!builder.Environment.IsEnvironment("Testing") && builder.Configuration.GetCo
             {
                 CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
                 SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
-                QueuePollInterval = TimeSpan.Zero,
+                QueuePollInterval = TimeSpan.FromSeconds(
+                    Math.Clamp(builder.Configuration.GetValue<int?>("Hangfire:QueuePollIntervalSeconds") ?? 15, 1, 60)),
                 UseRecommendedIsolationLevel = true,
                 DisableGlobalLocks = true,
             }));

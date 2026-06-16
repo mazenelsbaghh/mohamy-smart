@@ -282,7 +282,7 @@ const DefenseMemoPage = () => {
     // All parallel defenses completed — advance through step 3 (defense analysis, already done) to step 4 (FinalRequirements)
     // Use setTimeout to avoid dispatch during render
     const timer = setTimeout(async () => {
-      dispatch(clearParallelDefenseTracking());
+      dispatch(clearParallelDefenseTracking(undefined));
       // Advance from step 2 to step 3 (which maps to FinalRequirements in the UI)
       await handleAdvanceStage(2, 3);
     }, 500);

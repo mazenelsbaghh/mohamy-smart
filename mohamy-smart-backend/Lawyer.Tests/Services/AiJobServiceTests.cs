@@ -144,7 +144,7 @@ public class AiJobServiceTests
 
         var sut = new AiJobService(db, hangfireMock.Object, notificationsMock.Object, accessMock.Object);
 
-        var result = await sut.GetAllByCaseAsync(caseId, "user123", CancellationToken.None);
+        var result = await sut.GetAllByCaseAsync(caseId, "user123", null, null, null, true, CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data.Should().HaveCount(2);

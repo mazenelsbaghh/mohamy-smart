@@ -582,7 +582,7 @@ export function useWorkflowOrchestrator<
     const currentStepType = autoRunStepMap[currentStep];
     if (!currentStepType) return;
 
-    const currentJob = (aiJobs.jobs as Record<string, { status?: string; resultJson?: string } | undefined>)[currentStepType];
+    const currentJob = (aiJobs.jobs as Record<string, { status?: string; resultJson?: string; errorMessage?: string | null } | undefined>)[currentStepType];
 
     // Step completed?
     if (currentJob?.status === 'Completed' && currentJob.resultJson) {
@@ -618,7 +618,7 @@ export function useWorkflowOrchestrator<
       if (autoRunStorageKey) {
         try { localStorage.removeItem(autoRunStorageKey); } catch { /* ignore */ }
       }
-      onAutoRunError?.(currentStep, (currentJob as any).errorMessage ?? null);
+      onAutoRunError?.(currentStep, currentJob.errorMessage ?? null);
       setAutoRunFailedStep(currentStep);
     }
   }, [isAutoRunning, active, aiJobs.jobs, autoRunStepMap, maxSteps, handleAdvanceStage, onAutoRunStepCompleted, onAutoRunComplete, onAutoRunError, autoRunStorageKey]);

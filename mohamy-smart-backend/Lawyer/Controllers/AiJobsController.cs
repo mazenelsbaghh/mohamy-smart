@@ -25,10 +25,16 @@ namespace Lawyer.Controllers
         private string GetUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
 
         [HttpGet]
-        public async Task<IActionResult> GetAll(Guid caseId, CancellationToken ct)
+        public async Task<IActionResult> GetAll(
+            Guid caseId,
+            [FromQuery] string? runId,
+            [FromQuery] string? workflowType,
+            [FromQuery] DateTime? since,
+            [FromQuery] bool includeLegacyActive = true,
+            CancellationToken ct = default)
         {
             _logger.LogInformation("GetAllAiJobs called for Case {CaseId}", caseId);
-            var result = await _service.GetAllByCaseAsync(caseId, GetUserId(), ct);
+            var result = await _service.GetAllByCaseAsync(caseId, GetUserId(), runId, workflowType, since, includeLegacyActive, ct);
             return CreateResponse(result);
         }
 

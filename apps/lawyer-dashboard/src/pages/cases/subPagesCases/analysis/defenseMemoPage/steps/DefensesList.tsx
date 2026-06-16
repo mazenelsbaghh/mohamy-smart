@@ -302,7 +302,7 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
    const jobMap = parallelTracking.defenseJobMap;
    if (!jobMap) return;
 
-   for (const [defenseId, jobId] of Object.entries(jobMap)) {
+   for (const jobId of Object.values(jobMap)) {
      if (hydratedParallelJobIds.current.has(jobId)) continue;
 
      const job = defenseAnalysisJobs[jobId];
@@ -320,10 +320,10 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
            },
          }));
        }
-       dispatch(incrementParallelDefenseCompleted());
+       dispatch(incrementParallelDefenseCompleted(undefined));
      } else if (job.status === 'Failed') {
        hydratedParallelJobIds.current.add(jobId);
-       dispatch(incrementParallelDefenseFailed());
+       dispatch(incrementParallelDefenseFailed(undefined));
      }
    }
  }, [defenseAnalysisJobs, parallelTracking, explanationsCache, dispatch]);

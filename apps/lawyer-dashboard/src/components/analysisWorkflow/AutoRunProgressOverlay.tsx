@@ -29,7 +29,6 @@ interface AutoRunProgressOverlayProps {
 export const AutoRunProgressOverlay: React.FC<AutoRunProgressOverlayProps> = ({
   steps,
   activeStep,
-  maxSteps,
   completedSteps: completedStepsProp,
   failedStep = null,
   onStop,

@@ -6,7 +6,14 @@ namespace Lawyer.Application.IServices
 {
     public interface IAiJobService
     {
-        Task<Result<List<AiJobStatusDto>>> GetAllByCaseAsync(Guid caseId, string userId, CancellationToken ct);
+        Task<Result<List<AiJobStatusDto>>> GetAllByCaseAsync(
+            Guid caseId,
+            string userId,
+            string? runId,
+            string? workflowType,
+            DateTime? since,
+            bool includeLegacyActive,
+            CancellationToken ct);
 
         Task<Result<AiJobStatusDto>> GetByCaseAndStepAsync(Guid caseId, AiStepType step, string userId, CancellationToken ct);
 

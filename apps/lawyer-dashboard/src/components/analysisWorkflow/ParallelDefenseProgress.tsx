@@ -1,6 +1,6 @@
 import React from 'react';
 import { Progress } from '@heroui/react';
-import { IoFlash, IoCheckmark, IoClose } from 'react-icons/io5';
+import { IoCheckmark, IoClose } from 'react-icons/io5';
 
 interface ParallelDefenseProgressProps {
   tracking: {

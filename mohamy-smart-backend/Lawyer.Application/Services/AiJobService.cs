@@ -43,19 +43,57 @@ namespace Lawyer.Application.Services
         {
         }
 
-        public async Task<Result<List<AiJobStatusDto>>> GetAllByCaseAsync(Guid caseId, string userId, CancellationToken ct)
+        public async Task<Result<List<AiJobStatusDto>>> GetAllByCaseAsync(
+            Guid caseId,
+            string userId,
+            string? runId,
+            string? workflowType,
+            DateTime? since,
+            bool includeLegacyActive,
+            CancellationToken ct)
         {
             var accessResult = await ValidateCaseAccessAsync(caseId, userId, ct);
             if (!accessResult.Succeeded)
                 return Result<List<AiJobStatusDto>>.Error(accessResult.StatusCode, accessResult.Message);
 
-            var jobs = await _db.AiJobs
+            var query = _db.AiJobs
                 .AsNoTracking()
-                .Where(j => j.CaseId == caseId)
+                .Where(j => j.CaseId == caseId);
+
+            if (!string.IsNullOrWhiteSpace(runId))
+            {
+                query = query.Where(j =>
+                    j.RunId == runId ||
+                    (includeLegacyActive &&
+                     j.RunId == null &&
+                     (j.Status == AiJobStatus.Queued || j.Status == AiJobStatus.Processing)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(workflowType))
+            {
+                query = query.Where(j =>
+                    j.WorkflowType == workflowType ||
+                    (includeLegacyActive &&
+                     j.WorkflowType == null &&
+                     (j.Status == AiJobStatus.Queued || j.Status == AiJobStatus.Processing)));
+            }
+
+            if (since.HasValue)
+            {
+                var cutoff = DateTime.SpecifyKind(since.Value, DateTimeKind.Utc).AddSeconds(-10);
+                query = query.Where(j => j.CreatedAt >= cutoff || j.Status == AiJobStatus.Queued || j.Status == AiJobStatus.Processing);
+            }
+
+            var jobs = await query
+                .OrderByDescending(j => j.CreatedAt)
+                .Take(100)
+                .ToListAsync(ct);
+
+            return Result<List<AiJobStatusDto>>.Success(jobs
                 .OrderBy(j => j.StepType)
                 .ThenBy(j => j.CreatedAt)
-                .ToListAsync(ct);
-            return Result<List<AiJobStatusDto>>.Success(jobs.Select(ToDto).ToList());
+                .Select(ToDto)
+                .ToList());
         }
 
         public async Task<Result<AiJobStatusDto>> GetByCaseAndStepAsync(Guid caseId, AiStepType step, string userId, CancellationToken ct)

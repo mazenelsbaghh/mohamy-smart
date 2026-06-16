@@ -14,6 +14,9 @@ const thunkGetAllAiJobs = createAsyncThunk('aiJobs/getAll',
   const params = new URLSearchParams();
   if (runId !== undefined && runId !== null) params.append('runId', String(runId));
   if (workflowType) params.append('workflowType', workflowType);
+  if (since) params.append('since', since.endsWith("Z") ? since : `${since}Z`);
+  if (stepNumber != null) params.append('stepNumber', String(stepNumber));
+  params.append('includeLegacyActive', String(includeLegacyActive));
   const query = params.toString() ? `?${params.toString()}` : '';
   const res = await api.get(`/cases/${caseId}/ai-jobs${query}`);
   let jobs = res.data.data as AiJob[];
