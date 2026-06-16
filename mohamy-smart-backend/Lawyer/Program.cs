@@ -177,6 +177,10 @@ builder.Services.AddHttpClient("Gemini", client =>
     3,
     attempt => TimeSpan.FromMilliseconds(500 * Math.Pow(2, attempt))))
 .AddTransientHttpErrorPolicy(p => p.CircuitBreakerAsync(5, TimeSpan.FromSeconds(30)));
+builder.Services.AddHttpClient("GeminiStartupHealth", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(8);
+});
 builder.Services.AddHttpClient("OpenAI", client =>
 {
     client.Timeout = TimeSpan.FromMinutes(5);
