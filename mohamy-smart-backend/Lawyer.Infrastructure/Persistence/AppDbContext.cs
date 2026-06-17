@@ -84,9 +84,9 @@ namespace Lawyer.Infrastructure.Persistence
 				entity.HasIndex(e => new { e.RunId, e.StepNumber })
 					  .HasDatabaseName("IX_AiJobs_RunId_StepNumber");
 				entity.HasIndex(e => new { e.CaseId, e.StepType, e.RunId, e.StepNumber })
-					  .HasFilter("[Status] IN (0, 1)")
-					  .IsUnique()
-					  .HasDatabaseName("UX_AiJobs_CaseId_StepType_RunId_StepNumber_Active");
+				  .HasFilter("[Status] IN (0, 1) AND [RunId] IS NOT NULL")
+				  .IsUnique()
+				  .HasDatabaseName("UX_AiJobs_CaseId_StepType_RunId_StepNumber_Active");
 				entity.HasIndex(e => new { e.CaseId, e.StepType, e.CreatedAt })
 					  .HasDatabaseName("IX_AiJobs_CaseId_StepType_CreatedAt");
 
