@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from'../../../../../../hooks/reduxHook
 import thunkSubmitAiJob from'../../../../../../redux/aiJobs/thunk/thunkSubmitAiJob';
 import { hydrateStep } from'../../../../../../redux/analysis/smartAnalysisSlice';
 import { parseJobResult } from"@mohamy/shared-utils";
+import type { TFactAnalysis } from '../../../../../../redux/shared/workflowTypes';
 import { DEFENSE_MEMO_STEPS } from '../../../../../../components/analysisWorkflow/workflowConstants';
 import {
  UnifiedStepShell,
@@ -40,26 +41,31 @@ const LegalAnalysis = ({ finalFacts, caseFacts, goToDefenses, caseId }: TLegalAn
  const showLoading = (!factAnalysis && isFactJobActive) || isNavigating || (factAnalysisJob?.status ==='Completed' && !factAnalysis);
  const hasFactFailed = factAnalysisJob?.status ==='Failed';
  const factErrorMessage = factAnalysisJob?.errorMessage ||'تعذّر تحليل الوقائع. أعد المحاولة أو تحقق من البيانات.';
+ const completedFactAnalysis = useMemo(() => {
+ if (factAnalysis) return factAnalysis as TFactAnalysis;
+ if (factAnalysisJob?.status !=='Completed' || !factAnalysisJob.resultJson) return null;
+ return parseJobResult<TFactAnalysis>(factAnalysisJob.resultJson);
+ }, [factAnalysis, factAnalysisJob?.resultJson, factAnalysisJob?.status]);
 
  const normalizedFactAnalysis = useMemo(() => {
- if (!factAnalysis) return null;
+ if (!completedFactAnalysis) return null;
 
  return {
- ...factAnalysis,
- caseType: factAnalysis.caseType || singleCase?.caseTypeName ||'',
- caseNumber: factAnalysis.caseNumber || singleCase?.number ||'',
- courtName: factAnalysis.courtName || singleCase?.court ||'',
- legalFactsSummary: factAnalysis.legalFactsSummary ?? [],
- defendantsPositions: factAnalysis.defendantsPositions ?? [],
- evidenceMap: factAnalysis.evidenceMap ?? [],
- legalAndTechnicalReviewPoints: factAnalysis.legalAndTechnicalReviewPoints ?? [],
+ ...completedFactAnalysis,
+ caseType: completedFactAnalysis.caseType || singleCase?.caseTypeName ||'',
+ caseNumber: completedFactAnalysis.caseNumber || singleCase?.number ||'',
+ courtName: completedFactAnalysis.courtName || singleCase?.court ||'',
+ legalFactsSummary: completedFactAnalysis.legalFactsSummary ?? [],
+ defendantsPositions: completedFactAnalysis.defendantsPositions ?? [],
+ evidenceMap: completedFactAnalysis.evidenceMap ?? [],
+ legalAndTechnicalReviewPoints: completedFactAnalysis.legalAndTechnicalReviewPoints ?? [],
  potentialLegalCharacterization: {
- chargeDescription: factAnalysis.potentialLegalCharacterization?.chargeDescription ??'غير محدد',
- elementsReliedUpon: factAnalysis.potentialLegalCharacterization?.elementsReliedUpon ?? [],
- elementsLackingProof: factAnalysis.potentialLegalCharacterization?.elementsLackingProof ?? [],
+ chargeDescription: completedFactAnalysis.potentialLegalCharacterization?.chargeDescription ??'غير محدد',
+ elementsReliedUpon: completedFactAnalysis.potentialLegalCharacterization?.elementsReliedUpon ?? [],
+ elementsLackingProof: completedFactAnalysis.potentialLegalCharacterization?.elementsLackingProof ?? [],
  },
  };
- }, [factAnalysis, singleCase?.caseTypeName, singleCase?.number, singleCase?.court]);
+ }, [completedFactAnalysis, singleCase?.caseTypeName, singleCase?.number, singleCase?.court]);
 
  const effectiveFacts = finalFacts || caseFacts || normalizedFactAnalysis?.legalFactsSummary?.join('\n') ||'';
  const displayFactSummary = useMemo(() => {
@@ -74,13 +80,10 @@ const LegalAnalysis = ({ finalFacts, caseFacts, goToDefenses, caseId }: TLegalAn
  }, [normalizedFactAnalysis?.legalFactsSummary, effectiveFacts]);
 
  useEffect(() => {
- if (factAnalysisJob?.status ==='Completed' && factAnalysisJob.resultJson && !factAnalysis) {
- try {
- const parsed = parseJobResult(factAnalysisJob.resultJson);
- dispatch(hydrateStep({ stepNumber: 1, result: parsed }));
- } catch { /* ignore */ }
+ if (completedFactAnalysis && !factAnalysis) {
+ dispatch(hydrateStep({ stepNumber: 1, result: completedFactAnalysis }));
  }
- }, [factAnalysisJob?.status, factAnalysisJob?.resultJson, factAnalysis, dispatch]);
+ }, [completedFactAnalysis, factAnalysis, dispatch]);
 
  const handleNext = () => {
  if (defenses?.defensesFormal) {
@@ -121,13 +124,19 @@ const LegalAnalysis = ({ finalFacts, caseFacts, goToDefenses, caseId }: TLegalAn
  return;
  }
 
- if (caseId && factAnalysis) {
+ const analysisForRequest = (factAnalysis || completedFactAnalysis) as TFactAnalysis;
+ if (!analysisForRequest) {
+ sileo.error({ title:'لم تكتمل نتيجة التحليل بعد. حدّث الصفحة أو أعد المحاولة بعد لحظات.' });
+ return;
+ }
+
+ if (caseId) {
  setIsNavigating(true);
  const loadingToast = sileo.show({ type:"loading", title:'جاري إنشاء الدفوع...' });
  await dispatch(thunkSubmitAiJob({
  caseId,
  stepType:'GenerateDefenses',
- inputJson: JSON.stringify({ caseId, caseFacts: effectiveFacts, legalAnalysis: factAnalysis }),
+ inputJson: JSON.stringify({ caseId, caseFacts: effectiveFacts, legalAnalysis: analysisForRequest }),
  })).unwrap()
  .then(() => {
  sileo.success({ title:'مساعدك الذكي شغال الآن...' });

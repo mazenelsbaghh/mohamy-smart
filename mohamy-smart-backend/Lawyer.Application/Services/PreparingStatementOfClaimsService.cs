@@ -55,6 +55,37 @@ namespace Lawyer.Application.Services
             return caseType?.Title ?? string.Empty;
         }
 
+        private static string BuildCaseContextForPrompt(
+            Core.Models.Case caseEntity,
+            string caseTypeName,
+            string? facts,
+            IReadOnlyCollection<string>? selectedFacts)
+        {
+            var factsOverride = selectedFacts?
+                .Where(fact => !string.IsNullOrWhiteSpace(fact))
+                .Select(fact => fact.Trim())
+                .ToList();
+
+            var approvedFacts = factsOverride is { Count: > 0 }
+                ? string.Join("\n\n", factsOverride)
+                : facts?.Trim();
+
+            var context = AnalysisHelpers.BuildCaseContext(caseEntity, caseTypeName);
+            if (!string.IsNullOrWhiteSpace(approvedFacts))
+            {
+                var selectedFactsLine = $"وقائع القضية المعتمدة لهذه المرحلة (مرسلة من المحامي): {approvedFacts}";
+                var originalFactsLine = !string.IsNullOrWhiteSpace(caseEntity.Facts)
+                    ? $"وقائع القضية: {caseEntity.Facts}"
+                    : null;
+
+                context = originalFactsLine != null && context.Contains(originalFactsLine, StringComparison.Ordinal)
+                    ? context.Replace(originalFactsLine, selectedFactsLine, StringComparison.Ordinal)
+                    : $"{context}\n{selectedFactsLine}";
+            }
+
+            return $"{context}\n\nتعليمات إلزامية لحفظ التواريخ:\n- أي تاريخ وارد في الوقائع المعتمدة يجب نسخه كما هو حرفياً دون تبديل اليوم أو الشهر أو السنة.\n- لا تستنتج تاريخاً بديلاً، ولا تحوّل صيغة التاريخ، ولا تعيد حساب مدة أو ميعاد إلا إذا طلبت المخرجات ذلك صراحة.\n- عند وجود أكثر من تاريخ، اربط كل تاريخ بالواقعة الوارد معها فقط ولا تنقله إلى واقعة أخرى.";
+        }
+
         private static string SnakeToCamel(string key)
         {
             if (string.IsNullOrWhiteSpace(key) || !key.Contains('_'))
@@ -125,7 +156,7 @@ namespace Lawyer.Application.Services
 
                 // Build user input with case data
                 var caseTypeName = await ResolveCaseTypeNameAsync(caseEntity.CaseTypeId, cancellationToken);
-                var fullCaseContext = AnalysisHelpers.BuildCaseContext(caseEntity, caseTypeName);
+                var fullCaseContext = BuildCaseContextForPrompt(caseEntity, caseTypeName, request.Facts, request.SelectedFacts);
 
                 var finalPrompt = $"{promptTemplate}\n\n--- بيانات القضية الكاملة ---\n{fullCaseContext}";
 
@@ -280,7 +311,7 @@ namespace Lawyer.Application.Services
                 var promptTemplate = await _promptCache.GetAsync(Path.GetRelativePath(Path.Combine(_contentRootPath, "wwwroot", "prompts"), promptTemplatePath), cancellationToken);
 
                 var caseTypeName = await ResolveCaseTypeNameAsync(caseEntity.CaseTypeId, cancellationToken);
-                var fullCaseContext = AnalysisHelpers.BuildCaseContext(caseEntity, caseTypeName);
+                var fullCaseContext = BuildCaseContextForPrompt(caseEntity, caseTypeName, request.Facts, request.SelectedFacts);
 
                 var finalPrompt = $"{promptTemplate}\n\n--- بيانات القضية الكاملة ---\n{fullCaseContext}";
 
@@ -446,7 +477,7 @@ namespace Lawyer.Application.Services
                 var promptTemplate = await _promptCache.GetAsync(Path.GetRelativePath(Path.Combine(_contentRootPath, "wwwroot", "prompts"), promptTemplatePath), cancellationToken);
 
                 var caseTypeName = await ResolveCaseTypeNameAsync(caseEntity.CaseTypeId, cancellationToken);
-                var fullCaseContext = AnalysisHelpers.BuildCaseContext(caseEntity, caseTypeName);
+                var fullCaseContext = BuildCaseContextForPrompt(caseEntity, caseTypeName, request.Facts, request.SelectedFacts);
 
                 var finalPrompt = $"{promptTemplate}\n\n--- بيانات القضية الكاملة ---\n{fullCaseContext}";
 
@@ -612,7 +643,7 @@ namespace Lawyer.Application.Services
                 var promptTemplate = await _promptCache.GetAsync(Path.GetRelativePath(Path.Combine(_contentRootPath, "wwwroot", "prompts"), promptTemplatePath), cancellationToken);
 
                 var caseTypeName = await ResolveCaseTypeNameAsync(caseEntity.CaseTypeId, cancellationToken);
-                var fullCaseContext = AnalysisHelpers.BuildCaseContext(caseEntity, caseTypeName);
+                var fullCaseContext = BuildCaseContextForPrompt(caseEntity, caseTypeName, request.Facts, request.SelectedFacts);
 
                 var finalPrompt = $"{promptTemplate}\n\n--- بيانات القضية الكاملة ---\n{fullCaseContext}";
 
@@ -756,7 +787,7 @@ namespace Lawyer.Application.Services
                 var promptTemplate = await _promptCache.GetAsync(Path.GetRelativePath(Path.Combine(_contentRootPath, "wwwroot", "prompts"), promptTemplatePath), cancellationToken);
 
                 var caseTypeName = await ResolveCaseTypeNameAsync(caseEntity.CaseTypeId, cancellationToken);
-                var fullCaseContext = AnalysisHelpers.BuildCaseContext(caseEntity, caseTypeName);
+                var fullCaseContext = BuildCaseContextForPrompt(caseEntity, caseTypeName, request.Facts, request.SelectedFacts);
 
                 var finalPrompt = $"{promptTemplate}\n\n--- بيانات القضية الكاملة ---\n{fullCaseContext}";
 
@@ -957,7 +988,7 @@ namespace Lawyer.Application.Services
                 var promptTemplate = await _promptCache.GetAsync(Path.GetRelativePath(Path.Combine(_contentRootPath, "wwwroot", "prompts"), promptTemplatePath), cancellationToken);
 
                 var caseTypeName = await ResolveCaseTypeNameAsync(caseEntity.CaseTypeId, cancellationToken);
-                var fullCaseContext = AnalysisHelpers.BuildCaseContext(caseEntity, caseTypeName);
+                var fullCaseContext = BuildCaseContextForPrompt(caseEntity, caseTypeName, request.Facts, request.SelectedFacts);
 
                 var finalPrompt = $"{promptTemplate}\n\n--- بيانات القضية الكاملة ---\n{fullCaseContext}";
 
