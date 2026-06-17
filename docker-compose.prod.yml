@@ -21,10 +21,15 @@ services:
       - .env.docker.prod
     environment:
       ACCEPT_EULA: "Y"
+      MSSQL_TELEMETRY_ENABLED: "FALSE"
     ports:
       - "127.0.0.1:1433:1433"
     volumes:
       - mohamy-sqlserver-data:/var/opt/mssql
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     healthcheck:
       test: >
         /opt/mssql-tools18/bin/sqlcmd
