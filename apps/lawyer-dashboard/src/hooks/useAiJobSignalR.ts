@@ -108,7 +108,7 @@ export function useAiJobSignalR(caseId: string | null, skipInitialFetch = false,
  since: workflowCreatedAt,
  runId: runIdRef.current ?? undefined,
  }));
- }, 5000);
+ }, 10000);
 
  return () => {
  if (intervalRef.current) {
