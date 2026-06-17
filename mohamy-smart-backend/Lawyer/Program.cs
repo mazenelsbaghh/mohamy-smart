@@ -215,9 +215,11 @@ if (!builder.Environment.IsEnvironment("Testing") && builder.Configuration.GetCo
                 CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
                 SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
                 QueuePollInterval = TimeSpan.FromSeconds(
-                    Math.Clamp(builder.Configuration.GetValue<int?>("Hangfire:QueuePollIntervalSeconds") ?? 15, 1, 60)),
+                    Math.Clamp(builder.Configuration.GetValue<int?>("Hangfire:QueuePollIntervalSeconds") ?? 30, 5, 60)),
                 UseRecommendedIsolationLevel = true,
                 DisableGlobalLocks = true,
+                CountersAggregateInterval = TimeSpan.FromMinutes(10),
+                JobExpirationCheckInterval = TimeSpan.FromMinutes(30),
             }));
     var hangfireWorkerCount = builder.Configuration.GetValue<int?>("Hangfire:WorkerCount") ?? 4;
     hangfireWorkerCount = Math.Clamp(hangfireWorkerCount, 1, 8);
