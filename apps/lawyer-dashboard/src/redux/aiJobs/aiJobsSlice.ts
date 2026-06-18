@@ -67,8 +67,12 @@ const aiJobsSlice = createSlice({
  reducers: {
   upsertJob(state, action: PayloadAction<AiJob>) {
    const job = action.payload;
+   // Allow AnalysisDefense jobs through even when runId doesn't match activeRunId,
+   // because parallel defense analyses each have a unique runId (clientDefenseId).
    if (state.activeRunId !== null && job.runId !== undefined && job.runId !== null && String(job.runId) !== String(state.activeRunId)) {
-   return;
+    if (job.stepType !== 'AnalysisDefense') {
+     return;
+    }
    }
    state.jobs[job.stepType] = job;
    if (job.stepType === 'AnalysisDefense') {
@@ -95,12 +99,15 @@ const aiJobsSlice = createSlice({
  state.error = null;
  })
  .addCase(thunkGetAllAiJobs.fulfilled, (state, action) => {
- state.loading ='succeeded';
- state.jobs = {};
- for (const job of action.payload) {
- state.jobs[job.stepType] = job;
- }
- })
+  state.loading ='succeeded';
+  state.jobs = {};
+  for (const job of action.payload) {
+  state.jobs[job.stepType] = job;
+  if (job.stepType === 'AnalysisDefense') {
+    state.defenseAnalysisJobs[job.id] = job;
+  }
+  }
+  })
  .addCase(thunkGetAllAiJobs.rejected, (state, action) => {
  state.loading ='failed';
  if (isString(action.payload)) state.error = action.payload;
