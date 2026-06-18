@@ -9,6 +9,9 @@ const HUB_URL = import.meta.env.VITE_API_BASE_URL.replace(/\/api\/v1\/?$/,'') +'
 /** Statuses that indicate a job is still in-flight and worth polling for. */
 const ACTIVE_STATUSES: AiJobStatus[] = ['Queued','Processing'];
 
+/** Fallback poll interval when SignalR is completely non-functional (5 minutes). */
+const FALLBACK_POLL_MS = 300_000;
+
 export function useAiJobSignalR(caseId: string | null, skipInitialFetch = false, workflowCreatedAt?: string | null, activeRunId?: string | number | null) {
  const dispatch = useAppDispatch();
  const connectionRef = useRef<signalR.HubConnection | null>(null);
@@ -16,6 +19,7 @@ export function useAiJobSignalR(caseId: string | null, skipInitialFetch = false,
  const jobs = useAppSelector((state) => state.aiJobs.jobs);
  const runIdRef = useRef(activeRunId);
  runIdRef.current = activeRunId;
+ const signalrConnectedRef = useRef(false);
 
  // Check if there are any active (Queued/Processing) jobs worth polling for
  const hasActiveJobs = Object.values(jobs).some(
@@ -62,6 +66,30 @@ export function useAiJobSignalR(caseId: string | null, skipInitialFetch = false,
  connection.on('JobCompleted', handleStatusChanged);
  connection.on('JobFailed', handleStatusChanged);
 
+ // After reconnection, rejoin the case group and fetch any missed updates.
+ connection.onreconnected(() => {
+ if (cancelled) return;
+ signalrConnectedRef.current = true;
+ connection.invoke('JoinCase', caseId).catch(() => {});
+ if (workflowCreatedAt) {
+  dispatch(thunkGetAllAiJobs({
+  caseId,
+  since: workflowCreatedAt,
+  runId: runIdRef.current ?? undefined,
+  }));
+ }
+ });
+
+ // Track when connection drops so fallback polling can activate.
+ connection.onclose(() => {
+ if (cancelled) return;
+ signalrConnectedRef.current = false;
+ });
+
+ connection.onreconnecting(() => {
+ signalrConnectedRef.current = false;
+ });
+
  // Small delay to let React Strict Mode's immediate unmount happen
  // before starting the connection handshake.
  const startTimeout = setTimeout(() => {
@@ -73,10 +101,23 @@ export function useAiJobSignalR(caseId: string | null, skipInitialFetch = false,
  connection.stop();
  return;
  }
+ signalrConnectedRef.current = true;
  return connection.invoke('JoinCase', caseId);
+ })
+ .then(() => {
+ // Reconciliation fetch after successfully joining the group —
+ // covers the race window between connection start and group join.
+ if (!cancelled && workflowCreatedAt) {
+  dispatch(thunkGetAllAiJobs({
+  caseId,
+  since: workflowCreatedAt,
+  runId: runIdRef.current ?? undefined,
+  }));
+ }
  })
  .catch(() => {
  // SignalR failed — fallback polling handles it
+ signalrConnectedRef.current = false;
  });
  }, 100);
 
@@ -85,14 +126,24 @@ export function useAiJobSignalR(caseId: string | null, skipInitialFetch = false,
  clearTimeout(startTimeout);
  connection.stop().catch(() => {});
  connectionRef.current = null;
+ signalrConnectedRef.current = false;
  };
  }, [caseId, dispatch, skipInitialFetch, workflowCreatedAt]);
 
- // Reconciliation polling: SignalR can miss the final completion event if the
- // connection reconnects or joins the case group slightly late. While any job is
- // active, poll lightly so loaders cannot remain stuck until a manual refresh.
+ // Emergency fallback polling: activates ONLY when SignalR is completely
+ // non-functional and there are active jobs. Polls every 5 minutes as a
+ // safety net so the user never has to manually refresh.
  useEffect(() => {
  if (!caseId || !hasActiveJobs || !workflowCreatedAt) {
+ if (intervalRef.current) {
+ clearInterval(intervalRef.current);
+ intervalRef.current = null;
+ }
+ return;
+ }
+
+ // If SignalR is connected, no polling needed at all.
+ if (signalrConnectedRef.current) {
  if (intervalRef.current) {
  clearInterval(intervalRef.current);
  intervalRef.current = null;
@@ -103,12 +154,15 @@ export function useAiJobSignalR(caseId: string | null, skipInitialFetch = false,
  if (intervalRef.current) return;
 
  intervalRef.current = setInterval(() => {
- dispatch(thunkGetAllAiJobs({
- caseId,
- since: workflowCreatedAt,
- runId: runIdRef.current ?? undefined,
- }));
- }, 10000);
+ // Only poll if SignalR is still disconnected
+ if (!signalrConnectedRef.current) {
+  dispatch(thunkGetAllAiJobs({
+  caseId,
+  since: workflowCreatedAt,
+  runId: runIdRef.current ?? undefined,
+  }));
+ }
+ }, FALLBACK_POLL_MS);
 
  return () => {
  if (intervalRef.current) {

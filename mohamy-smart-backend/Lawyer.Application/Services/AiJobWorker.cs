@@ -637,6 +637,7 @@ namespace Lawyer.Application.Services
                 await _points.MarkNoChargeAsync(job, lawyerId, AiPointReasonCode.StaleIgnored, "لم يتم خصم أي نقاط لأن نتيجة الطلب تخص نسخة قديمة.", ct);
             }
             await _db.SaveChangesAsync(ct);
+            await _notifications.NotifyJobCompletedAsync(job);
         }
 
         private async Task<string> GetLawyerIdForCaseAsync(Guid caseId, CancellationToken ct)

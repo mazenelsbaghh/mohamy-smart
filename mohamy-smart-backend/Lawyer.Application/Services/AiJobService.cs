@@ -275,6 +275,7 @@ namespace Lawyer.Application.Services
             var lawyerId = await GetLawyerIdForCaseAsync(job.CaseId, ct);
             await _points.MarkNoChargeAsync(job, lawyerId, AiPointReasonCode.StaleIgnored, "لم يتم خصم أي نقاط لأن نتيجة الطلب أصبحت قديمة.", ct);
             await _db.SaveChangesAsync(ct);
+            await _notifications.NotifyJobFailedAsync(job);
 
             return Result<bool>.Success(data: true);
         }
@@ -294,6 +295,7 @@ namespace Lawyer.Application.Services
             job.ErrorMessage = conflictMessage;
             job.CompletedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync(ct);
+            await _notifications.NotifyJobFailedAsync(job);
 
             return Result<AiJobStatusDto>.Success(ToDto(job));
         }
@@ -321,6 +323,11 @@ namespace Lawyer.Application.Services
             }
 
             await _db.SaveChangesAsync(ct);
+
+            foreach (var job in stuckJobs)
+            {
+                await _notifications.NotifyJobFailedAsync(job);
+            }
         }
 
         private AiJobStatusDto ToDto(AiJob j) => new(
