@@ -30,12 +30,7 @@ namespace Lawyer.Infrastructure
 
 		services.AddDbContext<AppDbContext>((sp, options) =>
 			{
-				options.UseSqlServer(configuration.GetConnectionString("SqlServer"),
-				sqlOptions => sqlOptions.EnableRetryOnFailure(
-					maxRetryCount: 5,
-					maxRetryDelay: TimeSpan.FromSeconds(10),
-					errorNumbersToAdd: new[] { 1205 } // Deadlock victim
-				));
+				options.UseSqlServer(configuration.GetConnectionString("SqlServer"));
 				options.AddInterceptors(sp.GetRequiredService<AuditInterceptor>());
 			});
 
