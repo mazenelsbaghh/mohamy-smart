@@ -30,8 +30,7 @@ import thunkSubmitParallelDefenseAnalyses from'../../../../../../redux/aiJobs/th
 import { clearDefenseAnalysisJobs } from'../../../../../../redux/aiJobs/aiJobsSlice';
 import {
   startParallelDefenseTracking,
-  incrementParallelDefenseCompleted,
-  incrementParallelDefenseFailed,
+  setParallelDefenseCounts,
 } from'../../../../../../redux/analysis/smartAnalysisSlice';
 import type { ParallelDefenseTracking } from'../../../../../../redux/analysis/smartAnalysisSlice';
 import {
@@ -327,30 +326,37 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
    const jobMap = parallelTracking.defenseJobMap;
    if (!jobMap) return;
 
-   for (const jobId of Object.values(jobMap)) {
-     if (hydratedParallelJobIds.current.has(jobId)) continue;
+   let completedCount = 0;
+   let failedCount = 0;
 
+   for (const jobId of Object.values(jobMap)) {
      const job = defenseAnalysisJobs[jobId];
      if (!job) continue;
 
      if (job.status === 'Completed') {
-       hydratedParallelJobIds.current.add(jobId);
-       const completedAnalysis = getCompletedDefenseAnalysis((job as { resultJson?: string }).resultJson);
-       if (completedAnalysis && !explanationsCache[completedAnalysis.defenseId]) {
-         dispatch(hydrateStep({
-           stepNumber: 3,
-           result: {
-             defenseId: completedAnalysis.defenseId,
-             explanation: completedAnalysis.memorandum,
-           },
-         }));
+       completedCount++;
+       if (!hydratedParallelJobIds.current.has(jobId)) {
+         hydratedParallelJobIds.current.add(jobId);
+         const completedAnalysis = getCompletedDefenseAnalysis((job as { resultJson?: string }).resultJson);
+         if (completedAnalysis && !explanationsCache[completedAnalysis.defenseId]) {
+           dispatch(hydrateStep({
+             stepNumber: 3,
+             result: {
+               defenseId: completedAnalysis.defenseId,
+               explanation: completedAnalysis.memorandum,
+             },
+           }));
+         }
        }
-       dispatch(incrementParallelDefenseCompleted(undefined));
      } else if (job.status === 'Failed') {
-       hydratedParallelJobIds.current.add(jobId);
-       dispatch(incrementParallelDefenseFailed(undefined));
+       failedCount++;
+       if (!hydratedParallelJobIds.current.has(jobId)) {
+         hydratedParallelJobIds.current.add(jobId);
+       }
      }
    }
+
+   dispatch(setParallelDefenseCounts({ completedCount, failedCount }));
  }, [defenseAnalysisJobs, parallelTracking, explanationsCache, dispatch]);
 
  const reGenerateDefenses = async () => {
