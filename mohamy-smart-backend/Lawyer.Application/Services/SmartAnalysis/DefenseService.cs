@@ -765,21 +765,34 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 if (!accessResult.Succeeded)
                     return Result<bool>.Error(accessResult.StatusCode, accessResult.Message);
 
+                // ── Snapshot all step outputs before deleting so the lawyer can restore later ──
+                var snapshotOutputs = new Dictionary<string, object?>();
+
+                // Step 1: Fact Analysis
                 var factAnalyses = await _unitOfWork.Repository<Core.Models.FactAnalysis>()
                     .WhereAsync(x => x.CaseId == caseId, ct);
-                foreach (var f in factAnalyses)
-                    _unitOfWork.Repository<Core.Models.FactAnalysis>().Delete(f);
+                if (factAnalyses.Any())
+                {
+                    snapshotOutputs["1"] = factAnalyses.Select(f => new { f.Id, f.CaseId, f.FactText, f.LegalBasis, f.Category }).ToList();
+                }
 
+                // Step 2: Defenses
                 var defenses = await _unitOfWork.Repository<Core.Models.Defense>()
                     .WhereAsync(x => x.CaseId == caseId, ct);
-                foreach (var d in defenses)
-                    _unitOfWork.Repository<Core.Models.Defense>().Delete(d);
+                if (defenses.Any())
+                {
+                    snapshotOutputs["2"] = defenses.Select(d => new { d.Id, d.CaseId, d.Title, d.Type, d.Content, d.Explanation }).ToList();
+                }
 
+                // Step 3: Final Prayers
                 var finalPrayers = await _unitOfWork.Repository<Core.Models.FinalPrayer>()
                     .WhereAsync(x => x.CaseId == caseId, ct);
-                foreach (var p in finalPrayers)
-                    _unitOfWork.Repository<Core.Models.FinalPrayer>().Delete(p);
+                if (finalPrayers.Any())
+                {
+                    snapshotOutputs["3"] = finalPrayers.Select(p => new { p.Id, p.CaseId, p.Content }).ToList();
+                }
 
+                // Step 4: AI Job results (keep result JSONs for potential restore)
                 var defenseAiStepTypes = new[] { 
                     Core.Enum.AiStepType.FactAnalysis,
                     Core.Enum.AiStepType.GenerateDefenses,
@@ -789,6 +802,41 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 };
                 var defenseAiJobs = await _unitOfWork.Repository<Core.Models.AiJob>()
                     .WhereAsync(x => x.CaseId == caseId && defenseAiStepTypes.Contains(x.StepType), ct);
+                if (defenseAiJobs.Any())
+                {
+                    snapshotOutputs["4"] = defenseAiJobs
+                        .Where(j => j.Status == AiJobStatus.Completed && !string.IsNullOrWhiteSpace(j.ResultJson))
+                        .Select(j => new { j.Id, StepType = j.StepType.ToString(), j.ResultJson })
+                        .ToList();
+                }
+
+                // Save snapshot if there's any data
+                if (snapshotOutputs.Count > 0)
+                {
+                    var snapshot = new Core.Models.WorkflowSnapshot
+                    {
+                        CaseId = caseId,
+                        LawyerId = lawyerId,
+                        WorkflowType = "DefenseMemo",
+                        OutputsJson = JsonSerializer.Serialize(snapshotOutputs),
+                        CurrentStep = snapshotOutputs.Keys.Select(int.Parse).Max(),
+                        Label = $"نسخة قبل إعادة التحليل — {DateTime.UtcNow:yyyy-MM-dd HH:mm}",
+                        CreatedAt = DateTime.UtcNow,
+                    };
+                    await _unitOfWork.Repository<Core.Models.WorkflowSnapshot>().AddAsync(snapshot);
+                    _logger.LogInformation("Saved DefenseMemo snapshot for Case {CaseId} with {StepCount} steps", caseId, snapshotOutputs.Count);
+                }
+
+                // ── Now delete the actual data ──
+                foreach (var f in factAnalyses)
+                    _unitOfWork.Repository<Core.Models.FactAnalysis>().Delete(f);
+
+                foreach (var d in defenses)
+                    _unitOfWork.Repository<Core.Models.Defense>().Delete(d);
+
+                foreach (var p in finalPrayers)
+                    _unitOfWork.Repository<Core.Models.FinalPrayer>().Delete(p);
+
                 foreach (var job in defenseAiJobs)
                     _unitOfWork.Repository<Core.Models.AiJob>().Delete(job);
 
