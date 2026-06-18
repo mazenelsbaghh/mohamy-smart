@@ -12,8 +12,7 @@ import {
   abandonSmartAnalysisWorkflow,
   restoreWorkflowSnapshot as restoreSnapshot,
   startParallelDefenseTracking,
-  incrementParallelDefenseCompleted,
-  incrementParallelDefenseFailed,
+  setParallelDefenseCounts,
   clearParallelDefenseTracking,
 } from '../../../../../redux/analysis/smartAnalysisSlice';
 import type { ParallelDefenseTracking } from '../../../../../redux/analysis/smartAnalysisSlice';
@@ -259,7 +258,7 @@ const DefenseMemoPage = () => {
     const addDefenses = (items: Array<{ id: string; defenseTitle: string; basisFromCase: string; scope: string; isLocal?: boolean }> | undefined | null) => {
       (items ?? []).forEach((d) => {
         allDefenses.push({
-          defenseId: d.isLocal ? d.id : d.id,
+          defenseId: d.id,
           clientDefenseId: d.id,
           defenseTitle: d.defenseTitle,
           basisFromCase: d.basisFromCase,
@@ -307,33 +306,41 @@ const DefenseMemoPage = () => {
   useEffect(() => {
     if (!parallelTracking?.defenseJobMap) return;
 
-    for (const jobId of Object.values(parallelTracking.defenseJobMap)) {
-      if (hydratedParallelJobIdsRef.current.has(jobId)) continue;
+    let completedCount = 0;
+    let failedCount = 0;
 
+    for (const jobId of Object.values(parallelTracking.defenseJobMap)) {
       const job = aiJobs.defenseAnalysisJobs[jobId];
       if (!job) continue;
 
       if (job.status === 'Completed') {
-        const completedAnalysis = getCompletedDefenseAnalysis(job.resultJson);
-        if (!completedAnalysis) continue;
-
-        hydratedParallelJobIdsRef.current.add(jobId);
-        const cache = (orchestratorState.outputs[3] || {}) as Record<string, unknown>;
-        if (!cache[completedAnalysis.defenseId]) {
-          dispatch(hydrateStep({
-            stepNumber: 3,
-            result: {
-              defenseId: completedAnalysis.defenseId,
-              explanation: completedAnalysis.memorandum,
-            },
-          }));
+        completedCount++;
+        // Hydrate step 3 if not already done
+        if (!hydratedParallelJobIdsRef.current.has(jobId)) {
+          const completedAnalysis = getCompletedDefenseAnalysis(job.resultJson);
+          if (completedAnalysis) {
+            hydratedParallelJobIdsRef.current.add(jobId);
+            const cache = (orchestratorState.outputs[3] || {}) as Record<string, unknown>;
+            if (!cache[completedAnalysis.defenseId]) {
+              dispatch(hydrateStep({
+                stepNumber: 3,
+                result: {
+                  defenseId: completedAnalysis.defenseId,
+                  explanation: completedAnalysis.memorandum,
+                },
+              }));
+            }
+          }
         }
-        dispatch(incrementParallelDefenseCompleted(undefined));
       } else if (job.status === 'Failed') {
-        hydratedParallelJobIdsRef.current.add(jobId);
-        dispatch(incrementParallelDefenseFailed(undefined));
+        failedCount++;
+        if (!hydratedParallelJobIdsRef.current.has(jobId)) {
+          hydratedParallelJobIdsRef.current.add(jobId);
+        }
       }
     }
+
+    dispatch(setParallelDefenseCounts({ completedCount, failedCount }));
   }, [aiJobs.defenseAnalysisJobs, dispatch, orchestratorState.outputs, parallelTracking]);
 
   // ── Watch parallel tracking: when all defenses are done, advance from step 2 → 3 → 4 ──

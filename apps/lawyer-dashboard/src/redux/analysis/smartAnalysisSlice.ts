@@ -495,10 +495,19 @@ export const smartAnalysisSlice = createWorkflowSlice<{
   ext.parallelDefenseTracking.isRunning = false;
   }
   },
-  clearParallelDefenseTracking: (state) => {
-  const ext = state as unknown as SmartAnalysisExtraState;
-  ext.parallelDefenseTracking = null;
-  },
+   setParallelDefenseCounts: (state, action: PayloadAction<{ completedCount: number; failedCount: number }>) => {
+   const ext = state as unknown as SmartAnalysisExtraState;
+   if (!ext.parallelDefenseTracking) return;
+   ext.parallelDefenseTracking.completedCount = action.payload.completedCount;
+   ext.parallelDefenseTracking.failedCount = action.payload.failedCount;
+   if (action.payload.completedCount + action.payload.failedCount >= ext.parallelDefenseTracking.totalDefenses) {
+   ext.parallelDefenseTracking.isRunning = false;
+   }
+   },
+   clearParallelDefenseTracking: (state) => {
+   const ext = state as unknown as SmartAnalysisExtraState;
+   ext.parallelDefenseTracking = null;
+   },
  },
  maxSteps: 5,
 });
@@ -513,10 +522,11 @@ export const {
  clearDefenseAnalysis,
  setCurrentAccessibleStep,
  setLastCompletedStep,
- startParallelDefenseTracking,
- incrementParallelDefenseCompleted,
- incrementParallelDefenseFailed,
- clearParallelDefenseTracking,
+  startParallelDefenseTracking,
+  incrementParallelDefenseCompleted,
+  incrementParallelDefenseFailed,
+  setParallelDefenseCounts,
+  clearParallelDefenseTracking,
 } = smartAnalysisSlice.actions;
 
 export default smartAnalysisSlice.reducer;

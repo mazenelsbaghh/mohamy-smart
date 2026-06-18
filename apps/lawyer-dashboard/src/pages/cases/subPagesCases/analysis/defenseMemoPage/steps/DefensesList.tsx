@@ -212,6 +212,30 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  .finally(() => { fetchingIdsRef.current.delete(id); });
  }, [activeDefenseId, explanationsCache, dispatch]);
 
+ // Pre-load analyses for all non-local defenses on page load/refresh
+ const batchFetchedRef = useRef(false);
+ useEffect(() => {
+ if (!allDefenses.length || batchFetchedRef.current) return;
+ batchFetchedRef.current = true;
+ const toFetch = allDefenses.filter(
+  (d) => !d.isLocal && !d.id.startsWith('local-') && !explanationsCache[d.id] && !fetchingIdsRef.current.has(d.id)
+ );
+ for (const d of toFetch) {
+  fetchingIdsRef.current.add(d.id);
+  dispatch(thunkGetDefenseAnalysis({ defenseId: d.id })).unwrap()
+  .then((response: { memorandum?: TDefenseMemorandum }) => {
+   if (response?.memorandum) {
+   dispatch(hydrateStep({
+    stepNumber: 3,
+    result: { defenseId: d.id, explanation: response.memorandum },
+   }));
+   }
+  })
+  .catch(() => { /* defense has no analysis yet, that's OK */ })
+  .finally(() => { fetchingIdsRef.current.delete(d.id); });
+ }
+ }, [allDefenses, explanationsCache, dispatch]);
+
  useEffect(() => {
  if (currentJob?.status ==='Queued' || currentJob?.status ==='Processing') return;
  setIsLoading(false);
@@ -679,7 +703,7 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
    const loadingToast = sileo.show({ type: 'loading', title: `جاري تحضير وبدء تحليل ${unanalyzed.length} دفع بالتوازي...` });
    dispatch(clearDefenseAnalysisJobs());
    const defenses = unanalyzed.map((d) => ({
-     defenseId: d.isLocal ? d.id : d.id,
+     defenseId: d.id,
      clientDefenseId: d.id,
      defenseTitle: d.defenseTitle,
      basisFromCase: d.basisFromCase,

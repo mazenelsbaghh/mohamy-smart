@@ -34,7 +34,7 @@ const thunkSubmitParallelDefenseAnalyses = createAsyncThunk<ParallelDefenseResul
      // Stagger submissions by 3 seconds to avoid SQL Server deadlocks
      if (index > 0) await delay(index * 3000);
 
-     const isLocal = defense.defenseId === defense.clientDefenseId;
+     const isLocal = defense.defenseId.startsWith('local-');
      const inputJson = JSON.stringify({
       defenseId: isLocal ? LOCAL_DEFENSE_GUID : defense.defenseId,
       clientDefenseId: defense.clientDefenseId,
