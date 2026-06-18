@@ -53,7 +53,9 @@ export function useAiJobSignalR(caseId: string | null, skipInitialFetch = false,
   return;
   }
   if (runIdRef.current != null && job.runId != null && String(job.runId) !== String(runIdRef.current)) {
-  return;
+    if (job.stepType !== 'AnalysisDefense') {
+      return;
+    }
   }
   if (job.status === 'Conflict') {
   dispatch(upsertJob({ ...job, status: 'Failed' }));
