@@ -28,28 +28,33 @@ const thunkSubmitParallelDefenseAnalyses = createAsyncThunk<ParallelDefenseResul
  'aiJobs/submitParallelDefenseAnalyses',
  async ({ caseId, defenses }, { dispatch, rejectWithValue }) => {
   try {
-   const promises = defenses.map(async (defense) => {
-    const isLocal = defense.defenseId === defense.clientDefenseId;
-    const inputJson = JSON.stringify({
-     defenseId: isLocal ? LOCAL_DEFENSE_GUID : defense.defenseId,
-     clientDefenseId: defense.clientDefenseId,
-     defenseTitle: defense.defenseTitle,
-     basisFromCase: defense.basisFromCase,
-     scope: defense.scope,
+    const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    const promises = defenses.map(async (defense, index) => {
+     // Stagger submissions by 3 seconds to avoid SQL Server deadlocks
+     if (index > 0) await delay(index * 3000);
+
+     const isLocal = defense.defenseId === defense.clientDefenseId;
+     const inputJson = JSON.stringify({
+      defenseId: isLocal ? LOCAL_DEFENSE_GUID : defense.defenseId,
+      clientDefenseId: defense.clientDefenseId,
+      defenseTitle: defense.defenseTitle,
+      basisFromCase: defense.basisFromCase,
+      scope: defense.scope,
+     });
+
+     const res = await api.post(`/cases/${caseId}/ai-jobs`, {
+      stepType: 'AnalysisDefense',
+      inputJson,
+     });
+
+     return {
+      defenseId: defense.defenseId,
+      job: res.data.data as AiJob,
+     };
     });
 
-    const res = await api.post(`/cases/${caseId}/ai-jobs`, {
-     stepType: 'AnalysisDefense',
-     inputJson,
-    });
-
-    return {
-     defenseId: defense.defenseId,
-     job: res.data.data as AiJob,
-    };
-   });
-
-   const results = await Promise.allSettled(promises);
+    const results = await Promise.allSettled(promises);
 
    const submitted: ParallelDefenseResult['submitted'] = [];
    const failed: ParallelDefenseResult['failed'] = [];
