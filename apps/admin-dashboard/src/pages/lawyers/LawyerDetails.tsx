@@ -2,6 +2,8 @@ import { Container } from"@mohamy/shared-ui";
 import { useEffect, useState, type ReactNode } from"react";
 import { useParams, useNavigate } from"react-router-dom";
 import { Avatar, Button, Spinner, Textarea } from"@heroui/react";
+import AdjustPointsModal from"../../components/lawyers/AdjustPointsModal";
+import ChangePasswordModal from"../../components/lawyers/ChangePasswordModal";
 import {
  FaArrowRight,
  FaBalanceScale,
@@ -16,6 +18,7 @@ import {
  FaFileSignature,
  FaFolderOpen,
  FaIdCard,
+ FaLock,
  FaMoneyBillWave,
  FaPhone,
  FaRegClock,
@@ -148,6 +151,8 @@ const LawyerDetails = () => {
  const [manualReason, setManualReason] = useState("");
  const [manualReasonError, setManualReasonError] = useState<string | null>(null);
  const [expandedCaseId, setExpandedCaseId] = useState<string | null>(null);
+ const [isPointsModalOpen, setIsPointsModalOpen] = useState(false);
+ const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
  const { selectedLawyer: lawyer, isLoadingDetail, isVerifyingPhone, isUpdatingStatus, error } = useAppSelector(
  (state) => state.lawyers
  );
@@ -162,6 +167,10 @@ const LawyerDetails = () => {
  const handleToggleStatus = () => {
  if (!lawyer) return;
  dispatch(updateLawyerStatus({ id: lawyer.id, isActive: !lawyer.isActive }));
+ };
+
+ const handleRefetchLawyer = () => {
+ if (id) dispatch(fetchLawyerById(id));
  };
 
  const handleVerifyPhone = async () => {
@@ -292,6 +301,22 @@ const LawyerDetails = () => {
  استخدام الذكاء
  </Button>
  ) : null}
+ <Button
+ variant="flat"
+ className="bg-[var(--surface-muted)] text-[var(--text-primary)]"
+ startContent={<FaRobot />}
+ onPress={() => setIsPointsModalOpen(true)}
+ >
+ تعديل النقاط
+ </Button>
+ <Button
+ variant="flat"
+ className="bg-[var(--surface-muted)] text-[var(--text-primary)]"
+ startContent={<FaLock />}
+ onPress={() => setIsPasswordModalOpen(true)}
+ >
+ تغيير كلمة المرور
+ </Button>
  </div>
  </div>
  </div>
@@ -617,6 +642,20 @@ const LawyerDetails = () => {
  </div>
  </div>
  </Container>
+
+   <AdjustPointsModal
+    isOpen={isPointsModalOpen}
+    onClose={() => setIsPointsModalOpen(false)}
+    currentBalance={remainingAiRequests}
+    lawyerId={lawyer.id}
+    onSuccess={handleRefetchLawyer}
+   />
+   <ChangePasswordModal
+    isOpen={isPasswordModalOpen}
+    onClose={() => setIsPasswordModalOpen(false)}
+    lawyerId={lawyer.id}
+    onSuccess={handleRefetchLawyer}
+   />
  </section>
  );
 };

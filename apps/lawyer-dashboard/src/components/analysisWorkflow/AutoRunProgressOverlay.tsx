@@ -19,6 +19,8 @@ interface AutoRunProgressOverlayProps {
   onStop: () => void;
   isComplete?: boolean; // all steps done
   onViewResults?: () => void; // navigate to last step's results
+  /** Optional sub-labels per step index, e.g., { 2: 'تحليل الدفوع (3/8)' } */
+  stepSubLabels?: Record<number, string>;
 }
 
 /**
@@ -34,6 +36,7 @@ export const AutoRunProgressOverlay: React.FC<AutoRunProgressOverlayProps> = ({
   onStop,
   isComplete = false,
   onViewResults,
+  stepSubLabels,
 }) => {
   // Normalise completedSteps to a Set for O(1) lookups
   const completedSet = useMemo<Set<number>>(
@@ -260,6 +263,13 @@ export const AutoRunProgressOverlay: React.FC<AutoRunProgressOverlayProps> = ({
                     >
                       {step.label}
                     </span>
+
+                    {/* Sub-label (e.g., defense progress) */}
+                    {stepSubLabels?.[stepNum] && (
+                      <span className="text-[11px] app-text-muted font-medium mr-1">
+                        {stepSubLabels[stepNum]}
+                      </span>
+                    )}
                   </div>
                 );
               })}

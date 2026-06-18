@@ -1,6 +1,6 @@
 import React from 'react';
 import { Progress } from '@heroui/react';
-import { IoCheckmark, IoClose } from 'react-icons/io5';
+import { IoCheckmark, IoClose, IoStopOutline } from 'react-icons/io5';
 
 interface ParallelDefenseProgressProps {
   tracking: {
@@ -12,6 +12,7 @@ interface ParallelDefenseProgressProps {
   };
   defenseNames: Record<string, string>;
   defenseAnalysisJobs: Record<string, { status?: string; id: string }>;
+  onStop?: () => void;
 }
 
 type DefenseStatus = 'completed' | 'failed' | 'processing' | 'pending';
@@ -39,6 +40,7 @@ const ParallelDefenseProgress: React.FC<ParallelDefenseProgressProps> = ({
   tracking,
   defenseNames,
   defenseAnalysisJobs,
+  onStop,
 }) => {
   const { totalDefenses, completedCount, failedCount, defenseJobMap, isRunning } = tracking;
   const progressValue = totalDefenses > 0 ? ((completedCount + failedCount) / totalDefenses) * 100 : 0;
@@ -54,9 +56,21 @@ const ParallelDefenseProgress: React.FC<ParallelDefenseProgressProps> = ({
           <span className="text-lg">⚡</span>
           <span className="text-sm font-bold text-[var(--title-color)]">تحليل الدفوع</span>
         </div>
-        <span className="text-xs font-bold text-[var(--main-color)]">
-          {completedCount}/{totalDefenses}
-        </span>
+        <div className="flex items-center gap-2">
+          {onStop && isRunning && (
+            <button
+              type="button"
+              onClick={onStop}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-[var(--danger-color)] border border-[var(--danger-soft)] dark:border-red-800/50 hover:bg-[var(--danger-soft)] dark:hover:bg-red-950/30 transition-colors"
+            >
+              <IoStopOutline className="text-sm" />
+              إيقاف
+            </button>
+          )}
+          <span className="text-xs font-bold text-[var(--main-color)]">
+            {completedCount}/{totalDefenses}
+          </span>
+        </div>
       </div>
 
       {/* Progress Bar */}

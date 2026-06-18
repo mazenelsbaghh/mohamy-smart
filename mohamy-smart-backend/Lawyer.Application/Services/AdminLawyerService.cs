@@ -1,5 +1,6 @@
 using Lawyer.Application.Common.Interface;
 using Lawyer.Application.Common;
+using Lawyer.Application.Dtos.Admin;
 using Lawyer.Application.Dtos.Lawyers;
 using Lawyer.Application.IServices;
 using Lawyer.Core.Exceptions;
@@ -7,6 +8,7 @@ using Lawyer.Core.Enum;
 using Lawyer.Core.IRepositories;
 using Lawyer.Core.Models;
 using Lawyer.Application.Services.Workflows;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
@@ -20,17 +22,20 @@ namespace Lawyer.Application.Services
 		private readonly ILogger<AdminLawyerService> _logger;
 		private readonly IAuditService _audit;
 		private readonly IUserContextProvider _userContextProvider;
+		private readonly UserManager<ApplicationUser> _userManager;
 
 		public AdminLawyerService(
 			IUnitOfWork unitOfWork,
 			ILogger<AdminLawyerService> logger,
 			IAuditService audit,
-			IUserContextProvider userContextProvider)
+			IUserContextProvider userContextProvider,
+			UserManager<ApplicationUser> userManager)
 		{
 			_unitOfWork = unitOfWork;
 			_logger = logger;
 			_audit = audit;
 			_userContextProvider = userContextProvider;
+			_userManager = userManager;
 		}
 
 		public async Task<Result<AdminLawyerDetailDto>> GetLawyerDetailAsync(Guid userId, CancellationToken cancellationToken)
@@ -408,6 +413,105 @@ namespace Lawyer.Application.Services
 			};
 
 			return ApiExceptionResponse.Success(result, "تم توثيق رقم الهاتف يدويًا.");
+		}
+
+		public async Task<Result<AdjustAiPointsResultDto>> AdjustAiPointsAsync(Guid userId, int amount, CancellationToken cancellationToken)
+		{
+			var user = await _unitOfWork.Repository<ApplicationUser>()
+				.AsQueryable()
+				.IgnoreQueryFilters()
+				.Include(u => u.Lawyer)
+				.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+			if (user == null)
+				return ApiExceptionResponse.NotFound<AdjustAiPointsResultDto>("Lawyer user not found.");
+
+			if (user.Lawyer == null)
+				return ApiExceptionResponse.NotFound<AdjustAiPointsResultDto>("Lawyer profile not found.");
+
+			var lawyerSubscription = await _unitOfWork.Repository<LawyerSubscription>()
+				.AsQueryable()
+				.Include(ls => ls.Subscription)
+				.FirstOrDefaultAsync(ls => ls.LawyerId == user.Lawyer.Id && ls.IsActive, cancellationToken);
+
+			if (lawyerSubscription == null)
+				return ApiExceptionResponse.BadRequest<AdjustAiPointsResultDto>("لا يوجد اشتراك نشط لهذا المحامي");
+
+			var aiRequestsLimit = lawyerSubscription.Subscription.AiRequestsLimit ?? 0;
+			var currentRemaining = aiRequestsLimit - lawyerSubscription.UsedAiRequests;
+			var newRemaining = currentRemaining + amount;
+
+			if (newRemaining < 0)
+				return ApiExceptionResponse.BadRequest<AdjustAiPointsResultDto>("لا يمكن أن يكون الرصيد أقل من صفر");
+
+			var newLimit = aiRequestsLimit;
+			if (newRemaining > aiRequestsLimit)
+			{
+				newLimit = newRemaining;
+				lawyerSubscription.Subscription.AiRequestsLimit = newLimit;
+				await _unitOfWork.Repository<Subscription>().Update(lawyerSubscription.Subscription);
+			}
+
+			var newUsed = newLimit - newRemaining;
+			lawyerSubscription.UsedAiRequests = newUsed;
+			await _unitOfWork.Repository<LawyerSubscription>().Update(lawyerSubscription);
+			await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+			_audit.Log("AdminAdjustedAiPoints", new
+			{
+				UserId = userId,
+				LawyerId = user.Lawyer.Id,
+				Amount = amount,
+				NewRemaining = newRemaining,
+				NewUsed = newUsed,
+				NewLimit = newLimit
+			});
+
+			_logger.LogInformation(
+				"Admin adjusted AI points for user {UserId}: amount={Amount}, remaining={Remaining}, used={Used}, limit={Limit}",
+				userId, amount, newRemaining, newUsed, newLimit);
+
+			return ApiExceptionResponse.Success(new AdjustAiPointsResultDto
+			{
+				Remaining = newRemaining,
+				Used = newUsed,
+				Limit = newLimit
+			}, "تم تعديل نقاط الذكاء الاصطناعي بنجاح.");
+		}
+
+		public async Task<Result<string>> AdminResetPasswordAsync(Guid userId, string newPassword, CancellationToken cancellationToken)
+		{
+			if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8)
+				return ApiExceptionResponse.BadRequest<string>("كلمة المرور يجب أن تكون 8 أحرف على الأقل.");
+
+			var user = await _unitOfWork.Repository<ApplicationUser>()
+				.AsQueryable()
+				.IgnoreQueryFilters()
+				.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+			if (user == null)
+				return ApiExceptionResponse.NotFound<string>("المستخدم غير موجود.");
+
+			var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+			var resetResult = await _userManager.ResetPasswordAsync(user, resetToken, newPassword);
+
+			if (!resetResult.Succeeded)
+			{
+				var errors = string.Join("، ", resetResult.Errors.Select(e => e.Description));
+				_logger.LogWarning("Admin password reset failed for user {UserId}: {Errors}", userId, errors);
+				return ApiExceptionResponse.BadRequest<string>($"تعذر تغيير كلمة المرور: {errors}");
+			}
+
+			user.RefreshToken = null;
+			user.RefreshTokenExpiresAt = null;
+			await _unitOfWork.Repository<ApplicationUser>().Update(user);
+			await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+			_audit.Log("AdminResetPassword", new { TargetUserId = userId });
+
+			_logger.LogInformation("Admin reset password for user {UserId}", userId);
+
+			return ApiExceptionResponse.Success("تم تغيير كلمة المرور بنجاح.", "تم تغيير كلمة المرور بنجاح.");
 		}
 
 		private static AdminLawyerSubscriptionSummaryDto MapSubscription(

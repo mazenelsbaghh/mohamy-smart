@@ -33,7 +33,7 @@ const AUTO_RUN_STEP_MAP: Record<number, string> = {
   1: 'LawsuitCaseType',
   2: 'LawsuitParties',
   3: 'LawsuitSubjects',
-  4: 'LawsuitFacts',
+  // Step 4 (LawsuitFacts) is hidden/null — skipped by orchestrator
   5: 'LawsuitLegalBasis',
   6: 'LawsuitRequests',
 };
@@ -125,6 +125,7 @@ const PreparingStatementOfClaims = () => {
     computeMaxStepAllowed: STATEMENT_COMPUTE_MAX_STEP,
     jobStepMap: STATEMENT_JOB_STEP_MAP,
     autoRunStepMap: AUTO_RUN_STEP_MAP,
+    autoRunSkipSteps: [4], // Step 4 (LawsuitFacts) is hidden — auto-advance skips it
     onAutoRunComplete: () => { sileo.success({ title: 'اكتملت جميع مراحل إعداد الصحيفة بنجاح' }); },
     onAutoRunError: (step, error) => { sileo.error({ title: error ?? `فشل التشغيل التلقائي في المرحلة ${step}` }); },
     onError: (error) => { sileo.error({ title: typeof error === 'string' ? error : 'تعذر إتمام العملية' }); },
@@ -243,10 +244,10 @@ const PreparingStatementOfClaims = () => {
             {showAutoRunOverlay && (
               <AutoRunProgressOverlay
                 steps={STATEMENT_VISIBLE_STEP_DEFS}
-                activeStep={active}
+                activeStep={mapStatementStepToVisibleIndex(active)}
                 maxSteps={maxSteps}
-                completedSteps={autoRunCompletedSteps}
-                failedStep={autoRunFailedStep}
+                completedSteps={autoRunCompletedSteps.map(mapStatementStepToVisibleIndex)}
+                failedStep={autoRunFailedStep != null ? mapStatementStepToVisibleIndex(autoRunFailedStep) : null}
                 onStop={() => { stopAutoRun(); dismissAutoRunOverlay(); }}
                 isComplete={autoRunJustCompleted}
                 onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}

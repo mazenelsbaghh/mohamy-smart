@@ -1,3 +1,4 @@
+using Lawyer.Application.Dtos.Admin;
 using Lawyer.Application.Dtos.Lawyers;
 using Lawyer.Application.IServices;
 using Lawyer.Controllers.Base;
@@ -38,5 +39,20 @@ namespace Lawyer.Controllers
             var result = await _adminLawyerService.VerifyPhoneManuallyAsync(id, dto, cancellationToken);
             return CreateResponse(result);
         }
+
+        [HttpPatch("{id:guid}/ai-points")]
+        public async Task<IActionResult> AdjustAiPoints(Guid id, [FromBody] AdjustAiPointsRequest dto, CancellationToken cancellationToken)
+        {
+            var result = await _adminLawyerService.AdjustAiPointsAsync(id, dto.Amount, cancellationToken);
+            return CreateResponse(result);
+        }
+
+        [HttpPatch("{id:guid}/password")]
+        public async Task<IActionResult> ResetPassword(Guid id, [FromBody] AdminResetPasswordRequest dto, CancellationToken cancellationToken)
+        {
+            var result = await _adminLawyerService.AdminResetPasswordAsync(id, dto.NewPassword, cancellationToken);
+            return CreateResponse(result);
+        }
     }
 }
+

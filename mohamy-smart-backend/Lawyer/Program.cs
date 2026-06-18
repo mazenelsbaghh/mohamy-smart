@@ -229,7 +229,13 @@ if (!builder.Environment.IsEnvironment("Testing") && builder.Configuration.GetCo
     });
 }
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    // Default is 32 KB — too small for AI-generated documents (defense memos,
+    // appeal briefs, etc.) which can exceed 100 KB.  Without this, SignalR
+    // silently drops the JobCompleted message and the frontend appears stuck.
+    options.MaximumReceiveMessageSize = 10 * 1024 * 1024; // 10 MB
+});
 builder.Services.AddHealthChecks();
 
 // FluentValidation auto-validation for incoming MVC/DTO payloads

@@ -1,6 +1,6 @@
 import { CustomCard } from'@mohamy/shared-ui';
 import { useEffect, useMemo, useRef, useState } from"react";
-import { IoAddOutline, IoArrowBackOutline, IoFlash, IoPencilOutline, IoReload, IoSparklesOutline, IoTrashOutline } from"react-icons/io5";
+import { IoAddOutline, IoArrowBackOutline, IoFlash, IoPencilOutline, IoReload, IoSparklesOutline, IoStopOutline, IoTrashOutline } from"react-icons/io5";
 import { LuCheck } from'react-icons/lu';
 import { useDisclosure } from"@heroui/react";
 import FormModal from'../../../../../../components/ui/form/FormModal';
@@ -31,6 +31,7 @@ import { clearDefenseAnalysisJobs } from'../../../../../../redux/aiJobs/aiJobsSl
 import {
   startParallelDefenseTracking,
   setParallelDefenseCounts,
+  clearParallelDefenseTracking,
 } from'../../../../../../redux/analysis/smartAnalysisSlice';
 import type { ParallelDefenseTracking } from'../../../../../../redux/analysis/smartAnalysisSlice';
 import {
@@ -130,6 +131,7 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  const lastAnnouncedAnalysisStateRef = useRef<string | null>(null);
  const handledCompletedAnalysisJobRef = useRef<string | null>(null);
  const hydratedParallelJobIds = useRef<Set<string>>(new Set());
+ const parallelThunkRef = useRef<ReturnType<typeof dispatch> & { abort: () => void } | null>(null);
 
  const defenseAnalysisJobs = useAppSelector((state) => state.aiJobs.defenseAnalysisJobs);
  const parallelTracking = useAppSelector(
@@ -716,7 +718,9 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
      scope: d.scope,
    }));
    try {
-     const result = await dispatch(thunkSubmitParallelDefenseAnalyses({ caseId, defenses })).unwrap();
+     const thunkPromise = dispatch(thunkSubmitParallelDefenseAnalyses({ caseId, defenses }));
+     parallelThunkRef.current = thunkPromise as ReturnType<typeof dispatch> & { abort: () => void };
+     const result = await thunkPromise.unwrap();
      const defenseJobMap: Record<string, string> = {};
      for (const s of result.submitted) {
        defenseJobMap[s.defenseId] = s.jobId;
@@ -733,6 +737,15 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
      setIsSubmittingParallel(false);
    }
  };
+
+  const handleStopAnalysis = () => {
+    if (parallelThunkRef.current) {
+      parallelThunkRef.current.abort();
+      parallelThunkRef.current = null;
+    }
+    dispatch(clearParallelDefenseTracking());
+    sileo.success({ title: 'تم إيقاف تحليل الدفوع' });
+  };
 
  const defenseNamesMap = useMemo(() => {
    const map: Record<string, string> = {};
@@ -907,13 +920,26 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
          </button>
        )}
 
-       {parallelTracking && (
-         <ParallelDefenseProgress
-           tracking={parallelTracking}
-           defenseNames={defenseNamesMap}
-           defenseAnalysisJobs={defenseAnalysisJobs}
-         />
-       )}
+        {parallelTracking && (
+          <>
+            <ParallelDefenseProgress
+              tracking={parallelTracking}
+              defenseNames={defenseNamesMap}
+              defenseAnalysisJobs={defenseAnalysisJobs}
+              onStop={handleStopAnalysis}
+            />
+            {parallelTracking.isRunning && (
+              <button
+                type="button"
+                onClick={handleStopAnalysis}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-colors border border-[var(--danger-soft)] dark:border-red-800/50 text-[var(--danger-color)] hover:bg-[var(--danger-soft)] dark:hover:bg-red-950/30"
+              >
+                <IoStopOutline className="text-lg" />
+                إيقاف تحليل الدفوع
+              </button>
+            )}
+          </>
+        )}
     </>
   }
   >

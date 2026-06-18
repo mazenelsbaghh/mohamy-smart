@@ -64,6 +64,8 @@ export interface UseWorkflowOrchestratorConfig<
   onAutoRunError?: (stepNumber: number, error: string | null) => void;
   /** Custom handler called when a step completes during auto-run. Return false to pause auto-advance */
   onAutoRunStepCompleted?: (stepNumber: number) => boolean;
+  /** Step numbers that should be auto-skipped during auto-run (e.g., hidden/null steps) */
+  autoRunSkipSteps?: number[];
 }
 
 export interface UseWorkflowOrchestratorReturn<TOutputs extends Record<number, unknown>> {
@@ -149,6 +151,7 @@ export function useWorkflowOrchestrator<
     onAutoRunComplete,
     onAutoRunError,
     onAutoRunStepCompleted,
+    autoRunSkipSteps,
   } = config;
 
   const dispatch = useAppDispatch();
@@ -557,7 +560,8 @@ export function useWorkflowOrchestrator<
     }
     if (fromStep === 0) {
       setAutoRunCompletedSteps([0]); // facts step is done immediately
-      handleAdvanceStage(0, 1);
+      // Step 0 (facts) is local-only — skip backend advance, just move to step 1
+      setActive(1);
     }
   }, [handleAdvanceStage, autoRunStorageKey]);
 
@@ -580,7 +584,27 @@ export function useWorkflowOrchestrator<
 
     const currentStep = active;
     const currentStepType = autoRunStepMap[currentStep];
-    if (!currentStepType) return;
+
+    // If current step has no AI job mapping, check if we're past ALL AI steps.
+    // If so, auto-complete. If not (e.g., step 0 = facts), just wait.
+    if (!currentStepType) {
+      const mappedSteps = Object.keys(autoRunStepMap).map(Number);
+      const lastMappedStep = Math.max(...mappedSteps, 0);
+      if (currentStep > lastMappedStep) {
+        // Past the last AI step → auto-run is complete
+        if (autoRunAdvancedSteps.current.has(currentStep)) return;
+        autoRunAdvancedSteps.current.add(currentStep);
+        setAutoRunCompletedSteps(prev => [...prev, currentStep]);
+        setIsAutoRunning(false);
+        autoRunAdvancedSteps.current.clear();
+        if (autoRunStorageKey) {
+          try { localStorage.removeItem(autoRunStorageKey); } catch { /* ignore */ }
+        }
+        onAutoRunComplete?.();
+        setAutoRunJustCompleted(true);
+      }
+      return;
+    }
 
     const currentJob = (aiJobs.jobs as Record<string, { status?: string; resultJson?: string; errorMessage?: string | null } | undefined>)[currentStepType];
 
@@ -588,17 +612,23 @@ export function useWorkflowOrchestrator<
     if (currentJob?.status === 'Completed' && currentJob.resultJson) {
       if (autoRunAdvancedSteps.current.has(currentStep)) return;
 
-      // Custom handler can pause auto-advance
+      autoRunAdvancedSteps.current.add(currentStep);
+
+      // Custom handler can take over advancement (return false to skip default)
       if (onAutoRunStepCompleted && !onAutoRunStepCompleted(currentStep)) {
+        setAutoRunCompletedSteps(prev => [...prev, currentStep]);
         return;
       }
-
-      autoRunAdvancedSteps.current.add(currentStep);
       setAutoRunCompletedSteps(prev => [...prev, currentStep]);
 
       if (currentStep < maxSteps) {
+        // Determine target step, skipping any steps in autoRunSkipSteps
+        let targetStep = currentStep + 1;
+        while (targetStep < maxSteps && autoRunSkipSteps?.includes(targetStep)) {
+          targetStep++;
+        }
         setTimeout(() => {
-          handleAdvanceStage(currentStep, currentStep + 1);
+          handleAdvanceStage(currentStep, targetStep);
         }, 300);
       } else {
         setIsAutoRunning(false);
@@ -621,7 +651,7 @@ export function useWorkflowOrchestrator<
       onAutoRunError?.(currentStep, currentJob.errorMessage ?? null);
       setAutoRunFailedStep(currentStep);
     }
-  }, [isAutoRunning, active, aiJobs.jobs, autoRunStepMap, maxSteps, handleAdvanceStage, onAutoRunStepCompleted, onAutoRunComplete, onAutoRunError, autoRunStorageKey]);
+  }, [isAutoRunning, active, aiJobs.jobs, autoRunStepMap, maxSteps, handleAdvanceStage, onAutoRunStepCompleted, onAutoRunComplete, onAutoRunError, autoRunStorageKey, autoRunSkipSteps]);
 
   // ── Auto-run: resume after refresh ────────────────────────────────────
   const autoRunResumedRef = useRef(false);

@@ -26,13 +26,22 @@ const LOCAL_DEFENSE_GUID = '00000000-0000-0000-0000-000000000000';
 
 const thunkSubmitParallelDefenseAnalyses = createAsyncThunk<ParallelDefenseResult, ParallelDefenseArgs>(
  'aiJobs/submitParallelDefenseAnalyses',
- async ({ caseId, defenses }, { dispatch, rejectWithValue }) => {
+ async ({ caseId, defenses }, { dispatch, rejectWithValue, signal }) => {
   try {
-    const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const delay = (ms: number) => new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(resolve, ms);
+      signal.addEventListener('abort', () => { clearTimeout(timer); reject(new DOMException('Aborted', 'AbortError')); }, { once: true });
+     });
 
     const promises = defenses.map(async (defense, index) => {
-     // Stagger submissions by 3 seconds to avoid SQL Server deadlocks
-     if (index > 0) await delay(index * 3000);
+     // Check if aborted before starting this defense
+     if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+
+     // Stagger submissions with random delay to avoid SQL Server deadlocks
+     if (index > 0) await delay(Math.floor(Math.random() * (800 - 200 + 1)) + 200);
+
+     // Check again after the delay
+     if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
 
      const isLocal = defense.defenseId.startsWith('local-');
      const inputJson = JSON.stringify({
@@ -48,7 +57,7 @@ const thunkSubmitParallelDefenseAnalyses = createAsyncThunk<ParallelDefenseResul
       stepType: 'AnalysisDefense',
       inputJson,
       runId: defense.clientDefenseId,
-     });
+     }, { signal });
 
      return {
       defenseId: defense.defenseId,
