@@ -137,7 +137,7 @@ namespace Lawyer.Application.Services
                 }
                 else
                 {
-                    var activeJob = await GetActiveJobAsync(caseId, dto.StepType, ct);
+                    var activeJob = await GetActiveJobAsync(caseId, dto.StepType, dto.RunId, ct);
                     if (activeJob != null)
                     {
                         await transaction.CommitAsync(ct);
@@ -178,7 +178,7 @@ namespace Lawyer.Application.Services
                 dbContext.ChangeTracker.Clear();
                 var existing = !string.IsNullOrEmpty(dto.RunId) && dto.StepNumber.HasValue
                     ? await GetActiveJobEntityByRunAsync(caseId, dto.RunId, dto.WorkflowType, dto.StepNumber.Value, ct)
-                    : await GetActiveJobAsync(caseId, dto.StepType, ct);
+                    : await GetActiveJobAsync(caseId, dto.StepType, dto.RunId, ct);
                 if (existing != null)
                     return Result<AiJobStatusDto>.Success(ToDto(existing), HttpStatusCode.OK.ToString());
 
@@ -211,7 +211,7 @@ namespace Lawyer.Application.Services
             if (!accessResult.Succeeded)
                 return Result<AiJobStatusDto>.Error(accessResult.StatusCode, accessResult.Message);
 
-            var job = await GetActiveJobAsync(caseId, step, ct);
+            var job = await GetActiveJobAsync(caseId, step, null, ct);
             if (job == null)
             {
                 return Result<AiJobStatusDto>.Error(HttpStatusCode.Conflict,
@@ -336,8 +336,17 @@ namespace Lawyer.Application.Services
             j.RunId, j.WorkflowType, j.StepNumber, j.ErrorCode, null,
             _points.BuildChargeMetadata(j));
 
-        private async Task<AiJob?> GetActiveJobAsync(Guid caseId, AiStepType stepType, CancellationToken ct)
+        private async Task<AiJob?> GetActiveJobAsync(Guid caseId, AiStepType stepType, string? runId, CancellationToken ct)
         {
+            if (stepType == AiStepType.AnalysisDefense && !string.IsNullOrEmpty(runId))
+            {
+                return await _db.AiJobs
+                    .Where(j => j.CaseId == caseId && j.StepType == stepType && j.RunId == runId
+                                && (j.Status == AiJobStatus.Queued || j.Status == AiJobStatus.Processing))
+                    .OrderByDescending(j => j.CreatedAt)
+                    .FirstOrDefaultAsync(ct);
+            }
+
             return await _db.AiJobs
                 .Where(j => j.CaseId == caseId && j.StepType == stepType
                             && (j.Status == AiJobStatus.Queued || j.Status == AiJobStatus.Processing))

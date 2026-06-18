@@ -47,6 +47,7 @@ const thunkSubmitParallelDefenseAnalyses = createAsyncThunk<ParallelDefenseResul
      const res = await api.post(`/cases/${caseId}/ai-jobs`, {
       stepType: 'AnalysisDefense',
       inputJson,
+      runId: defense.clientDefenseId,
      });
 
      return {
