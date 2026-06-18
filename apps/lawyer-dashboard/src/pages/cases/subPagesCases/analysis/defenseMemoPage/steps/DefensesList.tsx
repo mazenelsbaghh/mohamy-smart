@@ -112,6 +112,7 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  const generateDefensesJob = aiJobs.jobs['GenerateDefenses'];
  const finalReqJob = aiJobs.jobs['FinalRequirements'];
  const [isLoading, setIsLoading] = useState(false);
+ const [isSubmittingParallel, setIsSubmittingParallel] = useState(false);
  const [isCancellingAnalysis, setIsCancellingAnalysis] = useState(false);
  const [activeDefenseId, setActiveDefenseId] = useState<string>('');
  const [approvedDefenses, setApprovedDefenses] = useState<string[]>([]);
@@ -671,9 +672,11 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  const handleAnalyzeAll = async () => {
    const unanalyzed = allDefenses.filter((d) => !explanationsCache[d.id]);
    if (unanalyzed.length === 0) {
-     sileo.success({ title:'جميع الدفوع محللة بالفعل' });
+     sileo.success({ title: 'جميع الدفوع محللة بالفعل' });
      return;
    }
+   setIsSubmittingParallel(true);
+   const loadingToast = sileo.show({ type: 'loading', title: `جاري تحضير وبدء تحليل ${unanalyzed.length} دفع بالتوازي...` });
    dispatch(clearDefenseAnalysisJobs());
    const defenses = unanalyzed.map((d) => ({
      defenseId: d.isLocal ? d.id : d.id,
@@ -695,6 +698,9 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
      sileo.success({ title: `بدأ تحليل ${unanalyzed.length} دفع بالتوازي` });
    } catch (error) {
      sileo.error({ title: typeof error === 'string' ? error : 'فشل بدء التحليل المتوازي' });
+   } finally {
+     sileo.dismiss(loadingToast);
+     setIsSubmittingParallel(false);
    }
  };
 
@@ -857,15 +863,17 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
          <button
            type="button"
            onClick={handleAnalyzeAll}
-           disabled={isAnalyzingDefense || analyzedCount === allDefenses.length}
+           disabled={isAnalyzingDefense || analyzedCount === allDefenses.length || isSubmittingParallel}
            className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-colors border ${
-             analyzedCount === allDefenses.length
+             analyzedCount === allDefenses.length || isSubmittingParallel
                ? 'app-surface-soft app-text-subtle app-border cursor-not-allowed'
                : 'border-[var(--main-color)] bg-orange-50/30 dark:bg-orange-950/20 text-[var(--main-color)] dark:text-white hover:bg-orange-50 dark:hover:bg-orange-950/40'
            }`}
          >
            <IoFlash className="text-lg" />
-           {analyzedCount === allDefenses.length ? 'تم تحليل جميع الدفوع' : `تحليل جميع الدفوع (${allDefenses.length - analyzedCount})`}
+           {isSubmittingParallel 
+             ? 'جاري بدء التحليل...' 
+             : (analyzedCount === allDefenses.length ? 'تم تحليل جميع الدفوع' : `تحليل جميع الدفوع (${allDefenses.length - analyzedCount})`)}
          </button>
        )}
 

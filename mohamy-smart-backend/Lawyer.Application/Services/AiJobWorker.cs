@@ -235,6 +235,7 @@ namespace Lawyer.Application.Services
                 case AiStepType.AnalysisDefense:
                 {
 	                    var input = JsonSerializer.Deserialize<AnalyzeDefenseRequestDto>(inputJson!, _jsonOptions)!;
+	                    input.CaseId = caseId;
 	                    input.RunId ??= job.RunId;
 	                    var result = await _defenseService.AnalyzeDefenseAsync(input, systemUserId, ct);
                     if (!result.Succeeded) throw new Exception(result.Message ?? "AnalysisDefense failed");

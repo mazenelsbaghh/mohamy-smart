@@ -38,6 +38,7 @@ const thunkSubmitParallelDefenseAnalyses = createAsyncThunk<ParallelDefenseResul
      const inputJson = JSON.stringify({
       defenseId: isLocal ? LOCAL_DEFENSE_GUID : defense.defenseId,
       clientDefenseId: defense.clientDefenseId,
+      caseId,
       defenseTitle: defense.defenseTitle,
       basisFromCase: defense.basisFromCase,
       scope: defense.scope,
