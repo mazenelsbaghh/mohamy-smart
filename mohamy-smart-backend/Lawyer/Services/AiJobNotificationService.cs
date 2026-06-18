@@ -8,26 +8,31 @@ namespace Lawyer.Services
     public class AiJobNotificationService : IAiJobNotificationService
     {
         private readonly IHubContext<AiJobHub> _hubContext;
+        private readonly ILogger<AiJobNotificationService> _logger;
 
-        public AiJobNotificationService(IHubContext<AiJobHub> hubContext)
+        public AiJobNotificationService(IHubContext<AiJobHub> hubContext, ILogger<AiJobNotificationService> logger)
         {
             _hubContext = hubContext;
+            _logger = logger;
         }
 
         public async Task NotifyJobStatusChangedAsync(AiJob job)
         {
+            _logger.LogInformation("SignalR: Sending JobStatusChanged to group case-{CaseId} for job {JobId} ({StepType}) status={Status}", job.CaseId, job.Id, job.StepType, job.Status);
             await _hubContext.Clients.Group($"case-{job.CaseId}")
                 .SendAsync("JobStatusChanged", ToPayload(job));
         }
 
         public async Task NotifyJobCompletedAsync(AiJob job)
         {
+            _logger.LogInformation("SignalR: Sending JobCompleted to group case-{CaseId} for job {JobId} ({StepType})", job.CaseId, job.Id, job.StepType);
             await _hubContext.Clients.Group($"case-{job.CaseId}")
                 .SendAsync("JobCompleted", ToPayload(job));
         }
 
         public async Task NotifyJobFailedAsync(AiJob job)
         {
+            _logger.LogInformation("SignalR: Sending JobFailed to group case-{CaseId} for job {JobId} ({StepType}) error={ErrorCode}", job.CaseId, job.Id, job.StepType, job.ErrorCode);
             await _hubContext.Clients.Group($"case-{job.CaseId}")
                 .SendAsync("JobFailed", ToPayload(job));
         }
