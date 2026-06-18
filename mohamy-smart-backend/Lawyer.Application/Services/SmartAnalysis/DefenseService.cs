@@ -773,7 +773,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
                     .WhereAsync(x => x.CaseId == caseId, ct);
                 if (factAnalyses.Any())
                 {
-                    snapshotOutputs["1"] = factAnalyses.Select(f => new { f.Id, f.CaseId, f.FactText, f.LegalBasis, f.Category }).ToList();
+                    snapshotOutputs["1"] = factAnalyses.Select(f => new { f.Id, f.CaseId, f.LegalFactsSummaryJson, f.DefendantsPositionsJson, f.EvidenceMapJson }).ToList();
                 }
 
                 // Step 2: Defenses
@@ -781,7 +781,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
                     .WhereAsync(x => x.CaseId == caseId, ct);
                 if (defenses.Any())
                 {
-                    snapshotOutputs["2"] = defenses.Select(d => new { d.Id, d.CaseId, d.Title, d.Type, d.Content, d.Explanation }).ToList();
+                    snapshotOutputs["2"] = defenses.Select(d => new { d.Id, d.CaseId, d.DefenseTitle, d.Type, d.BasisFromCase, d.Scope, d.Strength, d.AnalysisJson }).ToList();
                 }
 
                 // Step 3: Final Prayers
@@ -789,7 +789,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
                     .WhereAsync(x => x.CaseId == caseId, ct);
                 if (finalPrayers.Any())
                 {
-                    snapshotOutputs["3"] = finalPrayers.Select(p => new { p.Id, p.CaseId, p.Content }).ToList();
+                    snapshotOutputs["3"] = finalPrayers.Select(p => new { p.Id, p.CaseId, p.RequestText, p.Level, p.DisplayOrder }).ToList();
                 }
 
                 // Step 4: AI Job results (keep result JSONs for potential restore)

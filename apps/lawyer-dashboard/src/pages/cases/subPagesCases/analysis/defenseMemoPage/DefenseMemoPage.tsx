@@ -768,7 +768,7 @@ const DefenseMemoPage = () => {
                     isComplete={autoRunJustCompleted}
                     onViewResults={() => { dismissAutoRunOverlay(); setActive(maxSteps); }}
                     stepSubLabels={parallelTracking ? {
-                      2: `تحليل الدفوع (${parallelTracking.completed + parallelTracking.failed}/${parallelTracking.total})`,
+                      2: `تحليل الدفوع (${parallelTracking.completedCount + parallelTracking.failedCount}/${parallelTracking.totalDefenses})`,
                     } : undefined}
                   />
                 )}
