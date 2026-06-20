@@ -8,6 +8,7 @@ using Lawyer.Core.Exceptions;
 using Lawyer.Core.IRepositories;
 using Microsoft.Extensions.Logging;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -708,23 +709,39 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 var aiProvider = _aiProviderFactory.GetProvider();
                 var memoModel = await _aiProviderFactory.GetModelForStepAsync(AiStepType.DefenseMemoDraft);
                 var lawyerId = ResolveLawyerGuid(userId, caseEntity.LawyerId);
+                var inputFingerprint = ComputeDefenseMemoFingerprint(normalizedRequest);
+                var checkpoint = await LoadDefenseMemoCheckpointAsync(request.JobId, inputFingerprint, ct);
 
-                var frameResult = await GenerateDefenseMemoFrameAsync(
-                    aiProvider,
-                    memoModel,
-                    normalizedRequest,
-                    lawyerId,
-                    ct);
+                if (checkpoint.Frame == null)
+                {
+                    var frameResult = await GenerateDefenseMemoFrameAsync(
+                        aiProvider,
+                        memoModel,
+                        normalizedRequest,
+                        lawyerId,
+                        ct);
 
-                if (!frameResult.Succeeded || frameResult.Data == null)
-                    return Result<DefenseMemoDraftResponseDto>.Error(
-                        frameResult.StatusCode,
-                        frameResult.Message ?? "فشل في توليد أجزاء المذكرة الأساسية");
+                    if (!frameResult.Succeeded || frameResult.Data == null)
+                        return Result<DefenseMemoDraftResponseDto>.Error(
+                            frameResult.StatusCode,
+                            frameResult.Message ?? "فشل في توليد أجزاء المذكرة الأساسية");
+
+                    checkpoint.Frame = frameResult.Data;
+                    await SaveDefenseMemoCheckpointAsync(request.JobId, checkpoint, ct);
+                }
 
                 var defenseSections = new List<DraftedDefenseSectionDto>();
                 for (var i = 0; i < normalizedRequest.ApprovedDefenses.Count; i++)
                 {
                     var defense = normalizedRequest.ApprovedDefenses[i];
+                    var savedSection = checkpoint.DefenseSections.FirstOrDefault(section =>
+                        section.SourceOrder == i && section.DefenseTitle == defense.DefenseTitle);
+                    if (savedSection != null)
+                    {
+                        defenseSections.Add(savedSection);
+                        continue;
+                    }
+
                     var defenseResult = await GenerateSingleDefenseSectionAsync(
                         aiProvider,
                         memoModel,
@@ -740,9 +757,11 @@ namespace Lawyer.Application.Services.SmartAnalysis
                             defenseResult.Message ?? $"فشل في صياغة الدفع: {defense.DefenseTitle}");
 
                     defenseSections.Add(defenseResult.Data);
+                    checkpoint.DefenseSections.Add(defenseResult.Data);
+                    await SaveDefenseMemoCheckpointAsync(request.JobId, checkpoint, ct);
                 }
 
-                var memoHtml = AssembleDefenseMemoHtml(frameResult.Data, defenseSections);
+                var memoHtml = AssembleDefenseMemoHtml(checkpoint.Frame, defenseSections);
                 if (!HasHtmlContent(memoHtml))
                     return Result<DefenseMemoDraftResponseDto>.Error(HttpStatusCode.InternalServerError, "فشل في تجميع مذكرة الدفاع");
 
@@ -837,6 +856,27 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 foreach (var p in finalPrayers)
                     _unitOfWork.Repository<Core.Models.FinalPrayer>().Delete(p);
 
+                // Cancel running Hangfire jobs first to prevent race conditions
+                foreach (var job in defenseAiJobs)
+                {
+                    if (!string.IsNullOrWhiteSpace(job.HangfireJobId))
+                    {
+                        try { BackgroundJob.Delete(job.HangfireJobId); }
+                        catch { /* best effort */ }
+                    }
+                }
+
+                // Delete AiPointTransactions that reference these jobs (FK constraint)
+                var jobIds = defenseAiJobs.Select(j => j.Id).ToList();
+                if (jobIds.Any())
+                {
+                    var pointTransactions = await _unitOfWork.Repository<Core.Models.AiPointTransaction>()
+                        .WhereAsync(x => x.AiJobId.HasValue && jobIds.Contains(x.AiJobId.Value), ct);
+                    foreach (var tx in pointTransactions)
+                        _unitOfWork.Repository<Core.Models.AiPointTransaction>().Delete(tx);
+                }
+
+                // Now safe to delete the AiJobs themselves
                 foreach (var job in defenseAiJobs)
                     _unitOfWork.Repository<Core.Models.AiJob>().Delete(job);
 
@@ -1083,6 +1123,59 @@ namespace Lawyer.Application.Services.SmartAnalysis
             return Result<DefenseMemoFrameSectionsDto>.Success(frame);
         }
 
+        private async Task<DefenseMemoDraftCheckpointDto> LoadDefenseMemoCheckpointAsync(
+            Guid jobId,
+            string inputFingerprint,
+            CancellationToken ct)
+        {
+            if (jobId == Guid.Empty)
+                return CreateDefenseMemoCheckpoint(inputFingerprint);
+
+            var job = await _unitOfWork.Repository<Core.Models.AiJob>()
+                .FirstOrDefaultTrackedAsync(candidate => candidate.Id == jobId, ct);
+            if (string.IsNullOrWhiteSpace(job?.ResultJson))
+                return CreateDefenseMemoCheckpoint(inputFingerprint);
+
+            try
+            {
+                var checkpoint = JsonSerializer.Deserialize<DefenseMemoDraftCheckpointDto>(job.ResultJson, DeserializeOptions);
+                return checkpoint?.SchemaVersion == 1 && checkpoint.InputFingerprint == inputFingerprint
+                    ? checkpoint
+                    : CreateDefenseMemoCheckpoint(inputFingerprint);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Ignoring invalid defense memo checkpoint for Job {JobId}", jobId);
+                return CreateDefenseMemoCheckpoint(inputFingerprint);
+            }
+        }
+
+        private async Task SaveDefenseMemoCheckpointAsync(
+            Guid jobId,
+            DefenseMemoDraftCheckpointDto checkpoint,
+            CancellationToken ct)
+        {
+            if (jobId == Guid.Empty)
+                return;
+
+            var job = await _unitOfWork.Repository<Core.Models.AiJob>()
+                .FirstOrDefaultTrackedAsync(candidate => candidate.Id == jobId, ct);
+            if (job == null)
+                throw new InvalidOperationException($"AI job {jobId} was not found while saving defense memo progress.");
+
+            job.ResultJson = JsonSerializer.Serialize(checkpoint, CamelCaseOptions);
+            await _unitOfWork.SaveChangesAsync(ct);
+        }
+
+        private static DefenseMemoDraftCheckpointDto CreateDefenseMemoCheckpoint(string inputFingerprint) =>
+            new() { InputFingerprint = inputFingerprint };
+
+        private static string ComputeDefenseMemoFingerprint(DefenseMemoDraftRequestDto request)
+        {
+            var requestJson = JsonSerializer.Serialize(request, CamelCaseOptions);
+            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(requestJson)));
+        }
+
         private async Task<Result<DraftedDefenseSectionDto>> GenerateSingleDefenseSectionAsync(
             IAIProvider aiProvider,
             string memoModel,
@@ -1299,6 +1392,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
             return new DefenseMemoDraftRequestDto
             {
                 CaseId = request.CaseId,
+                RunId = request.RunId,
                 CaseNumber = FirstNonBlank(request.CaseNumber, caseEntity.Number),
                 CaseType = FirstNonBlank(request.CaseType, caseEntity.CaseType?.Title),
                 CourtName = NormalizeCourtName(FirstNonBlank(request.CourtName, caseEntity.Court)),

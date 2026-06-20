@@ -1,5 +1,7 @@
 using Hangfire;
+using Hangfire.States;
 using Lawyer.Application.Dtos.AiJobs;
+using Lawyer.Application.Dtos.SmartAnalysis;
 using Lawyer.Application.IServices;
 using Lawyer.Application.Common.Interface;
 using Lawyer.Core.Enum;
@@ -8,6 +10,7 @@ using Lawyer.Core.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Net;
+using System.Text.Json;
 
 namespace Lawyer.Application.Services
 {
@@ -120,6 +123,14 @@ namespace Lawyer.Application.Services
             if (!accessResult.Succeeded)
                 return Result<AiJobStatusDto>.Error(accessResult.StatusCode, accessResult.Message);
 
+            string? retryCheckpointJson = null;
+            if (dto.RepeatIntent == AiRepeatIntent.RetryAfterFailure)
+            {
+                var failedJob = await GetLatestFailedJobAsync(caseId, dto, ct);
+                CancelAutomaticRetry(failedJob);
+                retryCheckpointJson = GetDefenseMemoCheckpointJson(failedJob);
+            }
+
             var dbContext = (DbContext)_db;
 
             try
@@ -154,18 +165,11 @@ namespace Lawyer.Application.Services
                 if (!availability.Succeeded)
                     return Result<AiJobStatusDto>.Error(availability.StatusCode, availability.Message);
 
-                var latestJob = !string.IsNullOrEmpty(dto.RunId) && dto.StepNumber.HasValue
-                    ? await GetLatestJobByRunAsync(caseId, dto.RunId, dto.WorkflowType, dto.StepNumber.Value, ct)
-                    : await GetLatestJobAsync(caseId, dto.StepType, ct);
-                var shouldCreateNewAttempt = latestJob is null || dto.RepeatIntent.HasValue || dto.StepType == AiStepType.AnalysisDefense;
-                var job = shouldCreateNewAttempt
-                    ? CreateQueuedJob(caseId, dto.StepType, dto.RunId, dto.WorkflowType, dto.StepNumber)
-                    : ResetForResubmission(latestJob!, dto.RunId, dto.WorkflowType, dto.StepNumber);
+                var job = CreateQueuedJob(caseId, dto.StepType, dto.RunId, dto.WorkflowType, dto.StepNumber);
+                job.ResultJson = retryCheckpointJson;
 
                 ApplyPointMetadata(job, dto);
-
-                if (shouldCreateNewAttempt)
-                    _db.AiJobs.Add(job);
+                _db.AiJobs.Add(job);
 
                 await _db.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
@@ -201,6 +205,9 @@ namespace Lawyer.Application.Services
             if (existing == null)
                 return Result<AiJobStatusDto>.Error(HttpStatusCode.Conflict,
                     "Job is not in a failed state. Only failed jobs can be retried.");
+
+            if (dto.RepeatIntent != AiRepeatIntent.RetryAfterFailure)
+                CancelAutomaticRetry(existing);
 
             return await SubmitAsync(caseId, dto, userId, ct);
         }
@@ -354,20 +361,48 @@ namespace Lawyer.Application.Services
                 .FirstOrDefaultAsync(ct);
         }
 
-        private async Task<AiJob?> GetLatestJobAsync(Guid caseId, AiStepType stepType, CancellationToken ct)
+        private async Task<AiJob?> GetLatestFailedJobAsync(Guid caseId, SubmitAiJobDto submission, CancellationToken ct)
         {
-            return await _db.AiJobs
-                .Where(j => j.CaseId == caseId && j.StepType == stepType)
-                .OrderByDescending(j => j.CreatedAt)
+            var failedJobs = _db.AiJobs
+                .AsNoTracking()
+                .Where(job => job.CaseId == caseId
+                              && job.StepType == submission.StepType
+                              && job.Status == AiJobStatus.Failed);
+
+            if (!string.IsNullOrWhiteSpace(submission.RunId) && submission.StepNumber.HasValue)
+            {
+                failedJobs = failedJobs.Where(job => job.RunId == submission.RunId
+                                                     && job.WorkflowType == submission.WorkflowType
+                                                     && job.StepNumber == submission.StepNumber);
+            }
+
+            return await failedJobs
+                .OrderByDescending(job => job.CreatedAt)
                 .FirstOrDefaultAsync(ct);
         }
 
-        private async Task<AiJob?> GetLatestJobByRunAsync(Guid caseId, string runId, string? workflowType, int stepNumber, CancellationToken ct)
+        private void CancelAutomaticRetry(AiJob? failedJob)
         {
-            return await _db.AiJobs
-                .Where(j => j.CaseId == caseId && j.RunId == runId && j.WorkflowType == workflowType && j.StepNumber == stepNumber)
-                .OrderByDescending(j => j.CreatedAt)
-                .FirstOrDefaultAsync(ct);
+            if (!string.IsNullOrWhiteSpace(failedJob?.HangfireJobId))
+                _hangfire.ChangeState(failedJob.HangfireJobId, new DeletedState(), null);
+        }
+
+        private static string? GetDefenseMemoCheckpointJson(AiJob? failedJob)
+        {
+            if (failedJob?.StepType != AiStepType.DefenseMemoDraft || string.IsNullOrWhiteSpace(failedJob.ResultJson))
+                return null;
+
+            try
+            {
+                var checkpoint = JsonSerializer.Deserialize<DefenseMemoDraftCheckpointDto>(
+                    failedJob.ResultJson,
+                    Common.JsonOptions.Deserialize);
+                return checkpoint?.SchemaVersion == 1 ? failedJob.ResultJson : null;
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
         }
 
         private async Task<AiJob?> GetActiveJobEntityByRunAsync(Guid caseId, string runId, string? workflowType, int stepNumber, CancellationToken ct)
@@ -390,22 +425,6 @@ namespace Lawyer.Application.Services
                 WorkflowType = workflowType,
                 StepNumber = stepNumber,
             };
-        }
-
-        private static AiJob ResetForResubmission(AiJob job, string? runId, string? workflowType, int? stepNumber)
-        {
-            job.Status = AiJobStatus.Queued;
-            job.ErrorMessage = null;
-            job.ErrorCode = null;
-            job.ResultJson = null;
-            job.CompletedAt = null;
-            job.StartedAt = null;
-            job.HangfireJobId = null;
-            job.RunId = runId;
-            job.WorkflowType = workflowType;
-            job.StepNumber = stepNumber;
-            job.CreatedAt = DateTime.UtcNow;
-            return job;
         }
 
         private void ApplyPointMetadata(AiJob job, SubmitAiJobDto dto)

@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace Lawyer.Application.Dtos.SmartAnalysis
 {
     public class DefenseMemoDraftRequestDto
     {
+        [JsonIgnore]
+        public Guid JobId { get; set; }
         public Guid CaseId { get; set; }
         public string? RunId { get; set; }
         public string CaseNumber { get; set; } = string.Empty;
@@ -89,5 +92,13 @@ namespace Lawyer.Application.Dtos.SmartAnalysis
     public class DefenseMemoDraftResponseDto
     {
         public string MemoHtml { get; set; } = string.Empty;
+    }
+
+    public class DefenseMemoDraftCheckpointDto
+    {
+        public int SchemaVersion { get; set; } = 1;
+        public string InputFingerprint { get; set; } = string.Empty;
+        public DefenseMemoFrameSectionsDto? Frame { get; set; }
+        public List<DraftedDefenseSectionDto> DefenseSections { get; set; } = new();
     }
 }

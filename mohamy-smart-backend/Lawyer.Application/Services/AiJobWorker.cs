@@ -254,6 +254,7 @@ namespace Lawyer.Application.Services
                 {
                     _logger.LogInformation("AiJobWorker: Starting DefenseMemoDraft for Case {CaseId}", caseId);
 	                    var input = JsonSerializer.Deserialize<DefenseMemoDraftRequestDto>(inputJson!, _jsonOptions)!;
+	                    input.JobId = job.Id;
 	                    input.CaseId = caseId;
 	                    input.RunId ??= job.RunId;
                     _logger.LogInformation("AiJobWorker: DefenseMemoDraft deserialized. Case={CaseId}, Defenses={Count}", caseId, input.ApprovedDefenses?.Count ?? 0);

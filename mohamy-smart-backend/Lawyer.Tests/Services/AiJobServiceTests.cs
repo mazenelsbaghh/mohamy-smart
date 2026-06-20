@@ -4,6 +4,7 @@ using Hangfire;
 using Hangfire.Common;
 using Hangfire.States;
 using Lawyer.Application.Dtos.AiJobs;
+using Lawyer.Application.Dtos.SmartAnalysis;
 using Lawyer.Application.IServices;
 using Lawyer.Application.Services;
 using Lawyer.Core.Enum;
@@ -152,7 +153,7 @@ public class AiJobServiceTests
     }
 
     [Fact]
-    public async Task SubmitAsync_ShouldRefreshCreatedAt_WhenReusingCompletedJob()
+    public async Task SubmitAsync_ShouldCreateNewAttempt_WhenPreviousJobCompleted()
     {
         // Arrange
         await using var db = new AppDbContext(_dbOptions);
@@ -205,7 +206,6 @@ public class AiJobServiceTests
         hangfireMock
             .Setup(x => x.Create(It.IsAny<Job>(), It.IsAny<IState>()))
             .Returns("new-hangfire-id");
-
         var notificationsMock = new Mock<IAiJobNotificationService>();
         var accessMock = new Mock<ICaseAccessValidator>();
         accessMock.Setup(x => x.ValidateAsync(caseId, "user123", false, It.IsAny<CancellationToken>()))
@@ -219,16 +219,116 @@ public class AiJobServiceTests
         // Assert
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeNull();
-        result.Data!.Id.Should().Be(completedJob.Id);
+        result.Data!.Id.Should().NotBe(completedJob.Id);
         result.Data.Status.Should().Be(AiJobStatus.Queued);
         result.Data.CreatedAt.Should().BeAfter(originalCreatedAt);
         result.Data.CompletedAt.Should().BeNull();
         result.Data.ResultJson.Should().BeNull();
 
-        var persisted = await db.AiJobs.FindAsync(completedJob.Id);
-        persisted.Should().NotBeNull();
-        persisted!.CreatedAt.Should().Be(result.Data.CreatedAt);
-        persisted.HangfireJobId.Should().Be("new-hangfire-id");
+        var persistedCompletedJob = await db.AiJobs.FindAsync(completedJob.Id);
+        persistedCompletedJob!.Status.Should().Be(AiJobStatus.Completed);
+        persistedCompletedJob.ResultJson.Should().Be("{\"old\":true}");
+
+        var persistedNewAttempt = await db.AiJobs.FindAsync(result.Data.Id);
+        persistedNewAttempt!.HangfireJobId.Should().Be("new-hangfire-id");
+    }
+
+    [Fact]
+    public async Task SubmitAsync_ProductionRegression20260619_ShouldNotReuseFailedJob()
+    {
+        await using var db = new AppDbContext(_dbOptions);
+        var caseId = Guid.NewGuid();
+        var lawyerId = Guid.NewGuid();
+
+        db.Subscriptions.Add(new Subscription
+        {
+            Id = 1,
+            Name = "Test",
+            AiRequestsLimit = 10,
+            DurationDays = 30
+        });
+        db.LawyerSubscriptions.Add(new LawyerSubscription
+        {
+            Id = Guid.NewGuid(),
+            LawyerId = lawyerId,
+            SubscriptionId = 1,
+            StartDate = DateTime.UtcNow.AddDays(-1),
+            EndDate = DateTime.UtcNow.AddDays(30)
+        });
+        db.Cases.Add(new Case
+        {
+            Id = caseId,
+            LawyerId = lawyerId,
+            Title = "Test Case",
+            Number = "123",
+            Court = "Test Court"
+        });
+
+        var failedJob = new AiJob
+        {
+            Id = Guid.NewGuid(),
+            CaseId = caseId,
+            StepType = AiStepType.DefenseMemoDraft,
+            Status = AiJobStatus.Failed,
+            ErrorMessage = "AI provider failed",
+            CompletedAt = DateTime.UtcNow.AddMinutes(-1),
+            HangfireJobId = "scheduled-retry",
+            CreatedAt = DateTime.UtcNow.AddMinutes(-5)
+        };
+        failedJob.ResultJson = System.Text.Json.JsonSerializer.Serialize(
+            new DefenseMemoDraftCheckpointDto
+            {
+                InputFingerprint = "same-input",
+                Frame = new DefenseMemoFrameSectionsDto { OpeningHtml = "<p>saved frame</p>" }
+            },
+            Lawyer.Application.Common.JsonOptions.Serialize);
+        db.AiJobs.Add(failedJob);
+        await db.SaveChangesAsync();
+
+        var hangfireMock = new Mock<IBackgroundJobClient>();
+        hangfireMock
+            .Setup(x => x.Create(It.IsAny<Job>(), It.IsAny<IState>()))
+            .Returns("new-hangfire-id");
+        hangfireMock
+            .Setup(x => x.ChangeState("scheduled-retry", It.IsAny<DeletedState>(), null))
+            .Returns(true);
+        var notificationsMock = new Mock<IAiJobNotificationService>();
+        var accessMock = new Mock<ICaseAccessValidator>();
+        accessMock.Setup(x => x.ValidateAsync(caseId, "user123", false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Lawyer.Core.Exceptions.Result<bool>
+            {
+                Succeeded = true,
+                Data = true,
+                StatusCode = System.Net.HttpStatusCode.OK
+            });
+
+        var sut = new AiJobService(db, hangfireMock.Object, notificationsMock.Object, accessMock.Object);
+
+        var submission = await sut.SubmitAsync(
+            caseId,
+            new SubmitAiJobDto(
+                AiStepType.DefenseMemoDraft,
+                "{}",
+                null,
+                null,
+                null,
+                AiRepeatIntent.RetryAfterFailure,
+                DateTime.UtcNow),
+            "user123",
+            CancellationToken.None);
+
+        submission.Succeeded.Should().BeTrue();
+        submission.Data!.Id.Should().NotBe(failedJob.Id);
+
+        var persistedFailedJob = await db.AiJobs.FindAsync(failedJob.Id);
+        persistedFailedJob!.Status.Should().Be(AiJobStatus.Failed);
+        persistedFailedJob.ErrorMessage.Should().Be("AI provider failed");
+        var persistedNewAttempt = await db.AiJobs.SingleAsync(job => job.Id == submission.Data.Id);
+        persistedNewAttempt.ResultJson.Should().Be(failedJob.ResultJson);
+        (await db.AiJobs.CountAsync(job => job.CaseId == caseId)).Should().Be(2);
+        hangfireMock.Verify(
+            client => client.ChangeState("scheduled-retry", It.IsAny<DeletedState>(), null),
+            Times.Once);
     }
 
     [Fact]
