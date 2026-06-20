@@ -146,9 +146,9 @@ const Header = ({ theme, setTheme }: THeader) => {
 
             {/* Greeting Text & Mobile Actions (RTL) */}
             <div className="flex flex-col w-full lg:flex-1 order-2 mt-1 lg:mt-0 lg:px-4">
-                <h3 className="text-base md:text-xl font-bold text-[var(--title-color)] m-0 leading-tight">
-                    مرحباً سيادة المستشار:{' '}
-                    <span className="text-[var(--main-color)] dark:text-white">{user?.fullName || 'المستخدم'}</span>
+                <h3 className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-1 text-base md:text-xl font-bold text-[var(--title-color)] m-0 leading-snug">
+                    <span className="shrink-0">مرحبًا سيادة المستشار:</span>
+                    <span className="min-w-0 break-words text-[var(--main-color)] dark:text-white">{user?.fullName || 'المستخدم'}</span>
                 </h3>
                 <p className="text-xs md:text-sm text-[var(--text-color)] mt-1 opacity-80 font-medium max-w-xl hidden sm:block m-0">
                     مساعدك الذكي بيرتبلك الشغل.. بس متنساش تراجع وراه، القرار النهائي دايماً لك

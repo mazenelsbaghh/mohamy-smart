@@ -24,8 +24,10 @@ import thunkGetAiPointBalance from'../../redux/subscription/thunk/thunkGetAiPoin
 import * as pdfjsLib from'pdfjs-dist';
 import JSZip from'jszip';
 
-// Use CDN to ensure the worker loads correctly in production without Vite bundling issues
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+ 'pdfjs-dist/build/pdf.worker.min.mjs',
+ import.meta.url,
+).toString();
 
 const MAX_FILE_SIZE_MB = 800;
 const MAX_PDF_PAGES = 1000;
@@ -362,7 +364,11 @@ const Documents = () => {
  })),
  ];
  } catch {
- sileo.error({ title:"تعذّر قراءة الملف: " + file.name + ". تأكد أن الملف بصيغة PDF صحيحة." });
+ sileo.error({
+ title:'تعذّر قراءة ملف PDF',
+ description: `الملف «${file.name}» غير صالح أو محمي بكلمة مرور. جرّب فتحه وحفظ نسخة PDF جديدة ثم ارفعه مرة أخرى.`,
+ duration: 8000,
+ });
  }
  } else if (isSupportedImageFile(file)) {
  allFilesToProcess.push({
@@ -378,7 +384,11 @@ const Documents = () => {
  extractedText,
  });
  } catch {
- sileo.error({ title:"تعذّر قراءة ملف Word: " + file.name + ". تأكد أن الملف بصيغة DOCX." });
+ sileo.error({
+ title:'تعذّر قراءة ملف Word',
+ description: `لم نتمكن من قراءة «${file.name}». تأكد أنه ملف DOCX سليم ثم حاول مرة أخرى.`,
+ duration: 8000,
+ });
  }
  } else {
  sileo.error({ title:"يدعم النظام الصور وملفات PDF و Word بصيغة DOCX فقط: JPG, PNG, WEBP, PDF, DOCX" });
