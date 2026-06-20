@@ -12,9 +12,9 @@ namespace Lawyer.Application.Validators
                 .MaximumLength(200).WithMessage("عنوان القضية يجب ألا يتجاوز 200 حرف");
              RuleFor(x => x.Number)
                  .NotEmpty().WithMessage("رقم القضية مطلوب")
-                 .MaximumLength(50).WithMessage("رقم القضية يجب ألا يتجاوز 50 حرف");
+                 .MaximumLength(300).WithMessage("رقم القضية يجب ألا يتجاوز 300 حرف");
              RuleFor(x => x.Court)
-                 .MaximumLength(100).WithMessage("اسم المحكمة يجب ألا يتجاوز 100 حرف");
+                 .MaximumLength(300).WithMessage("اسم المحكمة يجب ألا يتجاوز 300 حرف");
              RuleFor(x => x.ClientName)
                  .NotEmpty().WithMessage("اسم العميل مطلوب")
                  .MaximumLength(200).WithMessage("اسم العميل يجب ألا يتجاوز 200 حرف");
@@ -29,9 +29,9 @@ namespace Lawyer.Application.Validators
                  .NotEmpty().WithMessage("عنوان القضية مطلوب")
                  .MaximumLength(200).WithMessage("عنوان القضية يجب ألا يتجاوز 200 حرف");
              RuleFor(x => x.Number)
-                 .MaximumLength(200).WithMessage("رقم القضية يجب ألا يتجاوز 200 حرف");
+                 .MaximumLength(300).WithMessage("رقم القضية يجب ألا يتجاوز 300 حرف");
              RuleFor(x => x.Court)
-                 .MaximumLength(200).WithMessage("اسم المحكمة يجب ألا يتجاوز 200 حرف");
+                 .MaximumLength(300).WithMessage("اسم المحكمة يجب ألا يتجاوز 300 حرف");
              RuleFor(x => x.ClientName)
                 .NotEmpty().WithMessage("اسم العميل مطلوب");
         }

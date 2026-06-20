@@ -60,6 +60,7 @@ const AddNewCaseFromOCRForm = ({ onClose }: Props) => {
  const [autocompleteInputValue, setAutocompleteInputValue] = useState("");
  const [noCaseNumber, setNoCaseNumber] = useState(false);
  const [noCourt, setNoCourt] = useState(false);
+ const [submitError, setSubmitError] = useState<string | null>(null);
 
  const { register, handleSubmit, control, formState: { errors, isSubmitting }, setValue, watch, trigger } = useForm<addNewCaseFromOCRType>({
  mode:'onChange',
@@ -155,20 +156,29 @@ const AddNewCaseFromOCRForm = ({ onClose }: Props) => {
  };
 
  const onSubmit: SubmitHandler<addNewCaseFromOCRType> = async (data) => {
+ setSubmitError(null);
+
  if (step !=='review') {
  const valid = await trigger();
- if (!valid) return;
+ if (!valid) {
+ setSubmitError('تعذرت مراجعة البيانات. صحح الحقول الموضحة ثم حاول مرة أخرى.');
+ return;
+ }
  setStep('review');
  return;
  }
 
  const valid = await trigger();
  if (!valid) {
+ setSubmitError('تعذر إنشاء القضية لأن بعض البيانات غير صحيحة. راجع الحقول الموضحة.');
  setStep('form');
  return;
  }
 
- if (!user) return;
+ if (!user) {
+ setSubmitError('تعذر التحقق من حسابك. سجل الدخول مرة أخرى ثم أعد المحاولة.');
+ return;
+ }
 
  const toastId = sileo.show({ type:"loading", title:'جاري إنشاء القضية' });
  try {
@@ -207,6 +217,10 @@ const AddNewCaseFromOCRForm = ({ onClose }: Props) => {
  if (newClient?.id) {
  finalClientId = newClient.id;
  isExisted = true;
+ // Keep the newly-created client selected if case creation fails. A retry must
+ // reuse it instead of creating duplicate client records.
+ setSelectedClient(newClient);
+ setClientMode('existing');
  }
  }
  }
@@ -235,7 +249,11 @@ const AddNewCaseFromOCRForm = ({ onClose }: Props) => {
  navigate(`/cases/${newCase.id || newCase.Id}`);
  }
  } catch (error: unknown) {
- sileo.error({ title: typeof error ==='string' ? error :'تعذّر إنشاء القضية. تحقق من البيانات وأعد المحاولة.' });
+ const message = typeof error ==='string'
+ ? error
+ :'تعذّر إنشاء القضية. تحقق من البيانات وأعد المحاولة.';
+ setSubmitError(message);
+ sileo.error({ title: message });
  } finally {
  sileo.dismiss(toastId);
  }
@@ -907,11 +925,23 @@ const AddNewCaseFromOCRForm = ({ onClose }: Props) => {
  />
  )}
 
+ {submitError && (
+ <div
+ role="alert"
+ aria-live="assertive"
+ className="rounded-xl border border-danger-300 bg-danger-50 px-4 py-3 text-sm font-medium text-danger-700 dark:border-danger-700 dark:bg-danger-950/40 dark:text-danger-300"
+ >
+ <p className="font-semibold">لم تكتمل العملية</p>
+ <p className="mt-1">{submitError}</p>
+ </div>
+ )}
+
  <FormFooter
  onCancel={step ==='review' ? () => setStep('form') : () => setStep('client-match')}
  submitLabel={step ==='review' ?"تأكيد وإنشاء القضية" :"مراجعة البيانات"}
  cancelLabel={step ==='review' ?"رجوع للتعديل" :"رجوع"}
  isLoading={isSubmitting}
+ loadingLabel={step ==='review' ?"جاري إنشاء القضية..." :"جاري مراجعة البيانات..."}
  />
  </form>
  );

@@ -11,7 +11,7 @@ const addNewCaseFromOCRSchema = z.object({
  .max(100,"عنوان القضية لا يجب أن يزيد عن 100 حرف"),
  caseNumber: z.string()
  .nonempty("رقم القضية مطلوب")
- .max(100,"رقم القضية لا يجب أن يزيد عن 100 حرف"),
+ .max(300,"رقم القضية لا يجب أن يزيد عن 300 حرف"),
 
  // Array of selected case type IDs (strings from Select keys). Min 1 required.
  caseTypes: z.array(z.string()).min(1,"يجب اختيار نوع قضية واحد على الأقل"),
@@ -47,7 +47,7 @@ const addNewCaseFromOCRSchema = z.object({
  defendingParty: z.enum(['client','opponent']),
 
  court: z.string()
- .max(200,"اسم المحكمة لا يجب أن يزيد عن 200 حرف"),
+ .max(300,"اسم المحكمة لا يجب أن يزيد عن 300 حرف"),
 
  caseDescription: z.string()
  .nonempty("وصف القضية مطلوب")

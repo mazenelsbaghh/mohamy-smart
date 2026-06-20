@@ -6,6 +6,7 @@ type FormFooterProps = {
  cancelLabel?: string;
  isLoading?: boolean;
  isDisabled?: boolean;
+ loadingLabel?: string;
 };
 
 /**
@@ -18,7 +19,10 @@ const FormFooter = ({
  cancelLabel ="إلغاء",
  isLoading,
  isDisabled,
+ loadingLabel,
 }: FormFooterProps) => {
+ const controlsDisabled = Boolean(isLoading || isDisabled);
+
  return (
  <div
  className="flex items-center justify-between pt-4 border-t app-border"
@@ -28,6 +32,7 @@ const FormFooter = ({
  variant="light"
  type="button"
  onPress={onCancel}
+ isDisabled={controlsDisabled}
  className="app-text-muted font-medium"
  >
  {cancelLabel}
@@ -36,10 +41,10 @@ const FormFooter = ({
  color="primary"
  type="submit"
  isLoading={isLoading}
- isDisabled={isDisabled}
+ isDisabled={controlsDisabled}
  className="text-white rounded-xl px-8"
  >
- {submitLabel}
+ {isLoading && loadingLabel ? loadingLabel : submitLabel}
  </Button>
  </div>
  );
