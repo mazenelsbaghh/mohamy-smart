@@ -18,7 +18,14 @@ export function AiPointBalancePill({ balance }: AiPointBalancePillProps) {
       className="font-tajawal"
       dir="rtl"
     >
-      {isEmpty ? 'رصيد غير كافٍ' : `المتاح: ${balance.available} / ${balance.limit} نقطة`}
+      {isEmpty ? (
+        'رصيد غير كافٍ'
+      ) : (
+        <span className="text-xs">
+          <span className="hidden sm:inline">المتاح: </span>
+          {balance.available} / {balance.limit} نقطة
+        </span>
+      )}
     </Chip>
   );
 }
