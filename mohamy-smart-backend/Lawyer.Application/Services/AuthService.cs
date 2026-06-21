@@ -539,7 +539,8 @@ namespace Lawyer.Application.Services
                 return ApiExceptionResponse.BadRequest<bool>("رمز التحقق غير صحيح أو منتهي الصلاحية.");
             }
 
-            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            using var transaction = await _unitOfWork.BeginTransactionAsync();
+            try
             {
                 otpEntity.IsVerified = true;
                 otpEntity.ConsumedAtUtc = _dateTimeProvider.UtcNow;
@@ -626,7 +627,13 @@ namespace Lawyer.Application.Services
 				}
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
-            }, cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
 
             if (!string.IsNullOrWhiteSpace(user.Email))
             {
