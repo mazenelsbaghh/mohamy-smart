@@ -57,7 +57,6 @@ namespace Lawyer.Application.Services
 
 			var lawyer = user.Lawyer;
 			var lawyerId = lawyer.Id;
-			var lawyerIdText = lawyerId.ToString();
 
 			var subscriptions = lawyer.LawyerSubscriptions
 				.OrderByDescending(ls => ls.IsActive)
@@ -79,7 +78,7 @@ namespace Lawyer.Application.Services
 				.Where(p => p.LawyerId == lawyerId);
 			var reviewsQuery = _unitOfWork.Repository<Review>().AsQueryable()
 				.AsNoTracking()
-				.Where(r => r.LawyerId == lawyerIdText);
+				.Where(r => r.LawyerId == lawyerId);
 			var aiUsageIds = new[] { lawyer.Id, lawyer.ApplicationUserId };
 			var aiUsageQuery = _unitOfWork.Repository<AiUsageRecord>().AsQueryable()
 				.AsNoTracking()

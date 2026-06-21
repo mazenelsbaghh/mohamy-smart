@@ -7,7 +7,7 @@ namespace Lawyer.Core.Models
     public class Review : BaseEntity<Guid>
     {
         [Required]
-        public string LawyerId { get; set; } = null!;
+        public Guid LawyerId { get; set; }
 
         [Required]
         [MaxLength(200)]

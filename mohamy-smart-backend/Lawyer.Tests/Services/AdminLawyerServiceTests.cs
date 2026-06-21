@@ -156,7 +156,7 @@ public class AdminLawyerServiceTests : IDisposable
         _dbContext.Reviews.Add(new Review
         {
             Id = Guid.NewGuid(),
-            LawyerId = lawyerId.ToString(),
+            LawyerId = lawyerId,
             ReviewerName = "عميل راض",
             Rating = 5,
             Comment = "خدمة ممتازة",
@@ -337,12 +337,14 @@ public class AdminLawyerServiceTests : IDisposable
             UserId = currentAdminId,
             IsAdmin = isAdmin
         });
+        var userManager = CreateUserManager();
 
         return new AdminLawyerService(
-            new UnitOfWork(_dbContext, CreateUserManager()),
+            new UnitOfWork(_dbContext, userManager),
             new Mock<ILogger<AdminLawyerService>>().Object,
             new Mock<IAuditService>().Object,
-            userContextProvider.Object);
+            userContextProvider.Object,
+            userManager);
     }
 
     private static UserManager<ApplicationUser> CreateUserManager()

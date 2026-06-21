@@ -138,6 +138,7 @@ namespace Lawyer.Infrastructure.Persistence
 			builder.Entity<AiUsageRecord>(entity =>
 			{
 				entity.HasKey(e => e.Id);
+				entity.Property(e => e.EstimatedCostUsd).HasPrecision(18, 8);
 				entity.Property(e => e.WorkflowRunId).HasMaxLength(450);
 				entity.Property(e => e.WorkflowType).HasMaxLength(200);
 				entity.HasIndex(e => e.LawyerId);
@@ -147,6 +148,25 @@ namespace Lawyer.Infrastructure.Persistence
 				entity.HasIndex(e => new { e.LawyerId, e.CreatedAt });
 				entity.HasIndex(e => new { e.Provider, e.CreatedAt });
 				entity.HasIndex(e => new { e.CaseId, e.WorkflowType, e.WorkflowRunId });
+			});
+
+			builder.Entity<Subscription>(entity =>
+			{
+				entity.Property(e => e.Price).HasPrecision(18, 2);
+				entity.Property(e => e.YearlyPrice).HasPrecision(18, 2);
+			});
+
+			builder.Entity<ClientTransaction>(entity =>
+			{
+				entity.Property(e => e.Amount).HasPrecision(18, 2);
+			});
+
+			builder.Entity<Review>(entity =>
+			{
+				entity.HasOne(e => e.Lawyer)
+					.WithMany(e => e.Reviews)
+					.HasForeignKey(e => e.LawyerId)
+					.OnDelete(DeleteBehavior.Cascade);
 			});
 
 			builder.Entity<AccountEmailEvent>(entity =>
