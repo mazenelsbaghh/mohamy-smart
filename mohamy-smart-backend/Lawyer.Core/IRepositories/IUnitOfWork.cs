@@ -13,8 +13,9 @@ namespace Lawyer.Core.IRepositories
 	{
 		IGenericRepository<TEntity> Repository<TEntity>() where TEntity : class;
 		IUserRepository Users { get; }
-		Task<int> SaveChangesAsync(CancellationToken cancellationToken=default);
+		Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 		Task<IDbContextTransaction> BeginTransactionAsync();
+		Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
 		Task<int> ExecuteSqlRawAsync(string sql, IEnumerable<object> parameters, CancellationToken cancellationToken = default);
 	}
 }

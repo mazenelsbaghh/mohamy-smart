@@ -49,6 +49,17 @@ namespace Lawyer.Infrastructure.Persistence.Repositories
 			return _context.Database.BeginTransactionAsync();
 		}
 
+		public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+		{
+			var executionStrategy = _context.Database.CreateExecutionStrategy();
+			await executionStrategy.ExecuteAsync(async () =>
+			{
+				await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+				await operation();
+				await transaction.CommitAsync(cancellationToken);
+			});
+		}
+
 		public async Task<int> ExecuteSqlRawAsync(string sql, IEnumerable<object> parameters, CancellationToken cancellationToken = default)
 		{
 			return await _context.Database.ExecuteSqlRawAsync(sql, parameters, cancellationToken);
