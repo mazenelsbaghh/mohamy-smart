@@ -7,19 +7,21 @@ type AiPointBalancePillProps = {
 };
 
 export function AiPointBalancePill({ balance }: AiPointBalancePillProps) {
-  if (!balance) return null;
+  const isInactive = !balance || !balance.subscriptionActive;
+  const isEmpty = isInactive || balance.available <= 0;
 
-  const isEmpty = balance.available <= 0;
   return (
     <Chip
-      color={isEmpty ? 'danger' : 'success'}
+      color={isInactive ? 'warning' : isEmpty ? 'danger' : 'success'}
       variant="flat"
       startContent={<Coins className="h-4 w-4" />}
       className="font-tajawal"
       dir="rtl"
     >
-      {isEmpty ? (
-        'رصيد غير كافٍ'
+      {isInactive ? (
+        <span className="text-xs font-semibold">غير مشترك</span>
+      ) : isEmpty ? (
+        <span className="text-xs font-semibold">رصيد غير كافٍ (٠)</span>
       ) : (
         <span className="text-xs">
           <span className="hidden sm:inline">المتاح: </span>
@@ -29,3 +31,4 @@ export function AiPointBalancePill({ balance }: AiPointBalancePillProps) {
     </Chip>
   );
 }
+
