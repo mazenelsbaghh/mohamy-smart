@@ -436,34 +436,47 @@ namespace Lawyer.Application.Services
 			if (lawyerSubscription == null)
 				return ApiExceptionResponse.BadRequest<AdjustAiPointsResultDto>("لا يوجد اشتراك نشط لهذا المحامي");
 
-			var aiRequestsLimit = lawyerSubscription.Subscription.AiRequestsLimit ?? 0;
+			var usageBySubscription = await GetPointUsageBySubscriptionAsync(
+				new[] { lawyerSubscription.Id },
+				cancellationToken);
+			if (usageBySubscription.TryGetValue(lawyerSubscription.Id, out var usedFromTransactions))
+			{
+				lawyerSubscription.UsedAiRequests = usedFromTransactions;
+			}
+
+			var aiRequestsLimit = lawyerSubscription.GetEffectiveAiRequestsLimit();
 			var currentRemaining = aiRequestsLimit - lawyerSubscription.UsedAiRequests;
-			var newRemaining = currentRemaining + amount;
+			var newRemaining = (long)currentRemaining + amount;
 
 			if (newRemaining < 0)
 				return ApiExceptionResponse.BadRequest<AdjustAiPointsResultDto>("لا يمكن أن يكون الرصيد أقل من صفر");
+			if (newRemaining > int.MaxValue)
+				return ApiExceptionResponse.BadRequest<AdjustAiPointsResultDto>("قيمة تعديل النقاط أكبر من الحد المسموح");
 
-			var newLimit = aiRequestsLimit;
-			if (newRemaining > aiRequestsLimit)
-			{
-				newLimit = newRemaining;
-				lawyerSubscription.Subscription.AiRequestsLimit = newLimit;
-				await _unitOfWork.Repository<Subscription>().Update(lawyerSubscription.Subscription);
-			}
+			var adjustedLimit = (long)aiRequestsLimit + amount;
+			if (adjustedLimit < 0 || adjustedLimit > int.MaxValue)
+				return ApiExceptionResponse.BadRequest<AdjustAiPointsResultDto>("قيمة تعديل النقاط غير صالحة");
 
-			var newUsed = newLimit - newRemaining;
-			lawyerSubscription.UsedAiRequests = newUsed;
+			var newAdjustment = (long)lawyerSubscription.AiRequestsAdjustment + amount;
+			if (newAdjustment < int.MinValue || newAdjustment > int.MaxValue)
+				return ApiExceptionResponse.BadRequest<AdjustAiPointsResultDto>("قيمة تعديل النقاط غير صالحة");
+
+			lawyerSubscription.AiRequestsAdjustment = (int)newAdjustment;
 			await _unitOfWork.Repository<LawyerSubscription>().Update(lawyerSubscription);
 			await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+			var newLimit = (int)adjustedLimit;
+			var newUsed = lawyerSubscription.UsedAiRequests;
 
 			_audit.Log("AdminAdjustedAiPoints", new
 			{
 				UserId = userId,
 				LawyerId = user.Lawyer.Id,
 				Amount = amount,
-				NewRemaining = newRemaining,
+				NewRemaining = (int)newRemaining,
 				NewUsed = newUsed,
-				NewLimit = newLimit
+				NewLimit = newLimit,
+				NewAdjustment = lawyerSubscription.AiRequestsAdjustment
 			});
 
 			_logger.LogInformation(
@@ -472,7 +485,7 @@ namespace Lawyer.Application.Services
 
 			return ApiExceptionResponse.Success(new AdjustAiPointsResultDto
 			{
-				Remaining = newRemaining,
+				Remaining = (int)newRemaining,
 				Used = newUsed,
 				Limit = newLimit
 			}, "تم تعديل نقاط الذكاء الاصطناعي بنجاح.");
@@ -525,7 +538,7 @@ namespace Lawyer.Application.Services
 				StartDate = subscription.StartDate,
 				EndDate = subscription.EndDate,
 				DurationDays = subscription.Subscription?.DurationDays ?? 0,
-				AiRequestsLimit = subscription.Subscription?.AiRequestsLimit,
+				AiRequestsLimit = subscription.GetEffectiveAiRequestsLimit(),
 				UsedAiRequests = usageOverrides != null && usageOverrides.TryGetValue(subscription.Id, out var usedFromTransactions)
 					? usedFromTransactions
 					: subscription.UsedAiRequests,

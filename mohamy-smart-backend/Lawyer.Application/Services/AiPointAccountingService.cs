@@ -112,7 +112,7 @@ namespace Lawyer.Application.Services
                 return Result<AiPointBalanceDto>.Success(ToBalance(subscription));
             }
 
-            var limit = subscription.Subscription.AiRequestsLimit ?? 0;
+            var limit = subscription.GetEffectiveAiRequestsLimit();
             if (subscription.UsedAiRequests + pointCost > limit)
             {
                 return Result<AiPointBalanceDto>.Error(
@@ -225,7 +225,7 @@ namespace Lawyer.Application.Services
                 return Result<AiChargeMetadataDto>.Error(HttpStatusCode.Conflict, job.ChargeReason);
             }
 
-            var limit = subscription.Subscription.AiRequestsLimit ?? 0;
+            var limit = subscription.GetEffectiveAiRequestsLimit();
             if (subscription.UsedAiRequests + job.PointCost > limit)
             {
                 job.ChargeState = AiChargeState.NoCharge;
@@ -425,7 +425,7 @@ namespace Lawyer.Application.Services
 
         private static AiPointBalanceDto ToBalance(LawyerSubscription subscription)
         {
-            var limit = subscription.Subscription.AiRequestsLimit ?? 0;
+            var limit = subscription.GetEffectiveAiRequestsLimit();
             var available = Math.Max(0, limit - subscription.UsedAiRequests);
             return new AiPointBalanceDto(
                 limit,

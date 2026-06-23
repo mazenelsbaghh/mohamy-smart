@@ -229,7 +229,7 @@ namespace Lawyer.Application.Services
 				StartDate = newSub.StartDate,
 				EndDate = newSub.EndDate,
 				UsedAiRequests = newSub.UsedAiRequests,
-				Limit = plan.AiRequestsLimit ?? 0,
+				Limit = newSub.GetEffectiveAiRequestsLimit(),
 				IsActive = true
 			}, "Lawyer subscribed successfully");
 		}
@@ -254,7 +254,7 @@ namespace Lawyer.Application.Services
 				StartDate = sub.StartDate,
 				EndDate = sub.EndDate,
 				UsedAiRequests = await ResolveUsedAiRequestsAsync(sub, cancellationToken),
-				Limit = sub.Subscription.AiRequestsLimit ?? 0,
+				Limit = sub.GetEffectiveAiRequestsLimit(),
 				IsActive = sub.IsActive
 			});
 		}
@@ -316,7 +316,7 @@ namespace Lawyer.Application.Services
 				StartDate = sub.StartDate,
 				EndDate = sub.EndDate,
 				UsedAiRequests = sub.UsedAiRequests,
-				Limit = sub.Subscription.AiRequestsLimit ?? 0,
+				Limit = sub.GetEffectiveAiRequestsLimit(),
 				IsActive = sub.IsActive
 			}).ToList();
 
@@ -361,7 +361,7 @@ namespace Lawyer.Application.Services
 			}
 
 			// Check available requests
-			return subscription.UsedAiRequests < (subscription.Subscription.AiRequestsLimit ?? 0);
+			return subscription.UsedAiRequests < subscription.GetEffectiveAiRequestsLimit();
 		}
 
 
@@ -430,7 +430,7 @@ namespace Lawyer.Application.Services
 				StartDate = sub.StartDate,
 				EndDate = sub.EndDate,
 				UsedAiRequests = sub.UsedAiRequests,
-				Limit = sub.Subscription.AiRequestsLimit ?? 0,
+				Limit = sub.GetEffectiveAiRequestsLimit(),
 				IsActive = sub.IsActive
 			}, $"Lawyer subscription {(sub.IsActive ? "activated" : "deactivated")} successfully");
 		}
@@ -453,7 +453,7 @@ namespace Lawyer.Application.Services
 				return ApiExceptionResponse.BadRequest<string>("Your subscription has expired. Please subscribe again to continue using AI features.");
 			}
 
-			var limit = subscription.Subscription.AiRequestsLimit ?? 0;
+			var limit = subscription.GetEffectiveAiRequestsLimit();
 
 			var rowsAffected = await _unitOfWork.ExecuteSqlRawAsync(
 				"UPDATE LawyerSubscription SET UsedAiRequests = UsedAiRequests + 1 WHERE LawyerId = {0} AND IsActive = 1 AND UsedAiRequests < {1}",

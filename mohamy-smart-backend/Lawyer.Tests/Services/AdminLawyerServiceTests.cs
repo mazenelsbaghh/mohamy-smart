@@ -328,6 +328,83 @@ public class AdminLawyerServiceTests : IDisposable
         updatedUser!.PhoneNumberConfirmed.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task ProductionRegression_20260623_AdjustingPoints_OnlyChangesTargetLawyerBalance()
+    {
+        var targetUserId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var plan = new Subscription
+        {
+            Id = 1006,
+            Name = "الباقة التجريبية",
+            AiRequestsLimit = 10,
+            DurationDays = 30,
+            IsActive = true
+        };
+        var targetUser = CreateLawyerUser(targetUserId);
+        var otherUser = CreateLawyerUser(otherUserId);
+        var targetSubscription = CreateLawyerSubscription(targetUser.Lawyer!, plan);
+        var otherSubscription = CreateLawyerSubscription(otherUser.Lawyer!, plan);
+
+        _dbContext.Users.AddRange(targetUser, otherUser);
+        _dbContext.Set<Core.Models.Lawyer>().AddRange(targetUser.Lawyer!, otherUser.Lawyer!);
+        _dbContext.Subscriptions.Add(plan);
+        _dbContext.Set<LawyerSubscription>().AddRange(targetSubscription, otherSubscription);
+        await _dbContext.SaveChangesAsync();
+
+        var result = await CreateSut().AdjustAiPointsAsync(targetUserId, 10_000, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.Remaining.Should().Be(10_010);
+        result.Data.Limit.Should().Be(10_010);
+        plan.AiRequestsLimit.Should().Be(10);
+        targetSubscription.AiRequestsAdjustment.Should().Be(10_000);
+        targetSubscription.GetEffectiveAiRequestsLimit().Should().Be(10_010);
+        otherSubscription.AiRequestsAdjustment.Should().Be(0);
+        otherSubscription.GetEffectiveAiRequestsLimit().Should().Be(10);
+
+        var accountingService = new AiPointAccountingService(_dbContext);
+        var targetBalance = await accountingService.GetCurrentBalanceAsync(targetUser.Lawyer!.Id, CancellationToken.None);
+        var otherBalance = await accountingService.GetCurrentBalanceAsync(otherUser.Lawyer!.Id, CancellationToken.None);
+        targetBalance.Data!.Available.Should().Be(10_010);
+        otherBalance.Data!.Available.Should().Be(10);
+    }
+
+    private static ApplicationUser CreateLawyerUser(Guid userId)
+    {
+        var lawyer = new Core.Models.Lawyer
+        {
+            Id = Guid.NewGuid(),
+            ApplicationUserId = userId,
+            IsActive = true
+        };
+        var user = new ApplicationUser
+        {
+            Id = userId,
+            FullName = $"Lawyer {userId}",
+            UserType = UserType.Lawyer,
+            IsActive = true,
+            Lawyer = lawyer
+        };
+        lawyer.ApplicationUser = user;
+        return user;
+    }
+
+    private static LawyerSubscription CreateLawyerSubscription(Core.Models.Lawyer lawyer, Subscription plan)
+    {
+        return new LawyerSubscription
+        {
+            Id = Guid.NewGuid(),
+            LawyerId = lawyer.Id,
+            Lawyer = lawyer,
+            SubscriptionId = plan.Id,
+            Subscription = plan,
+            StartDate = DateTime.UtcNow.AddDays(-1),
+            EndDate = DateTime.UtcNow.AddDays(29),
+            IsActive = true
+        };
+    }
+
     private AdminLawyerService CreateSut(Guid? adminId = null, bool isAdmin = true)
     {
         var currentAdminId = adminId ?? Guid.NewGuid();
