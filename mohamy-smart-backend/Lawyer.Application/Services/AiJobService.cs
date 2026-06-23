@@ -17,6 +17,7 @@ namespace Lawyer.Application.Services
     public class AiJobService : IAiJobService
     {
         private const string UserCancelledMessage = "تم إلغاء التحليل بواسطة المستخدم";
+        private const string ActiveJobRetryMessage = "لا يمكن إعادة المحاولة لأن التحليل ما زال قيد التنفيذ.";
         private readonly IApplicationDbContext _db;
         private readonly IBackgroundJobClient _hangfire;
         private readonly IAiJobNotificationService _notifications;
@@ -126,6 +127,12 @@ namespace Lawyer.Application.Services
             string? retryCheckpointJson = null;
             if (dto.RepeatIntent == AiRepeatIntent.RetryAfterFailure)
             {
+                var activeRetry = !string.IsNullOrEmpty(dto.RunId) && dto.StepNumber.HasValue
+                    ? await GetActiveJobEntityByRunAsync(caseId, dto.RunId, dto.WorkflowType, dto.StepNumber.Value, ct)
+                    : await GetActiveJobAsync(caseId, dto.StepType, dto.RunId, ct);
+                if (activeRetry != null)
+                    return Result<AiJobStatusDto>.Error(HttpStatusCode.Conflict, ActiveJobRetryMessage);
+
                 var failedJob = await GetLatestFailedJobAsync(caseId, dto, ct);
                 CancelAutomaticRetry(failedJob);
                 retryCheckpointJson = GetDefenseMemoCheckpointJson(failedJob);
@@ -142,6 +149,9 @@ namespace Lawyer.Application.Services
                     var runJobResult = await GetActiveJobByRunAsync(caseId, dto.RunId, dto.WorkflowType!, dto.StepNumber.Value, userId, ct);
                     if (runJobResult.Succeeded && runJobResult.Data != null)
                     {
+                        if (dto.RepeatIntent == AiRepeatIntent.RetryAfterFailure)
+                            return Result<AiJobStatusDto>.Error(HttpStatusCode.Conflict, ActiveJobRetryMessage);
+
                         await transaction.CommitAsync(ct);
                         return Result<AiJobStatusDto>.Success(runJobResult.Data, HttpStatusCode.OK.ToString());
                     }
@@ -151,6 +161,9 @@ namespace Lawyer.Application.Services
                     var activeJob = await GetActiveJobAsync(caseId, dto.StepType, dto.RunId, ct);
                     if (activeJob != null)
                     {
+                        if (dto.RepeatIntent == AiRepeatIntent.RetryAfterFailure)
+                            return Result<AiJobStatusDto>.Error(HttpStatusCode.Conflict, ActiveJobRetryMessage);
+
                         await transaction.CommitAsync(ct);
                         return Result<AiJobStatusDto>.Success(ToDto(activeJob), HttpStatusCode.OK.ToString());
                     }
@@ -195,6 +208,10 @@ namespace Lawyer.Application.Services
             var accessResult = await ValidateCaseAccessAsync(caseId, userId, ct);
             if (!accessResult.Succeeded)
                 return Result<AiJobStatusDto>.Error(accessResult.StatusCode, accessResult.Message);
+
+            var activeJob = await GetActiveJobAsync(caseId, step, dto.RunId, ct);
+            if (activeJob != null)
+                return Result<AiJobStatusDto>.Error(HttpStatusCode.Conflict, ActiveJobRetryMessage);
 
             var existing = await _db.AiJobs
                 .AsNoTracking()

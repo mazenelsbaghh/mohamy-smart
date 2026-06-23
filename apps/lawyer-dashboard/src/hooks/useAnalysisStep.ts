@@ -38,6 +38,7 @@ export function useAnalysisStep<T = unknown>({
 
  const [isSubmitting, setIsSubmitting] = useState(false);
  const [localError, setLocalError] = useState<string | null>(null);
+ const retryInFlightRef = useRef(false);
 
  // Track if hydration has occurred to prevent infinite loops (only hydrate once per job success)
  const hydratedJobIds = useRef<Set<string>>(new Set());
@@ -46,8 +47,8 @@ export function useAnalysisStep<T = unknown>({
  const job = useAppSelector((state) => state.aiJobs.jobs[stepType]);
 
  // Derived statuses
- const hasJobFailed = job?.status ==='Failed' || localError !== null;
  const isJobActive = job?.status ==='Queued' || job?.status ==='Processing';
+ const hasJobFailed = !isJobActive && (job?.status ==='Failed' || localError !== null);
  const isLoading = isSubmitting || isJobActive;
  const errorMessage = localError || job?.errorMessage ||'حدث خطأ غير متوقع';
 
@@ -87,12 +88,15 @@ export function useAnalysisStep<T = unknown>({
  }, [caseId, stepType, inputJson, dispatch]);
 
  const retry = useCallback(async () => {
+ if (isJobActive || isSubmitting || retryInFlightRef.current) return;
+
  const confirmed = window.confirm(
  'إعادة المحاولة ستنشئ طلب ذكاء اصطناعي جديد.\nسيتم خصم نقطة واحدة من رصيدك إذا اكتملت النتيجة بنجاح.\nلن يتم خصم أي نقاط إذا فشلت المحاولة.'
  );
  if (!confirmed) return;
 
  if (!caseId) return;
+ retryInFlightRef.current = true;
  setIsSubmitting(true);
  setLocalError(null);
 
@@ -107,9 +111,10 @@ export function useAnalysisStep<T = unknown>({
  } catch (error: unknown) {
  setLocalError(typeof error ==='string' ? error :'فشل إرسال الطلب');
  } finally {
+ retryInFlightRef.current = false;
  setIsSubmitting(false);
  }
- }, [caseId, stepType, inputJson, dispatch]);
+ }, [caseId, stepType, inputJson, dispatch, isJobActive, isSubmitting]);
 
  // 6. Auto-submit logic
  const hasAttemptedAutoSubmit = useRef(false);

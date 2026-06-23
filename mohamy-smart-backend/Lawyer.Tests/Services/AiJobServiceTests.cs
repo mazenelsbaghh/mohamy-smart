@@ -112,6 +112,64 @@ public class AiJobServiceTests
         result.Data!.Id.Should().Be(newerJob.Id); // Ensures the newer job was fetched
     }
 
+    [Theory]
+    [InlineData(AiJobStatus.Queued)]
+    [InlineData(AiJobStatus.Processing)]
+    public async Task ProductionRegression_20260623_RetryWhileActive_ReturnsConflictWithoutCreatingJob(AiJobStatus activeStatus)
+    {
+        await using var db = new AppDbContext(_dbOptions);
+        var caseId = Guid.NewGuid();
+        var activeJob = new AiJob
+        {
+            Id = Guid.NewGuid(),
+            CaseId = caseId,
+            StepType = AiStepType.AnalysisDefense,
+            Status = activeStatus,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Cases.Add(new Case
+        {
+            Id = caseId,
+            LawyerId = Guid.NewGuid(),
+            Title = "Test Case",
+            Number = "123",
+            Court = "Test Court"
+        });
+        db.AiJobs.Add(activeJob);
+        await db.SaveChangesAsync();
+
+        var hangfire = new Mock<IBackgroundJobClient>();
+        var access = new Mock<ICaseAccessValidator>();
+        access.Setup(x => x.ValidateAsync(caseId, "user123", false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Lawyer.Core.Exceptions.Result<bool>
+            {
+                Succeeded = true,
+                Data = true,
+                StatusCode = System.Net.HttpStatusCode.OK
+            });
+        var sut = new AiJobService(
+            db,
+            hangfire.Object,
+            new Mock<IAiJobNotificationService>().Object,
+            access.Object);
+        var dto = new SubmitAiJobDto(
+            AiStepType.AnalysisDefense,
+            "{}",
+            null,
+            null,
+            null,
+            AiRepeatIntent.RetryAfterFailure,
+            DateTime.UtcNow);
+
+        var result = await sut.RetryAsync(caseId, AiStepType.AnalysisDefense, dto, "user123", CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.StatusCode.Should().Be(System.Net.HttpStatusCode.Conflict);
+        result.Message.Should().Be("لا يمكن إعادة المحاولة لأن التحليل ما زال قيد التنفيذ.");
+        (await db.AiJobs.CountAsync()).Should().Be(1);
+        hangfire.VerifyNoOtherCalls();
+    }
+
     [Fact]
     public async Task GetAllByCaseAsync_ShouldProjectJobsAfterMaterialization()
     {

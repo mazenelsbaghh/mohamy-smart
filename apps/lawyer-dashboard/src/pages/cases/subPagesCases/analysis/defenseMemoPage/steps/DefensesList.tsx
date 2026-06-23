@@ -131,7 +131,7 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
  const lastAnnouncedAnalysisStateRef = useRef<string | null>(null);
  const handledCompletedAnalysisJobRef = useRef<string | null>(null);
  const hydratedParallelJobIds = useRef<Set<string>>(new Set());
- const parallelThunkRef = useRef<ReturnType<typeof dispatch> & { abort: () => void } | null>(null);
+ const parallelThunkRef = useRef<{ abort: (reason?: string) => void } | null>(null);
 
  const defenseAnalysisJobs = useAppSelector((state) => state.aiJobs.defenseAnalysisJobs);
  const parallelTracking = useAppSelector(
@@ -719,7 +719,7 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
    }));
    try {
      const thunkPromise = dispatch(thunkSubmitParallelDefenseAnalyses({ caseId, defenses }));
-     parallelThunkRef.current = thunkPromise as ReturnType<typeof dispatch> & { abort: () => void };
+     parallelThunkRef.current = thunkPromise;
      const result = await thunkPromise.unwrap();
      const defenseJobMap: Record<string, string> = {};
      for (const s of result.submitted) {
@@ -743,7 +743,7 @@ const DefensesList = ({ caseId, finalFacts, nextStep, onDefensesMutated }: TDefe
       parallelThunkRef.current.abort();
       parallelThunkRef.current = null;
     }
-    dispatch(clearParallelDefenseTracking());
+    dispatch(clearParallelDefenseTracking(undefined));
     sileo.success({ title: 'تم إيقاف تحليل الدفوع' });
   };
 

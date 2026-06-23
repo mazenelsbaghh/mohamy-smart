@@ -520,13 +520,13 @@ const FinalNote = ({ caseId, isActiveTab }: { caseId?: string; isActiveTab?: boo
  }, [caseId]);
 
  const handleRetryAiMemo = useCallback(() => {
- if (!caseId) return;
+ if (!caseId || isGenerating) return;
  setRepeatIntent('RetryAfterFailure');
  setIsRegenConfirmOpen(true);
- }, [caseId]);
+ }, [caseId, isGenerating]);
 
  const performRegenerateAiMemo = useCallback(() => {
- if (!caseId) return;
+ if (!caseId || isGenerating) return;
  setIsRegenConfirmOpen(false);
  setGenerationError(null);
  const inputJson = buildAiInputJson();
@@ -537,7 +537,7 @@ const FinalNote = ({ caseId, isActiveTab }: { caseId?: string; isActiveTab?: boo
  repeatIntent,
  confirmationAcceptedAt: new Date().toISOString(),
  }));
- }, [dispatch, caseId, buildAiInputJson, repeatIntent]);
+ }, [dispatch, caseId, buildAiInputJson, repeatIntent, isGenerating]);
 
   // Reset the auto-submit flag when user navigates away from this tab
   // so the modal re-opens when they return
@@ -708,7 +708,8 @@ const handleInput = () => {
  <p>{generationError}</p>
  <button
  onClick={handleRetryAiMemo}
- className="mt-2 px-3 py-1.5 bg-[var(--danger-soft)] dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 rounded text-sm font-medium transition-colors"
+ disabled={isGenerating}
+ className="mt-2 px-3 py-1.5 bg-[var(--danger-soft)] dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 rounded text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
  >
  إعادة المحاولة
  </button>
