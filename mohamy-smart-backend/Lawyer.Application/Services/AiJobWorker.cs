@@ -177,6 +177,8 @@ namespace Lawyer.Application.Services
 
                 job.Status = AiJobStatus.Completed;
                 job.ResultJson = resultJson;
+                job.ErrorCode = null;
+                job.ErrorMessage = null;
                 job.CompletedAt = DateTime.UtcNow;
                 if (lawyerId != Guid.Empty)
                 {
@@ -199,7 +201,7 @@ namespace Lawyer.Application.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "AiJobWorker: Job {JobId} ({StepType}) failed.", jobId, job.StepType);
-                await PersistJobFailureAsync(jobId, GenericFailureMessage, ct);
+                await PersistJobFailureAsync(jobId, GenericFailureMessage, ClassifyFailure(ex), ct);
                 throw;
             }
         }
@@ -460,7 +462,21 @@ namespace Lawyer.Application.Services
             return JsonSerializer.Serialize(result.Data, _jsonOptions);
         }
 
-        private async Task PersistJobFailureAsync(Guid jobId, string errorMessage, CancellationToken ct)
+        private static string ClassifyFailure(Exception exception)
+        {
+            var details = exception.ToString();
+            if (exception is TimeoutException or OperationCanceledException || details.Contains("timed out", StringComparison.OrdinalIgnoreCase))
+                return "ProviderTimeout";
+            if (exception is HttpRequestException || details.Contains("network", StringComparison.OrdinalIgnoreCase))
+                return "ProviderNetworkError";
+            if (exception is JsonException || details.Contains("unexpected response", StringComparison.OrdinalIgnoreCase) || details.Contains("invalid response", StringComparison.OrdinalIgnoreCase) || details.Contains("empty response", StringComparison.OrdinalIgnoreCase))
+                return "InvalidProviderResponse";
+            if (details.Contains("provider", StringComparison.OrdinalIgnoreCase) || details.Contains("Gemini API error", StringComparison.OrdinalIgnoreCase))
+                return "ProviderError";
+            return "AiProcessingFailed";
+        }
+
+        private async Task PersistJobFailureAsync(Guid jobId, string errorMessage, string errorCode, CancellationToken ct)
         {
             var dbContext = (DbContext)_db;
             dbContext.ChangeTracker.Clear();
@@ -479,6 +495,7 @@ namespace Lawyer.Application.Services
             }
 
             job.Status = AiJobStatus.Failed;
+            job.ErrorCode = errorCode;
             job.ErrorMessage = errorMessage;
             job.CompletedAt = DateTime.UtcNow;
             var lawyerId = await GetLawyerGuidForCaseAsync(job.CaseId, ct);

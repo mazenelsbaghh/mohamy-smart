@@ -142,6 +142,25 @@ namespace Lawyer.Application.Services.AI
                     model, usage?.TotalTokens ?? 0);
                 return Result<AIResponse>.Success(new AIResponse(content, usage));
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogError(ex, "Gemini API request timed out");
+                return Result<AIResponse>.Error(System.Net.HttpStatusCode.GatewayTimeout, "AI provider request timed out.");
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "Gemini API network request failed");
+                return Result<AIResponse>.Error(System.Net.HttpStatusCode.BadGateway, "AI provider network request failed.");
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Gemini API returned invalid JSON");
+                return Result<AIResponse>.Error(System.Net.HttpStatusCode.BadGateway, "AI provider returned an invalid response.");
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error calling Gemini API");

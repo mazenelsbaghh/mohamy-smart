@@ -59,6 +59,60 @@ public class AiJobWorkerErrorHandlingTests
     }
 
     [Fact]
+    public async Task ProductionRegression_20260623_SuccessfulRetry_ClearsPreviousFailureDetails()
+    {
+        using var fixture = new AiJobWorkerTestFixture();
+        var caseId = Guid.NewGuid();
+        var job = await fixture.SeedJobAsync(AiStepType.ExecRequestDrafting, caseId);
+        var workflow = await fixture.SeedExecRequestWorkflowAsync(caseId, "lawyer-1");
+        job.Status = AiJobStatus.Failed;
+        job.ErrorCode = "ProviderTimeout";
+        job.ErrorMessage = "previous failure";
+        await fixture.DbContext.SaveChangesAsync();
+        fixture.ExecRequestService
+            .Setup(x => x.RunStepAsync(
+                workflow.Id,
+                2,
+                It.IsAny<RunExecStepRequest>(),
+                workflow.LawyerId,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AiJobWorkerTestFixture.Success(new { drafted = true }));
+
+        await fixture.CreateSut().ProcessAsync(job.Id, "{\"drafting\":true}", CancellationToken.None);
+
+        var persisted = await fixture.DbContext.AiJobs.FindAsync(job.Id);
+        persisted!.Status.Should().Be(AiJobStatus.Completed);
+        persisted.ErrorCode.Should().BeNull();
+        persisted.ErrorMessage.Should().BeNull();
+        persisted.ResultJson.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public async Task ProductionRegression_20260623_ProviderTimeout_PersistsDiagnosticErrorCode()
+    {
+        using var fixture = new AiJobWorkerTestFixture();
+        var caseId = Guid.NewGuid();
+        var job = await fixture.SeedJobAsync(AiStepType.ExecRequestDrafting, caseId);
+        var workflow = await fixture.SeedExecRequestWorkflowAsync(caseId, "lawyer-1");
+        fixture.ExecRequestService
+            .Setup(x => x.RunStepAsync(
+                workflow.Id,
+                2,
+                It.IsAny<RunExecStepRequest>(),
+                workflow.LawyerId,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AiJobWorkerTestFixture.Failure("AI provider request timed out."));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            fixture.CreateSut().ProcessAsync(job.Id, "{\"drafting\":true}", CancellationToken.None));
+
+        var persisted = await fixture.DbContext.AiJobs.FindAsync(job.Id);
+        persisted!.Status.Should().Be(AiJobStatus.Failed);
+        persisted.ErrorCode.Should().Be("ProviderTimeout");
+        persisted.ErrorMessage.Should().Be("حدث خطأ أثناء معالجة الطلب عبر الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.");
+    }
+
+    [Fact]
     public async Task ProcessAsync_ShouldMarkJobAsConflict_WhenWorkflowConcurrencyExceptionRetriesExhaust()
     {
         using var fixture = new AiJobWorkerTestFixture();
