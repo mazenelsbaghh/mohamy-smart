@@ -108,6 +108,7 @@ namespace Lawyer.Application.Services.AI
         {
             private readonly IReadOnlyDictionary<string, IAIProvider> _providers;
             private readonly ILogger _logger;
+            private const int MaxRetries = 3;
 
             public FallbackAIProvider(IReadOnlyDictionary<string, IAIProvider> providers, ILogger logger)
             {
@@ -115,7 +116,7 @@ namespace Lawyer.Application.Services.AI
                 _logger = logger;
             }
 
-            public string ProviderName => "Fallback";
+            public string ProviderName => "Gemini (with retry)";
 
             public async Task<Result<AIResponse>> SendChatCompletionAsync(
                 string systemPrompt,
@@ -123,26 +124,42 @@ namespace Lawyer.Application.Services.AI
                 AIRequestOptions options,
                 CancellationToken cancellationToken)
             {
-                var orderedProviders = new[] { "Gemini", "OpenAI" };
+                if (!_providers.TryGetValue("Gemini", out var provider))
+                    return Result<AIResponse>.Error(HttpStatusCode.BadGateway, "Gemini provider is not configured");
+
                 Result<AIResponse>? lastResult = null;
 
-                foreach (var providerName in orderedProviders)
+                for (var attempt = 1; attempt <= MaxRetries; attempt++)
                 {
-                    if (!_providers.TryGetValue(providerName, out var provider))
-                        continue;
-
                     var result = await provider.SendChatCompletionAsync(systemPrompt, userPrompt, options, cancellationToken);
                     if (result.Succeeded)
                         return result;
 
                     lastResult = result;
-                    if (!IsTransient(result.StatusCode))
-                        break;
 
-                    _logger.LogWarning("AI provider {Provider} failed transiently ({StatusCode}); trying fallback provider.", provider.ProviderName, result.StatusCode);
+                    if (!IsTransient(result.StatusCode))
+                    {
+                        _logger.LogWarning("AI provider Gemini failed with non-transient error ({StatusCode}); will not retry.", result.StatusCode);
+                        break;
+                    }
+
+                    if (attempt < MaxRetries)
+                    {
+                        var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt)); // 2s, 4s, 8s
+                        _logger.LogWarning(
+                            "AI provider Gemini failed transiently ({StatusCode}); retrying in {Delay}s (attempt {Attempt}/{MaxRetries}).",
+                            result.StatusCode, delay.TotalSeconds, attempt, MaxRetries);
+                        await Task.Delay(delay, cancellationToken);
+                    }
+                    else
+                    {
+                        _logger.LogError(
+                            "AI provider Gemini failed after {MaxRetries} attempts ({StatusCode}).",
+                            MaxRetries, result.StatusCode);
+                    }
                 }
 
-                return lastResult ?? Result<AIResponse>.Error(HttpStatusCode.BadGateway, "No AI provider is available");
+                return lastResult ?? Result<AIResponse>.Error(HttpStatusCode.BadGateway, "Gemini provider is not available");
             }
 
             private static bool IsTransient(HttpStatusCode statusCode) =>
