@@ -182,7 +182,11 @@ namespace Lawyer.Application.Services
                     .Replace("{CUSTOM_CLAUSES}", string.IsNullOrWhiteSpace(request.CustomClauses)
                         ? "لا توجد بنود خاصة إضافية." : request.CustomClauses);
 
-                var step1Options = AIRequestOptions.ForContractDraft with { Model = step1Model };
+                var step1Options = AIRequestOptions.ForContractDraft with
+                {
+                    Model = step1Model,
+                    StepType = AiStepType.LegalContractAnalysis
+                };
                 var step1Result = await provider.SendChatCompletionAsync(
                     step1Prompt, "حلل المدخلات الآن واستخرج العناصر الأساسية.", step1Options, cancellationToken);
 
@@ -222,7 +226,11 @@ namespace Lawyer.Application.Services
             Result<AIResponse>? step2Result = null;
             string? draftContent = null;
             int attempt = 0;
-            var step2Options = AIRequestOptions.ForContractDraft with { Model = step2Model };
+            var step2Options = AIRequestOptions.ForContractDraft with
+            {
+                Model = step2Model,
+                StepType = AiStepType.LegalContractDraft
+            };
 
             while (attempt <= MaxRetryAttempts)
             {
@@ -293,7 +301,11 @@ namespace Lawyer.Application.Services
                     .Replace("{STEP1_ANALYSIS}", step1Analysis)
                     .Replace("{STEP2_DRAFT}", draftContent);
 
-                var step3Options = AIRequestOptions.ForContractDraft with { Model = step3Model };
+                var step3Options = AIRequestOptions.ForContractDraft with
+                {
+                    Model = step3Model,
+                    StepType = AiStepType.LegalContractReview
+                };
                 var step3Result = await provider.SendChatCompletionAsync(
                     step3Prompt, "راجع العقد الآن وأخرج النسخة النهائية المحسنة.", step3Options, cancellationToken);
 

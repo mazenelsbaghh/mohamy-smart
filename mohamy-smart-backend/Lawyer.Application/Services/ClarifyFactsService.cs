@@ -103,7 +103,8 @@ namespace Lawyer.Application.Services
                     {
                         Temperature = 0.1f,
                         MaxTokens = AIRequestOptions.GeminiMaxOutputTokens,
-                        Model = model
+                        Model = model,
+                        StepType = AiStepType.ClarifyFacts
                     },
                     cancellationToken);
 

@@ -122,7 +122,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
                     var aiResult = await aiProvider.SendChatCompletionAsync(
                         systemPrompt,
                         request.Message,
-                        AIRequestOptions.Default with { Model = chatModel },
+                        AIRequestOptions.Default with { Model = chatModel, StepType = AiStepType.Chat },
                         cancellationToken);
 
                     var messages = new List<ChatMessageDto>

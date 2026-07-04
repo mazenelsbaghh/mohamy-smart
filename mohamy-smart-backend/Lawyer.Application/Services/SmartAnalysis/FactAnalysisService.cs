@@ -133,7 +133,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 var aiResult = await aiProvider.SendChatCompletionAsync(
                     finalPrompt,
                     "Analyze the case documents mapped above and produce the requested JSON based on the specified format and rules.",
-                    AIRequestOptions.ForAnalysis with { Model = analysisModel },
+                    AIRequestOptions.ForAnalysis with { Model = analysisModel, StepType = AiStepType.FactAnalysis },
                     cancellationToken);
 
                 if (!aiResult.Succeeded || string.IsNullOrWhiteSpace(aiResult.Data?.Content))

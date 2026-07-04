@@ -1,4 +1,5 @@
 using Lawyer.Core.Exceptions;
+using Lawyer.Core.Enum;
 
 namespace Lawyer.Application.IServices.AI
 {
@@ -41,6 +42,7 @@ namespace Lawyer.Application.IServices.AI
         public float Temperature { get; init; } = 0.1f;
         public int MaxTokens { get; init; } = GeminiMaxOutputTokens;
         public string? Model { get; init; } // Optional: override default model
+        public AiStepType? StepType { get; init; }
 
         public static AIRequestOptions Default => new();
 

@@ -172,7 +172,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
         var aiResult = await aiProvider.SendChatCompletionAsync(
             systemPromptContent,
             finalPrompt,
-            AIRequestOptions.ForDefenses with { Model = defensesModel },
+            AIRequestOptions.ForDefenses with { Model = defensesModel, StepType = AiStepType.GenerateDefenses },
             cancellationToken);
 
         if (!aiResult.Succeeded || string.IsNullOrWhiteSpace(aiResult.Data?.Content))
@@ -352,7 +352,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 var aiResult = await aiProvider.SendChatCompletionAsync(
                     systemPromptContent,
                     finalPrompt,
-                    AIRequestOptions.ForDefenseAnalysis with { Model = defenseAnalysisModel },
+                    AIRequestOptions.ForDefenseAnalysis with { Model = defenseAnalysisModel, StepType = AiStepType.AnalysisDefense },
                     CancellationToken.None);
 
                 if (!aiResult.Succeeded || string.IsNullOrWhiteSpace(aiResult.Data?.Content))
@@ -621,7 +621,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
                 var aiResult = await aiProvider.SendChatCompletionAsync(
                     systemPromptContent,
                     finalPrompt,
-                    AIRequestOptions.ForFinalRequirements with { Model = finalReqModel },
+                    AIRequestOptions.ForFinalRequirements with { Model = finalReqModel, StepType = AiStepType.FinalRequirements },
                     cancellationToken);
 
                 if (!aiResult.Succeeded || string.IsNullOrWhiteSpace(aiResult.Data?.Content))
@@ -1100,7 +1100,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
             var aiResult = await aiProvider.SendChatCompletionAsync(
                 systemPrompt,
                 BuildDefenseMemoFrameUserPrompt(request),
-                AIRequestOptions.ForAnalysis with { Model = memoModel },
+                AIRequestOptions.ForAnalysis with { Model = memoModel, StepType = AiStepType.DefenseMemoDraft },
                 ct);
 
             if (!aiResult.Succeeded || string.IsNullOrWhiteSpace(aiResult.Data?.Content))
@@ -1195,7 +1195,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
             var aiResult = await aiProvider.SendChatCompletionAsync(
                 systemPrompt,
                 BuildSingleDefenseMemoUserPrompt(request, defense, sourceIndex),
-                AIRequestOptions.ForAnalysis with { Model = memoModel },
+                AIRequestOptions.ForAnalysis with { Model = memoModel, StepType = AiStepType.DefenseMemoDraft },
                 ct);
 
             if (!aiResult.Succeeded || string.IsNullOrWhiteSpace(aiResult.Data?.Content))

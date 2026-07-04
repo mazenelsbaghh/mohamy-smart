@@ -169,7 +169,7 @@ namespace Lawyer.Application.Services
                 var aiResult = await aiProvider.SendChatCompletionAsync(
                     systemPromptContent,
                     finalPrompt,
-                    AIRequestOptions.ForAnalysis with { Model = caseTypeModel },
+                    AIRequestOptions.ForAnalysis with { Model = caseTypeModel, StepType = AiStepType.LawsuitCaseType },
                     cancellationToken);
 
                 if (!aiResult.Succeeded || aiResult.Data == null || string.IsNullOrWhiteSpace(aiResult.Data.Content))
@@ -323,7 +323,7 @@ namespace Lawyer.Application.Services
                 var aiResult = await aiProvider.SendChatCompletionAsync(
                     systemPromptContent,
                     finalPrompt,
-                    AIRequestOptions.ForAnalysis with { Model = partiesModel },
+                    AIRequestOptions.ForAnalysis with { Model = partiesModel, StepType = AiStepType.LawsuitParties },
                     cancellationToken);
 
                 if (!aiResult.Succeeded || aiResult.Data == null || string.IsNullOrWhiteSpace(aiResult.Data.Content))
@@ -489,7 +489,7 @@ namespace Lawyer.Application.Services
                 var aiResult = await aiProvider.SendChatCompletionAsync(
                     systemPromptContent,
                     finalPrompt,
-                    AIRequestOptions.ForAnalysis with { Model = subjectsModel },
+                    AIRequestOptions.ForAnalysis with { Model = subjectsModel, StepType = AiStepType.LawsuitSubjects },
                     cancellationToken);
 
                 if (!aiResult.Succeeded || aiResult.Data == null || string.IsNullOrWhiteSpace(aiResult.Data.Content))
@@ -655,7 +655,7 @@ namespace Lawyer.Application.Services
                 var aiResult = await aiProvider.SendChatCompletionAsync(
                     systemPromptContent,
                     finalPrompt,
-                    AIRequestOptions.ForAnalysis with { Model = factsModel },
+                    AIRequestOptions.ForAnalysis with { Model = factsModel, StepType = AiStepType.LawsuitFacts },
                     cancellationToken);
 
                 if (!aiResult.Succeeded || aiResult.Data == null || string.IsNullOrWhiteSpace(aiResult.Data.Content))
@@ -799,7 +799,7 @@ namespace Lawyer.Application.Services
                 var aiResult = await aiProvider.SendChatCompletionAsync(
                     systemPromptContent,
                     finalPrompt,
-                    AIRequestOptions.ForAnalysis with { Model = legalBasisModel },
+                    AIRequestOptions.ForAnalysis with { Model = legalBasisModel, StepType = AiStepType.LawsuitLegalBasis },
                     cancellationToken);
 
                 if (!aiResult.Succeeded || aiResult.Data == null || string.IsNullOrWhiteSpace(aiResult.Data.Content))
@@ -1000,7 +1000,7 @@ namespace Lawyer.Application.Services
                 var aiResult = await aiProvider.SendChatCompletionAsync(
                     systemPromptContent,
                     finalPrompt,
-                    AIRequestOptions.ForAnalysis with { Model = requestsModel },
+                    AIRequestOptions.ForAnalysis with { Model = requestsModel, StepType = AiStepType.LawsuitRequests },
                     cancellationToken);
 
                 if (!aiResult.Succeeded || aiResult.Data == null || string.IsNullOrWhiteSpace(aiResult.Data.Content))

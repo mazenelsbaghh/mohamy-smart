@@ -1,4 +1,5 @@
 using Lawyer.Application.IServices.AI;
+using Lawyer.Core.Enum;
 using Lawyer.Core.Exceptions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -54,9 +55,10 @@ namespace Lawyer.Application.Services.AI
                 var model = options.Model ?? _defaultModel;
                 var endpoint = $"{ApiBaseUrl}/{model}:generateContent?key={_apiKey}";
 
-                var requestBody = new
+                var useGoogleSearch = ShouldUseGoogleSearch(options.StepType);
+                var requestBody = new Dictionary<string, object>
                 {
-                    contents = new[]
+                    ["contents"] = new[]
                     {
                         new
                         {
@@ -66,7 +68,7 @@ namespace Lawyer.Application.Services.AI
                             }
                         }
                     },
-                    generationConfig = new
+                    ["generationConfig"] = new
                     {
                         temperature = options.Temperature,
                         maxOutputTokens = options.MaxTokens,
@@ -74,7 +76,7 @@ namespace Lawyer.Application.Services.AI
                         topK = 40,
 
                     },
-                    safetySettings = new[]
+                    ["safetySettings"] = new[]
                     {
                         // BLOCK_ONLY_HIGH: only block clearly harmful content.
                         // Legal cases legitimately discuss crimes, disputes, assault, etc.
@@ -83,17 +85,22 @@ namespace Lawyer.Application.Services.AI
                         new { category = "HARM_CATEGORY_HATE_SPEECH", threshold = "BLOCK_ONLY_HIGH" },
                         new { category = "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold = "BLOCK_ONLY_HIGH" },
                         new { category = "HARM_CATEGORY_DANGEROUS_CONTENT", threshold = "BLOCK_ONLY_HIGH" }
-                    },
-                    tools = new[]
-                    {
-                        new { googleSearch = new { } }
                     }
                 };
+
+                if (useGoogleSearch)
+                {
+                    requestBody["tools"] = new[]
+                    {
+                        new { googleSearch = new { } }
+                    };
+                }
 
                 var jsonContent = JsonSerializer.Serialize(requestBody, Common.JsonOptions.Serialize);
                 var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-                _logger.LogInformation("Sending request to Gemini API with model: {Model}", model);
+                _logger.LogInformation("Sending request to Gemini API with model: {Model}, step: {StepType}, googleSearch: {GoogleSearch}",
+                    model, options.StepType, useGoogleSearch);
 
                 var response = await client.PostAsync(endpoint, httpContent, cancellationToken);
 
@@ -167,5 +174,19 @@ namespace Lawyer.Application.Services.AI
                 return Result<AIResponse>.Error(System.Net.HttpStatusCode.InternalServerError, "An error occurred while calling the AI provider. Please try again later.");
             }
         }
+
+        private static bool ShouldUseGoogleSearch(AiStepType? stepType) => stepType is
+            AiStepType.Chat or
+            AiStepType.GenerateDefenses or
+            AiStepType.AnalysisDefense or
+            AiStepType.LawsuitLegalBasis or
+            AiStepType.AppealBriefGrounds or
+            AiStepType.AppealBriefLegalBasis or
+            AiStepType.AdminComplaintViolation or
+            AiStepType.RulingAnalysisReasoning or
+            AiStepType.RulingAnalysisDefectEvaluation or
+            AiStepType.RulingAnalysisFeasibilityReport or
+            AiStepType.LegalWarningClassification or
+            AiStepType.LegalContractReview;
     }
 }

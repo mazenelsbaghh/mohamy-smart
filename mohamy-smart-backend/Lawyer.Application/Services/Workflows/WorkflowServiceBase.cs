@@ -560,7 +560,11 @@ namespace Lawyer.Application.Services.Workflows
 
                 var stepType = GetStepType(stepNumber);
                 var model = await _aiProviderFactory.GetModelForStepAsync(stepType);
-                var aiResult = await _aiProviderFactory.GetProvider().SendChatCompletionAsync(systemPrompt, userPrompt, AIRequestOptions.ForAnalysis with { Model = model }, ct);
+                var aiResult = await _aiProviderFactory.GetProvider().SendChatCompletionAsync(
+                    systemPrompt,
+                    userPrompt,
+                    AIRequestOptions.ForAnalysis with { Model = model, StepType = stepType },
+                    ct);
 
                 if (!aiResult.Succeeded || aiResult.Data == null || string.IsNullOrWhiteSpace(aiResult.Data.Content)) return Result<object>.Error(HttpStatusCode.InternalServerError, $"فشل في تنفيذ الخطوة {stepNumber}");
 
