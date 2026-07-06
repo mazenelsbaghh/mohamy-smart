@@ -62,7 +62,9 @@ namespace Lawyer.Application.Services
             string? workflowType,
             CancellationToken ct)
         {
-            var cost = ResolvePointCost(stepType);
+            var cost = await ResolveEffectivePointCostAsync(
+                new PointCostScope(lawyerId, stepType, runId, workflowType, null),
+                ct);
 
             var balanceResult = await GetCurrentBalanceAsync(lawyerId, ct);
             if (!balanceResult.Succeeded || balanceResult.Data == null)
@@ -78,6 +80,66 @@ namespace Lawyer.Application.Services
             }
 
             return balanceResult;
+        }
+
+        public async Task<Result<AiChargeMetadataDto>> ReserveJobStartAsync(AiJob job, Guid lawyerId, CancellationToken ct)
+        {
+            var effectiveCost = await ResolveEffectivePointCostAsync(PointCostScope.ForJob(lawyerId, job), ct);
+            job.PointCost = effectiveCost;
+
+            if (effectiveCost <= 0)
+            {
+                job.ChargeState = AiChargeState.NoCharge;
+                job.ChargedPoints = 0;
+                job.ChargeReason = string.IsNullOrWhiteSpace(job.RunId)
+                    ? "هذا الطلب لا يستهلك نقاطًا."
+                    : "تم احتساب نقطة لهذا المسار من قبل.";
+                await _db.SaveChangesAsync(ct);
+                return Result<AiChargeMetadataDto>.Success(BuildChargeMetadata(job));
+            }
+
+            if (job.ChargeState == AiChargeState.Held || job.ChargeState == AiChargeState.Charged)
+            {
+                return Result<AiChargeMetadataDto>.Success(BuildChargeMetadata(job));
+            }
+
+            var subscription = await GetActiveSubscriptionAsync(lawyerId, ct);
+            if (subscription == null)
+            {
+                return Result<AiChargeMetadataDto>.Error(
+                    HttpStatusCode.BadRequest,
+                    "لا يوجد اشتراك نشط لاستخدام ميزات الذكاء الاصطناعي.");
+            }
+
+            if (subscription.EndDate < DateTime.UtcNow)
+            {
+                subscription.IsActive = false;
+                await _db.SaveChangesAsync(ct);
+                return Result<AiChargeMetadataDto>.Error(
+                    HttpStatusCode.BadRequest,
+                    "انتهى الاشتراك الحالي. يرجى تجديد الاشتراك لاستخدام ميزات الذكاء الاصطناعي.");
+            }
+
+            await SyncUsedRequestsFromTransactionsAsync(subscription, ct);
+
+            var limit = subscription.GetEffectiveAiRequestsLimit();
+            if (subscription.UsedAiRequests + effectiveCost > limit)
+            {
+                return Result<AiChargeMetadataDto>.Error(
+                    HttpStatusCode.PaymentRequired,
+                    "رصيد النقاط غير كافٍ لتشغيل هذا الطلب.");
+            }
+
+            var before = subscription.UsedAiRequests;
+            subscription.UsedAiRequests += effectiveCost;
+            job.ChargeState = AiChargeState.Held;
+            job.ChargedPoints = 0;
+            job.ChargeReason = $"تم حجز {FormatPoints(effectiveCost)} لحين اكتمال الطلب.";
+
+            AddHoldTransaction(subscription, job, effectiveCost, before);
+
+            await _db.SaveChangesAsync(ct);
+            return Result<AiChargeMetadataDto>.Success(BuildChargeMetadata(job, ToBalance(subscription)));
         }
 
         public async Task<Result<AiPointBalanceDto>> ChargeSuccessfulDirectActionAsync(
@@ -200,6 +262,47 @@ namespace Lawyer.Application.Services
                 return Result<AiChargeMetadataDto>.Success(BuildChargeMetadata(job));
             }
 
+            if (job.ChargeState == AiChargeState.Pending)
+            {
+                var effectiveCost = await ResolveEffectivePointCostAsync(PointCostScope.ForJob(lawyerId, job), ct);
+                if (effectiveCost <= 0)
+                {
+                    job.ChargeState = AiChargeState.NoCharge;
+                    job.ChargedPoints = 0;
+                    job.ChargeReason = "تم احتساب نقطة لهذا المسار من قبل.";
+                    var subscriptionForNoCharge = await GetActiveSubscriptionAsync(lawyerId, ct);
+                    if (subscriptionForNoCharge != null)
+                    {
+                        await AddTransactionAsync(subscriptionForNoCharge, job, AiPointTransactionType.NoCharge, 0, AiPointReasonCode.Success, job.ChargeReason, ct);
+                    }
+                    await _db.SaveChangesAsync(ct);
+                    return Result<AiChargeMetadataDto>.Success(BuildChargeMetadata(job, subscriptionForNoCharge == null ? null : ToBalance(subscriptionForNoCharge)));
+                }
+            }
+
+            if (job.ChargeState == AiChargeState.Held)
+            {
+                var heldSubscription = await GetActiveSubscriptionAsync(lawyerId, ct);
+                var holdTransaction = await _db.AiPointTransactions
+                    .Where(t => t.AiJobId == job.Id && t.TransactionType == AiPointTransactionType.Hold)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .FirstOrDefaultAsync(ct);
+
+                if (holdTransaction != null)
+                {
+                    holdTransaction.TransactionType = AiPointTransactionType.Charge;
+                    holdTransaction.ReasonCode = AiPointReasonCode.Success;
+                    holdTransaction.MessageAr = $"تم خصم {FormatPoints(job.PointCost)} بعد اكتمال الطلب بنجاح.";
+                }
+
+                job.ChargeState = AiChargeState.Charged;
+                job.ChargedPoints = job.PointCost;
+                job.ChargedAt = DateTime.UtcNow;
+                job.ChargeReason = $"تم خصم {FormatPoints(job.PointCost)} بعد اكتمال الطلب بنجاح.";
+                await _db.SaveChangesAsync(ct);
+                return Result<AiChargeMetadataDto>.Success(BuildChargeMetadata(job, heldSubscription == null ? null : ToBalance(heldSubscription)));
+            }
+
 
 
             var existingCharge = await _db.AiPointTransactions
@@ -271,6 +374,11 @@ namespace Lawyer.Application.Services
                 return Result<AiChargeMetadataDto>.Success(BuildChargeMetadata(job));
             }
 
+            if (job.ChargeState == AiChargeState.Held)
+            {
+                return await RestoreHoldAsync(job, lawyerId, reasonCode, messageAr, ct);
+            }
+
             job.ChargeState = AiChargeState.NoCharge;
             job.ChargedPoints = 0;
             job.ChargeReason = messageAr;
@@ -287,6 +395,11 @@ namespace Lawyer.Application.Services
 
         public async Task<Result<AiChargeMetadataDto>> RestoreHoldAsync(AiJob job, Guid lawyerId, AiPointReasonCode reasonCode, string messageAr, CancellationToken ct)
         {
+            if (job.ChargeState == AiChargeState.Restored || job.ChargeState == AiChargeState.NoCharge)
+            {
+                return Result<AiChargeMetadataDto>.Success(BuildChargeMetadata(job));
+            }
+
             job.ChargeState = AiChargeState.Restored;
             job.ChargedPoints = 0;
             job.ChargeReason = messageAr;
@@ -294,7 +407,20 @@ namespace Lawyer.Application.Services
             var subscription = await GetActiveSubscriptionAsync(lawyerId, ct);
             if (subscription != null)
             {
-                await AddTransactionAsync(subscription, job, AiPointTransactionType.Restore, job.PointCost, reasonCode, messageAr, ct);
+                var hasHold = await _db.AiPointTransactions
+                    .AsNoTracking()
+                    .AnyAsync(t => t.AiJobId == job.Id && t.TransactionType == AiPointTransactionType.Hold, ct);
+                var hasRestore = await _db.AiPointTransactions
+                    .AsNoTracking()
+                    .AnyAsync(t => t.AiJobId == job.Id && t.TransactionType == AiPointTransactionType.Restore, ct);
+
+                if (hasHold && !hasRestore)
+                {
+                    var before = subscription.UsedAiRequests;
+                    subscription.UsedAiRequests = Math.Max(0, subscription.UsedAiRequests - job.PointCost);
+
+                    AddRestoreTransaction(subscription, job, before, reasonCode);
+                }
             }
 
             await _db.SaveChangesAsync(ct);
@@ -365,6 +491,45 @@ namespace Lawyer.Application.Services
                 .FirstOrDefaultAsync(ct);
         }
 
+        private async Task<int> ResolveEffectivePointCostAsync(PointCostScope scope, CancellationToken ct)
+        {
+            var cost = ResolvePointCost(scope.StepType);
+            if (cost <= 0 || string.IsNullOrWhiteSpace(scope.RunId))
+            {
+                return cost;
+            }
+
+            var existingRunCharge = _db.AiPointTransactions
+                .AsNoTracking()
+                .Where(t => t.LawyerId == scope.LawyerId
+                            && t.WorkflowRunId == scope.RunId
+                            && (t.TransactionType == AiPointTransactionType.Charge ||
+                                t.TransactionType == AiPointTransactionType.Hold));
+
+            if (!string.IsNullOrWhiteSpace(scope.WorkflowType))
+            {
+                existingRunCharge = existingRunCharge.Where(t => t.WorkflowType == scope.WorkflowType || t.WorkflowType == null);
+            }
+
+            if (scope.CurrentJobId.HasValue)
+            {
+                existingRunCharge = existingRunCharge.Where(t => t.AiJobId != scope.CurrentJobId.Value);
+            }
+
+            return await existingRunCharge.AnyAsync(ct) ? 0 : cost;
+        }
+
+        private readonly record struct PointCostScope(
+            Guid LawyerId,
+            AiStepType StepType,
+            string? RunId,
+            string? WorkflowType,
+            Guid? CurrentJobId)
+        {
+            public static PointCostScope ForJob(Guid lawyerId, AiJob job) =>
+                new(lawyerId, job.StepType, job.RunId, job.WorkflowType, job.Id);
+        }
+
         private async Task AddTransactionAsync(
             LawyerSubscription subscription,
             AiJob job,
@@ -396,6 +561,50 @@ namespace Lawyer.Application.Services
             });
         }
 
+        private void AddHoldTransaction(LawyerSubscription subscription, AiJob job, int points, int balanceBefore)
+        {
+            _db.AiPointTransactions.Add(new AiPointTransaction
+            {
+                LawyerId = subscription.LawyerId,
+                LawyerSubscriptionId = subscription.Id,
+                AiJobId = job.Id,
+                CaseId = job.CaseId,
+                WorkflowType = job.WorkflowType,
+                WorkflowRunId = job.RunId,
+                StepType = job.StepType,
+                TransactionType = AiPointTransactionType.Hold,
+                Points = points,
+                BalanceBefore = balanceBefore,
+                BalanceAfter = subscription.UsedAiRequests,
+                ReasonCode = AiPointReasonCode.Success,
+                MessageAr = job.ChargeReason ?? string.Empty
+            });
+        }
+
+        private void AddRestoreTransaction(
+            LawyerSubscription subscription,
+            AiJob job,
+            int balanceBefore,
+            AiPointReasonCode reasonCode)
+        {
+            _db.AiPointTransactions.Add(new AiPointTransaction
+            {
+                LawyerId = subscription.LawyerId,
+                LawyerSubscriptionId = subscription.Id,
+                AiJobId = job.Id,
+                CaseId = job.CaseId,
+                WorkflowType = job.WorkflowType,
+                WorkflowRunId = job.RunId,
+                StepType = job.StepType,
+                TransactionType = AiPointTransactionType.Restore,
+                Points = job.PointCost,
+                BalanceBefore = balanceBefore,
+                BalanceAfter = subscription.UsedAiRequests,
+                ReasonCode = reasonCode,
+                MessageAr = job.ChargeReason ?? string.Empty
+            });
+        }
+
         private async Task SyncUsedRequestsFromTransactionsAsync(LawyerSubscription subscription, CancellationToken ct)
         {
             var transactions = await _db.AiPointTransactions
@@ -410,9 +619,10 @@ namespace Lawyer.Application.Services
                 return;
             }
 
+            var held = transactions.FirstOrDefault(t => t.Type == AiPointTransactionType.Hold)?.Points ?? 0;
             var charged = transactions.FirstOrDefault(t => t.Type == AiPointTransactionType.Charge)?.Points ?? 0;
             var restored = transactions.FirstOrDefault(t => t.Type == AiPointTransactionType.Restore)?.Points ?? 0;
-            var syncedUsed = Math.Max(0, charged - restored);
+            var syncedUsed = Math.Max(0, charged + held - restored);
 
             if (subscription.UsedAiRequests == syncedUsed)
             {

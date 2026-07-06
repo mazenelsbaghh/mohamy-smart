@@ -225,6 +225,212 @@ public class AiPointAccountingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ReserveJobStartAsync_ShouldHoldPointBeforeAiExecution()
+    {
+        var lawyerId = Guid.NewGuid();
+        var subscription = new Subscription
+        {
+            Id = 201,
+            Name = "تجريبية",
+            AiRequestsLimit = 10,
+            DurationDays = 30
+        };
+        var lawyerSubscription = new LawyerSubscription
+        {
+            Id = Guid.NewGuid(),
+            LawyerId = lawyerId,
+            SubscriptionId = subscription.Id,
+            Subscription = subscription,
+            UsedAiRequests = 9,
+            StartDate = DateTime.UtcNow.AddDays(-1),
+            EndDate = DateTime.UtcNow.AddDays(10),
+            IsActive = true
+        };
+        var job = new AiJob
+        {
+            Id = Guid.NewGuid(),
+            CaseId = Guid.NewGuid(),
+            StepType = AiStepType.AnalysisDefense,
+            PointCost = 1,
+            ChargeState = AiChargeState.Pending
+        };
+
+        _dbContext.Subscriptions.Add(subscription);
+        _dbContext.LawyerSubscriptions.Add(lawyerSubscription);
+        _dbContext.AiJobs.Add(job);
+        await _dbContext.SaveChangesAsync();
+
+        var result = await _sut.ReserveJobStartAsync(job, lawyerId, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        job.ChargeState.Should().Be(AiChargeState.Held);
+
+        var dbSub = await _dbContext.LawyerSubscriptions.SingleAsync(s => s.Id == lawyerSubscription.Id);
+        dbSub.UsedAiRequests.Should().Be(10);
+
+        var hold = await _dbContext.AiPointTransactions.SingleAsync(t => t.AiJobId == job.Id);
+        hold.TransactionType.Should().Be(AiPointTransactionType.Hold);
+        hold.Points.Should().Be(1);
+        hold.BalanceBefore.Should().Be(9);
+        hold.BalanceAfter.Should().Be(10);
+    }
+
+    [Fact]
+    public async Task ReserveJobStartAsync_ShouldRejectWhenHeldPointsExhaustBalance()
+    {
+        var lawyerId = Guid.NewGuid();
+        var subscription = new Subscription
+        {
+            Id = 202,
+            Name = "تجريبية",
+            AiRequestsLimit = 10,
+            DurationDays = 30
+        };
+        var lawyerSubscription = new LawyerSubscription
+        {
+            Id = Guid.NewGuid(),
+            LawyerId = lawyerId,
+            SubscriptionId = subscription.Id,
+            Subscription = subscription,
+            UsedAiRequests = 10,
+            StartDate = DateTime.UtcNow.AddDays(-1),
+            EndDate = DateTime.UtcNow.AddDays(10),
+            IsActive = true
+        };
+        var job = new AiJob
+        {
+            Id = Guid.NewGuid(),
+            CaseId = Guid.NewGuid(),
+            StepType = AiStepType.AnalysisDefense,
+            PointCost = 1,
+            ChargeState = AiChargeState.Pending
+        };
+
+        _dbContext.Subscriptions.Add(subscription);
+        _dbContext.LawyerSubscriptions.Add(lawyerSubscription);
+        _dbContext.AiJobs.Add(job);
+        await _dbContext.SaveChangesAsync();
+
+        var result = await _sut.ReserveJobStartAsync(job, lawyerId, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.StatusCode.Should().Be(System.Net.HttpStatusCode.PaymentRequired);
+        job.ChargeState.Should().Be(AiChargeState.Pending);
+        (await _dbContext.AiPointTransactions.CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ChargeSuccessfulJobAsync_ShouldConvertHeldPointToChargeWithoutDoubleCounting()
+    {
+        var lawyerId = Guid.NewGuid();
+        var subscription = new Subscription
+        {
+            Id = 203,
+            Name = "تجريبية",
+            AiRequestsLimit = 10,
+            DurationDays = 30
+        };
+        var lawyerSubscription = new LawyerSubscription
+        {
+            Id = Guid.NewGuid(),
+            LawyerId = lawyerId,
+            SubscriptionId = subscription.Id,
+            Subscription = subscription,
+            UsedAiRequests = 0,
+            StartDate = DateTime.UtcNow.AddDays(-1),
+            EndDate = DateTime.UtcNow.AddDays(10),
+            IsActive = true
+        };
+        var job = new AiJob
+        {
+            Id = Guid.NewGuid(),
+            CaseId = Guid.NewGuid(),
+            StepType = AiStepType.AnalysisDefense,
+            PointCost = 1,
+            ChargeState = AiChargeState.Pending
+        };
+
+        _dbContext.Subscriptions.Add(subscription);
+        _dbContext.LawyerSubscriptions.Add(lawyerSubscription);
+        _dbContext.AiJobs.Add(job);
+        await _dbContext.SaveChangesAsync();
+        await _sut.ReserveJobStartAsync(job, lawyerId, CancellationToken.None);
+
+        var result = await _sut.ChargeSuccessfulJobAsync(job, lawyerId, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        job.ChargeState.Should().Be(AiChargeState.Charged);
+        job.ChargedPoints.Should().Be(1);
+
+        var dbSub = await _dbContext.LawyerSubscriptions.SingleAsync(s => s.Id == lawyerSubscription.Id);
+        dbSub.UsedAiRequests.Should().Be(1);
+
+        var transaction = await _dbContext.AiPointTransactions.SingleAsync(t => t.AiJobId == job.Id);
+        transaction.TransactionType.Should().Be(AiPointTransactionType.Charge);
+        transaction.Points.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task MarkNoChargeAsync_ShouldRestoreHeldPointOnFailure()
+    {
+        var lawyerId = Guid.NewGuid();
+        var subscription = new Subscription
+        {
+            Id = 204,
+            Name = "تجريبية",
+            AiRequestsLimit = 10,
+            DurationDays = 30
+        };
+        var lawyerSubscription = new LawyerSubscription
+        {
+            Id = Guid.NewGuid(),
+            LawyerId = lawyerId,
+            SubscriptionId = subscription.Id,
+            Subscription = subscription,
+            UsedAiRequests = 4,
+            StartDate = DateTime.UtcNow.AddDays(-1),
+            EndDate = DateTime.UtcNow.AddDays(10),
+            IsActive = true
+        };
+        var job = new AiJob
+        {
+            Id = Guid.NewGuid(),
+            CaseId = Guid.NewGuid(),
+            StepType = AiStepType.AnalysisDefense,
+            PointCost = 1,
+            ChargeState = AiChargeState.Pending
+        };
+
+        _dbContext.Subscriptions.Add(subscription);
+        _dbContext.LawyerSubscriptions.Add(lawyerSubscription);
+        _dbContext.AiJobs.Add(job);
+        await _dbContext.SaveChangesAsync();
+        await _sut.ReserveJobStartAsync(job, lawyerId, CancellationToken.None);
+
+        var result = await _sut.MarkNoChargeAsync(
+            job,
+            lawyerId,
+            AiPointReasonCode.Failed,
+            "لم يتم خصم أي نقاط لأن الطلب لم يكتمل بنجاح.",
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        job.ChargeState.Should().Be(AiChargeState.Restored);
+
+        var dbSub = await _dbContext.LawyerSubscriptions.SingleAsync(s => s.Id == lawyerSubscription.Id);
+        dbSub.UsedAiRequests.Should().Be(4);
+
+        var transactions = await _dbContext.AiPointTransactions
+            .Where(t => t.AiJobId == job.Id)
+            .ToListAsync();
+        transactions.Select(t => t.TransactionType).Should().BeEquivalentTo(
+            new[] { AiPointTransactionType.Hold, AiPointTransactionType.Restore });
+        var restore = transactions.Single(t => t.TransactionType == AiPointTransactionType.Restore);
+        restore.BalanceBefore.Should().Be(5);
+        restore.BalanceAfter.Should().Be(4);
+    }
+
+    [Fact]
     public async Task ValidateCanStartAsync_ShouldReturnSuccessWithCostZero_WhenRunAlreadyCharged()
     {
         // Arrange

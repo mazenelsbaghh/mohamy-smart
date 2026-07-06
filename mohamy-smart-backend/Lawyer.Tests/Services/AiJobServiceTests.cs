@@ -746,6 +746,64 @@ public class AiJobServiceTests
         allJobs.Should().HaveCount(2); // Verify we now have 2 jobs in the database (old one completed, new one queued)
     }
 
+    [Fact]
+    public async Task SubmitAsync_ShouldNotEnqueueJob_WhenAiPointBalanceIsExhausted()
+    {
+        await using var db = new AppDbContext(_dbOptions);
+        var lawyerId = Guid.NewGuid();
+        var caseId = Guid.NewGuid();
+        var subscription = new Subscription
+        {
+            Id = 3001,
+            Name = "تجريبية",
+            AiRequestsLimit = 10,
+            DurationDays = 30
+        };
+        var lawyerSubscription = new LawyerSubscription
+        {
+            Id = Guid.NewGuid(),
+            LawyerId = lawyerId,
+            SubscriptionId = subscription.Id,
+            Subscription = subscription,
+            UsedAiRequests = 10,
+            StartDate = DateTime.UtcNow.AddDays(-1),
+            EndDate = DateTime.UtcNow.AddDays(10),
+            IsActive = true
+        };
+
+        db.Subscriptions.Add(subscription);
+        db.LawyerSubscriptions.Add(lawyerSubscription);
+        db.Cases.Add(new Case
+        {
+            Id = caseId,
+            LawyerId = lawyerId,
+            Title = "Test Case",
+            Number = "123",
+            Court = "Test Court"
+        });
+        await db.SaveChangesAsync();
+
+        var hangfireMock = new Mock<IBackgroundJobClient>();
+        var notificationsMock = new Mock<IAiJobNotificationService>();
+        var accessMock = new Mock<ICaseAccessValidator>();
+        accessMock.Setup(x => x.ValidateAsync(caseId, "user123", false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Lawyer.Core.Exceptions.Result<bool> { Succeeded = true, Data = true, StatusCode = System.Net.HttpStatusCode.OK });
+
+        var sut = new AiJobService(db, hangfireMock.Object, notificationsMock.Object, accessMock.Object);
+
+        var result = await sut.SubmitAsync(
+            caseId,
+            new SubmitAiJobDto(AiStepType.AnalysisDefense, "{}", Guid.NewGuid().ToString(), null, null),
+            "user123",
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.StatusCode.Should().Be(System.Net.HttpStatusCode.PaymentRequired);
+        hangfireMock.Verify(x => x.Create(It.IsAny<Job>(), It.IsAny<IState>()), Times.Never);
+        (await db.AiJobs.CountAsync()).Should().Be(0);
+        (await db.AiPointTransactions.CountAsync()).Should().Be(0);
+    }
+
 
     private class SqlExceptionStub : Exception
     {

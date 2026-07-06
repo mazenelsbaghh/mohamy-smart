@@ -174,15 +174,15 @@ namespace Lawyer.Application.Services
                 if (!repeatValidation.Succeeded)
                     return Result<AiJobStatusDto>.Error(repeatValidation.StatusCode, repeatValidation.Message);
 
-                var availability = await _points.ValidateCanStartAsync(lawyerId, dto.StepType, dto.RunId, dto.WorkflowType, ct);
-                if (!availability.Succeeded)
-                    return Result<AiJobStatusDto>.Error(availability.StatusCode, availability.Message);
-
                 var job = CreateQueuedJob(caseId, dto.StepType, dto.RunId, dto.WorkflowType, dto.StepNumber);
                 job.ResultJson = retryCheckpointJson;
 
                 ApplyPointMetadata(job, dto);
                 _db.AiJobs.Add(job);
+
+                var reservation = await _points.ReserveJobStartAsync(job, lawyerId, ct);
+                if (!reservation.Succeeded)
+                    return Result<AiJobStatusDto>.Error(reservation.StatusCode, reservation.Message);
 
                 await _db.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
