@@ -275,7 +275,7 @@ namespace Lawyer.Application.Services.SmartAnalysis
             return sanitized.Trim();
         }
 
-        private async Task<List<InternalRegulation>> LoadSelectedInternalRegulationsAsync(Guid userId, IReadOnlyCollection<Guid> requestedIds, CancellationToken cancellationToken)
+        private async Task<List<InternalRegulation>> LoadSelectedInternalRegulationsAsync(Guid lawyerId, IReadOnlyCollection<Guid> requestedIds, CancellationToken cancellationToken)
         {
             var ids = requestedIds
                 .Where(id => id != Guid.Empty)
@@ -286,21 +286,21 @@ namespace Lawyer.Application.Services.SmartAnalysis
             if (ids.Count == 0)
                 return new List<InternalRegulation>();
 
-            var lawyerId = await _unitOfWork.Repository<Core.Models.Lawyer>()
+            var resolvedLawyerId = await _unitOfWork.Repository<Core.Models.Lawyer>()
                 .AsQueryable()
                 .AsNoTracking()
-                .Where(l => l.ApplicationUserId == userId)
+                .Where(l => l.Id == lawyerId || l.ApplicationUserId == lawyerId)
                 .Select(l => l.Id)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (lawyerId == Guid.Empty)
+            if (resolvedLawyerId == Guid.Empty)
                 return new List<InternalRegulation>();
 
             var regulations = await _unitOfWork.Repository<InternalRegulation>()
                 .AsQueryable()
                 .AsNoTracking()
                 .Where(regulation =>
-                    regulation.LawyerId == lawyerId &&
+                    regulation.LawyerId == resolvedLawyerId &&
                     regulation.IsActive &&
                     ids.Contains(regulation.Id))
                 .ToListAsync(cancellationToken);

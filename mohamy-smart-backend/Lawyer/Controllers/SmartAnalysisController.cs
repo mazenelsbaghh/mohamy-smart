@@ -2,6 +2,7 @@ using Lawyer.Application.Dtos.SmartAnalysis;
 using Lawyer.Application.Dtos.Workflows;
 using Lawyer.Application.IServices;
 using Lawyer.Controllers.Base;
+using Lawyer.Core.IRepositories;
 using Lawyer.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -22,6 +23,7 @@ namespace Lawyer.Controllers
         private readonly ICaseSummaryService _caseSummaryService;
         private readonly ISmartChatService _chatService;
         private readonly IDraftAutoSaveService _draftAutoSaveService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public SmartAnalysisController(
             ILogger<SmartAnalysisController> logger,
@@ -29,7 +31,8 @@ namespace Lawyer.Controllers
             IDefenseService defenseService,
             ICaseSummaryService caseSummaryService,
             ISmartChatService chatService,
-            IDraftAutoSaveService draftAutoSaveService)
+            IDraftAutoSaveService draftAutoSaveService,
+            IUnitOfWork unitOfWork)
         {
             _logger = logger;
             _factAnalysisService = factAnalysisService;
@@ -37,6 +40,7 @@ namespace Lawyer.Controllers
             _caseSummaryService = caseSummaryService;
             _chatService = chatService;
             _draftAutoSaveService = draftAutoSaveService;
+            _unitOfWork = unitOfWork;
         }
 
         private string GetUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
@@ -165,7 +169,12 @@ namespace Lawyer.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(Lawyer.Core.Exceptions.Result<string>.Error(System.Net.HttpStatusCode.Unauthorized, "User not authenticated."));
             
-            var result = await _chatService.ChatAsync(Guid.Parse(userId), dto, cancellationToken);
+            var lawyer = await _unitOfWork.Repository<Core.Models.Lawyer>()
+                .FirstOrDefaultAsync(l => l.ApplicationUserId == Guid.Parse(userId), cancellationToken);
+            if (lawyer == null)
+                return BadRequest(Lawyer.Core.Exceptions.Result<string>.Error(System.Net.HttpStatusCode.BadRequest, "Lawyer profile not found."));
+
+            var result = await _chatService.ChatAsync(lawyer.Id, dto, cancellationToken);
             return CreateResponse(result);
         }
 
