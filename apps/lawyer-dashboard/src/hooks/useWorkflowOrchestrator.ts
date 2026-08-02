@@ -653,6 +653,19 @@ export function useWorkflowOrchestrator<
     }
   }, [isAutoRunning, active, aiJobs.jobs, autoRunStepMap, maxSteps, handleAdvanceStage, onAutoRunStepCompleted, onAutoRunComplete, onAutoRunError, autoRunStorageKey, autoRunSkipSteps]);
 
+  useEffect(() => {
+    if (autoRunFailedStep === null || !autoRunStepMap) return;
+    const failedStepType = autoRunStepMap[autoRunFailedStep];
+    const retriedJob = (aiJobs.jobs as Record<string, { status?: string } | undefined>)[failedStepType];
+    if (retriedJob?.status !== 'Processing' && retriedJob?.status !== 'Completed') return;
+
+    setAutoRunFailedStep(null);
+    setIsAutoRunning(true);
+    if (autoRunStorageKey) {
+      localStorage.setItem(autoRunStorageKey, JSON.stringify({ active: true, ts: Date.now() }));
+    }
+  }, [aiJobs.jobs, autoRunFailedStep, autoRunStepMap, autoRunStorageKey]);
+
   // ── Auto-run: resume after refresh ────────────────────────────────────
   const autoRunResumedRef = useRef(false);
   useEffect(() => {

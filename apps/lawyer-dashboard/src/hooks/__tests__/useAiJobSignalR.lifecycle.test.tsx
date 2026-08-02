@@ -5,6 +5,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import type { ReactNode } from 'react';
 
 const eventHandlers: Record<string, (...args: unknown[]) => void> = {};
+let reconnectedHandler: (() => void) | undefined;
 
 vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:5000/api/v1');
 
@@ -16,6 +17,9 @@ vi.mock('@microsoft/signalr', () => {
     start: vi.fn().mockResolvedValue(undefined),
     stop: vi.fn().mockResolvedValue(undefined),
     invoke: vi.fn().mockResolvedValue(undefined),
+    onreconnected: vi.fn((handler: () => void) => {
+      reconnectedHandler = handler;
+    }),
     state: 'Connected',
   };
   return {
@@ -77,6 +81,7 @@ describe('useAiJobSignalR lifecycle', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     Object.keys(eventHandlers).forEach((key) => delete eventHandlers[key]);
+    reconnectedHandler = undefined;
   });
 
   it('completion event should update only matching runId and stepNumber', async () => {
@@ -156,7 +161,7 @@ describe('useAiJobSignalR lifecycle', () => {
     expect(state.aiJobs.jobs['FactAnalysis']).toBeUndefined();
   });
 
-  it('polls active jobs even when SignalR is connected', async () => {
+  it('active job is reconciled every five seconds even when SignalR is connected', async () => {
     vi.useFakeTimers();
     const caseId = 'case-456';
     const workflowCreatedAt = new Date().toISOString();
@@ -183,6 +188,12 @@ describe('useAiJobSignalR lifecycle', () => {
     const { unmount } = renderHook(() => useAiJobSignalR(caseId, true, workflowCreatedAt, 'run-123'), { wrapper });
 
     await act(async () => {
+      vi.advanceTimersByTime(100);
+      await Promise.resolve();
+    });
+    vi.mocked(thunkGetAllAiJobs).mockClear();
+
+    await act(async () => {
       vi.advanceTimersByTime(5000);
     });
 
@@ -194,5 +205,32 @@ describe('useAiJobSignalR lifecycle', () => {
 
     unmount();
     vi.useRealTimers();
+  });
+
+  it('reconnection reconciles jobs missed while the hub was unavailable', async () => {
+    const store = createTestStore('run-123');
+    const workflowCreatedAt = new Date().toISOString();
+    const { useAiJobSignalR } = await import('../useAiJobSignalR');
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <Provider store={store}>{children}</Provider>
+    );
+
+    renderHook(
+      () => useAiJobSignalR('case-456', true, workflowCreatedAt, 'run-123'),
+      { wrapper },
+    );
+
+    await vi.waitFor(() => expect(reconnectedHandler).toBeDefined());
+    vi.mocked(thunkGetAllAiJobs).mockClear();
+
+    await act(async () => {
+      reconnectedHandler?.();
+    });
+
+    expect(thunkGetAllAiJobs).toHaveBeenCalledWith({
+      caseId: 'case-456',
+      since: workflowCreatedAt,
+      runId: 'run-123',
+    });
   });
 });

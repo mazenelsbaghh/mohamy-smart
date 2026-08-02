@@ -369,6 +369,71 @@ describe('useWorkflowOrchestrator lifecycle', () => {
     });
   });
 
+  it('automatic retry resumes auto-run after a failed job starts processing again', async () => {
+    _adminComplaintOverrides = {
+      workflowId: 10,
+      currentAccessibleStep: 1,
+      runId: 'run-retry-1',
+      outputs: {},
+      status: 'InProgress',
+    };
+    const failedJob = {
+      id: 'job-retry-1',
+      caseId: 'case-123',
+      stepType: 'GenerateDefenses',
+      status: 'Failed',
+      resultJson: null,
+      errorMessage: 'Temporary model response failure',
+      createdAt: new Date().toISOString(),
+      completedAt: null,
+      runId: 'run-retry-1',
+    };
+    _aiJobsOverrides = { jobs: { GenerateDefenses: failedJob }, activeRunId: 'run-retry-1' };
+
+    const store = makeStore();
+    const { useWorkflowOrchestrator } = await import('../useWorkflowOrchestrator');
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/workflows/admin-complaint/case-123']}>
+          <Routes>
+            <Route path="/workflows/admin-complaint/:id" element={children} />
+          </Routes>
+        </MemoryRouter>
+      </Provider>
+    );
+
+    const { result, rerender } = renderHook(
+      () => useWorkflowOrchestrator({
+        sliceSelector,
+        thunks: mockThunks as unknown as import('../useWorkflowOrchestrator').IWorkflowThunks,
+        restoreSnapshot: vi.fn(),
+        resetWorkflow: () => ({ type: 'test/resetWorkflow' }),
+        workflowPrefix: 'adminComplaint',
+        maxSteps: 2,
+        steps: [{ id: 1, label: 'Step 1', icon: null }],
+        autoRunStepMap: { 1: 'GenerateDefenses' },
+      }),
+      { wrapper },
+    );
+
+    act(() => {
+      result.current.setActive(1);
+      result.current.startAutoRun(1);
+    });
+    await vi.waitFor(() => expect(result.current.autoRunFailedStep).toBe(1));
+
+    _aiJobsOverrides = {
+      jobs: { GenerateDefenses: { ...failedJob, status: 'Processing' } },
+      activeRunId: 'run-retry-1',
+    };
+    rerender();
+
+    await vi.waitFor(() => {
+      expect(result.current.autoRunFailedStep).toBeNull();
+      expect(result.current.isAutoRunning).toBe(true);
+    });
+  });
+
   it('resume should hydrate saved stage instead of applying stale cached tabs', async () => {
     _adminComplaintOverrides = {
       workflowId: 10,
