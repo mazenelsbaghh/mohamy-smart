@@ -84,8 +84,6 @@ type DefenseMemoSnapshot = {
  id: string;
  createdAt: string;
  memoHtml: string;
- markdown: string;
- outputs?: Record<string, unknown>;
  currentStep?: number;
  lastSavedAt?: string | null;
 };
@@ -127,45 +125,12 @@ const stripHtmlTags = (html: string): string => {
  return tmp.textContent || tmp.innerText ||'';
 };
 
-const markdownEscape = (value: string | undefined | null) => (value || '').trim();
 const normalizeMemoCourtName = (value: string | undefined | null) => {
  const trimmed = (value ||'').trim();
  return trimmed ==='بدون محكمة' ?'' : trimmed;
 };
 
-const buildMarkdown = (summary: TSummary, memoHtml: string): string => {
- const facts = summary?.factAnalysis?.legalFactsSummary || [];
- const defenses = summary?.defenses ? [
- ...(summary.defenses.defensesFormal || []),
- ...(summary.defenses.defensesSubstantive || []),
- ...(summary.defenses.defensesEvidentiary || []),
- ] : [];
- const requests = summary?.finalRequirements?.finalPrayers || [];
- return [
- `# مذكرة دفاع${summary?.caseNumber ? ` - ${summary.caseNumber}` : ''}`,
- '',
- '## الوقائع',
- facts.length ? facts.map((fact) => `- ${markdownEscape(fact)}`).join('\n') : markdownEscape(stripHtmlTags(memoHtml)),
- '',
- '## الدفوع',
- defenses.length ? defenses.map((defense, index) => {
- const explanation = summary?.explanationsCache?.[defense.id];
- const legalTexts = explanation?.legalTextsFull || [];
- const precedents = explanation?.cassationPrecedentsFull || [];
- return [
- `${index + 1}. ${markdownEscape(defense.defenseTitle)}`,
- `   - الأساس: ${markdownEscape(defense.basisFromCase)}`,
- ...legalTexts.map((text) => `   حيث نصت المادة ${markdownEscape(text.articleNumber)} من ${markdownEscape(text.lawName)} على أنه: ${markdownEscape(text.fullText)}`),
- ...precedents.map((precedent) => `   وفي ذلك قضت محكمة النقض بأنه: ${markdownEscape(precedent.fullText)} (طعن ${markdownEscape(precedent.appealNumber)} لسنة ${markdownEscape(precedent.judicialYear)} - جلسة ${markdownEscape(precedent.sessionDate)}).`),
- explanation?.legalApplication ? `   ${markdownEscape(explanation.legalApplication)}` : '',
- ].filter(Boolean).join('\n');
- }).join('\n\n') : '- لا توجد دفوع محددة.',
- '',
- '## الطلبات',
- requests.length ? requests.map((request) => `- ${markdownEscape(request.requestLevel)}: ${markdownEscape(request.requestText)}`).join('\n') : '- لا توجد طلبات ختامية.',
- '',
- ].join('\n');
-};
+const MAX_LOCAL_MEMO_SNAPSHOTS = 5;
 
 const snapshotsKey = (caseId?: string) => `defense-memo:snapshots:${caseId || 'unknown'}`;
 
@@ -173,14 +138,32 @@ const readSnapshots = (caseId?: string): DefenseMemoSnapshot[] => {
  try {
  const raw = window.localStorage.getItem(snapshotsKey(caseId));
  const parsed = raw ? JSON.parse(raw) : [];
- return Array.isArray(parsed) ? parsed : [];
+ if (!Array.isArray(parsed)) return [];
+
+ return parsed
+ .filter((snapshot): snapshot is DefenseMemoSnapshot =>
+ typeof snapshot?.id === 'string'
+ && typeof snapshot.createdAt === 'string'
+ && typeof snapshot.memoHtml === 'string')
+ .slice(0, MAX_LOCAL_MEMO_SNAPSHOTS)
+ .map(({ id, createdAt, memoHtml, currentStep, lastSavedAt }) => ({
+ id,
+ createdAt,
+ memoHtml,
+ currentStep,
+ lastSavedAt,
+ }));
  } catch {
  return [];
  }
 };
 
 const writeSnapshots = (caseId: string | undefined, snapshots: DefenseMemoSnapshot[]) => {
- window.localStorage.setItem(snapshotsKey(caseId), JSON.stringify(snapshots));
+ try {
+ window.localStorage.setItem(snapshotsKey(caseId), JSON.stringify(snapshots.slice(0, MAX_LOCAL_MEMO_SNAPSHOTS)));
+ } catch {
+ // Local history is optional; the authoritative memo is already saved on the server.
+ }
 };
 
 const buildDocxFromHtml = (html: string): Document => {
@@ -566,7 +549,6 @@ const FinalNote = ({ caseId, isActiveTab }: { caseId?: string; isActiveTab?: boo
  useEffect(() => {
  if (!caseId || !hasContent || !memoHtml || !summary) return;
  if (lastSnapshotContentRef.current === memoHtml) return;
- const markdown = buildMarkdown(summary, memoHtml);
  const current = readSnapshots(caseId);
  if (current[0]?.memoHtml === memoHtml) {
  lastSnapshotContentRef.current = memoHtml;
@@ -577,15 +559,13 @@ const FinalNote = ({ caseId, isActiveTab }: { caseId?: string; isActiveTab?: boo
  id: `${Date.now()}`,
  createdAt: new Date().toISOString(),
  memoHtml,
- markdown,
- outputs: smartOutputs as unknown as Record<string, unknown>,
  currentStep: 5,
  lastSavedAt: lastSavedState,
- }, ...current].slice(0, 20);
+ }, ...current].slice(0, MAX_LOCAL_MEMO_SNAPSHOTS);
  writeSnapshots(caseId, next);
  setSnapshots(next);
  lastSnapshotContentRef.current = memoHtml;
- }, [caseId, hasContent, memoHtml, summary, smartOutputs, lastSavedState]);
+ }, [caseId, hasContent, memoHtml, summary, lastSavedState]);
 
  useEffect(() => {
  if (aiJob?.status ==='Failed' && aiJob.errorMessage) {
