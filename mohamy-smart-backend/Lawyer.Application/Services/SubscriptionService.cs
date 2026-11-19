@@ -135,86 +135,14 @@ namespace Lawyer.Application.Services
 
 		public async Task<Result<LawyerSubscriptionDto>> SubscribeAsync(Guid lawyerId, int subscriptionId, string billingCycle, CancellationToken cancellationToken)
 		{
-			var plan = await _unitOfWork.Repository<Subscription>().GetByIdAsync(subscriptionId);
-			if (plan == null)
-				return ApiExceptionResponse.NotFound<LawyerSubscriptionDto>("Plan not found");
+			var activation = await ActivateSubscriptionAsync(lawyerId, subscriptionId, billingCycle, cancellationToken);
+			if (!activation.Succeeded || activation.Data is not { } newSub)
+				return Result<LawyerSubscriptionDto>.Error(activation.StatusCode, activation.Message, activation.Errors);
 
-			var isYearly = billingCycle?.ToLower() == "yearly";
+			await SendConfirmationEmailAsync(newSub, cancellationToken);
 
-			if (isYearly && !plan.YearlyPrice.HasValue)
-				return ApiExceptionResponse.BadRequest<LawyerSubscriptionDto>("Yearly billing is not available for this plan");
-
-			var lawyer = await _unitOfWork.Repository<Core.Models.Lawyer>()
-				.FirstOrDefaultAsync(x=>x.Id==lawyerId , cancellationToken , x=>x.ApplicationUser);
-
-			if (lawyer == null)
-				return ApiExceptionResponse.NotFound<LawyerSubscriptionDto>("Lawyer not found");
-
-			if (SubscriptionPlanClassifier.IsTrial(plan))
-			{
-				var existingTrialSub = await _unitOfWork.Repository<LawyerSubscription>()
-					.AsQueryable()
-					.IgnoreQueryFilters()
-					.Include(ls => ls.Subscription)
-					.FirstOrDefaultAsync(ls => ls.LawyerId == lawyerId && (ls.Subscription.Price <= 0 || ls.Subscription.Name == SubscriptionPlanClassifier.TrialPlanName || ls.Subscription.Name == SubscriptionPlanClassifier.LegacyTrialPlanName), cancellationToken);
-
-				if (existingTrialSub != null)
-				{
-					return ApiExceptionResponse.BadRequest<LawyerSubscriptionDto>("لا يمكن الاشتراك في الباقة التجريبية أكثر من مرة.");
-				}
-			}
-
-			var current = await _unitOfWork.Repository<LawyerSubscription>()
-				.FirstOrDefaultAsync(x => x.LawyerId == lawyerId && x.IsActive, cancellationToken);
-
-			if (current != null)
-			{
-				current.IsActive = false;
-				await _unitOfWork.Repository<LawyerSubscription>().Update(current);
-			}
-
-			var durationDays = isYearly ? (plan.YearlyDurationDays ?? 365) : plan.DurationDays;
-
-			var newSub = new LawyerSubscription
-			{
-				LawyerId = lawyerId,
-				SubscriptionId = subscriptionId,
-				UsedAiRequests = 0,
-				StartDate = DateTime.UtcNow,
-				EndDate = DateTime.UtcNow.AddDays(durationDays),
-				IsActive = true
-			};
-
-			await _unitOfWork.Repository<LawyerSubscription>().AddAsync(newSub);
-			await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-			if (!string.IsNullOrEmpty(lawyer.ApplicationUser?.Email))
-			{
-				var emailContent = $@"
-                    <h2>تأكيد تفعيل الاشتراك 🌟</h2>
-                    <p>مرحباً <strong>{lawyer.ApplicationUser.FullName}</strong>،</p>
-                    <p>تم تفعيل اشتراكك في باقة <strong>{plan.Name}</strong> بنجاح.</p>
-                    <p>نتمنى لك تجربة استثنائية مع محامي سمارت. إليك تفاصيل اشتراكك:</p>
-                    <div style=""background-color: #FBFAE8; border-radius: 12px; padding: 24px; margin: 24px 0; border: 1px solid rgba(239, 149, 10, 0.2);"">
-                        <div style=""margin-bottom: 12px;""><strong style=""color: #1B1B1B;"">اسم الباقة:</strong> {plan.Name}</div>
-                        <div style=""margin-bottom: 12px;""><strong style=""color: #1B1B1B;"">تاريخ البدء:</strong> {newSub.StartDate:yyyy-MM-dd}</div>
-                        <div style=""margin-bottom: 12px;""><strong style=""color: #1B1B1B;"">تاريخ الانتهاء:</strong> {newSub.EndDate:yyyy-MM-dd}</div>
-                        <div style=""margin-bottom: 0;""><strong style=""color: #1B1B1B;"">رصيد الاستفسارات:</strong> {plan.AiRequestsLimit} استفسار</div>
-                    </div>
-                    <p>يمكنك الآن البدء في استخدام جميع مميزات الذكاء الاصطناعي المتاحة لك بحرية تامة.</p>
-                ";
-
-				await _emailService.SendEmailAsync(
-					lawyer.ApplicationUser.Email,
-					"تأكيد الاشتراك في الباقة - محامي سمارت",
-					EmailTemplateBuilder.BuildEmailTemplate("تأكيد الاشتراك في الباقة", emailContent),
-					"SubscriptionConfirmation",
-					newSub.Id.ToString(),
-                    lawyer.ApplicationUser.Id,
-                    "subscription-confirmation",
-                    "subscription-activation",
-					cancellationToken);
-			}
+			var plan = newSub.Subscription;
+			var lawyer = newSub.Lawyer;
 
 			var isTrial = SubscriptionPlanClassifier.IsTrial(plan);
 
@@ -232,6 +160,115 @@ namespace Lawyer.Application.Services
 				Limit = newSub.GetEffectiveAiRequestsLimit(),
 				IsActive = true
 			}, "Lawyer subscribed successfully");
+		}
+
+		public async Task<Result<LawyerSubscription>> ActivateSubscriptionAsync(Guid lawyerId, int subscriptionId, string billingCycle, CancellationToken cancellationToken)
+		{
+			var plan = await _unitOfWork.Repository<Subscription>().FirstOrDefaultTrackedAsync(x => x.Id == subscriptionId, cancellationToken);
+			if (plan == null)
+				return ApiExceptionResponse.NotFound<LawyerSubscription>("Plan not found");
+
+			var isYearly = billingCycle?.ToLower() == "yearly";
+
+			if (isYearly && !plan.YearlyPrice.HasValue)
+				return ApiExceptionResponse.BadRequest<LawyerSubscription>("Yearly billing is not available for this plan");
+
+			var lawyer = await _unitOfWork.Repository<Core.Models.Lawyer>()
+				.FirstOrDefaultTrackedAsync(x => x.Id == lawyerId, cancellationToken, x => x.ApplicationUser);
+
+			if (lawyer == null)
+				return ApiExceptionResponse.NotFound<LawyerSubscription>("Lawyer not found");
+
+			if (SubscriptionPlanClassifier.IsTrial(plan))
+			{
+				var existingTrialSub = await _unitOfWork.Repository<LawyerSubscription>()
+					.AsQueryable()
+					.IgnoreQueryFilters()
+					.Include(ls => ls.Subscription)
+					.FirstOrDefaultAsync(ls => ls.LawyerId == lawyerId && (ls.Subscription.Price <= 0 || ls.Subscription.Name == SubscriptionPlanClassifier.TrialPlanName || ls.Subscription.Name == SubscriptionPlanClassifier.LegacyTrialPlanName), cancellationToken);
+
+				if (existingTrialSub != null)
+				{
+					return ApiExceptionResponse.BadRequest<LawyerSubscription>("لا يمكن الاشتراك في الباقة التجريبية أكثر من مرة.");
+				}
+			}
+
+			var current = await _unitOfWork.Repository<LawyerSubscription>()
+				.FirstOrDefaultAsync(x => x.LawyerId == lawyerId && x.IsActive, cancellationToken);
+
+			if (current != null)
+			{
+				current.IsActive = false;
+				await _unitOfWork.Repository<LawyerSubscription>().Update(current);
+			}
+
+			var durationDays = isYearly ? (plan.YearlyDurationDays ?? 365) : plan.DurationDays;
+
+			var now = DateTime.UtcNow;
+			var newSub = new LawyerSubscription
+			{
+				LawyerId = lawyerId,
+				Lawyer = lawyer,
+				SubscriptionId = subscriptionId,
+				Subscription = plan,
+				UsedAiRequests = 0,
+				StartDate = now,
+				EndDate = now.AddDays(durationDays),
+				IsActive = true
+			};
+
+			await _unitOfWork.Repository<LawyerSubscription>().AddAsync(newSub);
+			await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+			return ApiExceptionResponse.Success(newSub);
+		}
+
+		public async Task SendSubscriptionConfirmationAsync(Guid subscriptionId, CancellationToken cancellationToken)
+		{
+			var subscription = await _unitOfWork.Repository<LawyerSubscription>()
+				.AsQueryable()
+				.IgnoreQueryFilters()
+				.AsNoTracking()
+				.Include(x => x.Subscription)
+				.Include(x => x.Lawyer)
+				.ThenInclude(x => x.ApplicationUser)
+				.FirstOrDefaultAsync(x => x.Id == subscriptionId, cancellationToken);
+
+			if (subscription != null)
+				await SendConfirmationEmailAsync(subscription, cancellationToken);
+		}
+
+		private async Task SendConfirmationEmailAsync(LawyerSubscription subscription, CancellationToken cancellationToken)
+		{
+			var user = subscription.Lawyer.ApplicationUser;
+			if (string.IsNullOrEmpty(user?.Email))
+				return;
+
+			var plan = subscription.Subscription;
+			var emailContent = $@"
+                    <h2>تأكيد تفعيل الاشتراك 🌟</h2>
+                    <p>مرحباً <strong>{user.FullName}</strong>،</p>
+                    <p>تم تفعيل اشتراكك في باقة <strong>{plan.Name}</strong> بنجاح.</p>
+                    <p>نتمنى لك تجربة استثنائية مع محامي سمارت. إليك تفاصيل اشتراكك:</p>
+                    <div style=""background-color: #FBFAE8; border-radius: 12px; padding: 24px; margin: 24px 0; border: 1px solid rgba(239, 149, 10, 0.2);"">
+                        <div style=""margin-bottom: 12px;""><strong style=""color: #1B1B1B;"">اسم الباقة:</strong> {plan.Name}</div>
+                        <div style=""margin-bottom: 12px;""><strong style=""color: #1B1B1B;"">تاريخ البدء:</strong> {subscription.StartDate:yyyy-MM-dd}</div>
+                        <div style=""margin-bottom: 12px;""><strong style=""color: #1B1B1B;"">تاريخ الانتهاء:</strong> {subscription.EndDate:yyyy-MM-dd}</div>
+                        <div style=""margin-bottom: 0;""><strong style=""color: #1B1B1B;"">رصيد الاستفسارات:</strong> {plan.AiRequestsLimit} استفسار</div>
+                    </div>
+                    <p>يمكنك الآن البدء في استخدام جميع مميزات الذكاء الاصطناعي المتاحة لك بحرية تامة.</p>
+                ";
+
+			await _emailService.SendEmailAsync(
+				user.Email,
+				"تأكيد الاشتراك في الباقة - محامي سمارت",
+				EmailTemplateBuilder.BuildEmailTemplate("تأكيد الاشتراك في الباقة", emailContent),
+				"SubscriptionConfirmation",
+				subscription.Id.ToString(),
+				user.Id,
+				"subscription-confirmation",
+				"subscription-activation",
+				cancellationToken);
 		}
 
 		public async Task<Result<LawyerSubscriptionDto>> GetLawyerPlanAsync(Guid lawyerId, CancellationToken cancellationToken)

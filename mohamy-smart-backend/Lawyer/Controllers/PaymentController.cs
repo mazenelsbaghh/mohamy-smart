@@ -104,7 +104,9 @@ namespace Lawyer.Controllers
 						return Redirect($"{frontendBaseUrl}?status=error");
 				}
 
-				await _paymobService.HandleLocalGetCallbackAsync(merchantOrderId, success, data, receivedHmac, ct);
+				var processing = await _paymobService.HandleLocalGetCallbackAsync(merchantOrderId, success, data, receivedHmac, ct);
+				if (!processing.Succeeded)
+					return Redirect($"{frontendBaseUrl}?status=error&transactionId={merchantOrderId}");
 
 				if (success)
 					return Redirect($"{frontendBaseUrl}?status=success&transactionId={merchantOrderId}");

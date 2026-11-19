@@ -1,3 +1,4 @@
+using Hangfire;
 using Lawyer.Application.Dtos;
 using Lawyer.Application.IServices;
 using Lawyer.Core.Common;
@@ -23,19 +24,22 @@ namespace Lawyer.Application.Services
 		private readonly IHttpClientFactory _httpClientFactory;
 		private readonly PaymobSettings _settings;
 		private readonly ILogger<PaymobService> _logger;
+		private readonly IBackgroundJobClient? _backgroundJobs;
 
 		public PaymobService(
 			IUnitOfWork unitOfWork,
 			ISubscriptionService subscriptionService,
 			IHttpClientFactory httpClientFactory,
 			IOptions<PaymobSettings> settings,
-			ILogger<PaymobService> logger)
+			ILogger<PaymobService> logger,
+			IBackgroundJobClient? backgroundJobs = null)
 		{
 			_unitOfWork = unitOfWork;
 			_subscriptionService = subscriptionService;
 			_httpClientFactory = httpClientFactory;
 			_settings = settings.Value;
 			_logger = logger;
+			_backgroundJobs = backgroundJobs;
 		}
 
 		public async Task<Result<InitiatePaymentResponseDto>> InitiatePaymentAsync(
@@ -253,75 +257,8 @@ namespace Lawyer.Application.Services
 				var success = GetField(obj, "success").Equals("true", StringComparison.OrdinalIgnoreCase);
 				var paymobTransactionId = GetField(obj, "id");
 
-				var payment = await _unitOfWork.Repository<Payment>()
-					.FirstOrDefaultAsync(x => x.TransactionId == merchantOrderId, ct);
-
-				if (payment == null)
-				{
-					_logger.LogWarning("Payment not found for merchant_order_id: {OrderId}", merchantOrderId);
-					return ApiExceptionResponse.NotFound<string>("Payment not found");
-				}
-
-				// Idempotency: skip if already processed
-				if (payment.Status != PaymentStatus.Pending)
-				{
-					_logger.LogInformation("Payment {TransactionId} already processed with status {Status}", merchantOrderId, payment.Status);
-					return ApiExceptionResponse.Success("Payment already processed");
-				}
-
-				// Save raw callback payload for audit/debugging
-				payment.CallbackPayload = payload.ToString();
-				payment.PaymobTransactionId = paymobTransactionId;
-
-				// Use DB transaction to ensure atomicity: payment update + subscription activation succeed or fail together
-				using var transaction = await _unitOfWork.BeginTransactionAsync();
-				try
-				{
-					if (success)
-					{
-						payment.Status = PaymentStatus.Success;
-						await _unitOfWork.Repository<Payment>().Update(payment);
-						await _unitOfWork.SaveChangesAsync(ct);
-
-						// Activate subscription within the same transaction
-						await _subscriptionService.SubscribeAsync(payment.LawyerId, payment.SubscriptionId, payment.BillingCycle ?? "monthly", ct);
-
-						await transaction.CommitAsync(ct);
-
-						_logger.LogInformation("Payment successful. Subscription activated for Lawyer {LawyerId}, Plan {SubscriptionId}",
-							payment.LawyerId, payment.SubscriptionId);
-
-						return ApiExceptionResponse.Success("Payment processed successfully. Subscription activated.");
-					}
-					else
-					{
-						payment.Status = PaymentStatus.Failed;
-						await _unitOfWork.Repository<Payment>().Update(payment);
-						await _unitOfWork.SaveChangesAsync(ct);
-
-						await transaction.CommitAsync(ct);
-
-						_logger.LogWarning("Payment failed for TransactionId {TransactionId}", merchantOrderId);
-
-						return ApiExceptionResponse.Success("Payment failed. Subscription not activated.");
-					}
-				}
-				catch (DbUpdateConcurrencyException)
-				{
-					// Another request already processed this payment (Paymob webhook retry)
-					await transaction.RollbackAsync(ct);
-					_logger.LogInformation("Concurrent callback detected for {TransactionId}, skipping (already processed)", merchantOrderId);
-					return ApiExceptionResponse.Success("Payment already processed");
-				}
-				catch
-				{
-					await transaction.RollbackAsync(ct);
-					throw;
-				}
-			}
-			catch (DbUpdateConcurrencyException)
-			{
-				return ApiExceptionResponse.Success("Payment already processed");
+				return await ProcessVerifiedCallbackAsync(new VerifiedCallback(
+					merchantOrderId, success, paymobTransactionId, payload.ToString()));
 			}
 			catch (Exception ex)
 			{
@@ -332,59 +269,12 @@ namespace Lawyer.Application.Services
 
 		public async Task<Result<string>> HandleLocalGetCallbackAsync(string merchantOrderId, bool success, string hmacData, string receivedHmac, CancellationToken ct)
 		{
+			if (!VerifyCallbackHmac(hmacData, receivedHmac))
+				return ApiExceptionResponse.Unauthorized<string>("Invalid HMAC signature");
+
 			try
 			{
-				if (!VerifyCallbackHmac(hmacData, receivedHmac))
-				{
-					_logger.LogWarning("Invalid HMAC in local callback for merchant_order_id: {OrderId}", merchantOrderId);
-					return ApiExceptionResponse.Unauthorized<string>("Invalid HMAC signature");
-				}
-
-				var payment = await _unitOfWork.Repository<Payment>()
-					.FirstOrDefaultAsync(x => x.TransactionId == merchantOrderId, ct);
-
-				if (payment == null)
-				{
-					_logger.LogWarning("Local Callback: Payment not found for merchant_order_id: {OrderId}", merchantOrderId);
-					return ApiExceptionResponse.NotFound<string>("Payment not found");
-				}
-
-				if (payment.Status != PaymentStatus.Pending)
-				{
-					return ApiExceptionResponse.Success("Payment already processed");
-				}
-
-				using var transaction = await _unitOfWork.BeginTransactionAsync();
-				try
-				{
-					if (success)
-					{
-						payment.Status = PaymentStatus.Success;
-						await _unitOfWork.Repository<Payment>().Update(payment);
-						await _unitOfWork.SaveChangesAsync(ct);
-
-						await _subscriptionService.SubscribeAsync(payment.LawyerId, payment.SubscriptionId, payment.BillingCycle ?? "monthly", ct);
-						await transaction.CommitAsync(ct);
-
-						_logger.LogInformation("Local Callback: Payment successful. Subscription activated for Lawyer {LawyerId}", payment.LawyerId);
-						return ApiExceptionResponse.Success("Subscription activated.");
-					}
-					else
-					{
-						payment.Status = PaymentStatus.Failed;
-						await _unitOfWork.Repository<Payment>().Update(payment);
-						await _unitOfWork.SaveChangesAsync(ct);
-						await transaction.CommitAsync(ct);
-
-						_logger.LogWarning("Local Callback: Payment failed for TransactionId {TransactionId}", merchantOrderId);
-						return ApiExceptionResponse.Success("Payment failed.");
-					}
-				}
-				catch (Exception)
-				{
-					await transaction.RollbackAsync(ct);
-					throw;
-				}
+				return await ProcessVerifiedCallbackAsync(new VerifiedCallback(merchantOrderId, success, null, null));
 			}
 			catch (Exception ex)
 			{
@@ -392,6 +282,92 @@ namespace Lawyer.Application.Services
 				return ApiExceptionResponse.ServerError<string>("Error processing payment callback");
 			}
 		}
+
+		private async Task<Result<string>> ProcessVerifiedCallbackAsync(VerifiedCallback callback)
+		{
+			// A disconnected caller cannot undo a verified payment.
+			using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+			var payment = await _unitOfWork.Repository<Payment>()
+				.FirstOrDefaultAsync(x => x.TransactionId == callback.MerchantOrderId, timeout.Token);
+
+			if (payment == null)
+			{
+				_logger.LogWarning("Payment not found for merchant_order_id: {OrderId}", callback.MerchantOrderId);
+				return ApiExceptionResponse.NotFound<string>("Payment not found");
+			}
+
+			if (payment.Status != PaymentStatus.Pending)
+				return ApiExceptionResponse.Success("Payment already processed");
+
+			try
+			{
+				return await CompletePaymentAsync(payment, callback, timeout.Token);
+			}
+			catch (DbUpdateConcurrencyException ex) when (ex.Entries.Any(entry => entry.Entity is Payment))
+			{
+				var finalized = await _unitOfWork.Repository<Payment>().AnyAsync(
+					x => x.Id == payment.Id && (x.Status == PaymentStatus.Success || x.Status == PaymentStatus.Failed),
+					timeout.Token);
+				if (!finalized)
+					throw;
+
+				return ApiExceptionResponse.Success("Payment already processed");
+			}
+		}
+
+		private async Task<Result<string>> CompletePaymentAsync(Payment payment, VerifiedCallback callback, CancellationToken ct)
+		{
+			Guid? activatedSubscriptionId = null;
+			await using (var transaction = await _unitOfWork.BeginTransactionAsync())
+			{
+				payment.Status = callback.Success ? PaymentStatus.Success : PaymentStatus.Failed;
+				payment.PaymobTransactionId = callback.PaymobTransactionId;
+				payment.CallbackPayload = callback.Payload;
+
+				await _unitOfWork.Repository<Payment>().Update(payment);
+				await _unitOfWork.SaveChangesAsync(ct);
+
+				if (callback.Success)
+				{
+					var activation = await _subscriptionService.ActivateSubscriptionAsync(
+						payment.LawyerId, payment.SubscriptionId, payment.BillingCycle, ct);
+					if (!activation.Succeeded || activation.Data is not { } subscription)
+					{
+						_logger.LogError("Unable to activate subscription for payment {PaymentId}: {Reason}", payment.Id, activation.Message);
+						return ApiExceptionResponse.ServerError<string>("Unable to activate paid subscription");
+					}
+
+					activatedSubscriptionId = subscription.Id;
+				}
+
+				await transaction.CommitAsync(ct);
+			}
+
+			if (activatedSubscriptionId is not { } subscriptionId)
+			{
+				_logger.LogWarning("Payment failed for TransactionId {TransactionId}", callback.MerchantOrderId);
+				return ApiExceptionResponse.Success("Payment failed. Subscription not activated.");
+			}
+
+			QueueSubscriptionConfirmation(subscriptionId);
+			_logger.LogInformation("Payment {PaymentId} confirmed and subscription {SubscriptionId} activated", payment.Id, subscriptionId);
+			return ApiExceptionResponse.Success("Payment processed successfully. Subscription activated.");
+		}
+
+		private void QueueSubscriptionConfirmation(Guid subscriptionId)
+		{
+			try
+			{
+				_backgroundJobs?.Enqueue<ISubscriptionService>(service =>
+					service.SendSubscriptionConfirmationAsync(subscriptionId, CancellationToken.None));
+			}
+			catch (BackgroundJobClientException ex)
+			{
+				_logger.LogError(ex, "Unable to queue confirmation for committed subscription {SubscriptionId}", subscriptionId);
+			}
+		}
+
+		private sealed record VerifiedCallback(string MerchantOrderId, bool Success, string? PaymobTransactionId, string? Payload);
 
 		public bool VerifyCallbackHmac(string data, string receivedHmac)
 		{

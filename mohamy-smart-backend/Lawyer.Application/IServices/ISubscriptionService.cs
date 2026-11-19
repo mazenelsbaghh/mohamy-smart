@@ -1,5 +1,6 @@
 using Lawyer.Application.Dtos;
 using Lawyer.Core.Exceptions;
+using Lawyer.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +15,8 @@ namespace Lawyer.Application.IServices
 		Task<Result<List<SubscriptionDto>>> GetAllPlansAsync(bool includeInactive = false, CancellationToken cancellationToken = default);
 		Task<Result<PaginatedResult<SubscriptionDto>>> GetAllPlansAsync(int pageNumber, int pageSize, CancellationToken cancellationToken);
 		Task<Result<LawyerSubscriptionDto>> SubscribeAsync(Guid lawyerId, int subscriptionId, string billingCycle, CancellationToken cancellationToken);
+		Task<Result<LawyerSubscription>> ActivateSubscriptionAsync(Guid lawyerId, int subscriptionId, string billingCycle, CancellationToken cancellationToken);
+		Task SendSubscriptionConfirmationAsync(Guid subscriptionId, CancellationToken cancellationToken);
 		Task<Result<LawyerSubscriptionDto>> GetLawyerPlanAsync(Guid lawyerId, CancellationToken cancellationToken);
 		Task<bool> CheckAiRequestAvailability(Guid lawyerId, CancellationToken cancellationToken = default);
 		Task<Result<string>> UseAiRequestAsync(Guid lawyerId, CancellationToken cancellationToken = default);
